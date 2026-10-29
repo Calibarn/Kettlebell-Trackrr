@@ -1,0 +1,482 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="color-scheme" content="dark" />
+<title>KB Studio — Training, Sound & Bauchumfang</title>
+<style>
+:root{--bg:#0d1215;--panel:#172024;--panel2:#1b272b;--line:#2c3b40;--ink:#edf7f3;--muted:#9cb0ad;--mint:#a5f3bd;--green:#65d99b;--blue:#89c9e7;--yellow:#f1ce84;--red:#fca5a5;--shadow:0 16px 60px #0003;--radius:18px}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;font:15px/1.55 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:radial-gradient(ellipse 80% 40% at 80% 0%,#20392e 0,transparent 70%),var(--bg);color:var(--ink)}button,input,select{font:inherit}button{cursor:pointer}button:disabled{opacity:.42;cursor:not-allowed}button:focus-visible,input:focus-visible{outline:3px solid var(--blue);outline-offset:3px}.wrap{width:min(1100px,calc(100% - 36px));margin:auto}header{border-bottom:1px solid #ffffff13}header .wrap{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:23px 0}.brand{display:flex;align-items:center;gap:13px}.logo{width:44px;height:44px;background:var(--mint);border-radius:15px;color:#17291f;display:grid;place-items:center;font-weight:1000;font-size:21px;letter-spacing:-2px}.eyebrow{color:var(--green);font-size:11px;font-weight:750;letter-spacing:.15em;text-transform:uppercase}.brand h1{font-size:19px;line-height:1.1;letter-spacing:-.6px;margin:3px 0 0}.meta{color:var(--muted);font-size:12px;text-align:right}main{padding:32px 0 70px}.headrow{display:flex;align-items:end;justify-content:space-between;gap:20px;margin-bottom:20px}h2{font-size:30px;letter-spacing:-1.1px;line-height:1.12;margin:0}h3{font-size:16px;margin:0 0 14px;letter-spacing:-.25px}p{margin:6px 0}.sub{color:var(--muted);font-size:14px}.plans{display:flex;gap:8px;flex-wrap:wrap}.tab{border:1px solid var(--line);background:#141d20;color:var(--muted);border-radius:100px;padding:10px 17px;font-weight:700}.tab.active{background:var(--mint);color:#15271b;border-color:transparent}.grid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(300px,1fr);gap:20px}.card{background:linear-gradient(145deg,#182227,#131d20);border:1px solid #334245;border-radius:var(--radius);padding:23px;box-shadow:var(--shadow)}.kicker{color:var(--muted);font-size:12px;letter-spacing:.09em;text-transform:uppercase;font-weight:700}.phase{display:inline-flex;gap:6px;align-items:center;background:#243930;border:1px solid #456954;border-radius:100px;color:var(--mint);font-size:12px;font-weight:800;padding:5px 10px;margin:12px 0}.timernum{font-size:clamp(64px,9vw,107px);line-height:1.04;font-weight:790;font-variant-numeric:tabular-nums;letter-spacing:-5px;margin:10px 0 13px}.progress{height:9px;background:#354346;border-radius:100px;overflow:hidden}.fill{height:100%;background:linear-gradient(90deg,var(--green),var(--mint));width:0;transition:width .2s}.timeline{display:flex;gap:4px;margin-top:10px}.block{height:6px;border-radius:20px;background:#415251;flex:1}.block.active{background:var(--mint)}.timeline-labels{display:flex;justify-content:space-between;color:var(--muted);font-size:11px;margin-top:7px}.buttons{display:flex;flex-wrap:wrap;gap:9px;margin-top:20px}.btn{border-radius:12px;padding:11px 16px;background:#26373a;color:var(--ink);border:1px solid #415456;font-weight:750}.btn.primary{background:var(--mint);color:#16291d;border-color:transparent}.btn.danger{color:#fac4c4}.btn.small{font-size:12px;padding:8px 11px}.tiny{font-size:12px;color:var(--muted);margin-top:16px}.bigmetric{font-size:51px;font-weight:800;letter-spacing:-2px;line-height:1.15;font-variant-numeric:tabular-nums}.accent{color:var(--mint)}.stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:18px}.stat{background:#10191b;border:1px solid #2e4043;border-radius:13px;padding:15px}.stat span{display:block;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}.stat b{font-size:24px;font-variant-numeric:tabular-nums}.line{border-top:1px solid var(--line);margin:18px 0}.current{display:flex;justify-content:space-between;gap:15px;align-items:center;background:#233329;border:1px solid #44634b;border-radius:14px;padding:15px;margin:15px 0}.current small{display:block;color:#b5d2bf;margin-top:3px}.current b{font-size:19px}.worklist{display:grid;grid-template-columns:1fr;gap:5px;margin-top:14px}.workitem{display:flex;gap:11px;align-items:center;padding:10px 8px;border-bottom:1px solid #ffffff13}.num{display:grid;place-items:center;width:29px;height:29px;border:1px solid #445657;border-radius:9px;color:var(--muted);font-size:12px;font-weight:700;flex-shrink:0}.workitem.focus .num{color:#14251b;background:var(--mint);border-color:var(--mint)}.workitem.completed .num{color:#8cdaa7;border-color:#477c57}.workitem.completed .ename{opacity:.55}.ename{font-size:14px;font-weight:700}.esub{font-size:12px;color:var(--muted)}.rep{margin-left:auto;white-space:nowrap;font-size:12px;color:var(--muted);font-weight:700}.workitem.focus{background:#213029;border-radius:10px}.section{margin-top:28px}.historytable{width:100%;border-collapse:collapse;font-size:13px}.historytable th{text-align:left;color:var(--muted);font-weight:650;font-size:11px;text-transform:uppercase;letter-spacing:.07em}.historytable th,.historytable td{padding:12px 9px;border-bottom:1px solid #2f3f41}.historytable td:nth-child(3){font-weight:750}.historytable td:last-child,.historytable th:last-child{text-align:right}.empty{text-align:center;color:var(--muted);padding:27px 10px;background:#141e20;border:1px dashed #3d5050;border-radius:12px;font-size:13px}.chart{width:100%;height:160px;margin-top:8px}.smalltext{font-size:12px;color:var(--muted)}.badge{background:#2e4538;color:var(--mint);border-radius:100px;font-size:11px;padding:5px 10px;font-weight:800}.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0 0}.footer{margin-top:28px;padding:18px 0;border-top:1px solid #2a383b;color:var(--muted);font-size:12px}.secondarygrid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:20px}.steps{display:grid;gap:10px;margin-top:12px}.step{display:flex;gap:12px;align-items:start}.duration{min-width:65px;text-align:center;background:#293c39;border-radius:8px;padding:6px 7px;font-size:12px;font-weight:800;color:var(--mint)}.step div:nth-child(2){font-size:13px}.step b{display:block;color:var(--ink);font-size:14px}.manual{display:grid;grid-template-columns:1.2fr .8fr .7fr auto;gap:8px;align-items:end}.field{display:flex;flex-direction:column;gap:5px}.field label{font-size:11px;color:var(--muted)}input{border:1px solid #3b5052;border-radius:10px;background:#101a1d;color:var(--ink);padding:10px;max-width:100%;min-width:0}.message{color:var(--mint);font-weight:700;font-size:13px;margin-top:12px;min-height:18px}.warn{color:var(--yellow)}.hide{display:none!important}
+@media(max-width:830px){.grid,.secondarygrid{grid-template-columns:1fr}.headrow{align-items:start;flex-direction:column}.timernum{font-size:80px}.manual{grid-template-columns:1fr 1fr}.manual .btn{align-self:end}}@media(max-width:500px){.wrap{width:min(100% - 26px,1100px)}header .wrap{padding:15px 0}.meta{display:none}main{padding:23px 0 40px}.card{padding:17px}h2{font-size:25px}.timernum{font-size:69px}.tab{flex:1;text-align:center;padding:10px 8px;font-size:13px}.rep{font-size:11px}.bigmetric{font-size:44px}.manual{grid-template-columns:1fr 1fr}.btn{padding:10px 13px}}
+
+.soundbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:14px}
+.soundbar .smalltext{margin:0 0 0 4px;flex:1 1 220px}
+.stepstatus{display:flex;justify-content:space-between;gap:15px;align-items:center;margin-top:16px;padding:13px 16px;background:#112521;border:1px solid #3c6756;border-radius:13px}
+.stepstatus b{display:block;font-size:17px;margin-top:2px}
+.stepstatus small{display:block;color:var(--muted);font-size:12px}
+.stepclock{font-size:27px!important;font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--mint)}
+.step.focus{background:#1e382b;border:1px solid #3b7655;border-radius:10px;padding:9px 7px;margin:-9px -7px}
+.step.completed{opacity:.52}
+.timerwork{background:#142723;border:1px solid #386451;border-radius:12px;padding:12px;margin-top:12px}
+.timerwork .buttons{margin-top:9px;align-items:center}
+.timerwork select{background:#101a1d;color:var(--ink);border:1px solid #3b5052;border-radius:9px;padding:8px}
+.timerwork strong{font-variant-numeric:tabular-nums;color:var(--mint);font-size:24px}
+@media(max-width:500px){.stepclock{font-size:23px!important}.soundbar{align-items:stretch}.soundbar .btn{flex:1}.soundbar .smalltext{flex-basis:100%}}
+
+/* Fortschrittsmessung Bauchumfang */
+.measuregrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:17px 0}
+.measurebox{border-radius:13px;background:#10191b;border:1px solid #2e4043;padding:14px}
+.measurebox small{display:block;text-transform:uppercase;color:var(--muted);font-size:11px;letter-spacing:.06em}
+.measurebox strong{display:block;font-size:25px;line-height:1.4;font-variant-numeric:tabular-nums}
+.measure-form{display:grid;grid-template-columns:minmax(150px,1.1fr) minmax(140px,.8fr) auto;gap:9px;align-items:end;margin:12px 0 7px}
+.measure-note{color:var(--muted);font-size:12px;line-height:1.6}
+.measure-chart{max-width:100%;display:block;width:100%;height:auto;margin:12px 0 8px}
+@media(max-width:650px){.measuregrid{grid-template-columns:1fr 1fr}.measuregrid .measurebox:last-child{grid-column:span 2}.measure-form{grid-template-columns:1fr 1fr}.measure-form button{grid-column:span 2}}
+
+
+.file-save{background:#10241f;border:1px solid #3c6857;border-radius:14px;padding:18px;margin-top:20px}.file-save .buttons{margin-top:12px}.file-status{margin:10px 0 0;color:var(--mint);font-size:13px}.file-hint{font-size:12px;color:var(--muted);margin-top:8px}
+</style>
+</head>
+<body>
+<header><div class="wrap"><div class="brand"><div class="logo">KB</div><div><div class="eyebrow">Home Training</div><h1>Dein Trainings-Tracker</h1></div></div><div class="meta">Festes Zeitbudget. Mehr Runden.<br>Fortschritt ohne Gewichtswechsel.</div></div></header>
+<main class="wrap">
+  <div class="headrow"><div><div class="eyebrow">Dein Workout</div><h2>Training, das sich messen lässt.</h2><p class="sub">Übungen abhaken, Runden zählen, langfristig vergleichen.</p></div><div class="plans" role="tablist" aria-label="Trainingsplan"><button class="tab active" id="tab-wed" role="tab" aria-selected="true">Mi · Ganzkörper</button><button class="tab" id="tab-sun" role="tab" aria-selected="false">So · Leicht</button></div></div>
+  <div class="grid">
+  <section class="card"><div class="kicker" id="plan-title">Mittwoch · Ganzkörper</div><span class="phase" id="phase-badge">● Aufwärmen · 4 Minuten</span><div class="timernum" id="timer" aria-live="off">04:00</div><div class="progress"><div class="fill" id="progress"></div></div><div class="timeline" id="timeline"></div><div class="timeline-labels"><span>Warm-up</span><span>Zirkel</span><span>Cooldown</span></div>
+  <div class="stepstatus" id="stepstatus" aria-live="off"><div><span class="kicker" id="steplabel">Aktuelle Zeitübung</span><b id="stepname">Marschieren auf der Stelle</b><small id="stepdesc">Aufwärmen</small></div><b class="stepclock" id="stepclock">01:00</b></div>
+  <div class="soundbar"><button class="btn small" id="sound" type="button" aria-pressed="true">🔊 Ton an</button><button class="btn small" id="testsound" type="button">♪ Ton testen</button><span class="smalltext">3–2–1-Countdown und deutlicher Doppelton bei jedem Übungswechsel. Browser-Tab möglichst im Vordergrund lassen.</span></div><p class="smalltext" id="audio-status" role="status">Zum Testen auf „Ton testen“ klicken. Die Seite während des Trainings möglichst geöffnet lassen.</p>
+  <div class="buttons"><button class="btn primary" id="start">▶ Starten</button><button class="btn" id="skip" title="Nächste Phase beginnen">Phase weiter →</button><button class="btn danger" id="reset">↺ Zurücksetzen</button></div><p class="tiny" id="timehint">Timer startet beim Aufwärmen und wechselt automatisch zu Zirkel und Cooldown. Während des Zirkels jede abgeschlossene Übung abhaken.</p><div class="line"></div><div class="kicker">Aktueller Durchgang</div><div class="stats"><div class="stat"><span>Ganze Runden</span><b id="roundnum">0</b></div><div class="stat"><span>Weitere Übungen</span><b id="extranum">0</b></div><div class="stat"><span>Übungen gesamt</span><b id="totalnum">0</b></div><div class="stat"><span>Persönlicher Bestwert</span><b id="bestnum">–</b></div></div><div class="current"><div><span class="kicker">Nächste Übung</span><b id="currentname">Einarmiges Rudern</b><small id="currentrep">10 je Seite · Kettlebell</small></div><span class="badge" id="roundbadge">Runde 1</span></div>
+  <div class="timerwork hide" id="timerwork"><span class="kicker">Zeitgesteuerte Zirkelübung</span><div class="buttons"><button class="btn small primary" id="timedstart" type="button">▶ Übungs-Timer starten</button><select id="timedlength" aria-label="Dauer je Seite" class="hide"><option value="20">20 Sek. je Seite</option><option value="30" selected>30 Sek. je Seite</option></select><strong id="timedclock">00:20</strong></div><p class="smalltext" id="timedinfo">Links und rechts werden mit Tonsignal getrennt. Danach wird die Übung gezählt.</p></div>
+  <div class="buttons"><button class="btn primary" id="complete">✓ Übung erledigt</button><button class="btn" id="undo">↶ Rückgängig</button></div><div class="message" id="notice" role="status"></div></section>
+  <section class="card"><div class="kicker">Zirkel · Reihenfolge</div><h3 style="margin-top:6px" id="workoutname">11 Übungen · 21 Minuten</h3><p class="sub">Wiederholungszahlen bleiben konstant. Achte auf saubere Technik – nicht hektisch werden, um mehr Runden zu schaffen.</p><div id="worklist" class="worklist"></div></section>
+  </div>
+  <div class="secondarygrid">
+    <section class="card"><div class="kicker">Vorbereitung</div><h3 style="margin-top:7px">Aufwärmen</h3><div class="steps" id="warmup"></div></section>
+    <section class="card"><div class="kicker">Beweglichkeit</div><h3 style="margin-top:7px">Hüft-Cooldown</h3><div class="steps" id="cooldown"></div></section>
+  </div>
+
+  <section class="section card" id="storage-section">
+    <div class="kicker">Offline & Datenablage</div>
+    <h3 style="margin:6px 0 6px">Deine Trainingsdaten als JSON-Datei</h3>
+    <p class="sub">Die Seite speichert weiterhin lokal im Browser. Du kannst zusätzlich eine JSON-Datei auswählen, in die neue Runden und Bauchumfang-Messungen automatisch geschrieben werden.</p>
+    <div class="file-save">
+      <div class="buttons">
+        <button class="btn primary" type="button" id="new-datafile">＋ Neue JSON-Datei anlegen</button>
+        <button class="btn" type="button" id="connect-datafile">📂 Bestehende JSON-Datei verbinden</button>
+        <button class="btn" type="button" id="save-datafile">💾 Jetzt speichern</button>
+        <button class="btn small" type="button" id="disconnect-datafile">Verbindung lösen</button>
+      </div>
+      <p class="file-status" id="file-status" role="status">Browser-Speicherung aktiv · noch keine externe Datei verbunden.</p>
+      <p class="file-hint" id="file-hint">Das direkte Speichern ist für unterstützte Desktop-Browser (Chrome/Edge) gedacht. Wenn dein Browser keinen Dateizugriff erlaubt, nutze „Backup exportieren“ und „Backup importieren“. Die App benötigt keinen Server.</p>
+    </div>
+  </section>
+
+  <section class="section card"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><div class="kicker">Deine Entwicklung</div><h3 style="margin:6px 0 0">Fortschritt pro Training</h3></div><span class="badge" id="sessioncount">0 Einheiten</span></div><p class="sub">Jeder Balken steht für abgeschlossene Übungen in der festgelegten Zirkelzeit. So sind Trainings desselben Plans vergleichbar.</p><div id="chartbox"><div class="empty">Nach deiner ersten gespeicherten Einheit erscheint hier dein Fortschritt.</div></div><h3 style="margin:24px 0 5px">Trainingstagebuch</h3><div style="overflow-x:auto"><table class="historytable"><thead><tr><th>Datum</th><th>Plan</th><th>Ergebnis</th><th>Aktion</th></tr></thead><tbody id="history"><tr><td colspan="4" class="smalltext">Noch keine Trainingseinheit gespeichert.</td></tr></tbody></table></div><div class="toolbar"><button class="btn small" id="exportcsv">CSV exportieren</button><button class="btn small" id="exportjson">Backup exportieren</button><button class="btn small" id="importbtn">Backup importieren</button><input type="file" accept=".json,application/json" id="importfile" class="hide" /></div><p class="smalltext">Lokale Daten bleiben im Browser gespeichert. Mit einer verbundenen JSON-Datei werden Änderungen zusätzlich in die Datei geschrieben. Backup-Export und -Import bleiben verfügbar. Es werden keine Daten an einen Server übertragen.</p></section>
+  <section class="section card" id="bauchumfang-section">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+      <div><div class="kicker">Körpermaße</div><h3 style="margin:6px 0 0">Bauchumfang im Verlauf</h3></div>
+      <span class="badge" id="waist-count">0 Messungen</span>
+    </div>
+    <p class="sub">Einmal pro Monat messen. Hier zählt die langfristige Entwicklung, nicht die tägliche Schwankung.</p>
+    <div class="measuregrid" aria-label="Bauchumfang-Statistik">
+      <div class="measurebox"><small>Letzter Wert</small><strong id="waist-last">–</strong></div>
+      <div class="measurebox"><small>Veränderung zum Start</small><strong id="waist-delta">–</strong></div>
+      <div class="measurebox"><small>Startwert</small><strong id="waist-first">–</strong></div>
+    </div>
+    <form id="waist-form" class="measure-form">
+      <div class="field"><label for="waist-date">Messdatum</label><input id="waist-date" type="date" required /></div>
+      <div class="field"><label for="waist-cm">Bauchumfang in cm</label><input id="waist-cm" type="number" inputmode="decimal" min="40" max="220" step="0.1" placeholder="z. B. 108,5" required /></div>
+      <button class="btn primary" type="submit">Messung speichern</button>
+    </form>
+    <p class="measure-note">Morgens nach dem Toilettengang, vor dem Frühstück, entspannt stehen. Maßband waagerecht auf Nabelhöhe anlegen, ohne einzuschnüren. Immer an derselben Stelle messen; am besten zweimal und den Mittelwert eintragen.</p>
+    <p class="message" id="waist-notice" role="status"></p>
+    <div id="waist-chartbox"><div class="empty">Nach deiner ersten Messung erscheint hier die Entwicklung deines Bauchumfangs.</div></div>
+    <div style="overflow-x:auto"><table class="historytable"><thead><tr><th>Datum</th><th>Umfang</th><th>Änderung zur vorherigen Messung</th><th>Aktion</th></tr></thead><tbody id="waist-history"><tr><td colspan="4" class="smalltext">Noch keine Messung gespeichert.</td></tr></tbody></table></div>
+    <div class="toolbar"><button class="btn small" id="waist-csv" type="button">Bauchumfang als CSV</button><button class="btn small" id="waist-calendar" type="button">Monatliche Kalender-Erinnerung (.ics)</button></div>
+    <p class="smalltext">Die Messwerte werden wie dein Training lokal im Browser gespeichert. Der JSON-Backup-Export weiter oben enthält jetzt beides: Training und Bauchumfang.</p>
+  </section>
+
+  <section class="section card"><div class="kicker">Nachtragen</div><h3 style="margin:6px 0 10px">Ein Training manuell erfassen</h3><p class="sub" style="margin-bottom:16px">Falls du ohne geöffnete Seite trainiert hast: gleiche Übungsreihenfolge und Wiederholungen vorausgesetzt.</p><form class="manual" id="manual"><div class="field"><label for="manualdate">Datum</label><input id="manualdate" type="date" required /></div><div class="field"><label for="manualround">Ganze Runden</label><input id="manualround" type="number" min="0" max="100" value="1" required /></div><div class="field"><label for="manualextra">Weitere Übungen</label><input id="manualextra" type="number" min="0" max="10" value="0" required /></div><button class="btn primary" type="submit">Speichern</button></form><p class="smalltext">Der aktuell gewählte Plan wird verwendet. Angaben aus unterschiedlichen Plänen werden getrennt verglichen.</p></section>
+  <div class="footer"><b>So funktioniert der Tracker:</b> Starte mit eingeschaltetem Ton. Aufwärmen und Cooldown wechseln automatisch durch jede Zeitübung (einschließlich linker und rechter Seite). Der Zirkel zeigt für Übungen mit Zeitvorgabe einen eigenen Startknopf. Markiere alle anderen Übungen, sobald du sie erledigt hast. Nach der letzten Übung beginnt automatisch die nächste Runde. Nach Ablauf der Zeit kannst du das Ergebnis speichern. Wenn du morgen statt Mittwoch testest, wähle einfach den Ganzkörperplan. <br><br><span class="warn">Hinweis:</span> Tempo niemals zulasten der Technik steigern. Nach einem anstrengenden Longrun ist die Sonntagseinheit optional; bei Schmerzen im Mittelfuß Standwaage/Ausfallschritte anpassen oder auslassen. Lokale Speicherung kann beim Löschen von Browserdaten verloren gehen.</div>
+</main>
+<script>
+'use strict';
+const PLANS={
+ wed:{label:'Mittwoch · Ganzkörper',short:'Ganzkörper',durations:[4,21,5],exercises:[['Einarmiges Rudern','10 je Seite','Kettlebell'],['Um die Hüfte schwingen','10 gesamt','Kettlebell'],['Halo um den Kopf','5 je Richtung','Kettlebell'],['Kniebeugen','10','Kettlebell'],['Brustdrücken','10–12','Gelbes Band (20 kg)'],['Trizeps über Kopf','10','Kettlebell'],['Bizepscurls','10','Kettlebell'],['Ausfallschritte','10 je Seite','Kettlebell oder Körpergewicht'],['Standwaage','6–10 je Seite','Zunächst ohne Gewicht'],['Suitcase March','20 Sek. je Seite','Kettlebell'],['Stehende Knie-Ellenbogen-Crunches','10 je Seite','Ohne Gewicht']],warmup:[['1:00','Marschieren auf der Stelle'],['0:45','Seitliche Schritte'],['0:45','Schulter- und Armkreisen'],['0:45','Hüftkreisen'],['0:45','Kniebeugen ohne Gewicht']],cooldown:[['0:45 × 2','Hüftbeuger je Seite'],['0:30 × 2','Vorderer Oberschenkel'],['0:30 × 2','Figure-4 Gesäß'],['0:30 × 2','Adduktoren'],['0:30','Hüftkreisen']]},
+ sun:{label:'Sonntag · Leicht',short:'Leicht',durations:[3,16,6],exercises:[['Brustdrücken','12','Leichteres Band nach Bedarf'],['Einarmiges Rudern','10 je Seite','Kettlebell'],['Halo um den Kopf','5 je Richtung','Leichte Kettlebell'],['Bizepscurls','10','Kettlebell'],['Suitcase Hold','20–30 Sek. je Seite','Kettlebell ruhig halten'],['Stehende Knie-Ellenbogen-Crunches','10 je Seite','Ohne Gewicht']],warmup:[['1:00','Locker marschieren'],['1:00','Schulter- und Armkreisen'],['1:00','Hüftkreisen und sanfte Oberkörperrotation']],cooldown:[['0:45 × 2','Hüftbeuger je Seite'],['0:30 × 2','Vorderer Oberschenkel'],['0:30 × 2','Figure-4 Gesäß'],['0:30 × 2','Adduktoren'],['1:30','Hüftkreisen und lockeres Marschieren']]}}
+;
+const el=id=>document.getElementById(id); const KEY='jan-kettlebell-tracker-v1';
+const SOUND_KEY='jan-kb-sound-v1';
+let soundEnabled=true;
+try{soundEnabled=localStorage.getItem(SOUND_KEY)!=='false'}catch(e){}
+let audioCtx=null;
+function audioReady(){
+ if(!soundEnabled)return;
+ try{audioCtx??=new (window.AudioContext||window.webkitAudioContext)();if(audioCtx.state==='suspended')audioCtx.resume().catch(()=>{el('audio-status').textContent='Audio blockiert: bitte auf Ton testen klicken.'});}catch(e){}
+}
+function tone(freq,duration=0.18,delay=0,vol=0.28){
+ if(!soundEnabled||!audioCtx)return;
+ let t=audioCtx.currentTime+delay,osc=audioCtx.createOscillator(),g=audioCtx.createGain();
+ osc.type='sine';osc.frequency.setValueAtTime(freq,t);g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(vol,t+0.012);g.gain.exponentialRampToValueAtTime(0.0001,t+duration);osc.connect(g);g.connect(audioCtx.destination);osc.start(t);osc.stop(t+duration+0.01);
+}
+function cue(kind){
+ if(!soundEnabled)return;
+ if(kind==='count'){tone(800,0.14,0,0.22)}
+ else if(kind==='step'){tone(880,0.23,0,0.34);tone(1175,0.30,0.28,0.34)}
+ else if(kind==='phase'){tone(720,0.20,0,0.34);tone(900,0.20,0.23,0.34);tone(1160,0.35,0.48,0.34)}
+ else if(kind==='finish'){tone(680,0.21,0,0.34);tone(900,0.21,0.26,0.34);tone(1180,0.42,0.55,0.34)}
+}
+function updateSoundButton(){el('sound').textContent=soundEnabled?'🔊 Ton an':'🔇 Stumm';el('sound').setAttribute('aria-pressed',String(soundEnabled))}
+function toggleSound(){soundEnabled=!soundEnabled;try{localStorage.setItem(SOUND_KEY,String(soundEnabled))}catch(e){}updateSoundButton();if(soundEnabled){audioReady();cue('step')}notice(soundEnabled?'Tonsignale aktiviert.':'Tonsignale ausgeschaltet.')}
+function getStepSeconds(label){let match=label.match(/^(\d+):(\d+)(?:\s*×\s*(\d+))?/);if(!match)throw Error('Unbekanntes Zeitformat: '+label);return {seconds:Number(match[1])*60+Number(match[2]),times:Number(match[3]||1)}}
+function buildTimedSteps(items){let at=0,steps=[];items.forEach(([duration,name],group)=>{let parsed=getStepSeconds(duration);for(let part=0;part<parsed.times;part++){let suffix=parsed.times===2?(part===0?' · links':' · rechts'):'';steps.push({name:name+suffix,group,part,count:parsed.times,start:at,end:at+parsed.seconds});at+=parsed.seconds}});return steps}
+const TIMED_STEPS=Object.fromEntries(Object.entries(PLANS).map(([key,p])=>[key,{warmup:buildTimedSteps(p.warmup),cooldown:buildTimedSteps(p.cooldown)}]));
+function getTimeSteps(){return phase===0?TIMED_STEPS[plan].warmup:TIMED_STEPS[plan].cooldown}
+function currentStep(t=secNow()){let steps=getTimeSteps();return steps.find(s=>t<s.end) || steps[steps.length-1]}
+function timedParams(exercise){let m=exercise[1].match(/(\d+)(?:\s*[–-]\s*(\d+))?\s*Sek\./);return m?{min:Number(m[1]),max:Number(m[2]||m[1]),sides:/je Seite/.test(exercise[1])?2:1}:null}
+let saved=[];try{const x=JSON.parse(localStorage.getItem(KEY)||'[]');if(Array.isArray(x))saved=x.filter(validEntry)}catch(e){}
+let plan='wed',phase=0,elapsed=0,running=false,startedAt=0,completions=0,sessionSaved=false,interval=null;
+let lastScene=null,lastSecond=null,phaseCueSecond=null,timedExercise=null;
+function validEntry(e){return e&&['wed','sun'].includes(e.plan)&&typeof e.date==='string'&&Number.isInteger(e.total)&&e.total>=0&&e.total<10000}
+function persist(){try{localStorage.setItem(KEY,JSON.stringify(saved))}catch(e){notice('Browser-Speicherung nicht verfügbar. Bitte JSON exportieren.') }saveFileSoon()}
+function notice(t){el('notice').textContent=t}
+function clock(s){s=Math.max(0,Math.ceil(s));return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
+function durationSecs(){return PLANS[plan].durations[phase]*60}
+function secNow(){return running?elapsed+(Date.now()-startedAt)/1000:elapsed}
+function phaseProgress(){return Math.min(1,secNow()/durationSecs())}
+function updateClock(){const remaining=Math.max(0,durationSecs()-secNow());el('timer').textContent=clock(remaining);el('progress').style.width=(100*phaseProgress())+'%';updateStepStatus();updateTimedStatus()}
+function updateStepStatus(){
+ if(phase===1){el('stepstatus').classList.add('hide');return}
+ el('stepstatus').classList.remove('hide');
+ let s=currentStep();el('steplabel').textContent=phase===0?'Aufwärmen · jetzt':'Cooldown · jetzt';el('stepname').textContent=s.name;
+ el('stepdesc').textContent=`Übung ${s.group+1} von ${PLANS[plan][phase===0?'warmup':'cooldown'].length}`;
+ el('stepclock').textContent=clock(s.end-secNow());
+ for(let group of ['warmup','cooldown']){
+  for(let item of el(group).children){const i=Number(item.dataset.group);item.classList.toggle('focus',(phase===0&&group==='warmup'||phase===2&&group==='cooldown')&&i===s.group);item.classList.toggle('completed',(phase===0&&group==='warmup'||phase===2&&group==='cooldown')&&i<s.group)}
+ }
+}
+function signalCountdown(id,remaining){
+ if(lastScene!==id){if(lastScene!==null&&running){cue('step');if(phase===0||phase===2)el('audio-status').textContent='🔊 Übungswechsel: '+currentStep().name;}lastScene=id;lastSecond=null;}
+ let sec=Math.ceil(remaining);
+ if(sec!==lastSecond){lastSecond=sec;if(running&&sec>=1&&sec<=3)cue('count')}
+}
+function updatePhases(){
+ const p=PLANS[plan];
+ el('phase-badge').textContent=['● Aufwärmen · ','● Kraftzirkel · ','● Hüft-Cooldown · '][phase]+p.durations[phase]+' Minuten';
+ el('timeline').innerHTML=p.durations.map((v,i)=>`<div class="block ${i===phase?'active':''}"></div>`).join('');
+ el('timehint').textContent=phase===0?'Aufwärmübungen laufen automatisch nacheinander, einschließlich Countdown und Seitenwechsel.':phase===1?'Wiederholungsübungen abhaken. Bei zeitgesteuerten Übungen zusätzlich den Übungs-Timer starten.':'Beim Cooldown werden die einzelnen Dehnübungen und Seitenwechsel automatisch durch Tonsignale markiert.';
+ el('complete').disabled=phase!==1||sessionSaved;
+ lastScene=null;lastSecond=null;phaseCueSecond=null;updateClock();renderTimedControls();
+}
+function tick(){
+ if(!running)return;
+ let steps=0;
+ while(running&&secNow()>=durationSecs()&&steps++<4){
+  let overshoot=secNow()-durationSecs();
+  if(phase===2){elapsed=durationSecs();running=false;timedExercise=null;cue('finish');phaseDone();break}
+  phase++;timedExercise=null;elapsed=Math.max(0,overshoot);startedAt=Date.now();
+  updatePhases();cue('phase');notice(phase===1?'Zirkel läuft. Viel Spaß!':'Zirkel beendet – jetzt Hüft-Cooldown.');
+ }
+ if(!running)return;
+ if(phase!==1){let s=currentStep();signalCountdown(phase+'-'+s.group+'-'+s.part,s.end-secNow())}
+ else {
+  let phaseRemaining=Math.ceil(durationSecs()-secNow());
+  if(phaseRemaining!==phaseCueSecond){phaseCueSecond=phaseRemaining;if(phaseRemaining>=1&&phaseRemaining<=3)cue('count')}
+ }
+ if(phase===1&&timedExercise){
+  let current=timedExercise,progress=Math.max(0,secNow()-current.start),segment=Math.min(current.sides-1,Math.floor(progress/current.seconds));
+  if(progress>=current.seconds*current.sides){cue('step');timedExercise=null;finishExercise();notice('✓ Zeitübung geschafft und automatisch gezählt.');return}
+  signalCountdown('circuit-'+current.index+'-'+segment,(segment+1)*current.seconds-progress);
+ }
+ updateClock();
+}
+function phaseDone(){
+ el('phase-badge').textContent='✓ Training abgeschlossen';el('timer').textContent='00:00';el('progress').style.width='100%';
+ el('start').textContent='💾 Ergebnis speichern';el('skip').disabled=true;el('complete').disabled=true;
+ el('stepstatus').classList.add('hide');el('timerwork').classList.add('hide');
+ notice('Training geschafft! Ergebnis speichern, damit dein Fortschritt erhalten bleibt.');
+}
+function play(){
+ if(phase===2&&!running&&elapsed>=durationSecs()){saveCurrent();return}
+ if(running){elapsed=secNow();running=false;el('start').textContent='▶ Weiter';notice('Pausiert.')}
+ else {audioReady();startedAt=Date.now();running=true;el('start').textContent='Ⅱ Pause';if(elapsed===0&&phase===0)cue('phase');notice('')}
+ tick();
+}
+function saveCurrent(){
+ if(sessionSaved)return;
+ if(completions===0&&!confirm('Du hast noch keine Zirkelübung erfasst. Training trotzdem speichern?'))return;
+ const obj={id:crypto.randomUUID?crypto.randomUUID():String(Date.now()),date:new Date().toLocaleDateString('en-CA'),plan,total:completions,at:new Date().toISOString()};
+ saved.push(obj);persist();sessionSaved=true;el('start').disabled=true;el('complete').disabled=true;el('undo').disabled=true;
+ notice('✓ Training gespeichert! Du findest es unten im Verlauf.');renderHistory();renderMetrics();
+}
+function skip(){
+ if(phase>=2)return;
+ audioReady();if(running){elapsed=0;startedAt=Date.now()}else elapsed=0;
+ phase++;timedExercise=null;updatePhases();cue('phase');
+ notice(phase===1?'Zirkel gestartet.':'Jetzt kommt das Hüft-Cooldown.');
+}
+function reset(){
+ if((running||completions>0)&&!confirm('Aktuelles Training zurücksetzen? Noch nicht gespeicherte Fortschritte gehen verloren.'))return;
+ phase=0;elapsed=0;running=false;startedAt=0;completions=0;sessionSaved=false;timedExercise=null;
+ el('start').textContent='▶ Starten';el('start').disabled=false;el('undo').disabled=false;el('skip').disabled=false;
+ notice('');renderSteps();updatePhases();renderMetrics();renderExercises();
+}
+function setPlan(p){
+ if(plan===p)return;
+ if((running||completions>0)&&!confirm('Zum anderen Plan wechseln? Der aktuelle, nicht gespeicherte Durchgang geht verloren.'))return;
+ plan=p;phase=0;elapsed=0;running=false;completions=0;sessionSaved=false;timedExercise=null;
+ el('start').textContent='▶ Starten';el('start').disabled=false;el('undo').disabled=false;el('skip').disabled=false;
+ for(let k of ['wed','sun']){el('tab-'+k).classList.toggle('active',k===p);el('tab-'+k).setAttribute('aria-selected',String(k===p))}
+ el('plan-title').textContent=PLANS[p].label;el('workoutname').textContent=`${PLANS[p].exercises.length} Übungen · ${PLANS[p].durations[1]} Minuten`;
+ renderSteps();updatePhases();renderMetrics();renderExercises();renderHistory();notice('');
+}
+function renderSteps(){
+ for(let type of ['warmup','cooldown'])el(type).innerHTML=PLANS[plan][type].map((s,i)=>`<div class="step" data-group="${i}"><span class="duration">${s[0]}</span><div><b>${s[1]}</b>${getStepSeconds(s[0]).times>1?'<span class="smalltext">Links und rechts mit Tonsignal</span>':''}</div></div>`).join('');
+}
+function renderExercises(){
+ let x=PLANS[plan].exercises,n=x.length,off=completions%n;
+ el('worklist').innerHTML=x.map((e,i)=>`<div class="workitem ${i===off?'focus':''} ${i<off?'completed':''}"><div class="num">${i<off?'✓':i+1}</div><div><div class="ename">${e[0]}</div><div class="esub">${e[2]}</div></div><div class="rep">${e[1]}</div></div>`).join('');
+ el('currentname').textContent=x[off][0];el('currentrep').textContent=x[off][1]+' · '+x[off][2];el('roundbadge').textContent='Runde '+(Math.floor(completions/n)+1);
+ renderTimedControls();
+}
+function renderTimedControls(){
+ let off=completions%PLANS[plan].exercises.length,ex=PLANS[plan].exercises[off],params=timedParams(ex);
+ let visible=phase===1&&!!params&&!sessionSaved;
+ el('timerwork').classList.toggle('hide',!visible);
+ if(!visible)return;
+ let select=el('timedlength');select.classList.toggle('hide',params.max===params.min);
+ if(params.max!==params.min&&!timedExercise&&!select.dataset.exercise?.includes(plan+'-'+off)){select.value=String(params.max);select.dataset.exercise=plan+'-'+off}
+ let duration=timedExercise?.seconds||(params.min===params.max?params.min:Number(select.value)||params.max);
+ el('timedstart').disabled=!!timedExercise||!running;el('timedstart').textContent=timedExercise?'● Timer läuft':'▶ Übungs-Timer starten';
+ el('complete').disabled=!!timedExercise||!running;
+ el('timedclock').textContent=clock(duration);
+ el('timedinfo').textContent=`${params.sides===2?'Links und rechts nacheinander':'Eine Zeitübung'} · nach Ablauf automatisch als erledigt gezählt.`;
+}
+function updateTimedStatus(){
+ if(phase!==1||!timedExercise)return;
+ let st=timedExercise,progress=Math.max(0,secNow()-st.start);
+ let part=Math.min(st.sides-1,Math.floor(progress/st.seconds));
+ el('timedclock').textContent=clock((part+1)*st.seconds-progress);
+ el('timedinfo').textContent=st.sides===2?`${part===0?'Linke':'Rechte'} Seite · ${part+1} von 2`:'Halte die Position bis zum Signal.';
+}
+function startTimedExercise(){
+ if(phase!==1||!running||timedExercise)return;
+ let off=completions%PLANS[plan].exercises.length,params=timedParams(PLANS[plan].exercises[off]);if(!params)return;
+ audioReady();let s=params.min===params.max?params.min:Number(el('timedlength').value);
+ timedExercise={index:completions,seconds:s,sides:params.sides,start:secNow()};lastScene=null;lastSecond=null;
+ cue('step');renderTimedControls();updateTimedStatus();
+}
+function renderMetrics(){
+ let n=PLANS[plan].exercises.length;
+ el('roundnum').textContent=Math.floor(completions/n);el('extranum').textContent=completions%n;el('totalnum').textContent=completions;
+ const entries=saved.filter(s=>s.plan===plan),best=entries.length?Math.max(...entries.map(x=>x.total)):null;
+ el('bestnum').textContent=best===null?'–':`${Math.floor(best/n)}R +${best%n}`;el('sessioncount').textContent=entries.length+' '+(entries.length===1?'Einheit':'Einheiten');
+}
+function finishExercise(){
+ if(phase!==1||sessionSaved||timedExercise)return;
+ completions++;lastScene=null;lastSecond=null;
+ renderMetrics();renderExercises();
+ if(completions%PLANS[plan].exercises.length===0)notice('🎉 Runde '+Math.floor(completions/PLANS[plan].exercises.length)+' geschafft!');else notice('');
+}
+function undo(){
+ if(completions<1||sessionSaved||timedExercise)return;
+ completions--;renderMetrics();renderExercises();notice('Letzte Übung zurückgenommen.');
+}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function renderHistory(){const rows=saved.filter(s=>s.plan===plan).sort((a,b)=>((b.date||'').localeCompare(a.date||'')||((b.at||'').localeCompare(a.at||''))));const n=PLANS[plan].exercises.length;el('history').innerHTML=rows.length?rows.map(e=>`<tr><td>${esc(e.date.split('-').reverse().join('.'))}</td><td>${esc(PLANS[e.plan].short)}</td><td>${Math.floor(e.total/n)} Runden + ${e.total%n} Übungen</td><td><button class="btn small danger" data-delete="${esc(e.id)}" aria-label="Eintrag löschen">Löschen</button></td></tr>`).join(''):'<tr><td colspan="4" class="smalltext">Noch keine Trainingseinheit gespeichert.</td></tr>';let chart=el('chartbox');if(!rows.length){chart.innerHTML='<div class="empty">Nach deiner ersten gespeicherten Einheit erscheint hier dein Fortschritt.</div>';return}const chartrows=rows.slice(0,12).reverse(),max=Math.max(n,...chartrows.map(x=>x.total)),w=740,h=190,sp=28,l=38,t=14,base=158,plotW=w-l-14,plotH=base-t;let bars=chartrows.map((x,i)=>{let barW=Math.min(48,(plotW/chartrows.length)*.56),step=plotW/chartrows.length,xx=l+step*i+(step-barW)/2,yy=base-x.total/max*plotH,hh=base-yy,label=x.date.slice(5).split('-').reverse().join('.');return `<rect x="${xx}" y="${yy}" width="${barW}" height="${Math.max(hh,1)}" rx="6" fill="#a5f3bd"><title>${esc(x.date)}: ${Math.floor(x.total/n)} Runden + ${x.total%n} Übungen</title></rect><text x="${xx+barW/2}" y="${Math.max(yy-7,10)}" text-anchor="middle" font-size="11" fill="#e7f6ed">${x.total}</text><text x="${xx+barW/2}" y="177" text-anchor="middle" font-size="10" fill="#9cb0ad">${label}</text>`}).join('');chart.innerHTML=`<svg class="chart" role="img" aria-label="Balkendiagramm der letzten ${chartrows.length} Trainingseinheiten. Mehr Übungen bedeutet höhere Trainingsdichte." viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid meet"><line x1="${l}" y1="${base}" x2="${w-4}" y2="${base}" stroke="#58706a"/>${bars}</svg>`}
+function download(name,content,type){const blob=new Blob([content],{type});let url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),3000)}
+function csv(){const headers=['Datum','Plan','Runden','Weitere Übungen','Abgeschlossene Übungen'];const rows=saved.map(e=>{let n=PLANS[e.plan].exercises.length;return [e.date,PLANS[e.plan].short,Math.floor(e.total/n),e.total%n,e.total]});download('trainingstagebuch.csv','\uFEFF'+[headers,...rows].map(r=>r.join(';')).join('\r\n'),'text/csv;charset=utf-8')}
+function backup(){download('fitness-tracker-backup.json',JSON.stringify(getBackup(),null,2),'application/json')}
+function importBackup(f){
+ const r=new FileReader();r.onload=()=>{
+  try{const result=mergeData(JSON.parse(r.result));persist();saveWaistLocal();renderHistory();renderMetrics();renderWaist();alert(`${result.workouts} Trainings- und ${result.measurements} Bauchumfangseinträge importiert.`)}
+  catch(e){alert('Import fehlgeschlagen: '+e.message)}
+ };r.readAsText(f)
+}
+
+el('sound').addEventListener('click',toggleSound);el('testsound').addEventListener('click',()=>{audioReady();cue('step');el('audio-status').textContent='🔊 Zwei Signaltöne als Test ausgelöst. Falls nichts hörbar ist: Browser-Tab/Windows-Lautstärke prüfen.'});el('timedstart').addEventListener('click',startTimedExercise);el('timedlength').addEventListener('change',renderTimedControls);// Bauchumfang: getrennte Browserdaten, gemeinsames JSON-Backup.
+
+const WAIST_KEY='jan-bauchumfang-tracker-v1';
+let waistRecords=[];
+function validWaist(x){return !!x && /^\d{4}-\d{2}-\d{2}$/.test(x.date||'') && Number.isFinite(Number(x.cm)) && Number(x.cm)>=40 && Number(x.cm)<=220}
+try{const q=JSON.parse(localStorage.getItem(WAIST_KEY)||'[]');if(Array.isArray(q))waistRecords=q.filter(validWaist)}catch(e){}
+function saveWaistLocal(){try{localStorage.setItem(WAIST_KEY,JSON.stringify(waistRecords))}catch(e){el('waist-notice').textContent='Browser-Speicherung nicht verfügbar – bitte JSON exportieren.'}saveFileSoon()}
+function showCm(x){return Number(x).toLocaleString('de-DE',{minimumFractionDigits:1,maximumFractionDigits:1})+' cm'}
+function sortedWaist(){return [...waistRecords].sort((a,b)=>a.date.localeCompare(b.date))}
+function dateGerman(x){return x.split('-').reverse().join('.')}
+function renderWaist(){
+ const all=sortedWaist(),last=all[all.length-1],first=all[0];
+ el('waist-count').textContent=all.length+' '+(all.length===1?'Messung':'Messungen');
+ el('waist-last').textContent=last?showCm(last.cm):'–';
+ el('waist-first').textContent=first?showCm(first.cm):'–';
+ if(all.length<2)el('waist-delta').textContent='–';
+ else{const delta=+(Number(last.cm)-Number(first.cm)).toFixed(1);el('waist-delta').textContent=(delta>0?'+':'')+showCm(delta);el('waist-delta').style.color=delta<0?'var(--green)':delta>0?'var(--yellow)':'var(--ink)'}
+ el('waist-history').innerHTML=all.length?[...all].reverse().map((v,i,rev)=>{
+  const currentIndex=all.findIndex(x=>x.id===v.id),prev=currentIndex>0?all[currentIndex-1]:null;
+  const delta=prev?(Number(v.cm)-Number(prev.cm)).toFixed(1):null;
+  return `<tr><td>${dateGerman(v.date)}</td><td><b>${showCm(v.cm)}</b></td><td>${delta===null?'–':(delta>0?'+':'')+showCm(delta)}</td><td><button class="btn small danger" data-waist-delete="${esc(String(v.id))}">Löschen</button></td></tr>`
+ }).join(''):'<tr><td colspan="4" class="smalltext">Noch keine Messung gespeichert.</td></tr>';
+ const box=el('waist-chartbox');
+ if(!all.length){box.innerHTML='<div class="empty">Nach deiner ersten Messung erscheint hier die Entwicklung deines Bauchumfangs.</div>';return}
+ if(all.length===1){box.innerHTML='<p class="smalltext">Erste Messung erfasst. Ab der zweiten Messung wird der Verlauf sichtbar.</p>';return}
+ const pts=all.slice(-24),vals=pts.map(x=>Number(x.cm)),minVal=Math.floor((Math.min(...vals)-2)/2)*2,maxVal=Math.ceil((Math.max(...vals)+2)/2)*2;
+ const w=820,h=235,left=53,right=28,top=22,bottom=48,ww=w-left-right,hh=h-top-bottom,range=Math.max(1,maxVal-minVal);
+ const xx=i=>left+(pts.length===1?.5:i/(pts.length-1))*ww, yy=v=>top+(maxVal-v)/range*hh;
+ const points=pts.map((p,i)=>`${xx(i)},${yy(Number(p.cm))}`).join(' ');
+ const grid=[0,.25,.5,.75,1].map(fr=>{const v=maxVal-fr*range,y=top+fr*hh;return `<line x1="${left}" x2="${w-right}" y1="${y}" y2="${y}" stroke="#37504b" stroke-dasharray="3 5"/><text x="${left-9}" y="${y+4}" fill="#9cb0ad" text-anchor="end" font-size="12">${v.toFixed(0)}</text>`}).join('');
+ const labelEvery=Math.max(1,Math.ceil(pts.length/7));
+ const dots=pts.map((p,i)=>{const x=xx(i),y=yy(Number(p.cm)),label=i%labelEvery===0||i===pts.length-1?`<text x="${x}" y="${h-13}" font-size="11" text-anchor="middle" fill="#9cb0ad">${p.date.slice(2,7).split('-').reverse().join('/')}</text>`:'';return `<circle cx="${x}" cy="${y}" r="4.5" fill="#a5f3bd"><title>${dateGerman(p.date)}: ${showCm(p.cm)}</title></circle>${label}`}).join('');
+ box.innerHTML=`<svg class="measure-chart" viewBox="0 0 ${w} ${h}" role="img" aria-label="Verlauf Bauchumfang in Zentimetern, letzte ${pts.length} Messungen"><title>Bauchumfang: ${showCm(pts[0].cm)} bis ${showCm(pts[pts.length-1].cm)}</title>${grid}<polyline points="${points}" fill="none" stroke="#a5f3bd" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>${dots}</svg>`;
+}
+el('waist-date').value=new Date().toLocaleDateString('en-CA');
+el('waist-form').addEventListener('submit',e=>{
+ e.preventDefault();const date=el('waist-date').value,cm=Number(el('waist-cm').value);
+ if(!validWaist({date,cm})){el('waist-notice').textContent='Bitte ein gültiges Datum und einen Wert in Zentimetern eingeben.';return}
+ if(waistRecords.some(x=>x.date===date) && !confirm('Für diesen Tag gibt es bereits eine Messung. Vorhandenen Wert ersetzen?'))return;
+ waistRecords=waistRecords.filter(x=>x.date!==date);
+ waistRecords.push({id:(crypto.randomUUID?crypto.randomUUID():String(Date.now())),date,cm:Math.round(cm*10)/10});
+ saveWaistLocal();renderWaist();el('waist-cm').value='';el('waist-notice').textContent='✓ Bauchumfang gespeichert.';
+});
+el('waist-history').addEventListener('click',e=>{
+ const b=e.target.closest('[data-waist-delete]');if(!b||!confirm('Diese Messung löschen?'))return;
+ waistRecords=waistRecords.filter(x=>String(x.id)!==b.dataset.waistDelete);saveWaistLocal();renderWaist();el('waist-notice').textContent='Messung gelöscht.';
+});
+el('waist-csv').addEventListener('click',()=>{
+ const rows=[['Datum','Bauchumfang (cm)'],...sortedWaist().map(x=>[x.date,String(Number(x.cm)).replace('.',',')])];
+ download('bauchumfang-verlauf.csv','\uFEFF'+rows.map(r=>r.join(';')).join('\r\n'),'text/csv;charset=utf-8');
+});
+function calendarIcs(){
+ const ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Jans Fitness Tracker//Bauchumfang//DE','CALSCALE:GREGORIAN','METHOD:PUBLISH','BEGIN:VEVENT','UID:jan-bauchumfang-monatlich@fitness-tracker','DTSTAMP:20261029T190000Z','DTSTART;TZID=Europe/Berlin:20261101T080000','DURATION:PT10M','RRULE:FREQ=MONTHLY;BYMONTHDAY=1','SUMMARY:Bauchumfang messen und tracken','DESCRIPTION:Morgens vor dem Fruehstueck auf Nabelhoehe messen und Wert in den Trainings-Tracker eintragen.','BEGIN:VALARM','TRIGGER:PT0S','ACTION:DISPLAY','DESCRIPTION:Bauchumfang messen und im Tracker speichern','END:VALARM','END:VEVENT','END:VCALENDAR'];
+ download('Bauchumfang_monatlich_iCloud.ics',ics.join('\r\n')+'\r\n','text/calendar;charset=utf-8');
+}
+el('waist-calendar').addEventListener('click',calendarIcs);
+renderWaist();
+
+// Gemeinsames Datenformat: Training + Bauchumfang (Version 3).
+function getBackup(){return {version:3,exportedAt:new Date().toISOString(),entries:[...saved],waist:[...waistRecords]}}
+function mergeData(data){
+ if(!data || (typeof data!=='object'))throw Error('JSON hat kein gültiges Datenformat.');
+ const entries=Array.isArray(data)?data:data.entries;
+ if(!Array.isArray(entries)&&!Array.isArray(data.waist))throw Error('Keine Trainings- oder Bauchumfangdaten erkannt.');
+ let workouts=0,measurements=0;
+ const ids=new Set(saved.map(x=>String(x.id)));
+ for(const item of (Array.isArray(entries)?entries:[])){
+  if(!validEntry(item))continue;
+  const row={...item,id:String(item.id||'training-'+Date.now()+'-'+Math.random())};
+  if(ids.has(row.id))continue;
+  saved.push(row);ids.add(row.id);workouts++;
+ }
+ for(const item of (Array.isArray(data.waist)?data.waist:[])){
+  if(!validWaist(item))continue;
+  if(waistRecords.some(x=>x.date===item.date))continue;
+  waistRecords.push({date:item.date,cm:Number(item.cm),id:String(item.id||'messung-'+Date.now()+'-'+Math.random())});measurements++;
+ }
+ return {workouts,measurements};
+}
+
+// Die Dateiberechtigung wird über die browserseitige File System Access API verwaltet.
+let dataFileHandle=null,fileConnected=false,fileSaveChain=Promise.resolve(),fileSaveTimer=null;
+const FS_SUPPORTED=typeof window.showSaveFilePicker==='function'&&typeof window.showOpenFilePicker==='function';
+function fileStatus(s){el('file-status').textContent=s;}
+function saveFileSoon(){
+ if(!fileConnected||!dataFileHandle)return;
+ clearTimeout(fileSaveTimer);
+ fileSaveTimer=setTimeout(()=>writeDataFile(),250);
+}
+function writeDataFile(){
+ if(!fileConnected||!dataFileHandle)return fileSaveChain;
+ fileSaveChain=fileSaveChain.then(async()=>{
+  if(!fileConnected||!dataFileHandle)return;
+  const handle=dataFileHandle;
+  const permission=await handle.queryPermission({mode:'readwrite'});
+  if(permission!=='granted'){
+   fileConnected=false;fileStatus('Dateiberechtigung benötigt. Bitte „Bestehende JSON-Datei verbinden“ anklicken.');return;
+  }
+  const writable=await handle.createWritable();
+  try{await writable.write(JSON.stringify(getBackup(),null,2));await writable.close();fileStatus('✓ JSON-Datei aktualisiert: '+handle.name+' · '+new Date().toLocaleTimeString('de-DE'))}
+  catch(e){try{await writable.abort()}catch(_){}throw e}
+ }).catch(e=>{fileConnected=false;fileStatus('Datei nicht gespeichert: '+e.message+' · Browserdaten bleiben erhalten.');});
+ return fileSaveChain;
+}
+function openHandlesDb(){return new Promise((resolve,reject)=>{
+ const q=indexedDB.open('jan-fitness-file-handle',1);q.onupgradeneeded=()=>q.result.createObjectStore('settings');q.onsuccess=()=>resolve(q.result);q.onerror=()=>reject(q.error);
+})}
+async function rememberFileHandle(handle){
+ try{const db=await openHandlesDb();await new Promise((resolve,reject)=>{const tx=db.transaction('settings','readwrite');tx.objectStore('settings').put(handle,'datafile');tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)});db.close();}catch(e){}
+}
+async function getRememberedHandle(){
+ try{const db=await openHandlesDb();const handle=await new Promise((resolve,reject)=>{const q=db.transaction('settings').objectStore('settings').get('datafile');q.onsuccess=()=>resolve(q.result);q.onerror=()=>reject(q.error)});db.close();return handle||null}catch(e){return null}
+}
+async function forgetHandle(){
+ try{const db=await openHandlesDb();await new Promise((resolve,reject)=>{const tx=db.transaction('settings','readwrite');tx.objectStore('settings').delete('datafile');tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)});db.close()}catch(e){}
+}
+async function adoptHandle(handle,loadExisting){
+ if(loadExisting){
+  const contents=await (await handle.getFile()).text();
+  if(contents.trim()){
+   const data=JSON.parse(contents);
+   const r=mergeData(data);
+   // keep our existing local data and merge file data, never silently overwrite either.
+   try{localStorage.setItem(KEY,JSON.stringify(saved));localStorage.setItem(WAIST_KEY,JSON.stringify(waistRecords))}catch(e){}
+   renderHistory();renderMetrics();renderWaist();
+   fileStatus(`Daten abgeglichen: ${r.workouts} Trainings- und ${r.measurements} Messwerte ergänzt.`);
+  }
+ }
+ dataFileHandle=handle;fileConnected=true;await rememberFileHandle(handle);await writeDataFile();
+}
+async function connectDataFile(){
+ if(!FS_SUPPORTED){fileStatus('Dieser Browser unterstützt keinen direkten Dateizugriff. Bitte JSON-Export verwenden.');return}
+ try{
+  if(dataFileHandle){
+   const ok=await dataFileHandle.requestPermission({mode:'readwrite'});
+   if(ok==='granted'){await adoptHandle(dataFileHandle,true);return}
+   fileStatus('Dateiberechtigung abgelehnt. Du kannst erneut auf „Verbinden“ klicken.');return;
+  }
+  const [handle]=await window.showOpenFilePicker({multiple:false,types:[{description:'JSON Trainingsdaten',accept:{'application/json':['.json']}}]});
+  if(!handle)return;
+  const status=await handle.requestPermission({mode:'readwrite'});
+  if(status!=='granted'){fileStatus('Dateizugriff nicht freigegeben.');return}
+  await adoptHandle(handle,true);
+ }catch(e){if(e.name!=='AbortError')fileStatus('Verbindung fehlgeschlagen: '+e.message)}
+}
+async function newDataFile(){
+ if(!FS_SUPPORTED){fileStatus('Direktes Speichern wird hier nicht unterstützt. Bitte Backup exportieren.');return}
+ try{
+  const handle=await window.showSaveFilePicker({suggestedName:'Jans-Fitness-Tracking.json',types:[{description:'JSON Trainingsdaten',accept:{'application/json':['.json']}}]});
+  await adoptHandle(handle,false);
+ }catch(e){if(e.name!=='AbortError')fileStatus('Datei konnte nicht angelegt werden: '+e.message)}
+}
+async function initFileStorage(){
+ const supported=FS_SUPPORTED;
+ if(!supported){el('new-datafile').disabled=true;el('connect-datafile').disabled=true;el('save-datafile').disabled=true;el('disconnect-datafile').disabled=true;fileStatus('Direkter Dateizugriff in diesem Browser nicht verfügbar. JSON-Backup weiter unten funktioniert weiterhin.');return}
+ const old=await getRememberedHandle();
+ if(!old)return;
+ dataFileHandle=old;
+ try{
+  const status=await old.queryPermission({mode:'readwrite'});
+  if(status==='granted'){
+   // Merely restore the link, don't overwrite data before reloading contents.
+   await adoptHandle(old,true);
+  } else fileStatus('Gespeicherte Datei gefunden: '+old.name+' · Bitte „Bestehende JSON-Datei verbinden“ zum Freigeben klicken.');
+ }catch(e){fileStatus('Datei erneut verbinden, um automatisch zu speichern.')}
+}
+el('new-datafile').addEventListener('click',newDataFile);
+el('connect-datafile').addEventListener('click',connectDataFile);
+el('save-datafile').addEventListener('click',async()=>{
+ if(!fileConnected){fileStatus('Noch keine aktive JSON-Datei. Bitte erst neu anlegen oder verbinden.');return}
+ await writeDataFile();
+});
+el('disconnect-datafile').addEventListener('click',async()=>{
+ await fileSaveChain;
+ fileConnected=false;dataFileHandle=null;await forgetHandle();fileStatus('Dateiverbindung gelöst. Browser-Speicherung bleibt aktiv.');
+});
+initFileStorage();
+
+el('tab-wed').addEventListener('click',()=>setPlan('wed'));el('tab-sun').addEventListener('click',()=>setPlan('sun'));el('start').addEventListener('click',play);el('skip').addEventListener('click',skip);el('reset').addEventListener('click',reset);el('complete').addEventListener('click',finishExercise);el('undo').addEventListener('click',undo);el('exportcsv').addEventListener('click',csv);el('exportjson').addEventListener('click',backup);el('importbtn').addEventListener('click',()=>el('importfile').click());el('importfile').addEventListener('change',e=>{if(e.target.files[0])importBackup(e.target.files[0]);e.target.value=''});
+el('history').addEventListener('click',e=>{const b=e.target.closest('[data-delete]');if(!b||!confirm('Trainingseintrag wirklich löschen?'))return;saved=saved.filter(x=>String(x.id)!==b.dataset.delete);persist();renderHistory();renderMetrics()});
+el('manualdate').value=new Date().toLocaleDateString('en-CA');
+el('manual').addEventListener('submit',e=>{e.preventDefault();let date=el('manualdate').value,r=+el('manualround').value,extra=+el('manualextra').value,n=PLANS[plan].exercises.length;if(!date||!Number.isInteger(r)||r<0||!Number.isInteger(extra)||extra<0||extra>=n){alert('Bitte gültige Werte eingeben. Zusätzliche Übungen: 0 bis '+(n-1));return}let total=r*n+extra;saved.push({id:crypto.randomUUID?crypto.randomUUID():String(Date.now()),date,plan,total,at:new Date().toISOString()});persist();renderHistory();renderMetrics();el('manualround').value='1';el('manualextra').value='0';alert('Training nachgetragen.')});
+updateSoundButton();plan='sun';setPlan('wed');interval=setInterval(tick,200);document.addEventListener('visibilitychange',()=>{if(!document.hidden)tick()});
+</script>
+</body></html>
