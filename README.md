@@ -53,7 +53,7 @@ Daten gehen nur verloren, wenn die Adresse (Domain) wechselt, das App-Symbol vom
 
 ## Aktualisieren
 
-Bei Änderungen an Dateien in `sw.js` die Konstante `VERSION` erhöhen (z. B. `kbt-v4`). Online lädt die App immer die neueste Version, offline den Cache.
+Bei Änderungen an Dateien in `sw.js` die Konstante `VERSION` erhöhen (z. B. `kbt-v5`). Online lädt die App immer die neueste Version, offline den Cache.
 
 ## Aufbau
 
