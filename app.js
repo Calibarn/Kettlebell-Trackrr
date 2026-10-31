@@ -5,7 +5,7 @@ const $ = id => document.getElementById(id);
 const KEYS = {
   entries: 'jan-kettlebell-tracker-v1', waist: 'jan-kb-waist-v1', sound: 'jan-kb-sound-v1', gear: 'jan-kb-gear-v1',
   choice: 'jan-kb-choice-v1', stage: 'jan-kb-stage-v1', plan: 'jan-kb-plan-v1', session: 'jan-kb-session-v1',
-  backup: 'jan-kb-lastbackup-v1', hint: 'jan-kb-installhint-v1', area: 'jan-kb-area-v1', run: 'jan-kb-runview-v1', audio: 'jan-kb-audio-v1'
+  backup: 'jan-kb-lastbackup-v1', hint: 'jan-kb-installhint-v1', area: 'jan-kb-area-v1', run: 'jan-kb-runview-v1', audio: 'jan-kb-audio-v1', mob: 'jan-kb-mobview-v1'
 };
 /* Datensicherheit bei Updates:
    - Einträge, die diese Version nicht versteht, werden nie verworfen, sondern unverändert mitgespeichert.
@@ -839,11 +839,24 @@ function renderRun() {
     <div class="header">Cooldown<button type="button" class="hdrbtn" data-routine="cooldown">▶ Geführt</button></div><div class="group">${cur.cooldown.map(x => stepRow(...x)).join('')}</div>
     <p class="footer">Zeiten sind Richtwerte. „Geführt“ startet einen Ablauf mit Countdown und Ansage; Strecken und Wiederholungen hakst du selbst ab. Am Wettkampftag nichts Neues ausprobieren – den Ablauf vorher im Training testen.</p>`;
 }
+// Reiter wie bei Laufen: oben Läufer / Alltag / Übungen, darunter das Programm bzw. der Körperbereich
+const mobOptions = tab => tab === 'uebungen' ? MOBILITY.regions.map(([id, label]) => ({ id, label })) : MOBILITY.routines.filter(r => r.tab === tab);
+let mobView = load(KEYS.mob, null); if (!isObj(mobView)) mobView = {};
+mobView.tab = MOBILITY.tabs.some(t => t[0] === mobView.tab) ? mobView.tab : MOBILITY.tabs[0][0];
+for (const [t] of MOBILITY.tabs) if (!mobOptions(t).some(o => o.id === mobView[t])) mobView[t] = mobOptions(t)[0].id;
 function renderMobility() {
-  let h = '<div class="header">Kurzprogramme</div>';
-  h += MOBILITY.routines.map((r, i) => `<div class="group" style="margin-top:${i ? 12 : 0}px"><div class="row"><span class="txt"><b style="font-weight:600">${esc(r.title)}</b><small>${esc(r.time)} · Countdown, Seitenwechsel und Ansage</small></span><button type="button" class="btn small primary" data-mob="${i}">▶ Starten</button></div>${r.steps.map(s => stepRow(s[0], s[1], '')).join('')}</div>`).join('');
-  h += MOBILITY.groups.map(g => `<div class="header">${esc(g.title)}</div><div class="group">${g.items.map(s => stepRow(s[0], s[1], '')).join('')}</div>`).join('');
-  h += '<p class="footer">Dehnen und mobilisieren im angenehmen Bereich – ziehen ja, Schmerz nein. Ruhig weiteratmen.</p>';
+  const tab = mobView.tab, opts = mobOptions(tab), cur = opts.find(o => o.id === mobView[tab]) || opts[0];
+  $('mobtabs').innerHTML = MOBILITY.tabs.map(([k, l]) => `<button role="tab" type="button" data-mobtab="${k}" aria-selected="${tab === k}">${l}</button>`).join('');
+  $('mobsub').innerHTML = opts.map(o => `<button role="tab" type="button" data-mobsub="${o.id}" aria-selected="${o.id === cur.id}">${esc(o.label)}</button>`).join('');
+  let h;
+  if (tab === 'uebungen') {
+    h = MOBILITY.groups.filter(g => g.region === cur.id).map((g, i) => `<div class="header"${i ? '' : ' style="margin-top:6px"'}>${esc(g.title)}</div><div class="group">${g.items.map(s => stepRow(s[0], s[1], '')).join('')}</div>`).join('');
+    h += '<p class="footer">Dehnen und mobilisieren im angenehmen Bereich – ziehen ja, Schmerz nein. Ruhig weiteratmen.</p>';
+  } else {
+    const i = MOBILITY.routines.indexOf(cur);
+    h = `<div class="intro">${esc(cur.intro)}</div><div class="group" style="margin-top:12px"><div class="row"><span class="txt"><b style="font-weight:600">${esc(cur.title)}</b><small>${esc(cur.time)} · Countdown, Seitenwechsel und Ansage</small></span><button type="button" class="btn small primary" data-mob="${i}">▶ Starten</button></div>${cur.steps.map(s => stepRow(s[0], s[1], '')).join('')}</div>`;
+    h += '<p class="footer">Zeiten laufen automatisch weiter, Wiederholungen hakst du mit „Erledigt“ ab. Ziehen ja, Schmerz nein – ruhig weiteratmen.</p>';
+  }
   $('mobcontent').innerHTML = h;
 }
 
@@ -1076,6 +1089,8 @@ $('tabbar').addEventListener('click', e => { const b = e.target.closest('[data-a
 $('livepill').addEventListener('click', () => showArea('kraft'));
 $('runtabs').addEventListener('click', e => { const b = e.target.closest('[data-runtab]'); if (!b) return; runView.tab = b.dataset.runtab; store(KEYS.run, runView); renderRun(); });
 $('runsub').addEventListener('click', e => { const b = e.target.closest('[data-runsub]'); if (!b) return; runView[runView.tab] = b.dataset.runsub; store(KEYS.run, runView); renderRun(); });
+$('mobtabs').addEventListener('click', e => { const b = e.target.closest('[data-mobtab]'); if (!b) return; mobView.tab = b.dataset.mobtab; store(KEYS.mob, mobView); renderMobility(); });
+$('mobsub').addEventListener('click', e => { const b = e.target.closest('[data-mobsub]'); if (!b) return; mobView[mobView.tab] = b.dataset.mobsub; store(KEYS.mob, mobView); renderMobility(); });
 for (const id of ['runcontent', 'mobcontent']) $(id).addEventListener('click', e => {
   const r = e.target.closest('[data-routine]'), m = e.target.closest('[data-mob]');
   if (r) { const k = r.dataset.routine, cur = runCurrent(); if (k === 'abc') startRoutine('Lauf-ABC', RUN_GUIDE.abc.drills); else if (cur) startRoutine(`${cur.label} · ${k === 'warmup' ? 'Warm-up' : 'Cooldown'}`, cur[k]); return; }

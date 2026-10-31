@@ -1,5 +1,11 @@
 const { test, expect } = require('./fixtures');
 
+async function openMob(page, tab, sub) {
+  await page.evaluate(() => showArea('mobility'));
+  await page.click(`[data-mobtab="${tab}"]`);
+  await page.click(`[data-mobsub="${sub}"]`);
+}
+
 test('jede Kraftübung hat für jede Geräte-Auswahl eine Anleitung mit Skizze', async ({ page }) => {
   const problems = await page.evaluate(() => {
     const out = [], combos = [{ kb: true, band: true, bw: true }, { kb: true, band: false, bw: false }, { kb: false, band: true, bw: false }, { kb: false, band: false, bw: true }, { kb: true, band: false, bw: true }];
@@ -40,8 +46,33 @@ test('Laufen und Mobility: jede antippbare Übung hat Anleitung und Skizze', asy
   expect(problems).toEqual([]);
 });
 
-test('geführte Mobility-Routine: Countdown, Seitenwechsel, Pause, Ende', async ({ page }) => {
+test('Mobility-Reiter: jedes Programm und jeder Körperbereich erreichbar, Auswahl wird gemerkt', async ({ page }) => {
   await page.evaluate(() => showArea('mobility'));
+  await expect(page.locator('#mobtabs button')).toHaveText(['Läufer', 'Alltag', 'Übungen']);
+  await expect(page.locator('#mobsub button')).toHaveText(['Nach dem Lauf', 'Hüfte', 'Sprunggelenk']);
+  const all = await page.evaluate(() => [MOBILITY.routines.map(r => [r.tab, r.id, r.steps.length]), MOBILITY.regions.map(([id]) => [id, MOBILITY.groups.filter(g => g.region === id).reduce((n, g) => n + g.items.length, 0)])]);
+  for (const [tab, id, n] of all[0]) {
+    await openMob(page, tab, id);
+    await expect(page.locator('#mobcontent [data-mob]')).toHaveCount(1);
+    await expect(page.locator('#mobcontent .row[data-guide-name]')).toHaveCount(n);
+  }
+  for (const [id, n] of all[1]) {
+    await openMob(page, 'uebungen', id);
+    await expect(page.locator('#mobcontent [data-mob]')).toHaveCount(0);
+    await expect(page.locator('#mobcontent .row[data-guide-name]')).toHaveCount(n);
+  }
+  await openMob(page, 'uebungen', 'huefte');
+  await expect(page.locator('#mobcontent .header')).toHaveText(['Dehnen & mobilisieren', 'Aktiv & stark']);
+  await page.reload();
+  await page.evaluate(() => showArea('mobility'));
+  await expect(page.locator('#mobtabs [aria-selected="true"]')).toHaveText('Übungen');
+  await expect(page.locator('#mobsub [aria-selected="true"]')).toHaveText('Hüfte');
+  await page.locator('#mobcontent [data-guide-name="Copenhagen Hip Dips"]').click();
+  await expect(page.locator('#guide-title')).toHaveText('Copenhagen Hip Dips');
+});
+
+test('geführte Mobility-Routine: Countdown, Seitenwechsel, Pause, Ende', async ({ page }) => {
+  await openMob(page, 'laeufer', 'nachlauf');
   await page.click('[data-mob="2"]');
   await expect(page.locator('#routine')).toBeVisible();
   await expect(page.locator('#rt-count')).toHaveText('Schritt 1 von 6');
@@ -68,8 +99,8 @@ test('geführte Mobility-Routine: Countdown, Seitenwechsel, Pause, Ende', async 
 });
 
 test('Hüfte für Läufer und Sprunggelenk: Seiten, Zeiten und Abhaken', async ({ page }) => {
-  await page.evaluate(() => showArea('mobility'));
   const idx = await page.evaluate(() => ['Hüfte für Läufer', 'Sprunggelenk'].map(t => MOBILITY.routines.findIndex(r => r.title === t)));
+  await openMob(page, 'laeufer', 'huefte');
   await page.click(`[data-mob="${idx[0]}"]`);
   expect(await page.evaluate(() => rt.steps.map(s => [s.name, s.secs, s.sides]))).toEqual([
     ['Hüft-CARs', 60, 2], ['Beinheben im Sitzen', 30, 2], ['Beinüberheben im Sitzen', 30, 2], ['Knieheben im Stand', 30, 2], ['90/90 mit Aufrichten', 90, 1], ['Copenhagen Hip Dips', null, 2]]);
@@ -79,6 +110,7 @@ test('Hüfte für Läufer und Sprunggelenk: Seiten, Zeiten und Abhaken', async (
   await expect(page.locator('#rt-main')).toHaveText('✓ Erledigt');
   await page.click('#rt-close');
   await expect.poll(() => page.evaluate(() => rt)).toBeNull();
+  await openMob(page, 'laeufer', 'sprung');
   await page.click(`[data-mob="${idx[1]}"]`);
   expect(await page.evaluate(() => rt.steps.map(s => [s.name, s.secs, s.sides]))).toEqual([
     ['Fußgelenkkreisen', 30, 2], ['Sprunggelenk mit Kettlebell', 45, 2], ['Soleus-Dehnung', 45, 2], ['Schienbeinheben', 60, 1], ['Einbeinstand', 30, 2]]);
@@ -120,7 +152,7 @@ test('Cooldown mit Essen: nicht-Übungen werden abgehakt, Dehnungen je Seite', a
 test('Routine pausiert ein laufendes Kraft-Training', async ({ page }) => {
   await page.click('#btnMain');
   expect(await page.evaluate(() => running)).toBe(true);
-  await page.evaluate(() => showArea('mobility'));
+  await openMob(page, 'alltag', 'morgens');
   await page.click('[data-mob="0"]');
   expect(await page.evaluate(() => [running, !!rt])).toEqual([false, true]);
   await page.click('#rt-close');

@@ -274,22 +274,25 @@ const RUN_GUIDE = {
   }
 };
 
-/* Mobility: Übungen nach Bereich und Kurzprogramme (ohne Tracking) */
+/* Mobility (ohne Tracking): Reiter Läufer / Alltag mit je einem geführten Kurzprogramm pro Auswahl, Reiter Übungen nach Körperbereich.
+   Die Reihenfolge von routines nicht ändern: data-mob verweist auf den Index. */
 const MOBILITY = {
+  tabs: [['laeufer', 'Läufer'], ['alltag', 'Alltag'], ['uebungen', 'Übungen']],
+  regions: [['huefte', 'Hüfte'], ['ruecken', 'Rücken'], ['schultern', 'Schultern'], ['beine', 'Beine & Fuß']],
   routines: [
-    { title: 'Morgens', time: '5 Min.', steps: [['1 Min.', 'Katze-Kuh'], ['1 Min.', "World's Greatest Stretch"], ['1 Min.', '90/90-Hüftrotation'], ['1 Min.', 'Wand-Engel'], ['1 Min.', 'Kinn-Rückzug']] },
-    { title: 'Nach dem Sitzen', time: '6 Min.', steps: [['1:30 Min.', 'Hüftbeuger-Dehnung'], ['1 Min.', 'Brustdehnung am Türrahmen'], ['1 Min.', 'Brustwirbel-Rotation im Vierfüßlerstand'], ['1 Min.', 'Tiefe Hocke halten'], ['30 Sek.', 'Kinn-Rückzug'], ['1 Min.', 'Nackendehnung seitlich']] },
-    { title: 'Nach dem Laufen', time: '8 Min.', steps: [['1:30 Min.', 'Wadendehnung'], ['1:30 Min.', 'Hüftbeuger-Dehnung'], ['1 Min.', 'Vorderer Oberschenkel'], ['1 Min.', 'Hintere Oberschenkel'], ['1:30 Min.', 'Tauben-Dehnung'], ['1:30 Min.', 'Knie-zur-Wand']] },
-    { title: 'Hüfte für Läufer', time: '8 Min.', steps: [['2 Min.', 'Hüft-CARs'], ['1 Min.', 'Beinheben im Sitzen'], ['1 Min.', 'Beinüberheben im Sitzen'], ['1 Min.', 'Knieheben im Stand'], ['1:30 Min.', '90/90 mit Aufrichten'], ['6 je Seite', 'Copenhagen Hip Dips']] },
-    { title: 'Sprunggelenk', time: '6 Min.', steps: [['1 Min.', 'Fußgelenkkreisen'], ['1:30 Min.', 'Sprunggelenk mit Kettlebell'], ['1:30 Min.', 'Soleus-Dehnung'], ['1 Min.', 'Schienbeinheben'], ['1 Min.', 'Einbeinstand']] }
+    { id: 'morgens', tab: 'alltag', label: 'Morgens', title: 'Morgens', time: '5 Min.', intro: 'Fünf Minuten nach dem Aufstehen: Rücken, Hüfte, Schultern und Nacken in Gang bringen.', steps: [['1 Min.', 'Katze-Kuh'], ['1 Min.', "World's Greatest Stretch"], ['1 Min.', '90/90-Hüftrotation'], ['1 Min.', 'Wand-Engel'], ['1 Min.', 'Kinn-Rückzug']] },
+    { id: 'sitzen', tab: 'alltag', label: 'Nach dem Sitzen', title: 'Nach dem Sitzen', time: '6 Min.', intro: 'Gegenprogramm zum Schreibtisch: Hüftbeuger, Brust und Brustwirbelsäule öffnen, Nacken entlasten.', steps: [['1:30 Min.', 'Hüftbeuger-Dehnung'], ['1 Min.', 'Brustdehnung am Türrahmen'], ['1 Min.', 'Brustwirbel-Rotation im Vierfüßlerstand'], ['1 Min.', 'Tiefe Hocke halten'], ['30 Sek.', 'Kinn-Rückzug'], ['1 Min.', 'Nackendehnung seitlich']] },
+    { id: 'nachlauf', tab: 'laeufer', label: 'Nach dem Lauf', title: 'Nach dem Laufen', time: '8 Min.', intro: 'Ruhiges Dehnen nach dem Lauf: Waden, Hüfte und Oberschenkel. Nach sehr harten Einheiten nur sanft.', steps: [['1:30 Min.', 'Wadendehnung'], ['1:30 Min.', 'Hüftbeuger-Dehnung'], ['1 Min.', 'Vorderer Oberschenkel'], ['1 Min.', 'Hintere Oberschenkel'], ['1:30 Min.', 'Tauben-Dehnung'], ['1:30 Min.', 'Knie-zur-Wand']] },
+    { id: 'huefte', tab: 'laeufer', label: 'Hüfte', title: 'Hüfte für Läufer', time: '8 Min.', intro: 'Aktive Beweglichkeit und Kraft für die Hüfte, gut 2–3 × pro Woche. Nicht direkt vor Intervallen: Die Copenhagen Hip Dips sind echtes Krafttraining.', steps: [['2 Min.', 'Hüft-CARs'], ['1 Min.', 'Beinheben im Sitzen'], ['1 Min.', 'Beinüberheben im Sitzen'], ['1 Min.', 'Knieheben im Stand'], ['1:30 Min.', '90/90 mit Aufrichten'], ['6 je Seite', 'Copenhagen Hip Dips']] },
+    { id: 'sprung', tab: 'laeufer', label: 'Sprunggelenk', title: 'Sprunggelenk', time: '6 Min.', intro: 'Beweglichkeit, Kraft und Gleichgewicht für Sprunggelenk und Fuß. Passt an Ruhetagen oder nach einem lockeren Lauf.', steps: [['1 Min.', 'Fußgelenkkreisen'], ['1:30 Min.', 'Sprunggelenk mit Kettlebell'], ['1:30 Min.', 'Soleus-Dehnung'], ['1 Min.', 'Schienbeinheben'], ['1 Min.', 'Einbeinstand']] }
   ],
   groups: [
-    { title: 'Hüfte', items: [['45 Sek. je Seite', 'Hüftbeuger-Dehnung'], ['8 je Seite', '90/90-Hüftrotation'], ['45 Sek. je Seite', 'Tauben-Dehnung'], ['30–60 Sek.', 'Tiefe Hocke halten'], ['5 je Seite', "World's Greatest Stretch"], ['30 Sek. je Seite', 'Adduktoren'], ['30 Sek. je Seite', 'Figure-4 Gesäß']] },
-    { title: 'Hüfte aktiv & stark', items: [['3 je Richtung', 'Hüft-CARs'], ['8 je Seite', 'Beinheben im Sitzen'], ['6 je Seite', 'Beinüberheben im Sitzen'], ['6 je Seite', 'Knieheben im Stand'], ['5 je Seite', '90/90 mit Aufrichten'], ['6–8 je Seite', 'Copenhagen Hip Dips']] },
-    { title: 'Rücken', items: [['10 ×', 'Katze-Kuh'], ['60 Sek.', 'Kindhaltung'], ['8 je Seite', 'Open Book'], ['8 je Seite', 'Brustwirbel-Rotation im Vierfüßlerstand'], ['45 Sek.', 'Knie zur Brust'], ['8 je Seite', 'Bird Dog']] },
-    { title: 'Schultern & Nacken', items: [['10 ×', 'Wand-Engel'], ['10 ×', 'Schulterkreisen mit Band'], ['30 Sek. je Seite', 'Brustdehnung am Türrahmen'], ['10 ×', 'Kinn-Rückzug'], ['30 Sek. je Seite', 'Nackendehnung seitlich']] },
-    { title: 'Beine', items: [['45 Sek. je Seite', 'Wadendehnung'], ['30 Sek. je Seite', 'Hintere Oberschenkel'], ['30 Sek. je Seite', 'Vorderer Oberschenkel']] },
-    { title: 'Sprunggelenk & Fuß', items: [['10 je Seite', 'Knie-zur-Wand'], ['10 je Seite', 'Sprunggelenk mit Kettlebell'], ['45 Sek. je Seite', 'Soleus-Dehnung'], ['10 je Richtung', 'Fußgelenkkreisen'], ['15–20 ×', 'Schienbeinheben'], ['30 Sek. je Seite', 'Einbeinstand']] }
+    { region: 'huefte', title: 'Dehnen & mobilisieren', items: [['45 Sek. je Seite', 'Hüftbeuger-Dehnung'], ['8 je Seite', '90/90-Hüftrotation'], ['45 Sek. je Seite', 'Tauben-Dehnung'], ['30–60 Sek.', 'Tiefe Hocke halten'], ['5 je Seite', "World's Greatest Stretch"], ['30 Sek. je Seite', 'Adduktoren'], ['30 Sek. je Seite', 'Figure-4 Gesäß']] },
+    { region: 'huefte', title: 'Aktiv & stark', items: [['3 je Richtung', 'Hüft-CARs'], ['8 je Seite', 'Beinheben im Sitzen'], ['6 je Seite', 'Beinüberheben im Sitzen'], ['6 je Seite', 'Knieheben im Stand'], ['5 je Seite', '90/90 mit Aufrichten'], ['6–8 je Seite', 'Copenhagen Hip Dips']] },
+    { region: 'ruecken', title: 'Rücken', items: [['10 ×', 'Katze-Kuh'], ['60 Sek.', 'Kindhaltung'], ['8 je Seite', 'Open Book'], ['8 je Seite', 'Brustwirbel-Rotation im Vierfüßlerstand'], ['45 Sek.', 'Knie zur Brust'], ['8 je Seite', 'Bird Dog']] },
+    { region: 'schultern', title: 'Schultern & Nacken', items: [['10 ×', 'Wand-Engel'], ['10 ×', 'Schulterkreisen mit Band'], ['30 Sek. je Seite', 'Brustdehnung am Türrahmen'], ['10 ×', 'Kinn-Rückzug'], ['30 Sek. je Seite', 'Nackendehnung seitlich']] },
+    { region: 'beine', title: 'Beine', items: [['45 Sek. je Seite', 'Wadendehnung'], ['30 Sek. je Seite', 'Hintere Oberschenkel'], ['30 Sek. je Seite', 'Vorderer Oberschenkel']] },
+    { region: 'beine', title: 'Sprunggelenk & Fuß', items: [['10 je Seite', 'Knie-zur-Wand'], ['10 je Seite', 'Sprunggelenk mit Kettlebell'], ['45 Sek. je Seite', 'Soleus-Dehnung'], ['10 je Richtung', 'Fußgelenkkreisen'], ['15–20 ×', 'Schienbeinheben'], ['30 Sek. je Seite', 'Einbeinstand']] }
   ]
 };
 
