@@ -7,6 +7,18 @@ const KEYS = {
   choice: 'jan-kb-choice-v1', stage: 'jan-kb-stage-v1', plan: 'jan-kb-plan-v1', session: 'jan-kb-session-v1',
   backup: 'jan-kb-lastbackup-v1', hint: 'jan-kb-installhint-v1', area: 'jan-kb-area-v1', run: 'jan-kb-runview-v1'
 };
+/* Datensicherheit bei Updates:
+   - Einträge, die diese Version nicht versteht, werden nie verworfen, sondern unverändert mitgespeichert.
+   - Unlesbare Daten werden vor dem Überschreiben unter einem eigenen Schlüssel aufbewahrt.
+   - Vor einer Formatänderung (SCHEMA) wird eine Sicherung im Backup-Format angelegt. */
+const SCHEMA = 3, SCHEMA_KEY = 'jan-kb-schema-v1', PRE_UPDATE_KEY = 'jan-kb-sicherung-vor-update';
+const loadIssues = [];
+function loadList(key, valid) {
+  let raw = null; try { raw = localStorage.getItem(key); } catch (e) { }
+  if (raw === null) return { ok: [], keep: [] };
+  try { const v = JSON.parse(raw); if (!Array.isArray(v)) throw Error('kein Array'); return { ok: v.filter(valid), keep: v.filter(x => !valid(x)) }; }
+  catch (e) { try { localStorage.setItem(key + '-unlesbar-' + Date.now(), raw); } catch (_) { } loadIssues.push(key); return { ok: [], keep: [] }; }
+}
 function load(k, def) { try { const raw = localStorage.getItem(k); if (raw === null) return def; const v = JSON.parse(raw); return v === null || v === undefined ? def : v; } catch (e) { return def; } }
 function store(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } }
 const isObj = v => !!v && typeof v === 'object' && !Array.isArray(v);
@@ -48,8 +60,9 @@ function validEntry(e) {
   if (e.mode === 'sets') return e.v >= 3 ? Array.isArray(e.sets) && e.sets.every(Array.isArray) : isObj(e.sets);
   return true;
 }
-let saved = load(KEYS.entries, []); saved = Array.isArray(saved) ? saved.filter(validEntry) : [];
-function persistEntries() { if (!store(KEYS.entries, saved)) toast('Speichern im Browser nicht möglich – bitte Backup exportieren.'); renderBackupBanner(); }
+const entriesLoaded = loadList(KEYS.entries, validEntry);
+let saved = entriesLoaded.ok; const savedKeep = entriesLoaded.keep;
+function persistEntries() { if (!store(KEYS.entries, saved.concat(savedKeep))) toast('Speichern im Browser nicht möglich – bitte Backup exportieren.'); renderBackupBanner(); }
 function entryCount(e) { if (e.v >= 3 && Array.isArray(e.cfg)) return e.cfg.length; return Number.isInteger(e.exerciseCount) && e.exerciseCount > 0 ? e.exerciseCount : (e.plan === 'wed' ? 11 : e.plan === 'sun' ? 6 : 7); }
 function legacyCfg(e) {
   const w = n => { const v = e.weights && e.weights[n], x = Number(v); return v !== undefined && v !== null && Number.isFinite(x) ? x : KB_DEFAULT; };
@@ -446,8 +459,9 @@ function renderManual() {
 
 /* ---------- Bauchumfang ---------- */
 function validWaist(e) { return isObj(e) && typeof e.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(e.date) && typeof e.cm === 'number' && Number.isFinite(e.cm) && e.cm >= 40 && e.cm <= 250; }
-let waist = load(KEYS.waist, []); waist = Array.isArray(waist) ? waist.filter(validWaist) : [];
-function persistWaist() { if (!store(KEYS.waist, waist)) toast('Speichern im Browser nicht möglich – bitte Backup exportieren.'); renderBackupBanner(); }
+const waistLoaded = loadList(KEYS.waist, validWaist);
+let waist = waistLoaded.ok; const waistKeep = waistLoaded.keep;
+function persistWaist() { if (!store(KEYS.waist, waist.concat(waistKeep))) toast('Speichern im Browser nicht möglich – bitte Backup exportieren.'); renderBackupBanner(); }
 const waistSorted = () => [...waist].sort((a, b) => a.date.localeCompare(b.date));
 function renderWaist() {
   const rows = waistSorted(), newest = rows.at(-1), oldest = rows[0];
@@ -476,7 +490,18 @@ function renderWaist() {
 
 /* ---------- Dateien: Backup, CSV, Kalender ---------- */
 function download(name, content, type) { const blob = new Blob([content], { type }), url = URL.createObjectURL(blob), a = document.createElement('a'); a.href = url; a.download = name; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 3000); }
-function backupJson() { return JSON.stringify({ version: 3, entries: saved, waist, settings: { gear, choices, stages }, exportedAt: new Date().toISOString() }, null, 2); }
+function backupJson() { return JSON.stringify({ version: 3, entries: saved.concat(savedKeep), waist: waist.concat(waistKeep), settings: { gear, choices, stages }, exportedAt: new Date().toISOString() }, null, 2); }
+function schemaCheck() {
+  const prev = load(SCHEMA_KEY, null);
+  if (prev === SCHEMA || (typeof prev === 'number' && prev > SCHEMA)) return; // neuere Daten mit älterer App: nichts verändern
+  if (saved.length + savedKeep.length + waist.length + waistKeep.length > 0) store(PRE_UPDATE_KEY, { savedAt: new Date().toISOString(), fromSchema: prev, json: backupJson() });
+  store(SCHEMA_KEY, SCHEMA);
+}
+function renderPreUpdate() {
+  const b = load(PRE_UPDATE_KEY, null), row = $('preupdate');
+  row.classList.toggle('hide', !isObj(b) || typeof b.json !== 'string');
+  if (isObj(b) && b.savedAt) $('preupdatehint').textContent = 'Automatisch angelegt am ' + dateGerman(localDay(new Date(b.savedAt)));
+}
 function markBackup() { store(KEYS.backup, localDay()); renderBackupBanner(); }
 // Sicherung als lokale Datei: Teilen-Menü (iPhone: „In Dateien sichern“), Dateidialog oder Download – nie ein Server
 async function exportBackup() {
@@ -728,6 +753,7 @@ $('runsub').addEventListener('click', e => { const b = e.target.closest('[data-r
 for (const id of ['runcontent', 'mobcontent']) $(id).addEventListener('click', e => { const b = e.target.closest('[data-guide-name]'); if (b) openGuide(b.dataset.guideName, 'bw', { origin: b }); });
 
 /* ---------- Start ---------- */
+schemaCheck();
 const restored = restoreSession();
 if (!restored) runReps = emptyReps(plan);
 renderAll(); renderWaist(); renderStorageInfo(); renderRun(); renderMobility(); showArea(area, false);
@@ -735,4 +761,11 @@ if (/iPad|iPhone|iPod/.test(navigator.userAgent) || document.documentElement.dat
 if (restored) { toast(running ? 'Laufendes Training wiederhergestellt.' : 'Unterbrochenes Training wiederhergestellt.'); if (running) keepAwake(true); }
 setInterval(tick, 200);
 try { navigator.storage?.persist?.().then(renderStorageInfo).catch(() => { }); } catch (e) { }
-if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('./sw.js').catch(() => { });
+renderPreUpdate();
+if (loadIssues.length) toast('Ein Teil der gespeicherten Daten war unlesbar und wurde separat aufbewahrt. Bitte Backup prüfen.');
+if ('serviceWorker' in navigator && location.protocol === 'https:') {
+  const hadController = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.addEventListener('controllerchange', () => { if (hadController) toast('App aktualisiert – deine Daten sind unverändert.'); });
+  navigator.serviceWorker.register('./sw.js').catch(() => { });
+}
+$('preupdate').addEventListener('click', () => { const b = load(PRE_UPDATE_KEY, null); if (isObj(b) && typeof b.json === 'string') download(`kb-tracker-sicherung-vor-update-${localDay(new Date(b.savedAt || Date.now()))}.json`, b.json, 'application/json'); });

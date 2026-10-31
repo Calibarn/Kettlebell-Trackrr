@@ -41,9 +41,19 @@ Orientiert sich an Apples Gestaltungsrichtlinien: große Titel, gruppierte Liste
 
 Alte Version öffnen → „Backup exportieren“, in der neuen App unter **Mehr → Aus Datei wiederherstellen** einlesen. Doppelte Einträge werden übersprungen. Auf derselben Adresse übernimmt die neue Version vorhandene Daten automatisch.
 
+## Updates und deine Daten
+
+Updates ersetzen nur die App-Dateien (HTML, CSS, JavaScript). Die Daten liegen getrennt im Speicher des Geräts und bleiben erhalten. Zusätzlich gilt:
+
+- Einträge, die eine App-Version nicht kennt (z. B. aus einer neueren Version), werden nie verworfen, sondern unverändert mitgespeichert.
+- Unlesbare Daten werden vor dem Überschreiben unter einem eigenen Schlüssel aufbewahrt, die App weist darauf hin.
+- Bei einer Änderung des Datenformats (`SCHEMA` in `app.js`) legt die App vorher automatisch eine Sicherung an; sie ist unter **Mehr → Sicherung vor dem letzten Update** als Datei abrufbar.
+
+Daten gehen nur verloren, wenn die Adresse (Domain) wechselt, das App-Symbol vom Home-Bildschirm gelöscht wird oder die Website-Daten im Browser gelöscht werden. Dagegen hilft nur eine Sicherung in eine Datei.
+
 ## Aktualisieren
 
-Bei Änderungen an Dateien in `sw.js` die Konstante `VERSION` erhöhen (z. B. `kbt-v3`). Online lädt die App immer die neueste Version, offline den Cache.
+Bei Änderungen an Dateien in `sw.js` die Konstante `VERSION` erhöhen (z. B. `kbt-v4`). Online lädt die App immer die neueste Version, offline den Cache.
 
 ## Aufbau
 
