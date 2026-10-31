@@ -175,6 +175,19 @@ Object.assign(FIG, {
   'Wadenpumpe': { a: fr(SS), b: fr(P(shift(SS, 0, -10), { f1: [99, 178], t1: [110, 190], f2: [95, 178], t2: [106, 190] }), [{ arrow: 'M70 150 V120' }]), la: 'hüftbreit stehen', lb: 'auf die Ballen' }
 });
 
+Object.assign(FIG, {
+  'Ausfallschritte mit Band': { a: fr(P(SS, { e1: [106, 88], w1: [110, 64], e2: [102, 88], w2: [106, 64] }), [BAND([100, 188], [110, 64])]), b: fr(P(LG_B, { e1: [104, 120], w1: [108, 98], e2: [100, 120], w2: [104, 98] }), [BAND([128, 188], [108, 98])]), la: 'Band unter dem vorderen Fuß', lb: 'Schritt zurück, absenken' },
+  'Split Squat mit Band': { a: fr(P(SP_A, { e1: [104, 86], w1: [108, 62], e2: [100, 86], w2: [104, 62] }), [BAND([124, 188], [108, 62])]), b: fr(P(SP_B, { e1: [104, 120], w1: [108, 98], e2: [100, 120], w2: [104, 98] }), [BAND([124, 188], [108, 98])]), la: 'Schrittstellung, Band unter dem Fuß', lb: 'hinteres Knie absenken' },
+  'Suitcase March mit Band': { a: fr(SS, [BAND([95, 188], [96, 111])]), b: fr(P(SS, { k1: [128, 118], f1: [127, 156], t1: [140, 158], e1: [112, 84], w1: [118, 106] }), [BAND([95, 188], [96, 111])]), la: 'Band zieht einseitig nach unten', lb: 'Knie heben, nicht kippen' },
+  'Suitcase Hold mit Band': { a: fr(P(FS, { e2: [121, 88], w2: [124, 114] }), [BAND([111, 188], [124, 114])]), la: 'Gegen den Zug ruhig halten' },
+  'Einbeiniges Kreuzheben mit Band': { a: fr(SW_A, [BAND([99, 188], [96, 111])]), b: fr(SW_B, [BAND([100, 188], [142, 148])]), la: 'Band unter dem Standfuß', lb: 'Hüfte zurück, Bein nach hinten' },
+  'Einbeiniges Wadenheben mit Band': { a: fr(P(CA_A, { e2: [98, 86], w2: [104, 64] }), [{ wall: 168 }, BAND([100, 188], [104, 64])]), b: fr(P(CA_B, { e2: [98, 76], w2: [104, 54] }), [{ wall: 168 }, { arrow: 'M70 150 V118' }, BAND([101, 177], [104, 54])]), la: 'Band unter dem Fußballen', lb: 'auf den Fußballen' },
+  'Dead Bug mit Kettlebell': { a: fr(DB, [KB(54, 112)]), b: fr(P(DB, { k1: [138, 172], f1: [174, 178], t1: [182, 172] }), [KB(54, 112)]), la: 'Kugel über der Brust', lb: 'Bein strecken, Kugel ruhig' },
+  'Dead Bug mit Band': { a: fr(DB, [BAND([54, 122], [138, 146])]), b: fr(P(DB, { e2: [26, 170], w2: [6, 176], k1: [138, 172], f1: [174, 178], t1: [182, 172] }), [BAND([54, 122], [174, 178])]), la: 'Band zwischen Händen und Füßen', lb: 'Arm und Gegenbein strecken' },
+  'Kettlebell-Pullover': { a: fr(P(shift(LB, 20, 0), { e1: [72, 150], w1: [74, 124], e2: [70, 150], w2: [72, 124] }), [KB(73, 112)]), b: fr(P(shift(LB, 20, 0), { e1: [46, 166], w1: [24, 160], e2: [44, 168], w2: [22, 162] }), [KB(12, 160)]), la: 'Kugel über der Brust', lb: 'über den Kopf führen' },
+  'Butterfly mit Band': { a: fr(P(FS, { e1: [66, 70], w1: [42, 74], e2: [134, 70], w2: [158, 74] }), [BAND([42, 74], [100, 66], [158, 74])]), b: fr(P(FS, { e1: [78, 82], w1: [94, 76], e2: [122, 82], w2: [106, 76] }), [BAND([94, 76], [100, 66], [106, 76])]), la: 'Arme seitlich, Band im Rücken', lb: 'vor der Brust schließen' },
+  'Seitlicher Ausfallschritt mit Kettlebell': { a: fr(P(FS, { k1: [80, 150], f1: [64, 188], k2: [120, 150], f2: [136, 188], e1: [86, 96], w1: [96, 82], e2: [114, 96], w2: [104, 82] }), [KB(100, 74)]), b: fr(P(FS, { p: [112, 132], q1: [105, 132], q2: [119, 132], n: [110, 80], s1: [96, 82], s2: [124, 82], h: [110, 60], k1: [86, 160], f1: [64, 188], k2: [134, 152], f2: [136, 188], e1: [98, 112], w1: [108, 98], e2: [122, 112], w2: [114, 98] }), [KB(111, 90)]), la: 'breit stehen, Kugel vor der Brust', lb: 'zur Seite absenken' }
+});
 const FIG_RT = FIG['Russian Twist (Kugel)']; delete FIG['Russian Twist (Kugel)'];
 
 function getFigure(name, gear) { const f = FIG[name]; return typeof f === 'function' ? f(gear) : f || null; }

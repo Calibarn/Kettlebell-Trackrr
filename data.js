@@ -164,6 +164,19 @@ const GUIDES = {
 GUIDES['Locker marschieren'] = GUIDES['Marschieren auf der Stelle'];
 
 Object.assign(GUIDES, {
+  // Ergänzende Geräte-Varianten
+  'Ausfallschritte mit Band': { steps: ['Bandmitte unter den vorderen Fuß, Enden vor den Schultern halten.', 'Kontrolliert in den Ausfallschritt absenken, hinteres Knie Richtung Boden.', 'Über das vordere Bein hochdrücken; nach allen Wiederholungen Seite wechseln.'], effect: 'Gesäß und Oberschenkel; der Widerstand steigt nach oben.', cue: 'Band sicher unter dem Schuh, vorderes Knie über dem Fuß.' },
+  'Split Squat mit Band': { steps: ['Schrittstellung, Bandmitte unter dem vorderen Fuß, Enden vor den Schultern.', 'Hinteres Knie senkrecht Richtung Boden absenken.', 'Hochdrücken; nach allen Wiederholungen Seite wechseln.'], effect: 'Vordere Oberschenkel und Gesäß, jedes Bein einzeln.', cue: 'Oberkörper aufrecht, Band nicht verrutschen lassen.' },
+  'Suitcase March mit Band': { steps: ['Bandende unter einen Fuß klemmen, das andere Ende mit der Hand derselben Seite neben dem Körper halten – das Band zieht nach unten.', 'Aufrecht langsam auf der Stelle marschieren.', 'Nach der Zeit Seite wechseln.'], effect: 'Seitliche Rumpfmuskeln gegen einseitigen Zug.', cue: 'Nicht zur Bandseite kippen, Schultern waagerecht.' },
+  'Suitcase Hold mit Band': { steps: ['Bandende unter einen Fuß klemmen, das andere Ende seitlich mit gestrecktem Arm halten.', 'Aufrecht stehen und gegen den Zug ruhig halten.', 'Nach der Zeit Seite wechseln.'], effect: 'Rumpfstabilität gegen seitliches Kippen.', cue: 'Schultern waagerecht, ruhig weiteratmen.' },
+  'Einbeiniges Kreuzheben mit Band': { steps: ['Band unter den Standfuß, Ende in der Hand der Gegenseite.', 'Hüfte nach hinten schieben, freies Bein lang nach hinten, Oberkörper nach vorne.', 'Über das Gesäß gegen das Band aufrichten.'], effect: 'Gesäß, hintere Oberschenkel, Fuß- und Hüftstabilität.', cue: 'Becken gerade halten, Rücken lang.' },
+  'Einbeiniges Wadenheben mit Band': { steps: ['Band unter den Fußballen des Standbeins, Ende mit einer Hand auf Schulterhöhe halten, andere Hand an die Wand.', 'Auf den Fußballen hochdrücken, oben kurz halten.', 'In 3 Sekunden absenken; Seite wechseln.'], effect: 'Wade und Achillessehne mit Zusatzwiderstand.', cue: 'Bei Mittelfuß-Beschwerden erst beidbeinig und ohne Band.' },
+  'Dead Bug mit Kettlebell': { steps: ['Rückenlage, Kugel mit beiden Händen und gestreckten Armen über der Brust halten, Knie 90 Grad über der Hüfte.', 'Unteren Rücken in den Boden drücken, ein Bein langsam strecken.', 'Zurück, Bein wechseln – die Kugel bleibt ruhig über der Brust.'], effect: 'Tiefe Bauchmuskulatur und Rumpfkontrolle, fordernder als ohne Gewicht.', cue: 'Kugel sicher greifen und nie über das Gesicht kippen lassen. Unterer Rücken bleibt am Boden.' },
+  'Dead Bug mit Band': { steps: ['Rückenlage, Band unter beide Füße (Knie 90 Grad über der Hüfte), Enden mit gestreckten Armen über der Brust halten.', 'Einen Arm nach hinten und das Gegenbein nach vorne strecken – das Band spannt.', 'Zurück und Seite wechseln.'], effect: 'Rumpfstabilität gegen den Bandzug.', cue: 'Unterer Rücken bleibt am Boden; leichtes Band wählen.' },
+  'Kettlebell-Pullover': { steps: ['Rückenlage, Knie angestellt. Kugel mit beiden Händen an den Hörnern über der Brust halten.', 'Arme fast gestreckt langsam über den Kopf Richtung Boden führen, so weit es ohne Hohlkreuz geht.', 'Kontrolliert zurück über die Brust.'], effect: 'Breiter Rückenmuskel und Brust; öffnet Brustkorb und Brustwirbelsäule.', cue: 'Kugel sicher greifen, Rippen unten lassen. Bewegungsumfang langsam steigern.' },
+  'Butterfly mit Band': { steps: ['Band hinter dem oberen Rücken, Enden greifen, Arme seitlich leicht gebeugt.', 'Arme im Bogen vor der Brust zusammenführen.', 'Langsam zurück öffnen.'], effect: 'Brustmuskulatur, ergänzend zum Drücken.', cue: 'Ellenbogen leicht gebeugt lassen, Schultern unten.' },
+  'Seitlicher Ausfallschritt mit Kettlebell': { steps: ['Breiter Stand, Kugel vor der Brust, Füße leicht nach außen.', 'Gewicht auf ein Bein verlagern und dieses Knie beugen, das andere Bein bleibt gestreckt.', 'Zurück in die Mitte drücken und Seite wechseln.'], effect: 'Gesäß, Adduktoren und Oberschenkel in der seitlichen Ebene – stabilisiert Hüfte und Knie.', cue: 'Knie folgt den Zehen, Fersen am Boden, Rücken lang.' },
+
   // Kraft · Tabata
   'Vorgebeugtes Rudern beidarmig': { steps: ['Kugel mit beiden Händen am Griff halten, Füße hüftbreit.', 'Hüfte nach hinten schieben, Oberkörper etwa 45 Grad vorneigen, Rücken lang, Arme hängen.', 'Kugel zum Bauch ziehen, Ellenbogen nach hinten, Schulterblätter zusammen. Kontrolliert absenken.'], effect: 'Oberer und breiter Rückenmuskel, hintere Schulter, Bizeps; die Haltung trainiert zusätzlich Rückenstrecker und Gesäß.', cue: 'Rücken bleibt lang, kein Rundrücken – auch wenn es in den letzten Sekunden hart wird. Nicht mit Schwung aus dem Oberkörper ziehen.' },
   'Überkopfdrücken beidarmig': { steps: ['Kugel an den Hörnern (seitlich am Griff) vor der Brust halten, Ellenbogen unten.', 'Bauch und Gesäß anspannen und die Kugel senkrecht über den Kopf drücken.', 'Kontrolliert zurück vor die Brust.'], effect: 'Schultern, Trizeps und oberer Rücken; der Rumpf stabilisiert gegen das Hohlkreuz.', cue: 'Kein Hohlkreuz, Rippen unten. Den Kopf beim Drücken leicht zurücknehmen, damit die Kugel gerade nach oben gehen kann.' },
@@ -275,6 +288,37 @@ const TEMPO_TEXT = '3 Sekunden absenken (bzw. zurückführen), 1 Sekunde in der 
 const EMOM_TEXT = '„Every Minute On the Minute“: Zu Beginn jeder Minute die Wiederholungen ausführen, im Rest der Minute Pause. Der Timer gibt bei jedem Minutenwechsel ein Signal. Brauchst du mehr als etwa 40 Sekunden, nimm weniger Wiederholungen. Die geschafften Wiederholungen trägst du unter Min. 1–3 ein.';
 const BAND_TEXT = 'Kombinationen wie „Band 10 + 30 kg“: beide Bänder gleichzeitig nutzen und die Enden zusammen greifen. Vorher prüfen, dass beide gleich lang gespannt sind. Bänder vor jeder Nutzung auf Risse prüfen.';
 
+/* Ergänzende Varianten, damit jeder Übungsplatz mit Kettlebell, Band UND Körpergewicht funktioniert.
+   „Nur Kettlebell“ bzw. „Nur Band“ ergibt so ein Training ausschließlich mit diesem Gerät. */
+const EXTRA = {
+  wed: {
+    halo: { band: ['Schulterkreisen mit Band', '10', 'Band breit greifen, gestreckt über den Kopf'], _band: '10' },
+    lunge: { band: ['Ausfallschritte mit Band', '10 je Seite', 'Band unter dem vorderen Fuß, Enden an den Schultern'], _band: '20' },
+    march: { band: ['Suitcase March mit Band', '20 Sek. je Seite', 'Band unter dem Fuß, Ende seitlich halten'], _band: '20' },
+    balance: { band: ['Einbeiniges Kreuzheben mit Band', '6–10 je Seite', 'Band unter dem Standfuß'], _band: '20' },
+    crunch: { kb: ['Russian Twist', '10 je Seite', 'Füße am Boden, Kugel nah am Körper'], band: ['Dead Bug mit Band', '8 je Seite', 'Band zwischen Händen und Füßen'], _band: '10' }
+  },
+  run: {
+    split: { band: ['Split Squat mit Band', '8–15 je Seite', 'Band unter dem vorderen Fuß'], _band: '20' },
+    calf: { band: ['Einbeiniges Wadenheben mit Band', '8–15 je Seite', 'Band unter dem Fußballen'], _band: '20' },
+    sldl: { band: ['Einbeiniges Kreuzheben mit Band', '6–10 je Seite', 'Band unter dem Standfuß'], _band: '20' },
+    march: { band: ['Suitcase March mit Band', '20–30 Sek. je Seite', 'Band unter dem Fuß, Ende seitlich halten'], _band: '20' }
+  },
+  sun: {
+    pushup: { kb: ['Kettlebell-Pullover', '10–12', 'Rückenlage, Kugel über den Kopf führen'], band: ['Butterfly mit Band', '12–15', 'Band hinter dem Rücken, Arme schließen'], _band: '10' },
+    lateral: { kb: ['Halo um den Kopf', '8 je Richtung', 'Ersatz für Seitheben – 12 kg sind dafür zu schwer'] },
+    deadbug: { kb: ['Dead Bug mit Kettlebell', '8 je Seite', 'Kugel über der Brust halten'], band: ['Dead Bug mit Band', '8 je Seite', 'Band zwischen Händen und Füßen'], _band: '10' },
+    hold: { band: ['Suitcase Hold mit Band', '20–30 Sek. je Seite', 'Band unter dem Fuß, Ende seitlich halten'], _band: '20' }
+  },
+  office: {
+    angel: { kb: ['Kettlebell-Pullover', '10', 'Rückenlage, öffnet Brust und Brustwirbelsäule'], band: ['Schulterkreisen mit Band', '10', 'Band breit greifen'], _band: '10' },
+    birddog: { kb: ['Dead Bug mit Kettlebell', '8 je Seite', 'Kugel über der Brust halten'], band: ['Dead Bug mit Band', '8 je Seite', 'Band zwischen Händen und Füßen'], _band: '10' },
+    clam: { kb: ['Seitlicher Ausfallschritt mit Kettlebell', '8 je Seite', 'Kugel vor der Brust'] },
+    tspine: { kb: ['Halo um den Kopf', '8 je Richtung', 'Schultern und oberer Rücken'], band: ['Holzhacker mit Band', '8 je Seite', 'Rotation aus dem oberen Rücken'], _band: '10' }
+  }
+};
+for (const [pk, m] of Object.entries(EXTRA)) for (const sl of PLANS[pk].slots) if (m[sl.id]) { const { _band, ...v } = m[sl.id]; Object.assign(sl.v, v); if (_band) sl.band = _band; }
+
 /* Beste Variante je Übungsplatz: Rangfolge nach Wirksamkeit (vorne = bevorzugt).
    Die App nimmt die erste Variante, deren Gerät unter „Heute dabei“ gewählt ist.
    Grundlage: 12-kg-Kettlebell, Bänder 10/20/30 kg, eigenes Körpergewicht. */
@@ -282,16 +326,16 @@ const BEST = {
   wed: {
     swing: [['kb', 'band', 'bw'], 'Der Swing trainiert Hüftstreckung und Kondition zugleich – Hüftheben ist die schonende Alternative.'],
     hips: [['band', 'kb', 'bw'], 'Der Holzhacker mit Band gibt dem Rumpf echten Widerstand; um die Hüfte schwingen ist mit 12 kg vor allem Koordination.'],
-    halo: [['kb', 'bw'], 'Das Gewicht über Kopf fordert die Schulterkontrolle deutlich stärker als Armkreisen.'],
+    halo: [['kb', 'band', 'bw'], 'Das Gewicht über Kopf fordert die Schulterkontrolle am stärksten; das Band öffnet die Schultern, Armkreisen ist die Variante ohne Gerät.'],
     squat: [['kb', 'band', 'bw'], 'Die Kugel vor der Brust hält den Oberkörper aufrecht und belastet auch unten in der Kniebeuge; das Band wirkt vor allem oben.'],
-    lunge: [['kb', 'bw'], 'Zusatzgewicht erhöht den Reiz für Gesäß und Oberschenkel.'],
-    march: [['kb', 'bw'], 'Die einseitige Last trainiert den seitlichen Rumpf so, wie er beim Laufen arbeitet.'],
+    lunge: [['kb', 'band', 'bw'], 'Zusatzgewicht erhöht den Reiz für Gesäß und Oberschenkel; die Kugel belastet über den ganzen Weg, das Band vor allem oben.'],
+    march: [['kb', 'band', 'bw'], 'Die einseitige Last trainiert den seitlichen Rumpf so, wie er beim Laufen arbeitet.'],
     row: [['kb', 'band', 'bw'], 'Rudern mit Gewicht trifft den Rücken direkter als Y-T-W; das Band unter dem Fuß verrutscht leichter.'],
     press: [['bw', 'band', 'kb'], 'Liegestütze bewegen einen großen Teil des Körpergewichts und fordern Rumpf und Brust stärker als 12 kg oder ein Band.'],
     tri: [['kb', 'band', 'bw'], 'Gezielter Reiz für den Trizeps; enge Liegestütze sind die Alternative ohne Gerät.'],
     curl: [['kb', 'band', 'bw'], 'Bewegung mit Gewicht über den vollen Weg; das Halten gegen das Handtuch ist die Notlösung.'],
-    balance: [['bw', 'kb'], 'Im Zirkel unter Ermüdung zuerst ohne Gewicht – Gleichgewicht und saubere Hüftbeugung gehen vor Last.'],
-    crunch: [['bw'], '']
+    balance: [['bw', 'kb', 'band'], 'Im Zirkel unter Ermüdung zuerst ohne Gewicht – Gleichgewicht und saubere Hüftbeugung gehen vor Last.'],
+    crunch: [['bw', 'kb', 'band'], 'Ohne Gerät am einfachsten sauber auszuführen; Russian Twist und Dead Bug mit Band sind gleichwertige Rumpfübungen.']
   },
   tabata: {
     swing: [['kb', 'band', 'bw'], 'Der Swing ist die wirksamste Tabata-Übung für Hüfte und Puls.'],
@@ -301,33 +345,33 @@ const BEST = {
     twist: [['bw', 'band', 'kb'], 'Bergsteiger bringen Rumpf und Puls hoch, ohne den Rücken unter Last zu drehen.']
   },
   run: {
-    split: [['kb', 'bw'], 'Zusatzgewicht macht den Split Squat zum echten Kraftreiz.'],
+    split: [['kb', 'band', 'bw'], 'Zusatzgewicht macht den Split Squat zum echten Kraftreiz; die Kugel belastet gleichmäßiger als das Band.'],
     row: [['kb', 'band', 'bw'], 'Rudern mit Gewicht trifft den Rücken direkt.'],
     press: [['bw', 'band', 'kb'], 'Liegestütze bewegen mehr Last als 12 kg und lassen sich über die Höhe der Erhöhung gut steigern.'],
-    calf: [['kb', 'bw'], 'Gewicht in der Hand erhöht den Reiz für Wade und Achillessehne.'],
-    sldl: [['kb', 'bw'], 'Mit Gewicht wird die Standwaage zum einbeinigen Kreuzheben.'],
-    march: [['kb', 'bw'], 'Die einseitige Last trainiert den seitlichen Rumpf so, wie er beim Laufen arbeitet.'],
+    calf: [['kb', 'band', 'bw'], 'Gewicht in der Hand erhöht den Reiz für Wade und Achillessehne.'],
+    sldl: [['kb', 'band', 'bw'], 'Mit Gewicht wird die Standwaage zum einbeinigen Kreuzheben.'],
+    march: [['kb', 'band', 'bw'], 'Die einseitige Last trainiert den seitlichen Rumpf so, wie er beim Laufen arbeitet.'],
     swing: [['kb', 'band', 'bw'], 'Der Swing trainiert Hüftstreckung und Kondition zugleich.']
   },
   sun: {
     press: [['band', 'kb', 'bw'], 'Liegestütze folgen als eigene Übung – hier deshalb Drücken mit Band; ohne Geräte der Unterarmstütz.'],
-    pushup: [['bw'], ''],
+    pushup: [['bw', 'band', 'kb'], 'Liegestütze sind die stärkste Brustübung; ohne Körpergewicht-Auswahl Butterfly mit Band oder Pullover.'],
     shoulder: [['kb', 'band', 'bw'], 'Einarmiges Drücken mit der Kugel fordert Schulter und Rumpf am stärksten.'],
-    lateral: [['band', 'bw'], 'Das Band gibt über die ganze Bewegung Widerstand.'],
+    lateral: [['band', 'bw', 'kb'], 'Das Band gibt über die ganze Bewegung Widerstand. Mit 12 kg wäre Seitheben zu schwer – mit nur Kettlebell daher Halo.'],
     pull: [['band', 'kb', 'bw'], 'Pull-Aparts treffen die hintere Schulter gezielt – das Gegengewicht zu den Druckübungen.'],
     curl: [['kb', 'band', 'bw'], 'Bewegung mit Gewicht über den vollen Weg.'],
     tri: [['kb', 'band', 'bw'], 'Gezielter Reiz für den Trizeps.'],
-    deadbug: [['bw'], ''],
-    hold: [['kb', 'bw'], 'Die einseitige Last trainiert den seitlichen Rumpf; der Seitstütz ist die Alternative ohne Gerät.']
+    deadbug: [['kb', 'band', 'bw'], 'Die Kugel über der Brust macht den Dead Bug deutlich fordernder.'],
+    hold: [['kb', 'band', 'bw'], 'Die einseitige Last trainiert den seitlichen Rumpf; der Seitstütz ist die Alternative ohne Gerät.']
   },
   office: {
     hinge: [['kb', 'band', 'bw'], 'Kreuzheben trainiert genau die Muskeln, die beim Sitzen abschalten.'],
     upper: [['band', 'kb', 'bw'], 'Pull-Aparts öffnen Brust und Schultern – gezielt gegen die Sitzhaltung.'],
     squat: [['kb', 'band', 'bw'], 'Die Kugel vor der Brust hält den Oberkörper aufrecht.'],
-    angel: [['bw'], ''],
-    birddog: [['bw'], ''],
-    clam: [['band', 'bw'], 'Das Band erhöht den Reiz für die seitliche Gesäßmuskulatur.'],
-    tspine: [['bw'], '']
+    angel: [['bw', 'band', 'kb'], 'Der Wand-Engel trainiert Haltung und Schulterblätter am gezieltesten; Band und Pullover öffnen Brust und Schultern.'],
+    birddog: [['bw', 'kb', 'band'], 'Der Bird Dog trainiert gezielt den Rückenstrecker; der Dead Bug mit Gewicht ist die gleichwertige Rumpfalternative.'],
+    clam: [['band', 'kb', 'bw'], 'Das Band erhöht den Reiz für die seitliche Gesäßmuskulatur; der seitliche Ausfallschritt trainiert dieselbe Ebene mit Last.'],
+    tspine: [['bw', 'band', 'kb'], 'Mobilität braucht kein Gewicht – die Rotation im Vierfüßlerstand ist hier am wirksamsten.']
   }
 };
 for (const [pk, m] of Object.entries(BEST)) for (const sl of PLANS[pk].slots) if (m[sl.id]) { sl.order = m[sl.id][0]; sl.why = m[sl.id][1]; }
