@@ -133,7 +133,10 @@ const RT = { front: true, h: [100, 96], n: [100, 116], s1: [88, 118], s2: [112, 
 Object.assign(FIG, {
   'Vorgebeugtes Rudern beidarmig': { a: fr(P(BR, { e1: [128, 110], w1: [126, 136], e2: [124, 110], w2: [122, 136] }), [KB(124, 148)]), b: fr(P(BR, { e1: [108, 84], w1: [114, 108], e2: [104, 86], w2: [110, 110] }), [KB(112, 120)]), la: 'vorgebeugt, Arme lang', lb: 'Kugel zum Bauch ziehen' },
   'Überkopfdrücken beidarmig': { a: fr(P(FS, { e1: [84, 94], w1: [96, 80], e2: [116, 94], w2: [104, 80] }), [KB(100, 72)]), b: fr(P(FS, { e1: [88, 36], w1: [96, 12], e2: [112, 36], w2: [104, 12] }), [KB(100, 2)]), la: 'Kugel vor der Brust', lb: 'senkrecht nach oben' },
-  'Russian Twist': { a: fr(P(RT, { e1: [104, 142], w1: [124, 156], e2: [122, 140], w2: [128, 156] }), [KB(130, 168), { loop: [100, 156, 34, 8] }]), b: fr(P(RT, { e1: [78, 140], w1: [72, 156], e2: [96, 142], w2: [76, 156] }), [KB(70, 168), { loop: [100, 156, 34, 8] }]), la: 'Kugel neben der rechten Hüfte', lb: 'zur anderen Seite drehen' },
+  'Rudern beidarmig mit Band': { a: fr(P(BR, { e1: [128, 110], w1: [126, 136], e2: [124, 110], w2: [122, 136] }), [BAND([98, 188], [126, 136])]), b: fr(P(BR, { e1: [108, 84], w1: [114, 108], e2: [104, 86], w2: [110, 110] }), [BAND([98, 188], [114, 108])]), la: 'vorgebeugt, Band unter den Füßen', lb: 'zum Bauch ziehen' },
+  'Bergsteiger erhöht': { a: fr(PU_A, [{ table: [112, 148, 78] }]), b: fr(P(PU_A, { k1: [108, 148], f1: [84, 168], t1: [78, 176] }), [{ table: [112, 148, 78] }]), la: 'Hände erhöht, Körper gerade', lb: 'Knie zügig zur Brust, Wechsel' },
+  'Russian Twist': g => g === 'kb' ? FIG_RT : { a: fr(FIG_RT.a.P), b: fr(FIG_RT.b.P), la: FIG_RT.la.replace('Kugel', 'Hände'), lb: FIG_RT.lb },
+  'Russian Twist (Kugel)': { a: fr(P(RT, { e1: [104, 142], w1: [124, 156], e2: [122, 140], w2: [128, 156] }), [KB(130, 168), { loop: [100, 156, 34, 8] }]), b: fr(P(RT, { e1: [78, 140], w1: [72, 156], e2: [96, 142], w2: [76, 156] }), [KB(70, 168), { loop: [100, 156, 34, 8] }]), la: 'Kugel neben der rechten Hüfte', lb: 'zur anderen Seite drehen' },
   'Kettlebell-Kreuzheben': { a: fr({ h: [136, 92], n: [120, 100], p: [74, 132], k1: [104, 152], f1: [98, 188], t1: [112, 189], k2: [100, 154], f2: [94, 188], t2: [108, 189], e1: [118, 130], w1: [116, 160], e2: [114, 130], w2: [112, 160] }, [KB(114, 176)]), b: fr(SS, [KB(104, 124)]), la: 'Hüfte zurück, Rücken lang', lb: 'aufrichten, Gesäß anspannen' },
   'Wand-Engel': { a: fr(P(FS, { e1: [66, 72], w1: [68, 46], e2: [134, 72], w2: [132, 46] })), b: fr(P(FS, { e1: [74, 38], w1: [64, 12], e2: [126, 38], w2: [136, 12] })), la: 'Arme in W-Form an der Wand', lb: 'nach oben schieben' },
   'Bird Dog': { a: fr(QP), b: fr(P(QP, { e1: [158, 132], w1: [184, 128], k2: [46, 148], f2: [10, 146] })), la: 'Vierfüßlerstand', lb: 'Arm und Gegenbein strecken' },
@@ -171,6 +174,8 @@ Object.assign(FIG, {
   'Hüftöffner im Gehen': { a: fr(P(FS, { k2: [116, 124], f2: [118, 160], e1: [76, 88], w1: [66, 110] })), b: fr(P(FS, { k2: [132, 118], f2: [124, 152], e1: [76, 88], w1: [66, 110] }), [{ arrow: 'M112 104 Q128 96 140 108' }]), la: 'Knie vor dem Körper', lb: 'nach außen öffnen' },
   'Wadenpumpe': { a: fr(SS), b: fr(P(shift(SS, 0, -10), { f1: [99, 178], t1: [110, 190], f2: [95, 178], t2: [106, 190] }), [{ arrow: 'M70 150 V120' }]), la: 'hüftbreit stehen', lb: 'auf die Ballen' }
 });
+
+const FIG_RT = FIG['Russian Twist (Kugel)']; delete FIG['Russian Twist (Kugel)'];
 
 function getFigure(name, gear) { const f = FIG[name]; return typeof f === 'function' ? f(gear) : f || null; }
 

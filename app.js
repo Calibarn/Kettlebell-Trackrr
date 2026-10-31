@@ -409,7 +409,7 @@ function renderControls() {
   const main = $('btnMain'), done = $('btnDone'), undoB = $('btnUndo'), next = $('btnNext'), circuit = !isSets() && !isTabata();
   if (sessionSaved) { main.textContent = '✓ Gespeichert'; main.disabled = true; }
   else if (isFinished()) { main.textContent = '💾 Speichern'; main.disabled = false; }
-  else { main.textContent = running ? 'Ⅱ Pause' : (elapsed > 0 || phase > 0 ? '▶ Weiter' : '▶ Starten'); main.disabled = isTabata() && !gear.kb && !sessionActive(); }
+  else { main.textContent = running ? 'Ⅱ Pause' : (elapsed > 0 || phase > 0 ? '▶ Weiter' : '▶ Starten'); main.disabled = false; }
   const showDone = circuit && phase === 1 && !sessionSaved && !isFinished();
   main.setAttribute('aria-label', main.textContent.replace(/^[^A-Za-zÄÖÜ]+/, ''));
   if (showDone && !sessionSaved && !isFinished()) main.textContent = running ? 'Ⅱ' : '▶';
@@ -647,7 +647,6 @@ function renderBackupBanner() {
   const last = load(KEYS.backup, null), limit = new Date(); limit.setDate(limit.getDate() - 14);
   const due = saved.length + waist.length > 0 && (!last || last < localDay(limit));
   let html = '';
-  if (area === 'kraft' && isTabata() && !gear.kb) html += `<div class="banner"><span class="bicon">🏋️</span><span>Tabata braucht die Kettlebell.</span><button class="btn small primary" type="button" id="kbon">Kettlebell aktivieren</button></div>`;
   if (due) html += `<div class="banner"><span class="bicon">💾</span><span>${last ? `Letzte Sicherung am ${dateGerman(last)}.` : 'Noch keine Sicherung.'} Die Daten liegen nur auf diesem Gerät.</span><button class="btn small primary" type="button" id="backupnow">Sichern</button></div>`;
   if (document.documentElement.dataset.os === 'ios' && !standalone() && !load(KEYS.hint, false)) html += `<div class="banner"><span class="bicon">📲</span><span>Für zuverlässige Speicherung: „Teilen“ → „Zum Home-Bildschirm“ und die App nur noch über das Symbol öffnen. Safari und die App haben getrennte Daten.</span><button class="btn small" type="button" id="hintclose">OK</button></div>`;
   $('banners').innerHTML = html;

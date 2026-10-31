@@ -79,14 +79,14 @@ PLANS.office = {
   cooldown: [['0:45 × 2', 'Hüftbeuger-Dehnung'], ['0:30 × 2', 'Brustdehnung am Türrahmen'], ['1:30', 'Kindhaltung']]
 };
 PLANS.tabata = {
-  tab: 'Tabata', label: 'Tabata · Kettlebell Ganzkörper', short: 'Tabata', mode: 'tabata', requires: 'kb', durations: [4, 0, 4],
-  intro: 'Fünf Kettlebell-Übungen, je 20 Sek. Vollgas und 10 Sek. Pause. Läuft komplett automatisch mit Ton bei jedem Wechsel – nichts antippen, einfach mitmachen. Runden und Pause sind einstellbar.',
+  tab: 'Tabata', label: 'Tabata · Ganzkörper', short: 'Tabata', mode: 'tabata', durations: [4, 0, 4],
+  intro: 'Fünf Ganzkörper-Übungen mit Kettlebell, Band oder Körpergewicht, je 20 Sek. Vollgas und 10 Sek. Pause. Läuft komplett automatisch mit Ton bei jedem Wechsel – nichts antippen, einfach mitmachen. Runden und Pause sind einstellbar.',
   slots: [
-    { id: 'swing', v: { kb: ['Kettlebell-Swing', '20 Sek. je Runde', 'Kraft aus der Hüfte, nur bis Brusthöhe'] } },
-    { id: 'goblet', v: { kb: ['Kniebeugen (Goblet)', '20 Sek. je Runde', 'Kugel vor der Brust, tief und kontrolliert'] } },
-    { id: 'row2', v: { kb: ['Vorgebeugtes Rudern beidarmig', '20 Sek. je Runde', 'Rücken lang, Kugel zum Bauch'] } },
-    { id: 'press2', v: { kb: ['Überkopfdrücken beidarmig', '20 Sek. je Runde', 'Kugel an den Hörnern, Bauch fest'] } },
-    { id: 'twist', v: { kb: ['Russian Twist', '20 Sek. je Runde', 'Füße am Boden, Kugel nah am Körper'] } }
+    { id: 'swing', band: '20', v: { kb: ['Kettlebell-Swing', '20 Sek. je Runde', 'Kraft aus der Hüfte, nur bis Brusthöhe'], band: ['Hüftheben mit Band', '20 Sek. je Runde', 'zügig, oben kurz anspannen'], bw: ['Hüftheben', '20 Sek. je Runde', 'zügig, oben kurz anspannen'] } },
+    { id: 'goblet', band: '20', v: { kb: ['Kniebeugen (Goblet)', '20 Sek. je Runde', 'Kugel vor der Brust, tief und kontrolliert'], band: ['Kniebeugen mit Band', '20 Sek. je Runde', 'Band unter den Füßen, Enden an den Schultern'], bw: ['Kniebeugen', '20 Sek. je Runde', 'zügig, Fersen am Boden'] } },
+    { id: 'row2', band: '20', v: { kb: ['Vorgebeugtes Rudern beidarmig', '20 Sek. je Runde', 'Rücken lang, Kugel zum Bauch'], band: ['Rudern beidarmig mit Band', '20 Sek. je Runde', 'Band unter beiden Füßen'], bw: ['Y-T-W in Bauchlage', '20 Sek. je Runde', 'Y und T im Wechsel, Blick zum Boden'] } },
+    { id: 'press2', band: '10', v: { kb: ['Überkopfdrücken beidarmig', '20 Sek. je Runde', 'Kugel an den Hörnern, Bauch fest'], band: ['Überkopfdrücken mit Band', '20 Sek. je Runde', 'Band unter beiden Füßen'], bw: ['Liegestütze erhöht', '20 Sek. je Runde', 'Hände auf Tisch oder Sofalehne'] } },
+    { id: 'twist', band: '10', v: { kb: ['Russian Twist', '20 Sek. je Runde', 'Füße am Boden, Kugel nah am Körper'], band: ['Holzhacker mit Band', '20 Sek. je Runde', 'Seite jede Runde wechseln'], bw: ['Bergsteiger erhöht', '20 Sek. je Runde', 'Hände erhöht, Knie im Wechsel zur Brust'] } }
   ],
   warmup: [['1:00', 'Marschieren auf der Stelle'], ['0:45', 'Schulter- und Armkreisen'], ['0:45', 'Hüftkreisen'], ['0:45', 'Kniebeugen ohne Gewicht'], ['0:45', 'Kettlebell-Kreuzheben']],
   cooldown: [['0:30', 'Locker marschieren'], ['0:45 × 2', 'Hüftbeuger-Dehnung'], ['0:30 × 2', 'Brustdehnung am Türrahmen'], ['1:00', 'Kindhaltung']]
@@ -167,6 +167,8 @@ Object.assign(GUIDES, {
   // Kraft · Tabata
   'Vorgebeugtes Rudern beidarmig': { steps: ['Kugel mit beiden Händen am Griff halten, Füße hüftbreit.', 'Hüfte nach hinten schieben, Oberkörper etwa 45 Grad vorneigen, Rücken lang, Arme hängen.', 'Kugel zum Bauch ziehen, Ellenbogen nach hinten, Schulterblätter zusammen. Kontrolliert absenken.'], effect: 'Oberer und breiter Rückenmuskel, hintere Schulter, Bizeps; die Haltung trainiert zusätzlich Rückenstrecker und Gesäß.', cue: 'Rücken bleibt lang, kein Rundrücken – auch wenn es in den letzten Sekunden hart wird. Nicht mit Schwung aus dem Oberkörper ziehen.' },
   'Überkopfdrücken beidarmig': { steps: ['Kugel an den Hörnern (seitlich am Griff) vor der Brust halten, Ellenbogen unten.', 'Bauch und Gesäß anspannen und die Kugel senkrecht über den Kopf drücken.', 'Kontrolliert zurück vor die Brust.'], effect: 'Schultern, Trizeps und oberer Rücken; der Rumpf stabilisiert gegen das Hohlkreuz.', cue: 'Kein Hohlkreuz, Rippen unten. Den Kopf beim Drücken leicht zurücknehmen, damit die Kugel gerade nach oben gehen kann.' },
+  'Rudern beidarmig mit Band': { steps: ['Mit beiden Füßen hüftbreit auf die Bandmitte stellen, je ein Ende in einer Hand.', 'Hüfte nach hinten schieben, Oberkörper etwa 45 Grad vorneigen, Rücken lang.', 'Beide Hände zum Bauch ziehen, Ellenbogen nach hinten, Schulterblätter zusammen. Kontrolliert zurück.'], effect: 'Oberer und breiter Rückenmuskel, hintere Schulter, Bizeps.', cue: 'Rücken bleibt lang, auch in den letzten Sekunden. Band sicher unter den Füßen, Enden nicht um die Hände wickeln.' },
+  'Bergsteiger erhöht': { steps: ['Hände schulterbreit auf eine stabile Erhöhung (Sofalehne, Tisch, Treppenstufe), Körper in einer Linie.', 'Abwechselnd ein Knie zügig Richtung Brust ziehen und zurücksetzen.', 'Tempo nur so hoch, wie Becken und Rücken ruhig bleiben.'], effect: 'Rumpf, Hüftbeuger und Schultern – bringt den Puls hoch, ohne zu springen.', cue: 'Je höher die Erhöhung, desto leichter. Becken nicht hochschieben oder durchhängen lassen.' },
   'Russian Twist': { steps: ['Hinsetzen, Knie gebeugt, Füße am Boden. Oberkörper leicht nach hinten lehnen, Rücken lang.', 'Kugel mit beiden Händen nah vor dem Bauch halten.', 'Oberkörper abwechselnd nach rechts und links drehen, die Kugel neben die Hüfte führen.'], effect: 'Schräge und gerade Bauchmuskeln, Rumpfrotation.', cue: 'Bewegung kommt aus dem Oberkörper, nicht nur aus den Armen. Bei Rückenbeschwerden ohne Kugel oder mit geringerem Bewegungsumfang.' },
 
   // Kraft · Büro
