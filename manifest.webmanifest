@@ -1,0 +1,17 @@
+{
+  "name": "KB Trainings-Tracker",
+  "short_name": "KB Tracker",
+  "description": "Kettlebell-, Band- und Körpergewicht-Training mit Timer, Verlauf und Bauchumfang. Alle Daten bleiben auf dem Gerät.",
+  "lang": "de",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0d1215",
+  "theme_color": "#0d1215",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
