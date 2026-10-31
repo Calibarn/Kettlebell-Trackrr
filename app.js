@@ -46,12 +46,13 @@ function validKg(v) { const n = Number(v); return v !== undefined && v !== null 
 function availableGears(sl) { return (sl.order || ['kb', 'band', 'bw']).filter(g => sl.v[g] && gear[g]); }
 function resolve(pk, sl) {
   const avail = availableGears(sl), c = isObj(choices[slotKey(pk, sl)]) ? choices[slotKey(pk, sl)] : {};
-  const fallback = !avail.length, auto = !avail.includes(c.pref);
+  // Ersatz nur, wenn es die Übung mit Geräten gäbe, aber nicht mit den gewählten; reine Körpergewicht-Übungen gehen immer
+  const bwOnly = Object.keys(sl.v).every(k => k === 'bw'), fallback = !avail.length && !bwOnly, auto = !avail.includes(c.pref);
   const g = !auto ? c.pref : (avail[0] || (sl.v.bw ? 'bw' : Object.keys(sl.v)[0]));
-  if (fallback) avail.push(g);
+  if (!avail.length) avail.push(g);
   const [name, reps, note] = sl.v[g];
   const kg = validKg(c.kg), band = BANDS.includes(String(c.band)) ? String(c.band) : (sl.band || '20');
-  const gearText = (g === 'kb' ? (kg > 0 ? `Kettlebell ${kgText(kg)} kg` : 'Kettlebell ohne Gewicht') : g === 'band' ? bandLabel(band) : 'Körpergewicht') + (fallback ? ' (keine Variante für deine Auswahl)' : '');
+  const gearText = (g === 'kb' ? (kg > 0 ? `Kettlebell ${kgText(kg)} kg` : 'Kettlebell ohne Gewicht') : g === 'band' ? bandLabel(band) : 'Körpergewicht') + (fallback ? ' (Ersatz)' : '');
   const cfg = g === 'kb' ? 'kb:' + kg : g === 'band' ? 'band:' + band : 'bw';
   return { slot: sl, g, name, reps, note, kg, band, gearText, cfg, avail, auto, fallback };
 }
@@ -494,7 +495,7 @@ function renderSettings() {
     const opts = `<option value="auto" ${r.auto ? 'selected' : ''}>Automatisch: ${esc(sl.v[best][0])}</option>` + (r.avail.length > 1 ? r.avail.map(g => `<option value="${g}" ${!r.auto && g === r.g ? 'selected' : ''}>${esc(GEAR_LABEL[g])}: ${esc(sl.v[g][0])}</option>`).join('') : '');
     const param = r.g === 'kb' ? `<label class="param"><input type="number" min="0" max="60" step="0.5" inputmode="decimal" value="${r.kg}" data-kg="${sl.id}" aria-label="Gewicht für ${esc(r.name)}"> kg</label>`
       : r.g === 'band' ? `<select data-band="${sl.id}" aria-label="Band für ${esc(r.name)}">${BANDS.map(b => `<option value="${b}" ${b === r.band ? 'selected' : ''}>${esc(bandLabel(b).replace('Band ', ''))}</option>`).join('')}</select>` : '<span class="param">–</span>';
-    const why = sl.why && r.auto && !r.fallback && Object.keys(sl.v).length > 1 ? sl.why : r.fallback ? 'Für deine Auswahl gibt es hier keine Variante – Körpergewicht geht immer.' : !r.auto ? 'Manuell gewählt.' : '';
+    const why = sl.why && r.auto && !r.fallback && Object.keys(sl.v).length > 1 ? sl.why : r.fallback ? 'Mit deinen Geräten gibt es hier keine Variante – Körpergewicht als Ersatz.' : !r.auto ? 'Manuell gewählt.' : '';
     return `<div class="srow"><div class="sname"><b>${esc(r.name)}</b>${why ? `<small>${esc(why)}</small>` : ''}</div><select data-pref="${sl.id}" ${r.avail.length < 2 && r.auto ? 'disabled' : ''} aria-label="Variante">${opts}</select>${param}</div>`;
   }).join('');
   const tbRows = isTabata() ? (() => { const c = tabataCfg(); return `<div class="srow"><div class="sname"><b>Runden je Übung</b><small>Empfehlung zum Einstieg: 6</small></div><select data-tabata="rounds" aria-label="Runden je Übung">${TABATA_ROUNDS.map(v => `<option value="${v}" ${v === c.rounds ? 'selected' : ''}>${v} Runden</option>`).join('')}</select><span class="param">20″ / 10″</span></div><div class="srow"><div class="sname"><b>Pause zwischen Übungen</b><small>Empfehlung zum Einstieg: 90 Sek.</small></div><select data-tabata="blockRest" aria-label="Pause zwischen Übungen">${TABATA_RESTS.map(v => `<option value="${v}" ${v === c.blockRest ? 'selected' : ''}>${v} Sek.</option>`).join('')}</select><span class="param">${Math.round(phaseSecs('tabata', 1) / 60)} Min.</span></div>`; })() : '';
