@@ -61,7 +61,7 @@ Daten gehen nur verloren, wenn die Adresse (Domain) wechselt, das App-Symbol vom
 
 ## Aktualisieren
 
-Bei Änderungen an Dateien in `sw.js` die Konstante `VERSION` erhöhen (z. B. `kbt-v13`). Online lädt die App immer die neueste Version, offline den Cache.
+Bei Änderungen an Dateien in `sw.js` die Konstante `VERSION` erhöhen (z. B. `kbt-v14`). Online lädt die App immer die neueste Version, offline den Cache.
 
 ## Ton auf dem iPhone
 

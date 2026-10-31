@@ -20,6 +20,34 @@ test('Geräte-Auswahl: ein Gerät → nur dieses Gerät, nichts gewählt → Kö
   expect(new Set(result.none)).toEqual(new Set(['bw']));
 });
 
+test('keine Übung doppelt in einem Plan – bei jeder Geräte-Auswahl', async ({ page }) => {
+  const dupes = await page.evaluate(() => {
+    const out = [];
+    for (let m = 1; m < 8; m++) {
+      gear = { kb: !!(m & 1), band: !!(m & 2), bw: !!(m & 4) };
+      for (const pk of PLAN_ORDER) {
+        const names = exList(pk).map(x => x.name);
+        names.forEach((n, i) => { if (names.indexOf(n) !== i) out.push(`${pk} ${JSON.stringify(gear)} ${n}`); });
+      }
+    }
+    return out;
+  });
+  expect(dupes).toEqual([]);
+});
+
+test('Kettlebell: Holzhacker im Ganzkörper-Zirkel, Pullover im Oberkörper', async ({ page }) => {
+  const names = await page.evaluate(() => {
+    gear = { kb: true, band: true, bw: true };
+    const all = [exList('wed').map(x => x.name), exList('sun').map(x => x.name)];
+    gear = { kb: true, band: false, bw: false };
+    return all.concat([exList('sun').map(x => x.name)]);
+  });
+  expect(names[0]).toContain('Holzhacker mit Kettlebell');
+  expect(names[1]).toContain('Kettlebell-Pullover');
+  expect(names[1]).toContain('Liegestütze erhöht');
+  expect(names[2]).toEqual(expect.arrayContaining(['Kettlebell-Pullover', 'Squeeze Press am Boden', 'Floor Press']));
+});
+
 test('Geräte-Auswahl wird gemerkt', async ({ page }) => {
   await page.click('[data-gear="band"]');
   await page.reload();
