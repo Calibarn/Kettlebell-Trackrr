@@ -3,147 +3,168 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="color-scheme" content="dark">
-<meta name="theme-color" content="#0d1215">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; font-src 'self'; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="KB Tracker">
 <title>KB Tracker</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="stylesheet" href="styles.css">
+<script src="platform.js"></script>
 </head>
 <body>
-<header class="top">
-  <div class="wrap">
-    <div class="brand"><div class="logo">KB</div><span>Trainings-Tracker</span></div>
-    <nav class="tabs" role="tablist" aria-label="Trainingsplan" id="tabs"></nav>
-    <div class="gearbar" id="gearbar" aria-label="Verfügbare Geräte"></div>
-  </div>
-</header>
 
-<main class="wrap">
+<!-- ================= KRAFT ================= -->
+<section class="area wrap" id="area-kraft" aria-labelledby="t-kraft">
+  <h1 class="largetitle" id="t-kraft">Kraft</h1>
+  <div class="segmented" role="tablist" aria-label="Trainingsplan" id="tabs"></div>
+  <div class="gearrow" id="gearbar" aria-label="Verfügbare Geräte"></div>
   <div id="banners"></div>
-  <div class="grid">
-    <section class="card" aria-labelledby="plan-title">
-      <div class="rowx"><span class="kicker" id="plan-title"></span><button class="iconbtn" id="sound" type="button" aria-pressed="true">🔊</button></div>
-      <span class="phase" id="phase-badge"></span>
-      <div class="timernum" id="timer" aria-live="off">00:00</div>
-      <div class="progress"><div class="fill" id="progress"></div></div>
-      <div class="timeline" id="timeline"></div>
-      <div class="timeline-labels"><span>Aufwärmen</span><span id="midlabel">Zirkel</span><span>Cooldown</span></div>
-      <button class="stepstatus" id="stepstatus" type="button"><span><span class="kicker" id="steplabel"></span><b id="stepname"></b><small id="stepdesc"></small></span><span class="stepclock" id="stepclock">00:00</span></button>
-      <button class="current" id="current" type="button"><span><span class="kicker" id="currentlabel">Nächste Übung · ⓘ Anleitung</span><b id="currentname"></b><small id="currentrep"></small></span><span class="badge" id="roundbadge"></span></button>
-      <div class="timerwork hide" id="timerwork">
-        <span class="kicker">Zeitübung</span>
-        <div class="rowx">
-          <button class="btn small primary" id="timedstart" type="button">▶ Übungs-Timer</button>
-          <select id="timedlength" class="hide" aria-label="Dauer je Seite"></select>
-          <strong id="timedclock">00:20</strong>
-        </div>
-        <p class="tiny" id="timedinfo"></p>
-      </div>
-      <div class="statsline" id="statsline"></div>
-      <p class="tiny" id="timehint"></p>
-      <button class="linkbtn" id="reset" type="button">Training zurücksetzen</button>
-    </section>
 
-    <section class="card list" aria-labelledby="workoutname">
-      <div class="kicker" id="listkicker"></div>
-      <h3 id="workoutname"></h3>
-      <p class="sub" id="intro"></p>
-      <p class="info">ⓘ Übung antippen: Bilder, Ausführung und Wirkung</p>
-      <div id="worklist" class="worklist"></div>
-    </section>
+  <div class="timercard">
+    <div class="timertop"><span class="planlabel" id="plan-title"></span><button class="iconbtn" id="sound" type="button" aria-pressed="true">🔊</button></div>
+    <div class="ringwrap">
+      <svg class="ring" viewBox="0 0 200 200" aria-hidden="true"><circle class="track" cx="100" cy="100" r="88" fill="none" stroke-width="12"/><circle class="prog" id="ringprog" cx="100" cy="100" r="88" fill="none" stroke-width="12" stroke-linecap="round" stroke-dasharray="552.9" stroke-dashoffset="552.9"/></svg>
+      <div class="ringin"><span class="phase" id="phase-badge"></span><span class="time" id="timer" aria-live="off">00:00</span><span class="sub" id="ringsub"></span></div>
+    </div>
+    <div class="phasesteps" id="timeline"></div>
+    <div class="cardrows">
+      <button class="row" id="stepstatus" type="button"><span class="txt"><small id="steplabel"></small><b id="stepname"></b><small id="stepdesc"></small></span><span class="stepclock" id="stepclock">00:00</span></button>
+      <button class="row" id="current" type="button"><span class="txt"><small id="currentlabel">Nächste Übung</small><b id="currentname"></b><small id="currentrep"></small></span><span class="val" id="roundbadge"></span><span class="chev"></span></button>
+      <div class="timedctl hide" id="timerwork">
+        <button class="btn small primary" id="timedstart" type="button">▶ Übungs-Timer</button>
+        <select id="timedlength" class="hide" aria-label="Dauer je Seite"></select>
+        <strong id="timedclock">00:20</strong>
+        <span class="tiny" id="timedinfo" style="margin:0;flex-basis:100%"></span>
+      </div>
+    </div>
+    <div class="statsline" id="statsline"></div>
+    <p class="tiny" id="timehint"></p>
+    <button class="linkbtn" id="reset" type="button">Training zurücksetzen</button>
   </div>
 
-  <details class="fold" id="fold-settings"><summary>Übungen, Geräte &amp; Gewichte <span>Variante und Gewicht je Übung für diesen Plan</span></summary><div class="foldbody" id="settings"></div></details>
+  <div class="header"><span id="listkicker">Zirkel</span><b id="workoutname"></b></div>
+  <div class="group" id="worklist"></div>
+  <p class="footer" id="intro"></p>
 
-  <details class="fold"><summary>Aufwärmen &amp; Cooldown <span>Ablauf und Anleitungen</span></summary><div class="foldbody twocol">
-    <div><div class="kicker">Vorbereitung</div><h3>Aufwärmen</h3><div class="steps" id="warmup"></div></div>
-    <div><div class="kicker">Zum Abschluss</div><h3>Cooldown</h3><div class="steps" id="cooldown"></div></div>
-  </div></details>
+  <div class="header">Mehr zu diesem Plan</div>
+  <div class="group">
+    <details id="fold-settings"><summary class="row"><span class="icon" style="background:var(--orange)">⚙︎</span><span class="txt"><b>Übungen, Geräte &amp; Gewichte</b></span><span class="chev"></span></summary><div class="panel" id="settings"></div></details>
+    <details><summary class="row"><span class="icon" style="background:var(--blue)">◷</span><span class="txt"><b>Aufwärmen &amp; Cooldown</b></span><span class="chev"></span></summary><div class="panel">
+      <div class="header" style="margin-left:0">Aufwärmen</div><div class="group" id="warmup" style="background:var(--fill)"></div>
+      <div class="header" style="margin-left:0">Cooldown</div><div class="group" id="cooldown" style="background:var(--fill)"></div>
+    </div></details>
+    <details id="fold-history"><summary class="row"><span class="icon" style="background:var(--accent)">▥</span><span class="txt"><b>Verlauf</b></span><span class="val" id="sessioncount"></span><span class="chev"></span></summary><div class="panel">
+      <p class="tiny" id="historyhint"></p>
+      <div id="chartbox"></div>
+      <div style="overflow-x:auto;margin-top:12px"><table class="historytable"><thead><tr><th>Datum</th><th>Ergebnis</th><th></th></tr></thead><tbody id="history"></tbody></table></div>
+    </div></details>
+    <details><summary class="row"><span class="icon" style="background:#8e8e93">✎</span><span class="txt"><b>Training nachtragen</b></span><span class="chev"></span></summary><div class="panel">
+      <p class="tiny" id="manualhint"></p>
+      <form class="formgrid" id="manual">
+        <div class="field"><label for="manualdate">Datum</label><input id="manualdate" type="date" required></div>
+        <div class="field" id="manualroundfield"><label for="manualround">Ganze Runden</label><input id="manualround" type="number" min="0" max="100" value="1"></div>
+        <div class="field" id="manualextrafield"><label for="manualextra">Weitere Übungen</label><input id="manualextra" type="number" min="0" value="0"></div>
+        <button class="btn primary" type="submit">Speichern</button>
+      </form>
+    </div></details>
+  </div>
+</section>
 
-  <details class="fold" id="fold-history"><summary>Verlauf <span>Fortschritt und Trainingstagebuch dieses Plans</span></summary><div class="foldbody">
-    <div class="rowx"><h3>Fortschritt</h3><span class="badge" id="sessioncount">0 Einheiten</span></div>
-    <p class="sub" id="historyhint"></p>
-    <div id="chartbox"></div>
-    <h3 style="margin-top:20px">Trainingstagebuch</h3>
-    <div style="overflow-x:auto"><table class="historytable"><thead><tr><th>Datum</th><th>Ergebnis</th><th></th></tr></thead><tbody id="history"></tbody></table></div>
-  </div></details>
+<!-- ================= LAUFEN ================= -->
+<section class="area wrap hide" id="area-laufen" aria-labelledby="t-laufen">
+  <h1 class="largetitle" id="t-laufen">Laufen</h1>
+  <p class="subtitle">Warm-up, Cooldown und Lauf-ABC – Übung antippen für Anleitung und Skizze.</p>
+  <div class="segmented" role="tablist" aria-label="Bereich" id="runtabs"></div>
+  <div class="segmented" role="tablist" aria-label="Auswahl" id="runsub"></div>
+  <div id="runcontent"></div>
+</section>
 
-  <details class="fold"><summary>Bauchumfang <span>Messung und Entwicklung</span></summary><div class="foldbody">
-    <p class="sub">Einmal wöchentlich reicht. Vergleiche die Zentimeter über längere Zeit statt einzelner Tageswerte.</p>
-    <div class="measure-metrics">
-      <div class="stat"><span>Letzter Wert</span><b id="waistlatest">–</b><small id="waistlastdate">Noch keine Messung</small></div>
-      <div class="stat"><span>Seit Beginn</span><b id="waistdelta">–</b><small>Erste bis letzte Messung</small></div>
-      <div class="stat"><span>Messungen</span><b id="waistcount">0</b><small>Eigene Messreihe</small></div>
+<!-- ================= MOBILITY ================= -->
+<section class="area wrap hide" id="area-mobility" aria-labelledby="t-mobility">
+  <h1 class="largetitle" id="t-mobility">Mobility</h1>
+  <p class="subtitle">Ohne Tracking – einfach machen. Übung antippen für Anleitung und Skizze.</p>
+  <div id="mobcontent"></div>
+</section>
+
+<!-- ================= MEHR ================= -->
+<section class="area wrap hide" id="area-mehr" aria-labelledby="t-mehr">
+  <h1 class="largetitle" id="t-mehr">Mehr</h1>
+
+  <div class="header">Bauchumfang</div>
+  <div class="group"><div class="panel" style="border:0;padding-top:12px">
+    <div class="metrics">
+      <div class="metric"><span>Letzter Wert</span><b id="waistlatest">–</b><small id="waistlastdate">Noch keine Messung</small></div>
+      <div class="metric"><span>Seit Beginn</span><b id="waistdelta">–</b><small>erste bis letzte</small></div>
+      <div class="metric"><span>Messungen</span><b id="waistcount">0</b><small>gesamt</small></div>
     </div>
     <div class="alert" id="waistreminder" role="status"></div>
-    <div class="twocol" style="margin-top:14px">
-      <div><h3>Verlauf in Zentimetern</h3><div id="waistchart"></div></div>
-      <div><h3>Messwert eintragen</h3>
-        <form id="waistform" class="formgrid" style="margin-top:8px">
-          <div class="field"><label for="waistdate">Datum</label><input id="waistdate" type="date" required></div>
-          <div class="field"><label for="waistcm">Bauchumfang (cm)</label><input id="waistcm" type="text" inputmode="decimal" placeholder="z. B. 112,5" required></div>
-          <div class="field" style="grid-column:1/-1"><label for="waistnote">Notiz (optional)</label><input id="waistnote" type="text" maxlength="120" placeholder="z. B. morgens, nüchtern"></div>
-          <button type="submit" class="btn primary">✓ Messung speichern</button>
-        </form>
-        <p class="tiny">Morgens vor dem Frühstück, im Stehen, auf Nabelhöhe nach normalem Ausatmen messen. Das Maßband liegt an, schneidet aber nicht ein. Für ein bereits eingetragenes Datum wird der Wert ersetzt.</p>
-      </div>
-    </div>
-    <h3 style="margin-top:18px">Messprotokoll</h3>
-    <div style="overflow-x:auto"><table class="historytable"><thead><tr><th>Datum</th><th>Wert</th><th>Notiz</th><th></th></tr></thead><tbody id="waisthistory"></tbody></table></div>
-    <div class="toolbar"><button class="btn small" type="button" id="waistcsv">Messungen als CSV</button><button class="btn small" type="button" id="waistcalendar">📅 Wöchentliche Erinnerung (.ics)</button></div>
-    <p class="tiny">Die Kalenderdatei erinnert jeden Montag um 08:00 Uhr (Berlin). Zum Aktivieren in den Kalender importieren.</p>
-  </div></details>
-
-  <details class="fold"><summary>Training nachtragen <span>Einheit ohne Timer erfassen</span></summary><div class="foldbody">
-    <p class="sub" id="manualhint"></p>
-    <form class="formgrid" id="manual" style="margin-top:10px">
-      <div class="field"><label for="manualdate">Datum</label><input id="manualdate" type="date" required></div>
-      <div class="field" id="manualroundfield"><label for="manualround">Ganze Runden</label><input id="manualround" type="number" min="0" max="100" value="1"></div>
-      <div class="field" id="manualextrafield"><label for="manualextra">Weitere Übungen</label><input id="manualextra" type="number" min="0" value="0"></div>
-      <button class="btn primary" type="submit">Speichern</button>
+    <div id="waistchart" style="margin-top:10px"></div>
+    <form id="waistform" class="formgrid" style="margin-top:12px">
+      <div class="field"><label for="waistdate">Datum</label><input id="waistdate" type="date" required></div>
+      <div class="field"><label for="waistcm">Bauchumfang (cm)</label><input id="waistcm" type="text" inputmode="decimal" placeholder="z. B. 112,5" required></div>
+      <div class="field" style="grid-column:1/-1"><label for="waistnote">Notiz (optional)</label><input id="waistnote" type="text" maxlength="120" placeholder="z. B. morgens, nüchtern"></div>
+      <button type="submit" class="btn primary">Messung speichern</button>
     </form>
-  </div></details>
+    <p class="tiny">Morgens vor dem Frühstück, im Stehen, auf Nabelhöhe nach normalem Ausatmen messen. Für ein vorhandenes Datum wird der Wert ersetzt.</p>
+  </div></div>
+  <div class="group" style="margin-top:12px">
+    <details><summary class="row"><span class="txt"><b>Messprotokoll</b></span><span class="chev"></span></summary><div class="panel"><div style="overflow-x:auto"><table class="historytable"><thead><tr><th>Datum</th><th>Wert</th><th>Notiz</th><th></th></tr></thead><tbody id="waisthistory"></tbody></table></div></div></details>
+    <button class="row" type="button" id="waistcsv"><span class="txt"><b>Messungen als CSV</b></span><span class="chev"></span></button>
+    <button class="row" type="button" id="waistcalendar"><span class="txt"><b>Wöchentliche Erinnerung</b><small>Kalenderdatei, montags 08:00 Uhr</small></span><span class="chev"></span></button>
+  </div>
 
-  <details class="fold"><summary>Daten, Backup &amp; Ton <span>Alles bleibt auf diesem Gerät</span></summary><div class="foldbody">
-    <p class="sub">Trainings, Messungen und Einstellungen liegen nur im Speicher dieses Browsers bzw. dieser Home-Bildschirm-App. Nichts wird an einen Server übertragen.</p>
-    <div class="toolbar">
-      <button class="btn small primary" id="exportjson" type="button">Backup exportieren</button>
-      <button class="btn small" id="importbtn" type="button">Backup importieren</button>
-      <button class="btn small" id="exportcsv" type="button">Training als CSV</button>
-      <button class="btn small" id="testsound" type="button">♪ Ton testen</button>
-      <input type="file" accept=".json,application/json" id="importfile" class="hide">
-    </div>
-    <p class="tiny" id="storageinfo"></p>
-    <p class="tiny">Wechsel von der alten HTML-Datei: dort „Backup exportieren“, hier „Backup importieren“. Doppelte Einträge werden erkannt und übersprungen.</p>
-  </div></details>
+  <div class="header">Daten &amp; Datenschutz</div>
+  <div class="group">
+    <button class="row" type="button" id="savefile"><span class="icon" style="background:var(--blue)">⇩</span><span class="txt"><b>In Datei sichern</b><small id="savefilehint">Backup als Datei auf diesem Gerät ablegen</small></span><span class="chev"></span></button>
+    <button class="row" type="button" id="importbtn"><span class="icon" style="background:var(--accent)">⇧</span><span class="txt"><b>Aus Datei wiederherstellen</b><small>Doppelte Einträge werden übersprungen</small></span><span class="chev"></span></button>
+    <button class="row" type="button" id="exportcsv"><span class="icon" style="background:#8e8e93">▤</span><span class="txt"><b>Trainings als CSV</b></span><span class="chev"></span></button>
+    <input type="file" accept=".json,application/json" id="importfile" class="hide">
+  </div>
+  <p class="footer">Alle Daten liegen ausschließlich im Speicher dieses Geräts. Die App ist technisch so abgesichert, dass sie keine Verbindung zu fremden Servern aufbauen kann (Content-Security-Policy). Daten verlassen das Gerät nur, wenn du selbst eine Datei sicherst.</p>
+  <p class="footer" id="storageinfo"></p>
 
-  <details class="fold"><summary>Hinweise <span>Technik, Belastung, Timer</span></summary><div class="foldbody helpgrid">
-    <div><h3>Vor dem Start</h3><p>Freie, rutschfeste Fläche. Kettlebell-Griff und Bänder auf Schäden prüfen. Wasser und eine stabile Abstützmöglichkeit bereithalten.</p></div>
-    <div><h3>Passende Belastung</h3><p>Saubere Wiederholungen gehen vor Tempo. Einen Satz beenden, solange noch 2–3 saubere Wiederholungen möglich wären. Pausen sind jederzeit erlaubt.</p></div>
-    <div><h3>Vergleichbarkeit</h3><p>Bestwerte zählen nur Einheiten mit gleichen Übungen, Geräten und Gewichten. Abweichende Einheiten erscheinen im Verlauf blass mit „anderer Aufbau“.</p></div>
-    <div><h3>An Tagen mit Lauf</h3><p>Nach einem harten Longrun ist die Oberkörper-Einheit optional. Bei Schmerzen im Mittelfuß Wadenheben, Standwaage und Ausfallschritte anpassen oder auslassen.</p></div>
-    <div><h3>Timer &amp; Ton</h3><p>Vor dem Start Ton testen. Der Bildschirm bleibt während des Trainings an, sofern das Gerät das unterstützt. Wird die App geschlossen, läuft das Training beim nächsten Öffnen weiter.</p></div>
-    <div><h3>Atmung</h3><p>Bei der Anstrengung ausatmen, beim Zurückführen einatmen. Nicht dauerhaft die Luft anhalten.</p></div>
-  </div></details>
-</main>
+  <div class="header">Einstellungen</div>
+  <div class="group">
+    <button class="row" type="button" id="soundrow"><span class="txt"><b>Tonsignale</b></span><span class="val" id="soundval"></span></button>
+    <button class="row" type="button" id="testsound"><span class="txt"><b>Ton testen</b></span><span class="chev"></span></button>
+  </div>
 
-<nav class="actionbar" aria-label="Trainingssteuerung"><div class="wrap">
+  <div class="header">Hinweise</div>
+  <div class="group">
+    <details><summary class="row"><span class="txt"><b>Belastung &amp; Technik</b></span><span class="chev"></span></summary><div class="panel"><p class="tiny">Saubere Wiederholungen gehen vor Tempo. Einen Satz beenden, solange noch 2–3 saubere Wiederholungen möglich wären. Bei der Anstrengung ausatmen, nicht die Luft anhalten. Freie, rutschfeste Fläche; Kettlebell-Griff und Bänder vorher prüfen.</p></div></details>
+    <details><summary class="row"><span class="txt"><b>Vergleichbarkeit</b></span><span class="chev"></span></summary><div class="panel"><p class="tiny">Bestwerte zählen nur Einheiten mit gleichen Übungen, Geräten, Gewichten und Stufen. Abweichende Einheiten erscheinen im Verlauf blass mit „anderer Aufbau“.</p></div></details>
+    <details><summary class="row"><span class="txt"><b>Laufen &amp; Beschwerden</b></span><span class="chev"></span></summary><div class="panel"><p class="tiny">Nach einem harten Longrun ist die Kraft-Einheit optional. Bei Schmerzen im Mittelfuß Wadenheben, Standwaage, Ausfallschritte und Sprungübungen im Lauf-ABC anpassen oder auslassen.</p></div></details>
+    <details><summary class="row"><span class="txt"><b>Timer &amp; App</b></span><span class="chev"></span></summary><div class="panel"><p class="tiny">Der Bildschirm bleibt während des Trainings an, sofern das Gerät das unterstützt. Wird die App geschlossen, läuft das Training beim nächsten Öffnen weiter. Auf dem iPhone die App über „Teilen → Zum Home-Bildschirm“ installieren und nur noch über das Symbol öffnen.</p></div></details>
+  </div>
+</section>
+
+<!-- ================= Leisten ================= -->
+<nav class="actionbar hide" id="actionbar" aria-label="Trainingssteuerung"><div class="wrap">
   <button class="undo" id="btnUndo" type="button" aria-label="Letzte Übung zurücknehmen">↶</button>
   <button class="done" id="btnDone" type="button">✓ Erledigt</button>
   <button class="main" id="btnMain" type="button">▶ Starten</button>
   <button class="next" id="btnNext" type="button">Weiter →</button>
 </div></nav>
+<button class="livepill hide" id="livepill" type="button"></button>
+<nav class="tabbar" id="tabbar" role="tablist" aria-label="Bereiche">
+  <button type="button" role="tab" data-area="kraft"><span class="ind"><svg viewBox="0 0 24 24"><path d="M6.5 7v10M17.5 7v10M3.5 9.5v5M20.5 9.5v5M6.5 12h11"/></svg></span>Kraft</button>
+  <button type="button" role="tab" data-area="laufen"><span class="ind"><svg viewBox="0 0 24 24"><circle cx="14.5" cy="4.5" r="1.8"/><path d="M8 21l3-6 3 2v5M11 15l1.5-5L9 11 7 14M12.5 10l3 2.5 3-1"/></svg></span>Laufen</button>
+  <button type="button" role="tab" data-area="mobility"><span class="ind"><svg viewBox="0 0 24 24"><circle cx="12" cy="4.5" r="1.8"/><path d="M5 9l7 1.5L19 9M12 10.5V15l-4 6M12 15l4 6"/></svg></span>Mobility</button>
+  <button type="button" role="tab" data-area="mehr"><span class="ind"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12h.01M12 12h.01M16 12h.01" stroke-width="3"/></svg></span>Mehr</button>
+</nav>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<dialog class="guide" id="guide" aria-labelledby="guide-title">
-  <div class="guidehead"><h2 id="guide-title"></h2><button class="btn small" id="guide-close" type="button">Schließen ✕</button></div>
-  <div class="guidebody" id="guide-body"></div>
+<dialog class="sheet" id="guide" aria-labelledby="guide-title">
+  <div class="sheethead"><div class="grabber"></div><div class="rowx"><h2 id="guide-title" tabindex="-1" style="outline:none"></h2><button class="btn small" id="guide-close" type="button">Fertig</button></div></div>
+  <div class="sheetbody" id="guide-body"></div>
 </dialog>
 
 <script src="data.js"></script>

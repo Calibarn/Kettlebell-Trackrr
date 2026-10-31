@@ -4,7 +4,6 @@
    Gelenke: h Kopf, n Hals, p Becken, k/f Knie/Knöchel, t Zehen, e/w Ellenbogen/Handgelenk,
    s1/s2 Schultern und q1/q2 Hüften (nur Frontansicht). Index 1 = vorne/hell, 2 = hinten/dunkel. */
 
-const FC = { near: '#b0efc4', far: '#5e9a7b', kb: '#f1ce84', band: '#f1ce84', towel: '#d9c7a7', prop: '#6f9488', propFill: '#1b302b', arrow: '#89c9e7', ground: '#3d5a4f', text: '#d6e8dd' };
 const figEsc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const P = (base, over) => Object.assign({}, base, over || {});
 
@@ -107,35 +106,96 @@ FIG['Locker marschieren'] = FIG['Marschieren auf der Stelle'];
 FIG['Hüftkreisen und lockeres Marschieren'] = FIG['Marschieren auf der Stelle'];
 FIG['Hüftkreisen und Oberkörperrotation'] = FIG['Hüftkreisen'];
 
+const shift = (Q, dx, dy) => Object.fromEntries(Object.entries(Q).map(([k, v]) => [k, Array.isArray(v) ? [v[0] + dx, v[1] + dy] : v]));
+
+// Büro, Rücken, Mobility
+const QP = { h: [146, 130], n: [131, 138], p: [80, 150], k1: [82, 188], f1: [44, 188], k2: [78, 187], f2: [40, 186], e1: [132, 163], w1: [133, 188], e2: [128, 163], w2: [129, 188] };
+const SL = { h: [28, 170], n: [46, 174], p: [102, 176], k1: [130, 170], f1: [108, 186], k2: [132, 176], f2: [110, 188], e2: [62, 186], w2: [86, 188], e1: [66, 178], w1: [90, 180] };
+const WGS = { h: [148, 110], n: [132, 118], p: [90, 140], k1: [126, 150], f1: [132, 188], t1: [146, 189], k2: [60, 166], f2: [26, 186], t2: [20, 178], e1: [128, 152], w1: [126, 186], e2: [132, 152], w2: [130, 186] };
+const NN = { h: [90, 104], n: [90, 124], p: [88, 178], k1: [124, 184], f1: [136, 160], k2: [54, 184], f2: [50, 160], e1: [74, 150], w1: [62, 184], e2: [106, 150], w2: [118, 184] };
+const PG = { h: [100, 104], n: [98, 124], p: [92, 170], k1: [128, 184], f1: [98, 186], k2: [56, 184], f2: [20, 186], t2: [14, 180], e1: [108, 148], w1: [114, 184], e2: [104, 148], w2: [110, 184] };
+const KW_A = { h: [118, 44], n: [114, 64], p: [104, 116], k1: [134, 150], f1: [140, 188], t1: [154, 189], k2: [86, 152], f2: [70, 188], t2: [84, 189], e1: [140, 80], w1: [166, 74], e2: [136, 82], w2: [164, 76] };
+const KW_B = { h: [138, 58], n: [132, 76], p: [124, 128], k1: [158, 152], f1: [140, 188], t1: [154, 189], k2: [96, 156], f2: [70, 188], t2: [84, 189], e1: [150, 92], w1: [166, 84], e2: [146, 94], w2: [164, 86] };
+// Laufen
+const RN_A = { h: [110, 40], n: [105, 60], p: [96, 110], k1: [124, 136], f1: [114, 170], t1: [128, 174], k2: [82, 146], f2: [60, 160], t2: [54, 170], e1: [90, 84], w1: [96, 104], e2: [118, 80], w2: [132, 68] };
+const RN_B = { h: [110, 40], n: [105, 60], p: [96, 110], k1: [82, 146], f1: [60, 160], t1: [54, 170], k2: [124, 136], f2: [114, 170], t2: [128, 174], e1: [118, 80], w1: [132, 68], e2: [90, 84], w2: [96, 104] };
+const WALK_A = P(SS, { k1: [110, 150], f1: [118, 188], t1: [132, 189], k2: [88, 150], f2: [80, 188], t2: [94, 189], e1: [96, 86], w1: [92, 110], e2: [106, 86], w2: [114, 108] });
+const WALK_B = P(SS, { k1: [88, 150], f1: [80, 188], t1: [94, 189], k2: [110, 150], f2: [118, 188], t2: [132, 189], e1: [106, 86], w1: [114, 108], e2: [96, 86], w2: [92, 110] });
+const KH_A = { h: [102, 40], n: [101, 60], p: [98, 112], k1: [132, 112], f1: [130, 150], t1: [142, 152], k2: [100, 150], f2: [100, 188], t2: [114, 189], e1: [88, 84], w1: [92, 106], e2: [116, 80], w2: [124, 58] };
+const KH_B = P(KH_A, { k1: [100, 150], f1: [100, 188], t1: [114, 189], k2: [132, 112], f2: [130, 150], t2: [142, 152], e1: [116, 80], w1: [124, 58], e2: [88, 84], w2: [92, 106] });
+const SK_A = P(KH_A, { k1: [122, 130], f1: [118, 166], t1: [130, 170], f2: [100, 184], t2: [112, 190] });
+const SK_B = P(KH_B, { k2: [122, 130], f2: [118, 166], t2: [130, 170], f1: [100, 184], t1: [112, 190] });
+const AF_A = { h: [102, 40], n: [101, 60], p: [98, 112], k1: [98, 150], f1: [80, 118], t1: [72, 126], k2: [100, 150], f2: [100, 186], t2: [112, 190], e1: [114, 84], w1: [122, 66], e2: [88, 86], w2: [92, 108] };
+const AF_B = P(AF_A, { k1: [100, 150], f1: [100, 186], t1: [112, 190], k2: [98, 150], f2: [80, 118], t2: [72, 126], e1: [88, 86], w1: [92, 108], e2: [114, 84], w2: [122, 66] });
+
+Object.assign(FIG, {
+  'Kettlebell-Kreuzheben': { a: fr({ h: [136, 92], n: [120, 100], p: [74, 132], k1: [104, 152], f1: [98, 188], t1: [112, 189], k2: [100, 154], f2: [94, 188], t2: [108, 189], e1: [118, 130], w1: [116, 160], e2: [114, 130], w2: [112, 160] }, [KB(114, 176)]), b: fr(SS, [KB(104, 124)]), la: 'Hüfte zurück, Rücken lang', lb: 'aufrichten, Gesäß anspannen' },
+  'Wand-Engel': { a: fr(P(FS, { e1: [66, 72], w1: [68, 46], e2: [134, 72], w2: [132, 46] })), b: fr(P(FS, { e1: [74, 38], w1: [64, 12], e2: [126, 38], w2: [136, 12] })), la: 'Arme in W-Form an der Wand', lb: 'nach oben schieben' },
+  'Bird Dog': { a: fr(QP), b: fr(P(QP, { e1: [158, 132], w1: [184, 128], k2: [46, 148], f2: [10, 146] })), la: 'Vierfüßlerstand', lb: 'Arm und Gegenbein strecken' },
+  'Clamshells': { a: fr(P(SL, { k1: [134, 178], f1: [112, 186] })), b: fr(P(SL, { k1: [126, 146], f1: [110, 184] })), la: 'Seitlage, Knie gebeugt', lb: 'oberes Knie öffnen' },
+  'Clamshells mit Band': { a: fr(P(SL, { k1: [134, 178], f1: [112, 186] }), [BAND([132, 176], [133, 180])]), b: fr(P(SL, { k1: [126, 146], f1: [110, 184] }), [BAND([126, 150], [132, 178])]), la: 'Band um die Knie', lb: 'oberes Knie gegen das Band öffnen' },
+  'Brustwirbel-Rotation im Vierfüßlerstand': { a: fr(P(QP, { e1: [124, 162], w1: [144, 134] })), b: fr(P(QP, { e1: [126, 110], w1: [144, 128] })), la: 'Ellenbogen nach unten', lb: 'zur Decke aufdrehen' },
+  'Katze-Kuh': { a: fr(P(QP, { m: [106, 126], h: [146, 148] })), b: fr(P(QP, { m: [106, 160], h: [150, 122] })), la: 'Katze: Rücken rund', lb: 'Kuh: Brust nach vorne' },
+  'Kindhaltung': { a: fr({ h: [142, 176], n: [126, 172], m: [100, 156], p: [72, 168], k1: [110, 186], f1: [72, 188], k2: [108, 184], f2: [70, 186], e1: [150, 184], w1: [178, 187], e2: [148, 182], w2: [176, 185] }), la: 'Gesäß zu den Fersen, Arme lang' },
+  'Open Book': { a: fr(SL), b: fr(P(SL, { e1: [40, 150], w1: [22, 128] }), [{ arrow: 'M92 168 Q76 118 34 120' }]), la: 'Seitlage, Arme zusammen', lb: 'oberen Arm aufklappen' },
+  'Knie zur Brust': { a: fr(P(LB, { k1: [136, 176], f1: [170, 184], t1: [180, 178], k2: [134, 178], f2: [168, 186], t2: null })), b: fr(P(LB, { k1: [86, 146], f1: [110, 138], t1: null, k2: [84, 150], f2: [108, 142], t2: null, e1: [68, 158], w1: [86, 150], e2: [66, 160], w2: [84, 152] })), la: 'Rückenlage', lb: 'Knie zur Brust ziehen' },
+  'Schulterkreisen mit Band': { a: fr(P(FS, { e1: [70, 92], w1: [56, 114], e2: [130, 92], w2: [144, 114] }), [BAND([56, 114], [144, 114])]), b: fr(P(FS, { e1: [72, 40], w1: [56, 16], e2: [128, 40], w2: [144, 16] }), [BAND([56, 16], [144, 16])]), la: 'Band breit vor der Hüfte', lb: 'gestreckt über den Kopf' },
+  'Kinn-Rückzug': { a: fr(P(SS, { h: [114, 40] })), b: fr(P(SS, { h: [98, 40] }), [{ arrow: 'M132 40 H116' }]), la: 'Kopf vorgeschoben', lb: 'Kinn waagerecht zurück' },
+  'Nackendehnung seitlich': { a: fr(FS), b: fr(P(FS, { h: [112, 44], e2: [128, 42], w2: [104, 30] })), la: 'aufrecht', lb: 'Kopf zur Seite neigen' },
+  'Knie-zur-Wand': { a: fr(KW_A, [{ wall: 168 }]), b: fr(KW_B, [{ wall: 168 }]), la: 'Fuß eine Handbreit vor der Wand', lb: 'Knie zur Wand, Ferse unten' },
+  'Fußgelenkkreisen': { a: fr(P(SS, { k1: [112, 150], f1: [124, 174], t1: [136, 176], e2: [132, 74], w2: [166, 70] }), [{ wall: 168 }, { loop: [130, 176, 14, 9] }]), la: 'Fuß langsam kreisen' },
+  'Hintere Oberschenkel': { a: fr(SS), b: fr({ h: [146, 84], n: [130, 90], p: [86, 116], k1: [112, 149], f1: [138, 184], t1: [144, 172], k2: [90, 152], f2: [84, 188], t2: [98, 189], e1: [124, 116], w1: [112, 134], e2: [120, 116], w2: [108, 134] }), la: 'aufrecht', lb: 'Ferse vor, Hüfte zurück' },
+  '90/90-Hüftrotation': { a: fr(NN), b: fr(P(NN, { n: [118, 140], h: [130, 126], e1: [130, 166], w1: [146, 184], e2: [126, 166], w2: [140, 184] })), la: 'beide Knie 90 Grad', lb: 'über das vordere Bein neigen' },
+  'Tauben-Dehnung': { a: fr(PG), b: fr(P(PG, { n: [136, 166], h: [152, 170], e1: [160, 184], w1: [186, 186], e2: [158, 182], w2: [184, 184] })), la: 'vorderes Bein gebeugt, hinteres lang', lb: 'Oberkörper ablegen' },
+  'Tiefe Hocke halten': { a: fr({ h: [112, 96], n: [106, 116], p: [86, 166], k1: [124, 144], f1: [106, 188], t1: [120, 189], k2: [120, 148], f2: [102, 188], t2: [116, 189], e1: [122, 146], w1: [118, 124], e2: [118, 148], w2: [114, 126] }), la: 'tief sitzen, Fersen unten' },
+  "World's Greatest Stretch": { a: fr(WGS), b: fr(P(WGS, { e1: [134, 90], w1: [136, 62], h: [146, 104] })), la: 'Hände neben dem Fuß', lb: 'Arm zur Decke drehen' },
+  'Einlaufen': { a: fr(RN_A), b: fr(RN_B), la: 'locker traben', lb: 'Gesprächstempo' },
+  'Auslaufen': { a: fr(RN_A), b: fr(WALK_A), la: 'locker traben', lb: 'ausgehen' },
+  'Locker gehen': { a: fr(WALK_A), b: fr(WALK_B), la: 'zügig gehen', lb: 'Arme locker' },
+  'Steigerungsläufe': { a: fr(RN_A), b: fr(P(RN_B, { h: [118, 42], n: [112, 62] }), [{ arrow: 'M14 76 H54' }, { arrow: 'M22 98 H56' }]), la: 'locker beginnen', lb: 'zügig, aber locker' },
+  'Kniehebelauf': { a: fr(KH_A), b: fr(KH_B), la: 'Knie bis Hüfthöhe', lb: 'Gegenarm nach vorne' },
+  'Skippings': { a: fr(SK_A), b: fr(SK_B), la: 'kleine, schnelle Schritte', lb: 'auf dem Fußballen' },
+  'Anfersen': { a: fr(AF_A), b: fr(AF_B), la: 'Ferse zum Gesäß', lb: 'Knie zeigt nach unten' },
+  'Hopserlauf': { a: fr(KH_B), b: fr(shift(P(KH_A, { e2: [114, 66], w2: [118, 38] }), 0, -16)), la: 'Absprung', lb: 'Knie und Gegenarm hoch' },
+  'Fußgelenksarbeit': { a: fr(P(SS, { k2: [102, 150], f2: [100, 180], t2: [112, 190] })), b: fr(P(SS, { k1: [104, 150], f1: [102, 180], t1: [114, 190] })), la: 'Ferse leicht anheben', lb: 'über den Ballen abrollen' },
+  'Seitgalopp': { a: fr(shift(P(FS, { k1: [96, 150], f1: [96, 188], k2: [104, 150], f2: [104, 188], q1: [97, 112], q2: [103, 112], e1: [72, 78], w1: [52, 92], e2: [128, 78], w2: [148, 92] }), 0, -12)), b: fr(P(FS, { k1: [84, 150], f1: [70, 188], k2: [116, 150], f2: [130, 188], e1: [72, 78], w1: [52, 92], e2: [128, 78], w2: [148, 92] }), [{ arrow: 'M140 200 H180' }]), la: 'Füße kurz zusammen', lb: 'seitlich auseinander' },
+  'Überkreuzlauf': { a: fr(P(FS, { k1: [104, 150], f1: [116, 188], k2: [106, 150], f2: [98, 188], e1: [72, 80], w1: [54, 96], e2: [128, 80], w2: [146, 96] })), b: fr(P(FS, { k1: [86, 150], f1: [76, 188], k2: [116, 150], f2: [128, 188], e1: [72, 80], w1: [54, 96], e2: [128, 80], w2: [146, 96] }), [{ arrow: 'M140 200 H180' }]), la: 'Bein vorne kreuzen', lb: 'öffnen, dann hinten kreuzen' },
+  'Beinpendel vor/zurück': { a: fr(P(SS, { k1: [122, 140], f1: [146, 168], t1: [152, 158], e2: [116, 80], w2: [128, 98] }), [{ door: 130 }]), b: fr(P(SS, { k1: [80, 142], f1: [62, 172], t1: [72, 180], e2: [116, 80], w2: [128, 98] }), [{ door: 130 }]), la: 'Bein nach vorne', lb: 'Bein nach hinten' },
+  'Beinpendel seitlich': { a: fr(P(FS, { e1: [84, 80], w1: [90, 72], e2: [116, 80], w2: [110, 72], k2: [98, 148], f2: [82, 178] })), b: fr(P(FS, { e1: [84, 80], w1: [90, 72], e2: [116, 80], w2: [110, 72], k2: [124, 144], f2: [146, 170] })), la: 'vor dem Standbein', lb: 'zur Seite schwingen' },
+  'Ausfallschritt mit Rotation': { a: fr(P(SS, { e1: [112, 84], w1: [128, 76], e2: [108, 86], w2: [124, 78] })), b: fr(P(LG_B, { e1: [118, 90], w1: [140, 84], e2: [80, 96], w2: [62, 94] }), [{ loop: [98, 100, 32, 10] }]), la: 'Hände vor der Brust', lb: 'zum vorderen Bein drehen' },
+  'Hüftöffner im Gehen': { a: fr(P(FS, { k2: [116, 124], f2: [118, 160], e1: [76, 88], w1: [66, 110] })), b: fr(P(FS, { k2: [132, 118], f2: [124, 152], e1: [76, 88], w1: [66, 110] }), [{ arrow: 'M112 104 Q128 96 140 108' }]), la: 'Knie vor dem Körper', lb: 'nach außen öffnen' },
+  'Wadenpumpe': { a: fr(SS), b: fr(P(shift(SS, 0, -10), { f1: [99, 178], t1: [110, 190], f2: [95, 178], t2: [106, 190] }), [{ arrow: 'M70 150 V120' }]), la: 'hüftbreit stehen', lb: 'auf die Ballen' }
+});
+
 function getFigure(name, gear) { const f = FIG[name]; return typeof f === 'function' ? f(gear) : f || null; }
 
-function figLine(a, b, c, w) { return `<path d="M${a[0]} ${a[1]}L${b[0]} ${b[1]}" stroke="${c}" stroke-width="${w || 8}" stroke-linecap="round" fill="none"/>`; }
+function figLine(a, b, cls, w) { return `<path class="${cls}" d="M${a[0]} ${a[1]}L${b[0]} ${b[1]}" stroke-width="${w || 8}" stroke-linecap="round" fill="none"/>`; }
 function figPerson(Q) {
-  const far = Q.front ? FC.near : FC.far, near = FC.near, a1 = Q.s1 || Q.n, a2 = Q.s2 || Q.n, l1 = Q.q1 || Q.p, l2 = Q.q2 || Q.p;
+  const far = Q.front ? 'fn' : 'ff', a1 = Q.s1 || Q.n, a2 = Q.s2 || Q.n, l1 = Q.q1 || Q.p, l2 = Q.q2 || Q.p;
   let o = figLine(l2, Q.k2, far) + figLine(Q.k2, Q.f2, far) + (Q.t2 ? figLine(Q.f2, Q.t2, far, 6) : '');
   o += figLine(a2, Q.e2, far) + figLine(Q.e2, Q.w2, far);
-  if (Q.s1) o += figLine(Q.s1, Q.s2, near);
-  if (Q.q1) o += figLine(Q.q1, Q.q2, near);
-  o += figLine(Q.n, Q.p, near);
-  o += figLine(l1, Q.k1, near) + figLine(Q.k1, Q.f1, near) + (Q.t1 ? figLine(Q.f1, Q.t1, near, 6) : '');
-  o += `<circle cx="${Q.h[0]}" cy="${Q.h[1]}" r="12" fill="#10221e" stroke="${near}" stroke-width="5"/>`;
-  return o + figLine(a1, Q.e1, near) + figLine(Q.e1, Q.w1, near);
+  if (Q.s1) o += figLine(Q.s1, Q.s2, 'fn');
+  if (Q.q1) o += figLine(Q.q1, Q.q2, 'fn');
+  o += Q.m ? `<path class="fn" d="M${Q.n[0]} ${Q.n[1]}Q${2 * Q.m[0] - (Q.n[0] + Q.p[0]) / 2} ${2 * Q.m[1] - (Q.n[1] + Q.p[1]) / 2} ${Q.p[0]} ${Q.p[1]}" stroke-width="8" stroke-linecap="round" fill="none"/>` : figLine(Q.n, Q.p, 'fn');
+  o += figLine(l1, Q.k1, 'fn') + figLine(Q.k1, Q.f1, 'fn') + (Q.t1 ? figLine(Q.f1, Q.t1, 'fn', 6) : '');
+  o += `<circle class="fhead" cx="${Q.h[0]}" cy="${Q.h[1]}" r="12" stroke-width="5"/>`;
+  return o + figLine(a1, Q.e1, 'fn') + figLine(Q.e1, Q.w1, 'fn');
 }
 function figProps(props, behind, mk) {
   return props.map(p => {
     if (behind) {
-      if (p.box) return `<rect x="${p.box[0]}" y="${p.box[1]}" width="${p.box[2]}" height="${p.box[3]}" rx="4" fill="${FC.propFill}" stroke="${FC.prop}" stroke-width="3"/>`;
-      if (p.table) { const [x, y, w] = p.table; return `<path d="M${x} ${y}H${x + w}M${x + 6} ${y}V190M${x + w - 6} ${y}V190" stroke="${FC.prop}" stroke-width="5" fill="none"/>`; }
-      if (p.chair) { const [x, y, w] = p.chair; return `<path d="M${x} ${y}H${x + w}M${x + 4} ${y}V190M${x + w - 4} ${y}V190M${x} ${y}V${y - 52}" stroke="${FC.prop}" stroke-width="5" fill="none"/>`; }
-      if (p.wall) return `<rect x="${p.wall}" y="14" width="10" height="176" fill="${FC.propFill}" stroke="${FC.prop}" stroke-width="2"/>`;
-      if (p.door) return `<path d="M${p.door} 8V190" stroke="${FC.prop}" stroke-width="8" stroke-linecap="round"/>`;
+      if (p.box) return `<rect class="fprop" x="${p.box[0]}" y="${p.box[1]}" width="${p.box[2]}" height="${p.box[3]}" rx="4" stroke-width="3"/>`;
+      if (p.table) { const [x, y, w] = p.table; return `<path class="fpropline" d="M${x} ${y}H${x + w}M${x + 6} ${y}V190M${x + w - 6} ${y}V190" stroke-width="5" fill="none"/>`; }
+      if (p.chair) { const [x, y, w] = p.chair; return `<path class="fpropline" d="M${x} ${y}H${x + w}M${x + 4} ${y}V190M${x + w - 4} ${y}V190M${x} ${y}V${y - 52}" stroke-width="5" fill="none"/>`; }
+      if (p.wall) return `<rect class="fprop" x="${p.wall}" y="14" width="10" height="176" stroke-width="2"/>`;
+      if (p.door) return `<path class="fpropline" d="M${p.door} 8V190" stroke-width="8" stroke-linecap="round"/>`;
       return '';
     }
-    if (p.kb) { const [x, y] = p.kb; return `<circle cx="${x}" cy="${y}" r="10" fill="${FC.kb}"/><path d="M${x - 7} ${y - 6}q7 -14 14 0" fill="none" stroke="${FC.kb}" stroke-width="3.5"/>`; }
-    if (p.band) return `<polyline points="${p.band.map(q => q.join(',')).join(' ')}" fill="none" stroke="${FC.band}" stroke-width="3" stroke-linejoin="round"/>`;
-    if (p.towel) return `<polyline points="${p.towel.map(q => q.join(',')).join(' ')}" fill="none" stroke="${FC.towel}" stroke-width="5" stroke-linejoin="round"/>`;
-    if (p.loop) { const [cx, cy, rx, ry] = p.loop; return `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="none" stroke="${FC.arrow}" stroke-width="2.5" stroke-dasharray="6 5"/>`; }
-    if (p.arrow) return `<path d="${p.arrow}" fill="none" stroke="${FC.arrow}" stroke-width="3" marker-end="url(#${mk})"/>`;
+    if (p.kb) { const [x, y] = p.kb; return `<circle class="fkb" cx="${x}" cy="${y}" r="10"/><path class="fkbh" d="M${x - 7} ${y - 6}q7 -14 14 0" fill="none" stroke-width="3.5"/>`; }
+    if (p.band) return `<polyline class="fband" points="${p.band.map(q => q.join(',')).join(' ')}" fill="none" stroke-width="3" stroke-linejoin="round"/>`;
+    if (p.towel) return `<polyline class="ftowel" points="${p.towel.map(q => q.join(',')).join(' ')}" fill="none" stroke-width="5" stroke-linejoin="round"/>`;
+    if (p.loop) { const [cx, cy, rx, ry] = p.loop; return `<ellipse class="farrow" cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="none" stroke-width="2.5" stroke-dasharray="6 5"/>`; }
+    if (p.arrow) return `<path class="farrow" d="${p.arrow}" fill="none" stroke-width="3" marker-end="url(#${mk})"/>`;
     return '';
   }).join('');
 }
@@ -144,9 +204,9 @@ function renderFigure(name, gear) {
   const f = getFigure(name, gear);
   if (!f) return '';
   const mk = 'kbt-ah' + (++figCounter);
-  const defs = `<defs><marker id="${mk}" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="${FC.arrow}"/></marker></defs>`;
-  const frame = (x, part, label) => `<g transform="translate(${x},14)"><path d="M4 190H196" stroke="${FC.ground}" stroke-width="2"/>${figProps(part.props, true, mk)}${figPerson(part.P)}${figProps(part.props, false, mk)}<text x="100" y="220" text-anchor="middle" font-size="13" fill="${FC.text}">${figEsc(label)}</text></g>`;
+  const defs = `<defs><marker id="${mk}" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path class="farrowhead" d="M0 0L10 5L0 10z"/></marker></defs>`;
+  const frame = (x, part, label) => `<g transform="translate(${x},14)"><path class="fground" d="M4 190H196" stroke-width="2"/>${figProps(part.props, true, mk)}${figPerson(part.P)}${figProps(part.props, false, mk)}<text class="ftext" x="100" y="220" text-anchor="middle" font-size="13">${figEsc(label)}</text></g>`;
   const label = f.b ? `${f.la} → ${f.lb}` : f.la;
   if (!f.b) return `<svg class="guideart" viewBox="0 0 440 250" role="img" aria-label="Skizze ${figEsc(name)}: ${figEsc(label)}">${defs}${frame(120, f.a, f.la)}</svg>`;
-  return `<svg class="guideart" viewBox="0 0 440 250" role="img" aria-label="Skizze ${figEsc(name)}: ${figEsc(label)}">${defs}${frame(10, f.a, f.la)}<path d="M209 118H229" stroke="${FC.arrow}" stroke-width="3" marker-end="url(#${mk})"/>${frame(232, f.b, f.lb)}</svg>`;
+  return `<svg class="guideart" viewBox="0 0 440 250" role="img" aria-label="Skizze ${figEsc(name)}: ${figEsc(label)}">${defs}${frame(10, f.a, f.la)}<path class="farrow" d="M209 118H229" stroke-width="3" marker-end="url(#${mk})"/>${frame(232, f.b, f.lb)}</svg>`;
 }

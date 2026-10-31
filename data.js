@@ -31,7 +31,7 @@ const PLANS = {
     cooldown: [['0:45 × 2', 'Hüftbeuger-Dehnung'], ['0:30 × 2', 'Vorderer Oberschenkel'], ['0:30 × 2', 'Figure-4 Gesäß'], ['0:30 × 2', 'Adduktoren'], ['0:30', 'Hüftkreisen']]
   },
   run: {
-    tab: 'Lauftraining', label: 'Lauftraining · Kraft für Läufer', short: 'Lauftraining', mode: 'sets', durations: [4, 23, 3],
+    tab: 'Läufer', label: 'Kraft für Läufer', short: 'Lauftraining', mode: 'sets', durations: [4, 23, 3],
     intro: 'Wiederholungen je Satz eintragen. Erst Wiederholungen steigern (bis 15), dann Tempo 3-1-1, dann schwerere Stufe oder mehr Gewicht.',
     slots: [
       { id: 'split', sets: 3, block: 'Kraft · 3 Sätze', stages: ['Split Squat', 'Split Squat · Tempo 3-1-1', 'Bulgarian Split Squat', 'Bulgarian · Tempo 3-1-1'], v: { kb: ['Split Squat', '8–15 je Seite', 'Kugel vor der Brust'], bw: ['Split Squat', '8–15 je Seite', 'Hände an der Hüfte'] } },
@@ -63,7 +63,22 @@ const PLANS = {
     cooldown: [['0:45 × 2', 'Hüftbeuger-Dehnung'], ['0:30 × 2', 'Vorderer Oberschenkel'], ['0:30 × 2', 'Figure-4 Gesäß'], ['0:30 × 2', 'Brustdehnung am Türrahmen'], ['1:30', 'Hüftkreisen und lockeres Marschieren']]
   }
 };
-const PLAN_ORDER = ['wed', 'run', 'sun'];
+PLANS.office = {
+  tab: 'Büro', label: 'Büro · Haltung & Rücken', short: 'Büro', mode: 'circuit', durations: [3, 12, 4],
+  intro: 'Gegen langes Sitzen: Hüftstreckung, oberer Rücken, Rumpf und Beweglichkeit. Ruhig und sauber – Tempo ist hier Nebensache.',
+  slots: [
+    { id: 'hinge', band: '20', v: { kb: ['Kettlebell-Kreuzheben', '10', 'Kugel zwischen den Füßen, Rücken lang'], band: ['Hüftheben mit Band', '15', 'Band über der Hüfte'], bw: ['Hüftheben', '15', 'Oben kurz halten'] } },
+    { id: 'upper', order: ['band', 'kb', 'bw'], band: '10', v: { band: ['Band Pull-Apart', '15', 'Schulterblätter zusammenführen'], kb: ['Einarmiges Rudern', '10 je Seite', 'Freie Hand abstützen'], bw: ['Y-T-W in Bauchlage', '6 je Position', 'Blick zum Boden'] } },
+    { id: 'squat', band: '20', v: { kb: ['Kniebeugen (Goblet)', '10', 'Kugel vor der Brust'], band: ['Kniebeugen mit Band', '10', 'Band unter den Füßen'], bw: ['Kniebeugen', '12', 'Arme nach vorne'] } },
+    { id: 'angel', v: { bw: ['Wand-Engel', '8–10', 'Rücken und Arme an der Wand'] } },
+    { id: 'birddog', v: { bw: ['Bird Dog', '8 je Seite', 'Becken ruhig halten'] } },
+    { id: 'clam', order: ['band', 'bw'], band: '10', v: { band: ['Clamshells mit Band', '12 je Seite', 'Band doppelt um die Knie'], bw: ['Clamshells', '15 je Seite', 'Seitlage, Füße zusammen'] } },
+    { id: 'tspine', v: { bw: ['Brustwirbel-Rotation im Vierfüßlerstand', '8 je Seite', 'Blick folgt dem Ellenbogen'] } }
+  ],
+  warmup: [['1:00', 'Marschieren auf der Stelle'], ['1:00', 'Schulter- und Armkreisen'], ['1:00', 'Katze-Kuh']],
+  cooldown: [['0:45 × 2', 'Hüftbeuger-Dehnung'], ['0:30 × 2', 'Brustdehnung am Türrahmen'], ['1:30', 'Kindhaltung']]
+};
+const PLAN_ORDER = ['wed', 'run', 'sun', 'office'];
 
 /* Zuordnung alter Einträge (vor Version 3) zu den Übungsplätzen des Ganzkörper-Zirkels,
    damit bisherige Bestwerte vergleichbar bleiben. */
@@ -132,6 +147,98 @@ const GUIDES = {
   'Brustdehnung am Türrahmen': { steps: ['Unterarm senkrecht an einen Türrahmen legen, Ellenbogen auf Schulterhöhe.', 'Mit dem Oberkörper langsam nach vorne gehen, bis es in der Brust zieht.', 'Halten, dann Seite wechseln.'], effect: 'Dehnt Brust und vordere Schulter nach den Druckübungen.', cue: 'Schulter nicht nach vorne schieben; nur sanfter Zug.' }
 };
 GUIDES['Locker marschieren'] = GUIDES['Marschieren auf der Stelle'];
+
+Object.assign(GUIDES, {
+  // Kraft · Büro
+  'Kettlebell-Kreuzheben': { steps: ['Kugel zwischen die Füße stellen, Füße hüftbreit.', 'Hüfte nach hinten schieben, Knie leicht beugen, Rücken lang, Griff mit beiden Händen fassen.', 'Füße in den Boden drücken und aufrichten, oben Gesäß anspannen. Kontrolliert wieder absetzen.'], effect: 'Gesäß, hintere Oberschenkel, Rückenstrecker – das Gegenteil von langem Sitzen. Basis für den Swing.', cue: 'Rücken bleibt lang, kein Rundrücken. Die Kugel bleibt nah am Körper.' },
+  'Wand-Engel': { steps: ['Mit Rücken, Gesäß und Hinterkopf an die Wand stellen, Füße eine Fußlänge vor der Wand.', 'Arme in W-Form an die Wand legen, Ellenbogen und Handrücken möglichst an der Wand.', 'Arme langsam nach oben schieben und zurück in die W-Form ziehen.'], effect: 'Oberer Rücken, Schulterblattkontrolle, Brust- und Schulteröffnung.', cue: 'Unterer Rücken bleibt an der Wand – lieber kleinerer Bewegungsumfang.' },
+  'Bird Dog': { steps: ['Vierfüßlerstand: Hände unter den Schultern, Knie unter der Hüfte.', 'Einen Arm und das gegenüberliegende Bein lang ausstrecken, bis sie mit dem Rücken eine Linie bilden.', 'Kurz halten, zurück, Seite wechseln.'], effect: 'Rückenstrecker, Gesäß und Rumpfstabilität.', cue: 'Becken bleibt waagerecht, nicht ins Hohlkreuz. Langsam bewegen.' },
+  'Clamshells': { steps: ['Seitlage, Knie etwa 45 Grad gebeugt, Füße übereinander, Kopf auf dem Arm.', 'Füße zusammen lassen und das obere Knie öffnen.', 'Langsam schließen; nach allen Wiederholungen Seite wechseln.'], effect: 'Seitliche Gesäßmuskulatur – stabilisiert Hüfte und Knie, auch beim Laufen.', cue: 'Becken nicht nach hinten kippen lassen. Bewegung kommt aus der Hüfte.' },
+  'Clamshells mit Band': { steps: ['Band doppelt oberhalb der Knie umwickeln, Seitlage, Knie gebeugt, Füße übereinander.', 'Oberes Knie gegen das Band öffnen, Füße bleiben zusammen.', 'Langsam schließen; Seite wechseln.'], effect: 'Seitliche Gesäßmuskulatur mit Widerstand.', cue: 'Leichtestes Band nehmen. Becken stabil halten.' },
+  'Brustwirbel-Rotation im Vierfüßlerstand': { steps: ['Vierfüßlerstand, eine Hand an den Hinterkopf.', 'Ellenbogen Richtung Stützarm nach unten führen.', 'Dann Ellenbogen zur Decke drehen, Blick folgt. Nach allen Wiederholungen Seite wechseln.'], effect: 'Beweglichkeit der Brustwirbelsäule – wichtig bei viel Sitzen und für den Armschwung beim Laufen.', cue: 'Becken bleibt ruhig über den Knien, Drehung kommt aus dem oberen Rücken.' },
+  'Katze-Kuh': { steps: ['Vierfüßlerstand: Hände unter den Schultern, Knie unter der Hüfte.', 'Ausatmen: Rücken rund machen, Kinn Richtung Brust (Katze).', 'Einatmen: Brust nach vorne, Rücken sanft durchhängen lassen, Blick leicht nach vorne (Kuh).'], effect: 'Mobilisiert die ganze Wirbelsäule.', cue: 'Langsam und im angenehmen Bereich, Bewegung mit der Atmung verbinden.' },
+  'Kindhaltung': { steps: ['Kniestand, Gesäß zu den Fersen sinken lassen.', 'Oberkörper nach vorne ablegen, Arme lang nach vorne.', 'Ruhig in den Rücken atmen.'], effect: 'Entspannt Rücken und Schultern, dehnt den unteren Rücken.', cue: 'Bei Kniebeschwerden ein Kissen zwischen Gesäß und Fersen legen.' },
+
+  // Laufen
+  'Einlaufen': { steps: ['Sehr locker beginnen – du solltest dich problemlos unterhalten können.', 'Nach einigen Minuten das Tempo leicht anheben.', 'Die letzten Minuten etwas zügiger, aber deutlich unter dem Wettkampftempo.'], effect: 'Erhöht Körpertemperatur, Durchblutung und Puls schrittweise und bereitet Muskeln und Sehnen vor.', cue: 'Nicht zu schnell – das Einlaufen soll vorbereiten, nicht ermüden.' },
+  'Auslaufen': { steps: ['Direkt nach dem Training oder Rennen sehr locker traben oder zügig gehen.', 'Puls und Atmung langsam herunterkommen lassen.', 'Danach trockene Kleidung anziehen und trinken.'], effect: 'Hilft beim Übergang in die Erholung und lockert die Beine.', cue: 'Nach sehr harten Rennen reicht Gehen völlig.' },
+  'Locker gehen': { steps: ['Zügig, aber entspannt gehen.', 'Arme locker mitschwingen, Schultern unten.'], effect: 'Sanfter Einstieg bzw. Ausklang ohne Belastung.', cue: 'Bewusst ruhig atmen.' },
+  'Beinpendel vor/zurück': { steps: ['Seitlich an eine Wand stellen und mit einer Hand abstützen.', 'Das äußere Bein locker nach vorne und hinten schwingen, Bewegung langsam größer werden lassen.', 'Seite wechseln.'], effect: 'Mobilisiert Hüftbeuger und hintere Oberschenkel dynamisch.', cue: 'Oberkörper aufrecht, nicht aus dem Rücken schwingen.' },
+  'Beinpendel seitlich': { steps: ['Mit dem Gesicht zur Wand stellen und beide Hände abstützen.', 'Ein Bein vor dem Standbein seitlich hin und her schwingen.', 'Seite wechseln.'], effect: 'Mobilisiert Adduktoren und seitliche Hüftmuskeln.', cue: 'Becken möglichst ruhig halten.' },
+  'Ausfallschritt mit Rotation': { steps: ['Großer Schritt nach vorne in den Ausfallschritt.', 'Oberkörper zur Seite des vorderen Beins drehen, Arme mitnehmen.', 'Zurück zur Mitte, aufrichten, Seite wechseln.'], effect: 'Öffnet Hüftbeuger, mobilisiert Brustwirbelsäule und aktiviert die Beine.', cue: 'Vorderes Knie bleibt über dem Fuß.' },
+  'Hüftöffner im Gehen': { steps: ['Langsam gehen. Ein Knie vor dem Körper anheben.', 'Knie im Bogen nach außen öffnen und das Bein absetzen.', 'Mit dem anderen Bein wiederholen.'], effect: 'Mobilisiert das Hüftgelenk in alle Richtungen.', cue: 'Aufrecht bleiben, bei Bedarf an einer Wand festhalten.' },
+  'Wadenpumpe': { steps: ['Hüftbreit stehen.', 'Zügig auf die Fußballen hochdrücken und wieder absenken.', '15–20 Wiederholungen.'], effect: 'Aktiviert Waden und Achillessehne vor dem Lauf.', cue: 'Locker und federnd, nicht verkrampfen.' },
+  'Steigerungsläufe': { steps: ['Aus dem lockeren Traben über 60–100 m allmählich beschleunigen.', 'Die letzten 20 m zügig, aber locker laufen – nicht sprinten.', 'Austraben und zurückgehen, dann den nächsten.'], effect: 'Bereitet Nerven und Muskeln auf schnelles Laufen vor, ohne zu ermüden.', cue: 'Locker bleiben, Schultern unten, aufrechte Haltung.' },
+  'Fußgelenksarbeit': { steps: ['Mit kleinen, schnellen Schritten vorwärts bewegen.', 'Abwechselnd über den Fußballen abrollen, die Ferse hebt nur leicht ab, das Knie bleibt fast gestreckt.', '2 × 20 m, zurück locker gehen.'], effect: 'Kräftigt Fuß und Wade, verbessert den Fußaufsatz.', cue: 'Locker in den Sprunggelenken, aufrechter Oberkörper.' },
+  'Skippings': { steps: ['Kleine, sehr schnelle Schritte auf dem Fußballen.', 'Knie nur leicht anheben, Arme schnell mitschwingen.', '2 × 20 m, zurück locker gehen.'], effect: 'Schnelligkeit und Koordination, kurzer Bodenkontakt.', cue: 'Frequenz vor Höhe. Aufrecht bleiben.' },
+  'Kniehebelauf': { steps: ['Abwechselnd die Knie bis etwa Hüfthöhe anheben.', 'Auf dem Fußballen landen, aktiver Armeinsatz (Gegenarm nach vorne).', '2 × 20 m, zurück locker gehen.'], effect: 'Kräftigt Hüftbeuger, verbessert Kniehub und Haltung.', cue: 'Nicht nach hinten lehnen, Hüfte gestreckt.' },
+  'Anfersen': { steps: ['Locker laufen und die Fersen abwechselnd Richtung Gesäß führen.', 'Knie zeigen nach unten, Oberschenkel bleiben fast senkrecht.', '2 × 20 m, zurück locker gehen.'], effect: 'Verbessert den Rückschwung des Beins und dehnt den vorderen Oberschenkel dynamisch.', cue: 'Schnell und locker, nicht nach vorne beugen.' },
+  'Hopserlauf': { steps: ['Hüpfend vorwärts: Absprung von einem Bein, Knie des anderen Beins hoch.', 'Gegenarm kräftig nach oben schwingen.', '2 × 20–30 m, zurück locker gehen.'], effect: 'Sprungkraft, Koordination und Rhythmus.', cue: 'Weich landen. Bei Waden- oder Fußbeschwerden auslassen.' },
+  'Seitgalopp': { steps: ['Seitlich zur Laufrichtung stellen.', 'Mit federnden Seitwärtssprüngen vorwärts: Füße kurz zusammen, dann wieder auseinander.', '2 × 20 m, einmal mit jeder Seite vorne.'], effect: 'Seitliche Hüftmuskulatur und Koordination.', cue: 'Füße nicht überkreuzen, auf den Fußballen bleiben.' },
+  'Überkreuzlauf': { steps: ['Seitwärts laufen, das hintere Bein abwechselnd vor und hinter dem vorderen Bein kreuzen.', 'Hüfte dreht mit, Schultern bleiben möglichst ruhig.', '2 × 20 m, einmal mit jeder Seite vorne.'], effect: 'Hüftbeweglichkeit, Koordination und Rumpfrotation.', cue: 'Langsam beginnen, erst dann schneller werden.' },
+  'Hintere Oberschenkel': { steps: ['Ein Bein leicht nach vorne stellen, Ferse am Boden, Zehen hoch.', 'Hüfte nach hinten schieben, Rücken lang, Hände auf dem hinteren Oberschenkel.', 'Halten, bis es hinten im vorderen Oberschenkel zieht; dann wechseln.'], effect: 'Dehnt die hintere Oberschenkelmuskulatur.', cue: 'Rücken bleibt lang – nicht mit rundem Rücken nach unten greifen.' },
+
+  // Mobility
+  '90/90-Hüftrotation': { steps: ['Auf den Boden setzen, beide Knie etwa 90 Grad gebeugt: ein Bein vorne, eines seitlich hinten.', 'Oberkörper aufrecht, dann langsam über das vordere Schienbein neigen.', 'Knie zur anderen Seite kippen und wechseln.'], effect: 'Innen- und Außenrotation der Hüfte – Basis für einen freien Laufschritt.', cue: 'Mit den Händen hinter dem Körper abstützen, wenn nötig.' },
+  'Tauben-Dehnung': { steps: ['Aus dem Vierfüßlerstand ein Knie nach vorne hinter die Hand bringen, Schienbein schräg.', 'Hinteres Bein lang nach hinten strecken.', 'Aufrecht halten oder Oberkörper langsam nach vorne ablegen; dann wechseln.'], effect: 'Dehnt Gesäß und Hüftaußenrotatoren intensiv.', cue: 'Bei Kniedruck stattdessen Figure-4 im Sitzen.' },
+  'Tiefe Hocke halten': { steps: ['Füße etwas breiter als hüftbreit, Zehen leicht nach außen.', 'Tief in die Hocke sinken, Fersen am Boden, Ellenbogen drücken die Knie sanft nach außen.', 'Halten und ruhig atmen.'], effect: 'Mobilisiert Hüfte, Sprunggelenke und unteren Rücken.', cue: 'Fersen heben ab? Etwas Festes zum Festhalten nutzen oder Fersen leicht erhöhen.' },
+  "World's Greatest Stretch": { steps: ['Großer Ausfallschritt, beide Hände innen neben dem vorderen Fuß aufstützen.', 'Inneren Arm Richtung Decke drehen, Blick folgt der Hand.', 'Zurück, Seite wechseln.'], effect: 'Hüftbeuger, Hüfte, Brustwirbelsäule und hintere Oberschenkel in einer Bewegung.', cue: 'Hinteres Knie darf am Boden abgelegt werden.' },
+  'Open Book': { steps: ['Seitlage, Knie 90 Grad angewinkelt, Arme lang nach vorne, Handflächen aufeinander.', 'Oberen Arm im Bogen zur anderen Seite öffnen, Blick folgt.', 'Langsam zurück; Seite wechseln.'], effect: 'Rotation der Brustwirbelsäule, öffnet Brust und Schultern.', cue: 'Knie bleiben aufeinander liegen.' },
+  'Knie zur Brust': { steps: ['Rückenlage.', 'Beide Knie zur Brust ziehen und mit den Händen umfassen.', 'Halten oder sanft hin und her schaukeln.'], effect: 'Entlastet und dehnt den unteren Rücken.', cue: 'Nacken entspannt am Boden lassen.' },
+  'Schulterkreisen mit Band': { steps: ['Band breit vor der Hüfte greifen, Arme gestreckt.', 'Arme gestreckt über den Kopf und – wenn möglich – hinter den Körper führen.', 'Langsam zurück.'], effect: 'Schulterbeweglichkeit und Öffnung der Brust.', cue: 'Griff so breit wählen, dass es ohne Zwang geht. Leichtestes Band nehmen.' },
+  'Kinn-Rückzug': { steps: ['Aufrecht sitzen oder stehen, Blick geradeaus.', 'Kinn waagerecht nach hinten schieben (Doppelkinn).', 'Kurz halten, lösen.'], effect: 'Kräftigt die tiefen Nackenbeuger, wirkt dem vorgeschobenen Kopf am Bildschirm entgegen.', cue: 'Kopf nicht neigen, nur waagerecht zurück.' },
+  'Nackendehnung seitlich': { steps: ['Aufrecht sitzen, eine Hand unter das Gesäß oder an die Stuhlkante.', 'Kopf zur anderen Seite neigen, die freie Hand liegt locker am Kopf.', 'Halten, Seite wechseln.'], effect: 'Dehnt die seitliche Nackenmuskulatur.', cue: 'Nicht am Kopf ziehen; das Gewicht der Hand reicht.' },
+  'Knie-zur-Wand': { steps: ['Vor eine Wand stellen, vorderer Fuß eine Handbreit vor der Wand.', 'Knie Richtung Wand schieben, die Ferse bleibt am Boden.', 'Zurück; Abstand vergrößern, wenn es leicht geht.'], effect: 'Beweglichkeit des Sprunggelenks – wichtig für Kniebeuge und Laufschritt.', cue: 'Knie zeigt über die mittleren Zehen.' },
+  'Fußgelenkkreisen': { steps: ['Auf einem Bein stehen und an einer Wand abstützen (oder sitzen).', 'Den freien Fuß langsam große Kreise beschreiben lassen.', 'Richtung und Seite wechseln.'], effect: 'Mobilisiert das Sprunggelenk.', cue: 'Langsam und mit vollem Bewegungsumfang.' }
+});
+
+/* Laufen: Warm-up und Cooldown. Schritt: [Dauer, Übung, Hinweis] – Übungen mit Anleitung sind antippbar. */
+const RUN_GUIDE = {
+  race: [
+    { id: '5k', label: '5 km', intro: 'Kurz und schnell: gründlich aufwärmen, damit der erste Kilometer nicht zum Aufwärmen wird. Etwa 25 Minuten, 5–10 Minuten vor dem Start fertig sein.',
+      warmup: [['10–15 Min.', 'Einlaufen', 'sehr locker beginnen, zum Ende etwas zügiger'], ['1 Min.', 'Beinpendel vor/zurück', 'je Bein 10–15 ×'], ['1 Min.', 'Beinpendel seitlich', 'je Bein 10–15 ×'], ['1 Min.', 'Ausfallschritt mit Rotation', 'je Seite 5 ×'], ['2 × 20 m', 'Skippings', ''], ['2 × 20 m', 'Kniehebelauf', ''], ['2 × 20 m', 'Anfersen', ''], ['4–6 ×', 'Steigerungsläufe', '80–100 m, bis knapp über Renntempo'], ['1 Min.', 'Renntempo antesten', 'kurz im geplanten Tempo, dann locker traben'], ['bis Start', 'Warm halten', 'locker bewegen, Jacke an']],
+      cooldown: [['5–10 Min.', 'Auslaufen', 'sehr locker traben oder gehen'], ['45 Sek. je Seite', 'Wadendehnung', ''], ['45 Sek. je Seite', 'Hüftbeuger-Dehnung', ''], ['30 Sek. je Seite', 'Vorderer Oberschenkel', ''], ['30 Sek. je Seite', 'Hintere Oberschenkel', ''], ['30–60 Min.', 'Trinken & Essen', 'Flüssigkeit und etwas Kohlenhydrate mit Eiweiß']] },
+    { id: '10k', label: '10 km', intro: 'Zügiges Renntempo ab dem Start: etwa 20 Minuten aufwärmen, 5–10 Minuten vor dem Start fertig sein.',
+      warmup: [['10–12 Min.', 'Einlaufen', 'locker, zum Ende etwas zügiger'], ['1 Min.', 'Beinpendel vor/zurück', 'je Bein 10–15 ×'], ['1 Min.', 'Beinpendel seitlich', 'je Bein 10–15 ×'], ['1 Min.', 'Ausfallschritt mit Rotation', 'je Seite 5 ×'], ['2 × 20 m', 'Skippings', ''], ['2 × 20 m', 'Kniehebelauf', ''], ['3–4 ×', 'Steigerungsläufe', '80 m, bis etwa Renntempo'], ['bis Start', 'Warm halten', 'locker bewegen, Jacke an']],
+      cooldown: [['5–10 Min.', 'Auslaufen', 'sehr locker traben oder gehen'], ['45 Sek. je Seite', 'Wadendehnung', ''], ['45 Sek. je Seite', 'Hüftbeuger-Dehnung', ''], ['30 Sek. je Seite', 'Vorderer Oberschenkel', ''], ['30 Sek. je Seite', 'Hintere Oberschenkel', ''], ['30–60 Min.', 'Trinken & Essen', '']] },
+    { id: 'hm', label: 'HM', intro: 'Halbmarathon: kürzer aufwärmen, Energie sparen – etwa 15 Minuten. Die ersten 1–2 Kilometer bewusst etwas langsamer – sie gehören zum Aufwärmen.',
+      warmup: [['5–10 Min.', 'Einlaufen', 'sehr locker'], ['1 Min.', 'Beinpendel vor/zurück', 'je Bein 10 ×'], ['1 Min.', 'Beinpendel seitlich', 'je Bein 10 ×'], ['1 Min.', 'Hüftöffner im Gehen', 'je Seite 5 ×'], ['2–3 ×', 'Steigerungsläufe', '60–80 m, locker'], ['bis Start', 'Warm halten', 'im Startblock locker bewegen']],
+      cooldown: [['5–10 Min.', 'Locker gehen', 'nicht abrupt stehen bleiben'], ['30–60 Min.', 'Trinken & Essen', 'früh mit dem Auffüllen beginnen'], ['30 Sek. je Seite', 'Wadendehnung', 'nur sanft'], ['30 Sek. je Seite', 'Hüftbeuger-Dehnung', 'nur sanft'], ['30 Sek. je Seite', 'Vorderer Oberschenkel', 'nur sanft']] },
+    { id: 'marathon', label: 'Marathon', intro: 'Minimal aufwärmen und Energie sparen: etwa 10 Minuten Mobilisation. Die ersten Kilometer sind das eigentliche Aufwärmen.',
+      warmup: [['5 Min.', 'Locker gehen', 'oder sehr locker traben'], ['1 Min.', 'Beinpendel vor/zurück', 'je Bein 10 ×'], ['1 Min.', 'Beinpendel seitlich', 'je Bein 10 ×'], ['1 Min.', 'Hüftkreisen', ''], ['30 Sek.', 'Wadenpumpe', '15 ×'], ['optional', 'Steigerungsläufe', '1–2 × 50 m, ganz locker'], ['bis Start', 'Warm halten', 'Wegwerfjacke oder Folie bis kurz vor dem Start']],
+      cooldown: [['10–15 Min.', 'Locker gehen', 'in Bewegung bleiben'], ['sofort', 'Trinken & Essen', 'Flüssigkeit, Salz, Kohlenhydrate'], ['', 'Trockene Kleidung', 'schnell umziehen, warm halten'], ['1 Min.', 'Hüftkreisen', 'nur sanft lockern – heute kein intensives Dehnen'], ['10 Min.', 'Beine hochlegen', 'später am Tag'], ['Folgetage', 'Aktive Erholung', 'Gehen oder lockeres Radfahren statt Laufen']] }
+  ],
+  training: [
+    { id: 'interval', label: 'Intervall', intro: 'Harte Abschnitte brauchen ein vollständiges Aufwärmen: etwa 25 Minuten inklusive Lauf-ABC.',
+      warmup: [['15 Min.', 'Einlaufen', 'locker, Gesprächstempo'], ['1 Min.', 'Beinpendel vor/zurück', 'je Bein 10–15 ×'], ['1 Min.', 'Beinpendel seitlich', 'je Bein 10–15 ×'], ['1 Min.', 'Ausfallschritt mit Rotation', 'je Seite 5 ×'], ['2 × 20 m', 'Skippings', ''], ['2 × 20 m', 'Kniehebelauf', ''], ['2 × 20 m', 'Anfersen', ''], ['3–4 ×', 'Steigerungsläufe', '80 m']],
+      cooldown: [['10 Min.', 'Auslaufen', 'sehr locker'], ['45 Sek. je Seite', 'Wadendehnung', ''], ['45 Sek. je Seite', 'Hüftbeuger-Dehnung', ''], ['30 Sek. je Seite', 'Vorderer Oberschenkel', ''], ['30 Sek. je Seite', 'Hintere Oberschenkel', '']] },
+    { id: 'speed', label: 'Speed', intro: 'Kurze, sehr schnelle Abschnitte: Nerven und Sehnen müssen besonders gut vorbereitet sein. Etwa 25–30 Minuten mit ausführlichem Lauf-ABC.',
+      warmup: [['15 Min.', 'Einlaufen', 'locker'], ['1 Min.', 'Beinpendel vor/zurück', 'je Bein 10–15 ×'], ['1 Min.', 'Hüftöffner im Gehen', 'je Seite 5 ×'], ['2 × 20 m', 'Fußgelenksarbeit', ''], ['2 × 20 m', 'Skippings', ''], ['2 × 20 m', 'Kniehebelauf', ''], ['2 × 20 m', 'Anfersen', ''], ['2 × 20 m', 'Hopserlauf', ''], ['4–6 ×', 'Steigerungsläufe', '80–100 m, die letzten deutlich schnell']],
+      cooldown: [['10 Min.', 'Auslaufen', 'sehr locker'], ['45 Sek. je Seite', 'Wadendehnung', ''], ['45 Sek. je Seite', 'Hüftbeuger-Dehnung', ''], ['30 Sek. je Seite', 'Hintere Oberschenkel', ''], ['30 Sek. je Seite', 'Vorderer Oberschenkel', '']] },
+    { id: 'long', label: 'Longrun', intro: 'Kein großes Aufwärmprogramm nötig: kurz mobilisieren und die ersten 10 Minuten sehr locker laufen. Nach dem Lauf bewusst erholen.',
+      warmup: [['3–5 Min.', 'Locker gehen', ''], ['1 Min.', 'Beinpendel vor/zurück', 'je Bein 10 ×'], ['1 Min.', 'Beinpendel seitlich', 'je Bein 10 ×'], ['1 Min.', 'Hüftkreisen', ''], ['10 Min.', 'Einlaufen', 'Teil des Longruns – bewusst langsamer als das Zieltempo']],
+      cooldown: [['5–10 Min.', 'Locker gehen', ''], ['sofort', 'Trinken & Essen', 'Kohlenhydrate und Eiweiß'], ['45 Sek. je Seite', 'Wadendehnung', 'sanft'], ['45 Sek. je Seite', 'Hüftbeuger-Dehnung', 'sanft'], ['30 Sek. je Seite', 'Vorderer Oberschenkel', 'sanft'], ['30 Sek. je Seite', 'Figure-4 Gesäß', 'zu Hause auf einem Stuhl']] }
+  ],
+  abc: {
+    intro: 'Lauf-ABC verbessert Koordination, Fußaufsatz und Kniehub. 1–2 × pro Woche nach dem Einlaufen, je Übung 2 × 20–30 m, zurück locker gehen.',
+    drills: [['2 × 20 m', 'Fußgelenksarbeit', 'Fuß und Wade'], ['2 × 20 m', 'Skippings', 'Frequenz'], ['2 × 20 m', 'Kniehebelauf', 'Kniehub und Haltung'], ['2 × 20 m', 'Anfersen', 'Rückschwung'], ['2 × 20–30 m', 'Hopserlauf', 'Sprungkraft'], ['2 × 20 m', 'Seitgalopp', 'seitliche Hüfte'], ['2 × 20 m', 'Überkreuzlauf', 'Hüftbeweglichkeit'], ['3–4 ×', 'Steigerungsläufe', 'zum Abschluss']]
+  }
+};
+
+/* Mobility: Übungen nach Bereich und Kurzprogramme (ohne Tracking) */
+const MOBILITY = {
+  routines: [
+    { title: 'Morgens', time: '5 Min.', steps: [['1 Min.', 'Katze-Kuh'], ['1 Min.', "World's Greatest Stretch"], ['1 Min.', '90/90-Hüftrotation'], ['1 Min.', 'Wand-Engel'], ['1 Min.', 'Kinn-Rückzug']] },
+    { title: 'Nach dem Sitzen', time: '6 Min.', steps: [['1:30 Min.', 'Hüftbeuger-Dehnung'], ['1 Min.', 'Brustdehnung am Türrahmen'], ['1 Min.', 'Brustwirbel-Rotation im Vierfüßlerstand'], ['1 Min.', 'Tiefe Hocke halten'], ['30 Sek.', 'Kinn-Rückzug'], ['1 Min.', 'Nackendehnung seitlich']] },
+    { title: 'Nach dem Laufen', time: '8 Min.', steps: [['1:30 Min.', 'Wadendehnung'], ['1:30 Min.', 'Hüftbeuger-Dehnung'], ['1 Min.', 'Vorderer Oberschenkel'], ['1 Min.', 'Hintere Oberschenkel'], ['1:30 Min.', 'Tauben-Dehnung'], ['1:30 Min.', 'Knie-zur-Wand']] }
+  ],
+  groups: [
+    { title: 'Hüfte', items: [['45 Sek. je Seite', 'Hüftbeuger-Dehnung'], ['8 je Seite', '90/90-Hüftrotation'], ['45 Sek. je Seite', 'Tauben-Dehnung'], ['30–60 Sek.', 'Tiefe Hocke halten'], ['5 je Seite', "World's Greatest Stretch"], ['30 Sek. je Seite', 'Adduktoren'], ['30 Sek. je Seite', 'Figure-4 Gesäß']] },
+    { title: 'Rücken', items: [['10 ×', 'Katze-Kuh'], ['60 Sek.', 'Kindhaltung'], ['8 je Seite', 'Open Book'], ['8 je Seite', 'Brustwirbel-Rotation im Vierfüßlerstand'], ['45 Sek.', 'Knie zur Brust'], ['8 je Seite', 'Bird Dog']] },
+    { title: 'Schultern & Nacken', items: [['10 ×', 'Wand-Engel'], ['10 ×', 'Schulterkreisen mit Band'], ['30 Sek. je Seite', 'Brustdehnung am Türrahmen'], ['10 ×', 'Kinn-Rückzug'], ['30 Sek. je Seite', 'Nackendehnung seitlich']] },
+    { title: 'Beine & Füße', items: [['45 Sek. je Seite', 'Wadendehnung'], ['10 je Seite', 'Knie-zur-Wand'], ['30 Sek. je Seite', 'Hintere Oberschenkel'], ['30 Sek. je Seite', 'Vorderer Oberschenkel'], ['10 je Richtung', 'Fußgelenkkreisen']] }
+  ]
+};
 
 /* Erklärungen zu Stufen, Tempo, Bändern und EMOM (Lauftraining) */
 const STAGE_INFO = {

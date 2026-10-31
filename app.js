@@ -5,7 +5,7 @@ const $ = id => document.getElementById(id);
 const KEYS = {
   entries: 'jan-kettlebell-tracker-v1', waist: 'jan-kb-waist-v1', sound: 'jan-kb-sound-v1', gear: 'jan-kb-gear-v1',
   choice: 'jan-kb-choice-v1', stage: 'jan-kb-stage-v1', plan: 'jan-kb-plan-v1', session: 'jan-kb-session-v1',
-  backup: 'jan-kb-lastbackup-v1', hint: 'jan-kb-installhint-v1'
+  backup: 'jan-kb-lastbackup-v1', hint: 'jan-kb-installhint-v1', area: 'jan-kb-area-v1', run: 'jan-kb-runview-v1'
 };
 function load(k, def) { try { const raw = localStorage.getItem(k); if (raw === null) return def; const v = JSON.parse(raw); return v === null || v === undefined ? def : v; } catch (e) { return def; } }
 function store(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } }
@@ -260,7 +260,7 @@ let toastTimer = null;
 function toast(t) { const el = $('toast'); el.textContent = t; el.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), 3200); }
 
 function renderTabs() {
-  $('tabs').innerHTML = PLAN_ORDER.map(k => `<button class="tab" role="tab" type="button" data-plan="${k}" aria-selected="${k === plan}">${esc(PLANS[k].tab)}</button>`).join('');
+  $('tabs').innerHTML = PLAN_ORDER.map(k => `<button role="tab" type="button" data-plan="${k}" aria-selected="${k === plan}">${esc(PLANS[k].tab)}</button>`).join('');
 }
 function renderGear() {
   $('gearbar').innerHTML = '<span class="lbl">Heute dabei:</span>' +
@@ -271,17 +271,17 @@ function renderGear() {
 function renderHeader() {
   const p = PLANS[plan], ex = exList();
   $('plan-title').textContent = p.label;
-  $('listkicker').textContent = isSets() ? 'Sätze · Reihenfolge' : 'Zirkel · Reihenfolge';
-  $('workoutname').textContent = `${ex.length} Übungen · ${p.durations[1]} Minuten`;
-  $('intro').textContent = p.intro;
-  $('midlabel').textContent = isSets() ? 'Kraft' : 'Zirkel';
+  $('listkicker').textContent = isSets() ? 'Sätze' : 'Zirkel';
+  $('workoutname').textContent = `${ex.length} Übungen · ${p.durations[1]} Min.`;
+  $('intro').textContent = p.intro + ' Übung antippen für Anleitung und Skizze.';
   $('sound').textContent = soundEnabled ? '🔊' : '🔇'; $('sound').setAttribute('aria-pressed', String(soundEnabled)); $('sound').setAttribute('aria-label', soundEnabled ? 'Ton ausschalten' : 'Ton einschalten');
+  $('soundval').textContent = soundEnabled ? 'An' : 'Aus';
 }
 function renderPhase() {
   const p = PLANS[plan];
-  const names = isSets() ? ['Aufwärmen', 'Kraft & Läufer-Block', 'Cooldown'] : ['Aufwärmen', 'Zirkel', 'Cooldown'];
-  $('phase-badge').textContent = sessionSaved ? '✓ Gespeichert' : isFinished() ? '✓ Training abgeschlossen' : `● ${names[phase]} · ${p.durations[phase]} Minuten`;
-  $('timeline').innerHTML = p.durations.map((_, i) => `<div class="block ${i === phase ? 'active' : ''}"></div>`).join('');
+  const names = isSets() ? ['Aufwärmen', 'Kraft', 'Cooldown'] : ['Aufwärmen', 'Zirkel', 'Cooldown'];
+  $('phase-badge').textContent = sessionSaved ? 'Gespeichert' : isFinished() ? 'Geschafft' : names[phase];
+  $('timeline').innerHTML = names.map((n, i) => `<span class="${i === phase && !sessionSaved ? 'on' : ''}">${n} ${p.durations[i]}′</span>`).join('');
   $('timehint').textContent = sessionSaved ? 'Diese Einheit ist gespeichert. „Training zurücksetzen“ startet eine neue.'
     : phase === 0 ? 'Die Aufwärmübungen laufen automatisch mit Countdown und Seitenwechsel.'
       : phase === 1 ? (isSets() ? 'Wiederholungen je Satz eintragen: Kraft, Läufer-Block, dann Swing-EMOM. Die Zeit ist ein Richtwert.' : 'Übungen der Reihe nach abhaken. Bei Zeitübungen den Übungs-Timer starten.')
@@ -289,15 +289,16 @@ function renderPhase() {
   renderStepsList(); renderCurrent(); renderControls(); renderStats(); updateClock();
 }
 function updateClock() {
-  const done = sessionSaved || isFinished();
+  const done = sessionSaved || isFinished(), frac = done ? 1 : Math.min(1, secNow() / durationSecs());
   $('timer').textContent = done ? '00:00' : clock(durationSecs() - secNow());
-  $('progress').style.width = (done ? 100 : 100 * Math.min(1, secNow() / durationSecs())) + '%';
+  $('ringprog').style.strokeDashoffset = String(552.9 * (1 - frac)); $('ringprog').style.opacity = frac > 0.002 ? '1' : '0';
+  $('ringsub').textContent = done ? (sessionSaved ? 'Einheit gespeichert' : 'Jetzt speichern') : running ? 'verbleibend' : (elapsed > 0 || phase > 0 ? 'pausiert' : 'bereit');
   const showStep = phase !== 1 && !done;
   $('stepstatus').classList.toggle('hide', !showStep);
   if (showStep) {
     const s = currentStep(), list = phase === 0 ? PLANS[plan].warmup : PLANS[plan].cooldown;
-    $('steplabel').textContent = phase === 0 ? 'Aufwärmen · jetzt' : 'Cooldown · jetzt';
-    $('stepname').textContent = s.name; $('stepdesc').textContent = `Übung ${s.group + 1} von ${list.length} · ⓘ Anleitung`;
+    $('steplabel').textContent = (phase === 0 ? 'Aufwärmen' : 'Cooldown') + ` · ${s.group + 1} von ${list.length}`;
+    $('stepname').textContent = s.name; $('stepdesc').textContent = 'Antippen für Anleitung';
     $('stepclock').textContent = clock(s.end - secNow());
     for (const type of ['warmup', 'cooldown']) for (const item of $(type).children) {
       const active = (phase === 0 && type === 'warmup') || (phase === 2 && type === 'cooldown'), i = Number(item.dataset.group);
@@ -310,16 +311,17 @@ function updateClock() {
     $('timedinfo').textContent = timed.sides === 2 ? `${part === 0 ? 'Linke' : 'Rechte'} Seite · ${part + 1} von 2` : 'Position halten bis zum Signal.';
   }
   if (emom) renderEmomClock();
+  renderLivePill();
 }
 function renderStepsList() {
-  for (const type of ['warmup', 'cooldown']) $(type).innerHTML = PLANS[plan][type].map((s, i) => `<button type="button" class="step" data-group="${i}" data-guide-name="${esc(s[1])}"><span class="duration">${esc(s[0])}</span><span class="itxt"><b>${esc(s[1])} <span class="info">ⓘ</span></b>${parseStep(s[0]).times > 1 ? '<small>Links und rechts, Wechsel per Ton</small>' : ''}</span></button>`).join('');
+  for (const type of ['warmup', 'cooldown']) $(type).innerHTML = PLANS[plan][type].map((s, i) => `<button type="button" class="row" data-group="${i}" data-guide-name="${esc(s[1])}"><span class="dur">${esc(s[0])}</span><span class="txt"><b>${esc(s[1])}</b>${parseStep(s[0]).times > 1 ? '<small>links und rechts, Wechsel per Ton</small>' : ''}</span><span class="chev"></span></button>`).join('');
 }
 function renderCurrent() {
   const ex = exList(), cur = $('current'), tw = $('timerwork');
   if (isSets() || sessionSaved || isFinished()) { cur.classList.add('hide'); tw.classList.add('hide'); return; }
   const n = ex.length, off = completions % n, x = ex[off];
   cur.classList.remove('hide');
-  $('currentlabel').textContent = (phase === 1 ? 'Jetzt' : 'Erste Übung') + ' · ⓘ Anleitung';
+  $('currentlabel').textContent = phase === 1 ? 'Jetzt' : 'Erste Übung';
   $('currentname').textContent = x.name; $('currentrep').textContent = `${x.reps} · ${x.gearText}`;
   $('roundbadge').textContent = 'Runde ' + (Math.floor(completions / n) + 1);
   cur.dataset.index = off;
@@ -370,25 +372,27 @@ function renderStats() {
 }
 function lastSetsEntry() { return saved.filter(e => e.plan === plan && e.mode === 'sets' && e.v >= 3).sort((a, b) => b.date.localeCompare(a.date) || String(b.at || '').localeCompare(String(a.at || '')))[0]; }
 function renderList() {
-  const ex = exList();
+  const ex = exList(), wl = $('worklist');
   if (!isSets()) {
+    wl.className = 'group';
     const n = ex.length, off = completions % n, active = phase <= 1 && !sessionSaved;
-    $('worklist').innerHTML = ex.map((x, i) => `<button type="button" class="item ${active && i === off ? 'focus' : ''} ${active && phase === 1 && i < off ? 'done' : ''}" data-ex="${i}"><span class="num">${active && phase === 1 && i < off ? '✓' : i + 1}</span><span class="itxt"><b>${esc(x.name)} <span class="info">ⓘ</span></b><small>${esc(x.gearText)} · ${esc(x.note)}</small></span><span class="rep">${esc(x.reps)}</span></button>`).join('');
+    wl.innerHTML = ex.map((x, i) => { const d = active && phase === 1 && i < off; return `<button type="button" class="row ${active && i === off ? 'focus' : ''} ${d ? 'done' : ''}" data-ex="${i}"><span class="num">${d ? '✓' : i + 1}</span><span class="txt"><b>${esc(x.name)}</b><small>${esc(x.gearText)} · ${esc(x.note)}</small></span><span class="val">${esc(x.reps)}</span><span class="chev"></span></button>`; }).join('');
     return;
   }
+  wl.className = '';
   const last = lastSetsEntry(); let html = '', blk = null;
   ex.forEach((x, i) => {
     const sl = x.slot;
-    if (sl.block !== blk) { blk = sl.block; html += `<div class="grouphead">${esc(blk)}</div>`; }
+    if (sl.block !== blk) { html += (blk === null ? '' : '</div>') + `<div class="header" style="margin-top:${blk === null ? 4 : 22}px">${esc(sl.block)}</div><div class="group">`; blk = sl.block; }
     const st = stageOf(plan, sl);
     const stageSel = sl.stages ? `<select class="stagesel" data-stage="${sl.id}" aria-label="Stufe ${esc(x.name)}">${sl.stages.map(s => `<option ${s === st ? 'selected' : ''}>${esc(s)}</option>`).join('')}</select>` : '';
     const inputs = runReps[sl.id].map((v, k) => `<label class="setin"><span>${sl.setLabel || 'Satz'} ${k + 1}</span><input type="number" inputmode="numeric" min="0" max="${/Sek\./.test(x.reps) ? 600 : 200}" step="1" data-slot="${sl.id}" data-idx="${k}" value="${esc(v)}" placeholder="${/Sek\./.test(x.reps) ? 'Sek.' : 'Wdh.'}"></label>`).join('');
     let lastTxt = 'Noch kein Eintrag';
-    if (last) { const li = (last.cfg || []).length === ex.length ? i : -1; if (li >= 0 && last.sets[li]) lastTxt = `Zuletzt (${dateGerman(last.date)}): ${last.sets[li].map(r => r ?? '–').join(' / ')}${last.stages && last.stages[li] ? ' · ' + esc(last.stages[li]) : ''} · ${esc(cfgText(last.cfg[li]))}${last.names && last.names[li] !== x.name ? ' · ' + esc(last.names[li]) : ''}`; }
-    const em = sl.emom ? '<div class="rowx" style="margin-top:8px;justify-content:flex-start"><button type="button" class="btn small primary" id="emomstart">▶ EMOM starten</button><strong class="stepclock" id="emomclock">03:00</strong></div><p class="tiny" id="emominfo"></p>' : '';
-    html += `<div class="setcard"><div class="sethead"><button type="button" class="setname" data-ex="${i}">${esc(sl.stages && /^Bulgarian/.test(st) ? 'Bulgarian Split Squat' : x.name)} <span class="info">ⓘ</span></button><span class="rep">${esc(x.reps)}</span></div><div class="setmeta">${esc(x.gearText)} · ${esc(x.note)}</div>${stageSel}<div class="setrow">${inputs}</div><div class="setmeta">${lastTxt}</div>${em}</div>`;
+    if (last && (last.cfg || []).length === ex.length && last.sets[i]) lastTxt = `Zuletzt (${dateGerman(last.date)}): ${last.sets[i].map(r => r ?? '–').join(' / ')}${last.stages && last.stages[i] ? ' · ' + esc(last.stages[i]) : ''} · ${esc(cfgText(last.cfg[i]))}${last.names && last.names[i] !== x.name ? ' · ' + esc(last.names[i]) : ''}`;
+    const em = sl.emom ? '<div class="timedctl" style="padding:8px 0 0"><button type="button" class="btn small primary" id="emomstart">▶ EMOM starten</button><strong class="stepclock" id="emomclock">03:00</strong></div><p class="tiny" id="emominfo"></p>' : '';
+    html += `<div class="setcard"><div class="sethead"><button type="button" class="setname" data-ex="${i}">${esc(sl.stages && /^Bulgarian/.test(st) ? 'Bulgarian Split Squat' : x.name)} <span class="info">ⓘ</span></button><span class="setmeta">${esc(x.reps)}</span></div><div class="setmeta">${esc(x.gearText)} · ${esc(x.note)}</div>${stageSel}<div class="setrow">${inputs}</div><div class="setmeta">${lastTxt}</div>${em}</div>`;
   });
-  $('worklist').innerHTML = html;
+  wl.innerHTML = html + '</div>';
   renderEmom();
 }
 function renderEmom() {
@@ -411,7 +415,7 @@ function renderSettings() {
     const missing = Object.keys(sl.v).filter(g => g !== 'bw' && !gear[g]).map(g => GEAR_LABEL[g]);
     return `<div class="srow"><div class="sname"><b>${esc(r.name)}</b><small>${r.avail.length > 1 ? r.avail.length + ' Varianten verfügbar' : 'nur diese Variante'}${missing.length ? ' · ohne ' + esc(missing.join(', ')) : ''}</small></div><select data-pref="${sl.id}" ${r.avail.length < 2 ? 'disabled' : ''} aria-label="Variante">${opts}</select>${param}</div>`;
   }).join('');
-  $('settings').innerHTML = `<p class="sub">Gilt für „${esc(PLANS[pk].tab)}“. Welche Varianten erscheinen, steuerst du oben mit „Heute dabei“. Einheiten mit anderen Varianten oder Gewichten zählen nicht in den Bestwert.</p>${rows}
+  $('settings').innerHTML = `<p class="tiny">Gilt für „${esc(PLANS[pk].tab)}“. Welche Varianten erscheinen, steuerst du oben mit „Heute dabei“. Einheiten mit anderen Varianten oder Gewichten zählen nicht in den Bestwert.</p>${rows}
   <div class="srow"><div class="sname"><b>Alle Kettlebell-Übungen</b><small>dieses Plans auf ein Gewicht setzen</small></div><label class="param"><input type="number" min="0" max="60" step="0.5" inputmode="decimal" id="allkg" value="${KB_DEFAULT}" aria-label="Gewicht für alle Kettlebell-Übungen"> kg</label><button class="btn small" type="button" id="allkgbtn">Übernehmen</button></div>
   ${gear.band ? `<p class="tiny">${esc(BAND_TEXT)}</p>` : ''}`;
 }
@@ -424,14 +428,14 @@ function updateChoice(slotId, patch) {
 function renderHistory() {
   const rows = saved.filter(e => e.plan === plan).sort((a, b) => b.date.localeCompare(a.date) || String(b.at || '').localeCompare(String(a.at || '')));
   const comp = rows.filter(comparable);
-  $('sessioncount').textContent = comp.length === rows.length ? `${rows.length} ${rows.length === 1 ? 'Einheit' : 'Einheiten'}` : `${comp.length} von ${rows.length} vergleichbar`;
-  $('historyhint').textContent = isSets() ? 'Jeder Balken zeigt die Summe der Wiederholungen. Blasse Balken: anderer Aufbau (Variante, Stufe oder Gewicht).' : 'Jeder Balken zeigt die abgeschlossenen Übungen in der festen Zirkelzeit. Blasse Balken: anderer Aufbau (Übungen, Geräte oder Gewichte).';
+  $('sessioncount').textContent = comp.length === rows.length ? String(rows.length) : `${comp.length}/${rows.length}`;
+  $('historyhint').textContent = isSets() ? 'Balken: Summe der Wiederholungen. Blass: anderer Aufbau (Variante, Stufe oder Gewicht).' : 'Balken: abgeschlossene Übungen in der festen Zirkelzeit. Blass: anderer Aufbau (Übungen, Geräte oder Gewichte).';
   $('history').innerHTML = rows.length ? rows.map(e => `<tr><td>${esc(dateGerman(e.date))}</td><td>${resultText(e)}${comparable(e) ? '' : ' <span class="tag">· anderer Aufbau</span>'}${e.manual ? ' <span class="tag">· nachgetragen</span>' : ''}</td><td><button class="btn small danger" type="button" data-delete="${esc(e.id)}" aria-label="Eintrag vom ${esc(dateGerman(e.date))} löschen">Löschen</button></td></tr>`).join('') : '<tr><td colspan="3" class="tag">Noch keine Einheit gespeichert.</td></tr>';
   const box = $('chartbox');
   if (!rows.length) { box.innerHTML = '<div class="empty">Nach der ersten gespeicherten Einheit erscheint hier dein Fortschritt.</div>'; return; }
   const data = rows.slice(0, 12).reverse(), max = Math.max(1, ...data.map(x => x.total)), w = 740, base = 158, l = 30, plotW = w - l - 14, plotH = base - 18, step = plotW / data.length, barW = Math.min(48, step * 0.56);
-  const bars = data.map((x, i) => { const xx = l + step * i + (step - barW) / 2, hh = Math.max(1, x.total / max * plotH), yy = base - hh, c = comparable(x); return `<rect x="${xx}" y="${yy}" width="${barW}" height="${hh}" rx="6" fill="#a5f3bd" opacity="${c ? 1 : 0.32}"><title>${esc(dateGerman(x.date))}: ${resultText(x)}${c ? '' : ' (anderer Aufbau)'}</title></rect><text x="${xx + barW / 2}" y="${Math.max(yy - 6, 10)}" text-anchor="middle" font-size="11" fill="#e7f6ed">${x.total}</text><text x="${xx + barW / 2}" y="177" text-anchor="middle" font-size="10" fill="#9cb0ad">${x.date.slice(5).split('-').reverse().join('.')}</text>`; }).join('');
-  box.innerHTML = `<svg class="chart" viewBox="0 0 ${w} 190" role="img" aria-label="Balkendiagramm der letzten ${data.length} Einheiten"><line x1="${l}" y1="${base}" x2="${w - 4}" y2="${base}" stroke="#58706a"/>${bars}</svg>`;
+  const bars = data.map((x, i) => { const xx = l + step * i + (step - barW) / 2, hh = Math.max(1, x.total / max * plotH), yy = base - hh, c = comparable(x); return `<rect class="bar" x="${xx}" y="${yy}" width="${barW}" height="${hh}" rx="6" opacity="${c ? 1 : 0.3}"><title>${esc(dateGerman(x.date))}: ${resultText(x)}${c ? '' : ' (anderer Aufbau)'}</title></rect><text class="val" x="${xx + barW / 2}" y="${Math.max(yy - 6, 10)}" text-anchor="middle" font-size="12">${x.total}</text><text class="lbl" x="${xx + barW / 2}" y="178" text-anchor="middle" font-size="11">${x.date.slice(5).split('-').reverse().join('.')}</text>`; }).join('');
+  box.innerHTML = `<svg class="chart" viewBox="0 0 ${w} 190" role="img" aria-label="Balkendiagramm der letzten ${data.length} Einheiten"><line class="axis" x1="${l}" y1="${base}" x2="${w - 4}" y2="${base}"/>${bars}</svg>`;
 }
 function renderManual() {
   const sets = isSets(), n = exList().length;
@@ -452,7 +456,7 @@ function renderWaist() {
   $('waistcount').textContent = String(rows.length);
   const delta = rows.length > 1 ? newest.cm - oldest.cm : 0, d = $('waistdelta');
   d.textContent = rows.length < 2 ? '–' : (delta > 0 ? '+' : '') + cmString(delta) + ' cm';
-  d.style.color = rows.length < 2 ? '' : delta < 0 ? 'var(--green)' : delta > 0 ? 'var(--yellow)' : '';
+  d.style.color = rows.length < 2 ? '' : delta < 0 ? 'var(--accent-ink)' : delta > 0 ? 'var(--orange)' : '';
   const b = $('waistreminder'); b.classList.remove('due');
   if (!newest) b.textContent = 'Noch keine Messung: morgens vor dem Frühstück messen und den ersten Wert eintragen.';
   else { const next = new Date(newest.date + 'T12:00:00'); next.setDate(next.getDate() + 7); const nd = localDay(next), due = localDay() >= nd; b.classList.toggle('due', due); b.textContent = due ? `📏 Zeit für die nächste Messung – die letzte war am ${dateGerman(newest.date)}.` : `✓ Letzte Messung am ${dateGerman(newest.date)}. Nächste ab ${dateGerman(nd)}.`; }
@@ -463,18 +467,31 @@ function renderWaist() {
   let lo = Math.min(...data.map(e => e.cm)), hi = Math.max(...data.map(e => e.cm)); const m = Math.max(1, (hi - lo) * 0.25);
   lo = Math.floor((lo - m) * 2) / 2; hi = Math.ceil((hi + m) * 2) / 2; if (hi <= lo) hi = lo + 2;
   const y = v => bottom - ((v - lo) / (hi - lo)) * (bottom - top), x = i => left + (data.length === 1 ? pw / 2 : i * pw / (data.length - 1));
-  const grid = [0, .25, .5, .75, 1].map(f => { const yy = top + (bottom - top) * f, v = hi - (hi - lo) * f; return `<line x1="${left}" y1="${yy}" x2="${w - right}" y2="${yy}" stroke="#354c45" stroke-dasharray="4 5"/><text x="${left - 9}" y="${yy + 4}" text-anchor="end" font-size="11" fill="#9cb0ad">${cmString(v)}</text>`; }).join('');
+  const grid = [0, .25, .5, .75, 1].map(f => { const yy = top + (bottom - top) * f, v = hi - (hi - lo) * f; return `<line class="axis" x1="${left}" y1="${yy}" x2="${w - right}" y2="${yy}" stroke-dasharray="4 5"/><text class="lbl" x="${left - 9}" y="${yy + 4}" text-anchor="end" font-size="12">${cmString(v)}</text>`; }).join('');
   const path = data.map((e, i) => `${i ? 'L' : 'M'} ${x(i).toFixed(1)} ${y(e.cm).toFixed(1)}`).join(' ');
-  const dots = data.map((e, i) => `<circle cx="${x(i)}" cy="${y(e.cm)}" r="5.5" fill="#a5f3bd" stroke="#182827" stroke-width="2"><title>${dateGerman(e.date)}: ${cmString(e.cm)} cm</title></circle>`).join('');
-  const labels = data.map((e, i) => i === 0 || i === data.length - 1 || data.length <= 5 ? `<text x="${x(i)}" y="${h - 12}" text-anchor="middle" font-size="11" fill="#9cb0ad">${e.date.slice(5).split('-').reverse().join('.')}</text>` : '').join('');
-  t.innerHTML = `<svg class="chart" role="img" aria-label="Bauchumfang der letzten ${data.length} Messungen, von ${cmString(data[0].cm)} bis ${cmString(data.at(-1).cm)} cm" viewBox="0 0 ${w} ${h}">${grid}<path d="${path}" fill="none" stroke="#a5f3bd" stroke-width="3" stroke-linejoin="round"/>${dots}${labels}</svg>`;
+  const dots = data.map((e, i) => `<circle class="dot" cx="${x(i)}" cy="${y(e.cm)}" r="5.5" stroke-width="2"><title>${dateGerman(e.date)}: ${cmString(e.cm)} cm</title></circle>`).join('');
+  const labels = data.map((e, i) => i === 0 || i === data.length - 1 || data.length <= 5 ? `<text class="lbl" x="${x(i)}" y="${h - 12}" text-anchor="middle" font-size="12">${e.date.slice(5).split('-').reverse().join('.')}</text>` : '').join('');
+  t.innerHTML = `<svg class="chart" role="img" aria-label="Bauchumfang der letzten ${data.length} Messungen, von ${cmString(data[0].cm)} bis ${cmString(data.at(-1).cm)} cm" viewBox="0 0 ${w} ${h}">${grid}<path class="line" d="${path}" fill="none" stroke-width="3" stroke-linejoin="round"/>${dots}${labels}</svg>`;
 }
 
 /* ---------- Dateien: Backup, CSV, Kalender ---------- */
 function download(name, content, type) { const blob = new Blob([content], { type }), url = URL.createObjectURL(blob), a = document.createElement('a'); a.href = url; a.download = name; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 3000); }
-function exportBackup() {
-  download(`kb-tracker-backup-${localDay()}.json`, JSON.stringify({ version: 3, entries: saved, waist, settings: { gear, choices, stages }, exportedAt: new Date().toISOString() }, null, 2), 'application/json');
-  store(KEYS.backup, localDay()); renderBackupBanner(); toast('Backup erstellt.');
+function backupJson() { return JSON.stringify({ version: 3, entries: saved, waist, settings: { gear, choices, stages }, exportedAt: new Date().toISOString() }, null, 2); }
+function markBackup() { store(KEYS.backup, localDay()); renderBackupBanner(); }
+// Sicherung als lokale Datei: Teilen-Menü (iPhone: „In Dateien sichern“), Dateidialog oder Download – nie ein Server
+async function exportBackup() {
+  const name = `kb-tracker-backup-${localDay()}.json`, json = backupJson();
+  try {
+    const file = new File([json], name, { type: 'application/json' });
+    if (navigator.canShare && navigator.canShare({ files: [file] }) && document.documentElement.dataset.os !== 'other') {
+      await navigator.share({ files: [file], title: 'KB Tracker Backup' }); markBackup(); toast('Sicherung übergeben.'); return;
+    }
+    if (window.showSaveFilePicker) {
+      const h = await window.showSaveFilePicker({ suggestedName: name, types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }] });
+      const w = await h.createWritable(); await w.write(json); await w.close(); markBackup(); toast('In Datei gesichert.'); return;
+    }
+  } catch (e) { if (e && e.name === 'AbortError') return; }
+  download(name, json, 'application/json'); markBackup(); toast('Sicherung heruntergeladen.');
 }
 function importBackup(file) {
   const r = new FileReader();
@@ -542,9 +559,8 @@ function renderBackupBanner() {
   const last = load(KEYS.backup, null), limit = new Date(); limit.setDate(limit.getDate() - 14);
   const due = saved.length + waist.length > 0 && (!last || last < localDay(limit));
   let html = '';
-  if (due) html += `<div class="banner"><span>💾 ${last ? `Letztes Backup am ${dateGerman(last)} – älter als 14 Tage.` : 'Noch kein Backup exportiert.'} Die Daten liegen nur auf diesem Gerät.</span><button class="btn small" type="button" id="backupnow">Jetzt sichern</button></div>`;
-  const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-  if (ios && !standalone() && !load(KEYS.hint, false)) html += `<div class="banner info"><span>📲 Für zuverlässige Speicherung: in Safari auf „Teilen“ → „Zum Home-Bildschirm“ und die App künftig nur über das Symbol öffnen. Safari und die Home-Bildschirm-App haben getrennte Daten.</span><button class="btn small" type="button" id="hintclose">Verstanden</button></div>`;
+  if (due) html += `<div class="banner"><span class="bicon">💾</span><span>${last ? `Letzte Sicherung am ${dateGerman(last)}.` : 'Noch keine Sicherung.'} Die Daten liegen nur auf diesem Gerät.</span><button class="btn small primary" type="button" id="backupnow">Sichern</button></div>`;
+  if (document.documentElement.dataset.os === 'ios' && !standalone() && !load(KEYS.hint, false)) html += `<div class="banner"><span class="bicon">📲</span><span>Für zuverlässige Speicherung: „Teilen“ → „Zum Home-Bildschirm“ und die App nur noch über das Symbol öffnen. Safari und die App haben getrennte Daten.</span><button class="btn small" type="button" id="hintclose">OK</button></div>`;
   $('banners').innerHTML = html;
 }
 async function renderStorageInfo() {
@@ -568,7 +584,7 @@ function openGuide(name, g, opts = {}) {
   $('guide-body').innerHTML = (opts.gearText ? `<span class="guidegear">${esc(opts.gearText)}${opts.reps ? ' · ' + esc(opts.reps) : ''}</span>` : '') + renderFigure(name, g || 'kb') +
     '<p class="guidecaption">Schematische Skizze. Maßgeblich sind die Hinweise unten.</p><h3>So geht’s</h3><ol>' + info.steps.map(t => `<li>${esc(t)}</li>`).join('') +
     `</ol><h3>Das trainierst du</h3><p>${esc(info.effect)}</p><h3>Darauf achten</h3><p class="guidecue">${esc(info.cue)}</p>${extra}<p class="guidecaption">Ruhig weiteratmen. Kontrolliert und im angenehmen Umfang ausführen; bei Schmerzen abbrechen.</p>`;
-  guide.showModal(); guide.scrollTop = 0;
+  guide.showModal(); guide.scrollTop = 0; $('guide-title').focus();
 }
 function openExerciseGuide(i, origin) {
   const x = exList()[i]; if (!x) return;
@@ -580,6 +596,53 @@ function renderAll() {
   renderTabs(); renderGear(); renderHeader(); renderPhase(); renderList(); renderSettings(); renderHistory(); renderManual(); renderBackupBanner();
 }
 
+/* ---------- Bereiche: Kraft, Laufen, Mobility, Mehr ---------- */
+let area = ['kraft', 'laufen', 'mobility', 'mehr'].includes(load(KEYS.area, 'kraft')) ? load(KEYS.area, 'kraft') : 'kraft';
+let runView = load(KEYS.run, null); if (!isObj(runView)) runView = {}; runView = { tab: ['race', 'training', 'abc'].includes(runView.tab) ? runView.tab : 'race', race: runView.race || '5k', training: runView.training || 'interval' };
+function showArea(a, scroll = true) {
+  area = a; store(KEYS.area, a);
+  for (const x of ['kraft', 'laufen', 'mobility', 'mehr']) $('area-' + x).classList.toggle('hide', x !== a);
+  for (const b of $('tabbar').children) b.setAttribute('aria-selected', String(b.dataset.area === a));
+  const bar = a === 'kraft';
+  $('actionbar').classList.toggle('hide', !bar);
+  document.body.style.setProperty('--actbar', bar ? '66px' : '0px');
+  renderLivePill();
+  if (scroll) window.scrollTo({ top: 0 });
+}
+function renderLivePill() {
+  const pill = $('livepill'), show = area !== 'kraft' && sessionActive();
+  pill.classList.toggle('hide', !show);
+  document.body.style.setProperty('--actbar', area === 'kraft' ? '66px' : show ? '52px' : '0px');
+  if (show) pill.textContent = (running ? '● ' : 'Ⅱ ') + PLANS[plan].tab + ' · ' + (isFinished() ? 'speichern' : clock(durationSecs() - secNow()));
+}
+const stepRow = (dur, name, detail) => {
+  const has = !!GUIDES[name];
+  return `<${has ? 'button type="button"' : 'div'} class="row" ${has ? `data-guide-name="${esc(name)}"` : ''}><span class="dur">${esc(dur)}</span><span class="txt"><b>${esc(name)}</b>${detail ? `<small>${esc(detail)}</small>` : ''}</span>${has ? '<span class="chev"></span>' : ''}</${has ? 'button' : 'div'}>`;
+};
+function renderRun() {
+  const tabs = [['race', 'Wettkampf'], ['training', 'Training'], ['abc', 'Lauf-ABC']];
+  $('runtabs').innerHTML = tabs.map(([k, l]) => `<button role="tab" type="button" data-runtab="${k}" aria-selected="${runView.tab === k}">${l}</button>`).join('');
+  const sub = $('runsub');
+  if (runView.tab === 'abc') {
+    sub.classList.add('hide');
+    $('runcontent').innerHTML = `<div class="intro">${esc(RUN_GUIDE.abc.intro)}</div><div class="header">Übungen</div><div class="group">${RUN_GUIDE.abc.drills.map(d => stepRow(...d)).join('')}</div><p class="footer">Bei Beschwerden in Fuß oder Wade Sprungübungen (Hopserlauf, Seitgalopp) auslassen.</p>`;
+    return;
+  }
+  const list = RUN_GUIDE[runView.tab], cur = list.find(r => r.id === runView[runView.tab]) || list[0];
+  sub.classList.remove('hide');
+  sub.innerHTML = list.map(r => `<button role="tab" type="button" data-runsub="${r.id}" aria-selected="${r.id === cur.id}">${esc(r.label)}</button>`).join('');
+  $('runcontent').innerHTML = `<div class="intro">${esc(cur.intro)}</div>
+    <div class="header">Warm-up</div><div class="group">${cur.warmup.map(x => stepRow(...x)).join('')}</div>
+    <div class="header">Cooldown</div><div class="group">${cur.cooldown.map(x => stepRow(...x)).join('')}</div>
+    <p class="footer">Zeiten sind Richtwerte. Am Wettkampftag nichts Neues ausprobieren – den Ablauf vorher im Training testen.</p>`;
+}
+function renderMobility() {
+  let h = '<div class="header">Kurzprogramme</div>';
+  h += MOBILITY.routines.map((r, i) => `<div class="group" style="margin-top:${i ? 12 : 0}px"><div class="row" style="font-weight:600"><span class="txt"><b style="font-weight:600">${esc(r.title)}</b></span><span class="val">${esc(r.time)}</span></div>${r.steps.map(s => stepRow(s[0], s[1], '')).join('')}</div>`).join('');
+  h += MOBILITY.groups.map(g => `<div class="header">${esc(g.title)}</div><div class="group">${g.items.map(s => stepRow(s[0], s[1], '')).join('')}</div>`).join('');
+  h += '<p class="footer">Dehnen und mobilisieren im angenehmen Bereich – ziehen ja, Schmerz nein. Ruhig weiteratmen.</p>';
+  $('mobcontent').innerHTML = h;
+}
 /* ---------- Ereignisse ---------- */
 $('tabs').addEventListener('click', e => { const b = e.target.closest('[data-plan]'); if (b) setPlan(b.dataset.plan); });
 $('gearbar').addEventListener('click', e => {
@@ -595,7 +658,9 @@ $('btnUndo').addEventListener('click', undo);
 $('reset').addEventListener('click', resetTraining);
 $('timedstart').addEventListener('click', startTimed);
 $('timedlength').addEventListener('change', e => { timedPick[plan + '-' + (completions % exList().length)] = Number(e.target.value); renderCurrent(); });
-$('sound').addEventListener('click', () => { soundEnabled = !soundEnabled; store(KEYS.sound, soundEnabled); renderHeader(); if (soundEnabled) { audioReady(); cue('step'); } toast(soundEnabled ? 'Ton an.' : 'Ton aus.'); });
+const toggleSound = () => { soundEnabled = !soundEnabled; store(KEYS.sound, soundEnabled); renderHeader(); if (soundEnabled) { audioReady(); cue('step'); } toast(soundEnabled ? 'Ton an.' : 'Ton aus.'); };
+$('sound').addEventListener('click', toggleSound);
+$('soundrow').addEventListener('click', toggleSound);
 $('testsound').addEventListener('click', () => { audioReady(); cue('finish'); });
 $('current').addEventListener('click', e => openExerciseGuide(Number(e.currentTarget.dataset.index || 0), e.currentTarget));
 $('stepstatus').addEventListener('click', e => { const s = currentStep(); openGuide(s.base, 'bw', { origin: e.currentTarget }); });
@@ -633,7 +698,7 @@ $('manual').addEventListener('submit', e => {
   if (!Number.isInteger(r) || r < 0 || !Number.isInteger(x) || x < 0 || x >= n) { alert(`Bitte gültige Werte eingeben. Weitere Übungen: 0 bis ${n - 1}.`); return; }
   saveSession(date, { manual: true, total: r * n + x }); $('manualround').value = '1'; $('manualextra').value = '0';
 });
-$('exportjson').addEventListener('click', exportBackup);
+$('savefile').addEventListener('click', exportBackup);
 $('importbtn').addEventListener('click', () => $('importfile').click());
 $('importfile').addEventListener('change', e => { if (e.target.files[0]) importBackup(e.target.files[0]); e.target.value = ''; });
 $('exportcsv').addEventListener('click', exportCsv);
@@ -656,10 +721,17 @@ guide.addEventListener('close', () => { if (guideOrigin && document.contains(gui
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { tick(); if (running) keepAwake(true); } else persistSession(); });
 window.addEventListener('pagehide', persistSession);
 
+$('tabbar').addEventListener('click', e => { const b = e.target.closest('[data-area]'); if (b) showArea(b.dataset.area); });
+$('livepill').addEventListener('click', () => showArea('kraft'));
+$('runtabs').addEventListener('click', e => { const b = e.target.closest('[data-runtab]'); if (!b) return; runView.tab = b.dataset.runtab; store(KEYS.run, runView); renderRun(); });
+$('runsub').addEventListener('click', e => { const b = e.target.closest('[data-runsub]'); if (!b) return; runView[runView.tab] = b.dataset.runsub; store(KEYS.run, runView); renderRun(); });
+for (const id of ['runcontent', 'mobcontent']) $(id).addEventListener('click', e => { const b = e.target.closest('[data-guide-name]'); if (b) openGuide(b.dataset.guideName, 'bw', { origin: b }); });
+
 /* ---------- Start ---------- */
 const restored = restoreSession();
 if (!restored) runReps = emptyReps(plan);
-renderAll(); renderWaist(); renderStorageInfo();
+renderAll(); renderWaist(); renderStorageInfo(); renderRun(); renderMobility(); showArea(area, false);
+if (/iPad|iPhone|iPod/.test(navigator.userAgent) || document.documentElement.dataset.os === 'ios') $('savefilehint').textContent = 'Öffnet „Teilen“ → „In Dateien sichern“';
 if (restored) { toast(running ? 'Laufendes Training wiederhergestellt.' : 'Unterbrochenes Training wiederhergestellt.'); if (running) keepAwake(true); }
 setInterval(tick, 200);
 try { navigator.storage?.persist?.().then(renderStorageInfo).catch(() => { }); } catch (e) { }
