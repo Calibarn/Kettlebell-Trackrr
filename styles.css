@@ -40,7 +40,7 @@ html[data-os=android] .largetitle{font-size:28px;font-weight:500;letter-spacing:
 
 /* Segmentierte Steuerung */
 .segmented{display:flex;background:var(--fill);border-radius:9px;padding:2px;gap:2px;margin:0 0 12px}
-.segmented button{flex:1;border:0;background:none;border-radius:7px;padding:7px 4px;font-size:13px;font-weight:600;color:var(--label);white-space:nowrap;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.segmented button{flex:1 1 auto;border:0;background:none;border-radius:7px;padding:7px 6px;font-size:13px;font-weight:600;color:var(--label);white-space:nowrap;min-width:0;overflow:hidden;text-overflow:ellipsis}
 .segmented button[aria-selected=true]{background:var(--elev);box-shadow:0 3px 8px rgba(0,0,0,.12),0 0 0 .5px rgba(0,0,0,.04)}
 html[data-os=android] .segmented{background:none;border:1px solid var(--label3);border-radius:100px;padding:0;gap:0;overflow:hidden}
 html[data-os=android] .segmented button{border-radius:0;padding:10px 4px;border-right:1px solid var(--label3);font-weight:500}
@@ -98,6 +98,7 @@ html[data-os=android] .chip[aria-pressed=true]{background:var(--accent-soft);col
 .ring{width:100%;height:100%;transform:rotate(-90deg)}
 .ring .track{stroke:var(--fill2)}
 .ring .prog{stroke:var(--accent);transition:stroke-dashoffset .25s linear}
+.ring .prog.rest{stroke:var(--orange)}
 .ringin{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px}
 .ringin .phase{font-size:13px;font-weight:600;color:var(--accent-ink);text-transform:uppercase;letter-spacing:.04em}
 .ringin .time{font-size:clamp(46px,14vw,62px);font-weight:300;font-variant-numeric:tabular-nums;letter-spacing:-1px;line-height:1.05;margin:2px 0}

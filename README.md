@@ -5,7 +5,7 @@ Mein persönlicher Trainings-Begleiter als Web-App für iPhone und Android – K
 ## Bereiche
 
 - **Kraft** (mit Timer und Verlauf)
-  - Ganzkörper (Zirkel), Läufer (Sätze mit Progression), Oberkörper (z. B. nach dem Longrun), Büro (Haltung & Rücken)
+  - Ganzkörper (Zirkel), Tabata (Kettlebell, komplett automatisch), Läufer (Sätze mit Progression), Oberkörper (z. B. nach dem Longrun), Büro (Haltung & Rücken)
   - „Heute dabei“: Kettlebell und Bänder an- oder abwählen, die Übungen passen sich an; Körpergewicht geht immer. Die Auswahl wird gemerkt.
   - Gewicht je Übung (vorbelegt 12 kg) und Bandstärke unter „Übungen, Geräte & Gewichte“
   - Ton-Countdown, automatische Aufwärm-/Cooldown-Abläufe, Zeitübungen, Swing-EMOM
@@ -53,7 +53,7 @@ Daten gehen nur verloren, wenn die Adresse (Domain) wechselt, das App-Symbol vom
 
 ## Aktualisieren
 
-Bei Änderungen an Dateien in `sw.js` die Konstante `VERSION` erhöhen (z. B. `kbt-v5`). Online lädt die App immer die neueste Version, offline den Cache.
+Bei Änderungen an Dateien in `sw.js` die Konstante `VERSION` erhöhen (z. B. `kbt-v6`). Online lädt die App immer die neueste Version, offline den Cache.
 
 ## Aufbau
 

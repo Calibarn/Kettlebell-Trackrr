@@ -78,7 +78,22 @@ PLANS.office = {
   warmup: [['1:00', 'Marschieren auf der Stelle'], ['1:00', 'Schulter- und Armkreisen'], ['1:00', 'Katze-Kuh']],
   cooldown: [['0:45 × 2', 'Hüftbeuger-Dehnung'], ['0:30 × 2', 'Brustdehnung am Türrahmen'], ['1:30', 'Kindhaltung']]
 };
-const PLAN_ORDER = ['wed', 'run', 'sun', 'office'];
+PLANS.tabata = {
+  tab: 'Tabata', label: 'Tabata · Kettlebell Ganzkörper', short: 'Tabata', mode: 'tabata', requires: 'kb', durations: [4, 0, 4],
+  intro: 'Fünf Kettlebell-Übungen, je 20 Sek. Vollgas und 10 Sek. Pause. Läuft komplett automatisch mit Ton bei jedem Wechsel – nichts antippen, einfach mitmachen. Runden und Pause sind einstellbar.',
+  slots: [
+    { id: 'swing', v: { kb: ['Kettlebell-Swing', '20 Sek. je Runde', 'Kraft aus der Hüfte, nur bis Brusthöhe'] } },
+    { id: 'goblet', v: { kb: ['Kniebeugen (Goblet)', '20 Sek. je Runde', 'Kugel vor der Brust, tief und kontrolliert'] } },
+    { id: 'row2', v: { kb: ['Vorgebeugtes Rudern beidarmig', '20 Sek. je Runde', 'Rücken lang, Kugel zum Bauch'] } },
+    { id: 'press2', v: { kb: ['Überkopfdrücken beidarmig', '20 Sek. je Runde', 'Kugel an den Hörnern, Bauch fest'] } },
+    { id: 'twist', v: { kb: ['Russian Twist', '20 Sek. je Runde', 'Füße am Boden, Kugel nah am Körper'] } }
+  ],
+  warmup: [['1:00', 'Marschieren auf der Stelle'], ['0:45', 'Schulter- und Armkreisen'], ['0:45', 'Hüftkreisen'], ['0:45', 'Kniebeugen ohne Gewicht'], ['0:45', 'Kettlebell-Kreuzheben']],
+  cooldown: [['0:30', 'Locker marschieren'], ['0:45 × 2', 'Hüftbeuger-Dehnung'], ['0:30 × 2', 'Brustdehnung am Türrahmen'], ['1:00', 'Kindhaltung']]
+};
+const TABATA_DEFAULT = { rounds: 6, blockRest: 90 }, TABATA_ROUNDS = [6, 8], TABATA_RESTS = [60, 90];
+const TABATA_TEXT = 'Tabata: 20 Sekunden so viele saubere Wiederholungen wie möglich, 10 Sekunden Pause, dann die nächste Runde derselben Übung. Nach allen Runden folgt eine längere Pause und die nächste Übung. Die App sagt jeden Wechsel per Ton an, 3-2-1 vorher.';
+const PLAN_ORDER = ['wed', 'tabata', 'run', 'sun', 'office'];
 
 /* Zuordnung alter Einträge (vor Version 3) zu den Übungsplätzen des Ganzkörper-Zirkels,
    damit bisherige Bestwerte vergleichbar bleiben. */
@@ -149,6 +164,11 @@ const GUIDES = {
 GUIDES['Locker marschieren'] = GUIDES['Marschieren auf der Stelle'];
 
 Object.assign(GUIDES, {
+  // Kraft · Tabata
+  'Vorgebeugtes Rudern beidarmig': { steps: ['Kugel mit beiden Händen am Griff halten, Füße hüftbreit.', 'Hüfte nach hinten schieben, Oberkörper etwa 45 Grad vorneigen, Rücken lang, Arme hängen.', 'Kugel zum Bauch ziehen, Ellenbogen nach hinten, Schulterblätter zusammen. Kontrolliert absenken.'], effect: 'Oberer und breiter Rückenmuskel, hintere Schulter, Bizeps; die Haltung trainiert zusätzlich Rückenstrecker und Gesäß.', cue: 'Rücken bleibt lang, kein Rundrücken – auch wenn es in den letzten Sekunden hart wird. Nicht mit Schwung aus dem Oberkörper ziehen.' },
+  'Überkopfdrücken beidarmig': { steps: ['Kugel an den Hörnern (seitlich am Griff) vor der Brust halten, Ellenbogen unten.', 'Bauch und Gesäß anspannen und die Kugel senkrecht über den Kopf drücken.', 'Kontrolliert zurück vor die Brust.'], effect: 'Schultern, Trizeps und oberer Rücken; der Rumpf stabilisiert gegen das Hohlkreuz.', cue: 'Kein Hohlkreuz, Rippen unten. Den Kopf beim Drücken leicht zurücknehmen, damit die Kugel gerade nach oben gehen kann.' },
+  'Russian Twist': { steps: ['Hinsetzen, Knie gebeugt, Füße am Boden. Oberkörper leicht nach hinten lehnen, Rücken lang.', 'Kugel mit beiden Händen nah vor dem Bauch halten.', 'Oberkörper abwechselnd nach rechts und links drehen, die Kugel neben die Hüfte führen.'], effect: 'Schräge und gerade Bauchmuskeln, Rumpfrotation.', cue: 'Bewegung kommt aus dem Oberkörper, nicht nur aus den Armen. Bei Rückenbeschwerden ohne Kugel oder mit geringerem Bewegungsumfang.' },
+
   // Kraft · Büro
   'Kettlebell-Kreuzheben': { steps: ['Kugel zwischen die Füße stellen, Füße hüftbreit.', 'Hüfte nach hinten schieben, Knie leicht beugen, Rücken lang, Griff mit beiden Händen fassen.', 'Füße in den Boden drücken und aufrichten, oben Gesäß anspannen. Kontrolliert wieder absetzen.'], effect: 'Gesäß, hintere Oberschenkel, Rückenstrecker – das Gegenteil von langem Sitzen. Basis für den Swing.', cue: 'Rücken bleibt lang, kein Rundrücken. Die Kugel bleibt nah am Körper.' },
   'Wand-Engel': { steps: ['Mit Rücken, Gesäß und Hinterkopf an die Wand stellen, Füße eine Fußlänge vor der Wand.', 'Arme in W-Form an die Wand legen, Ellenbogen und Handrücken möglichst an der Wand.', 'Arme langsam nach oben schieben und zurück in die W-Form ziehen.'], effect: 'Oberer Rücken, Schulterblattkontrolle, Brust- und Schulteröffnung.', cue: 'Unterer Rücken bleibt an der Wand – lieber kleinerer Bewegungsumfang.' },
