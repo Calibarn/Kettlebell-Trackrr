@@ -274,3 +274,60 @@ const STAGE_INFO = {
 const TEMPO_TEXT = '3 Sekunden absenken (bzw. zurückführen), 1 Sekunde in der Endposition halten, 1 Sekunde zurück in die Anstrengung. Laut mitzählen. Die Wiederholungsziele bleiben gleich, die Übung wird durch die längere Spannung deutlich schwerer.';
 const EMOM_TEXT = '„Every Minute On the Minute“: Zu Beginn jeder Minute die Wiederholungen ausführen, im Rest der Minute Pause. Der Timer gibt bei jedem Minutenwechsel ein Signal. Brauchst du mehr als etwa 40 Sekunden, nimm weniger Wiederholungen. Die geschafften Wiederholungen trägst du unter Min. 1–3 ein.';
 const BAND_TEXT = 'Kombinationen wie „Band 10 + 30 kg“: beide Bänder gleichzeitig nutzen und die Enden zusammen greifen. Vorher prüfen, dass beide gleich lang gespannt sind. Bänder vor jeder Nutzung auf Risse prüfen.';
+
+/* Beste Variante je Übungsplatz: Rangfolge nach Wirksamkeit (vorne = bevorzugt).
+   Die App nimmt die erste Variante, deren Gerät unter „Heute dabei“ gewählt ist.
+   Grundlage: 12-kg-Kettlebell, Bänder 10/20/30 kg, eigenes Körpergewicht. */
+const BEST = {
+  wed: {
+    swing: [['kb', 'band', 'bw'], 'Der Swing trainiert Hüftstreckung und Kondition zugleich – Hüftheben ist die schonende Alternative.'],
+    hips: [['band', 'kb', 'bw'], 'Der Holzhacker mit Band gibt dem Rumpf echten Widerstand; um die Hüfte schwingen ist mit 12 kg vor allem Koordination.'],
+    halo: [['kb', 'bw'], 'Das Gewicht über Kopf fordert die Schulterkontrolle deutlich stärker als Armkreisen.'],
+    squat: [['kb', 'band', 'bw'], 'Die Kugel vor der Brust hält den Oberkörper aufrecht und belastet auch unten in der Kniebeuge; das Band wirkt vor allem oben.'],
+    lunge: [['kb', 'bw'], 'Zusatzgewicht erhöht den Reiz für Gesäß und Oberschenkel.'],
+    march: [['kb', 'bw'], 'Die einseitige Last trainiert den seitlichen Rumpf so, wie er beim Laufen arbeitet.'],
+    row: [['kb', 'band', 'bw'], 'Rudern mit Gewicht trifft den Rücken direkter als Y-T-W; das Band unter dem Fuß verrutscht leichter.'],
+    press: [['bw', 'band', 'kb'], 'Liegestütze bewegen einen großen Teil des Körpergewichts und fordern Rumpf und Brust stärker als 12 kg oder ein Band.'],
+    tri: [['kb', 'band', 'bw'], 'Gezielter Reiz für den Trizeps; enge Liegestütze sind die Alternative ohne Gerät.'],
+    curl: [['kb', 'band', 'bw'], 'Bewegung mit Gewicht über den vollen Weg; das Halten gegen das Handtuch ist die Notlösung.'],
+    balance: [['bw', 'kb'], 'Im Zirkel unter Ermüdung zuerst ohne Gewicht – Gleichgewicht und saubere Hüftbeugung gehen vor Last.'],
+    crunch: [['bw'], '']
+  },
+  tabata: {
+    swing: [['kb', 'band', 'bw'], 'Der Swing ist die wirksamste Tabata-Übung für Hüfte und Puls.'],
+    goblet: [['kb', 'band', 'bw'], 'Die Kugel vor der Brust erlaubt schnelle, saubere Wiederholungen.'],
+    row2: [['kb', 'band', 'bw'], 'Beidarmiges Rudern mit Gewicht lässt sich in 20 Sekunden zügig und sicher ausführen.'],
+    press2: [['bw', 'kb', 'band'], 'Liegestütze sind im Tabata-Tempo die stärkste Druckübung.'],
+    twist: [['bw', 'band', 'kb'], 'Bergsteiger bringen Rumpf und Puls hoch, ohne den Rücken unter Last zu drehen.']
+  },
+  run: {
+    split: [['kb', 'bw'], 'Zusatzgewicht macht den Split Squat zum echten Kraftreiz.'],
+    row: [['kb', 'band', 'bw'], 'Rudern mit Gewicht trifft den Rücken direkt.'],
+    press: [['bw', 'band', 'kb'], 'Liegestütze bewegen mehr Last als 12 kg und lassen sich über die Höhe der Erhöhung gut steigern.'],
+    calf: [['kb', 'bw'], 'Gewicht in der Hand erhöht den Reiz für Wade und Achillessehne.'],
+    sldl: [['kb', 'bw'], 'Mit Gewicht wird die Standwaage zum einbeinigen Kreuzheben.'],
+    march: [['kb', 'bw'], 'Die einseitige Last trainiert den seitlichen Rumpf so, wie er beim Laufen arbeitet.'],
+    swing: [['kb', 'band', 'bw'], 'Der Swing trainiert Hüftstreckung und Kondition zugleich.']
+  },
+  sun: {
+    press: [['band', 'kb', 'bw'], 'Liegestütze folgen als eigene Übung – hier deshalb Drücken mit Band; ohne Geräte der Unterarmstütz.'],
+    pushup: [['bw'], ''],
+    shoulder: [['kb', 'band', 'bw'], 'Einarmiges Drücken mit der Kugel fordert Schulter und Rumpf am stärksten.'],
+    lateral: [['band', 'bw'], 'Das Band gibt über die ganze Bewegung Widerstand.'],
+    pull: [['band', 'kb', 'bw'], 'Pull-Aparts treffen die hintere Schulter gezielt – das Gegengewicht zu den Druckübungen.'],
+    curl: [['kb', 'band', 'bw'], 'Bewegung mit Gewicht über den vollen Weg.'],
+    tri: [['kb', 'band', 'bw'], 'Gezielter Reiz für den Trizeps.'],
+    deadbug: [['bw'], ''],
+    hold: [['kb', 'bw'], 'Die einseitige Last trainiert den seitlichen Rumpf; der Seitstütz ist die Alternative ohne Gerät.']
+  },
+  office: {
+    hinge: [['kb', 'band', 'bw'], 'Kreuzheben trainiert genau die Muskeln, die beim Sitzen abschalten.'],
+    upper: [['band', 'kb', 'bw'], 'Pull-Aparts öffnen Brust und Schultern – gezielt gegen die Sitzhaltung.'],
+    squat: [['kb', 'band', 'bw'], 'Die Kugel vor der Brust hält den Oberkörper aufrecht.'],
+    angel: [['bw'], ''],
+    birddog: [['bw'], ''],
+    clam: [['band', 'bw'], 'Das Band erhöht den Reiz für die seitliche Gesäßmuskulatur.'],
+    tspine: [['bw'], '']
+  }
+};
+for (const [pk, m] of Object.entries(BEST)) for (const sl of PLANS[pk].slots) if (m[sl.id]) { sl.order = m[sl.id][0]; sl.why = m[sl.id][1]; }

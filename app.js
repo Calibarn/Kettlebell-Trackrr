@@ -32,23 +32,28 @@ const cmString = v => Number(v).toLocaleString('de-DE', { minimumFractionDigits:
 
 /* ---------- Einstellungen: Geräte, Varianten, Gewichte ---------- */
 let gear = load(KEYS.gear, null);
-if (!isObj(gear)) gear = { kb: true, band: true };
-gear = { kb: gear.kb !== false, band: gear.band !== false };
+if (!isObj(gear)) gear = { kb: true, band: true, bw: true };
+gear = { kb: gear.kb !== false, band: gear.band !== false, bw: gear.bw !== false };
+// Ohne Auswahl wird mit Körpergewicht trainiert
+const ensureGear = () => { if (!gear.kb && !gear.band && !gear.bw) gear.bw = true; };
+ensureGear();
 let choices = load(KEYS.choice, {}); if (!isObj(choices)) choices = {};
 let stages = load(KEYS.stage, {}); if (!isObj(stages)) stages = {};
 
 const slotKey = (pk, sl) => pk + '.' + sl.id;
 function validKg(v) { const n = Number(v); return v !== undefined && v !== null && v !== '' && Number.isFinite(n) && n >= 0 && n <= 60 ? n : KB_DEFAULT; }
-function availableGears(sl) { return (sl.order || ['kb', 'band', 'bw']).filter(g => sl.v[g] && (g === 'bw' || gear[g])); }
+// Gewählte Geräte in der Rangfolge der Wirksamkeit; gibt es keine passende Variante, bleibt Körpergewicht (geht immer)
+function availableGears(sl) { return (sl.order || ['kb', 'band', 'bw']).filter(g => sl.v[g] && gear[g]); }
 function resolve(pk, sl) {
   const avail = availableGears(sl), c = isObj(choices[slotKey(pk, sl)]) ? choices[slotKey(pk, sl)] : {};
-  const g = avail.includes(c.pref) ? c.pref : (avail[0] || Object.keys(sl.v)[0]);
-  if (!avail.length) avail.push(g);
+  const fallback = !avail.length, auto = !avail.includes(c.pref);
+  const g = !auto ? c.pref : (avail[0] || (sl.v.bw ? 'bw' : Object.keys(sl.v)[0]));
+  if (fallback) avail.push(g);
   const [name, reps, note] = sl.v[g];
   const kg = validKg(c.kg), band = BANDS.includes(String(c.band)) ? String(c.band) : (sl.band || '20');
-  const gearText = g === 'kb' ? (kg > 0 ? `Kettlebell ${kgText(kg)} kg` : 'Kettlebell ohne Gewicht') : g === 'band' ? bandLabel(band) : 'Körpergewicht';
+  const gearText = (g === 'kb' ? (kg > 0 ? `Kettlebell ${kgText(kg)} kg` : 'Kettlebell ohne Gewicht') : g === 'band' ? bandLabel(band) : 'Körpergewicht') + (fallback ? ' (keine Variante für deine Auswahl)' : '');
   const cfg = g === 'kb' ? 'kb:' + kg : g === 'band' ? 'band:' + band : 'bw';
-  return { slot: sl, g, name, reps, note, kg, band, gearText, cfg, avail };
+  return { slot: sl, g, name, reps, note, kg, band, gearText, cfg, avail, auto, fallback };
 }
 function stageOf(pk, sl) { if (!sl.stages) return null; const s = stages[slotKey(pk, sl)]; return sl.stages.includes(s) ? s : sl.stages[0]; }
 const exList = (pk = plan) => PLANS[pk].slots.map(sl => resolve(pk, sl));
@@ -321,7 +326,7 @@ function renderGear() {
   $('gearbar').innerHTML = '<span class="lbl">Heute dabei:</span>' +
     `<button class="chip" type="button" data-gear="kb" aria-pressed="${gear.kb}">Kettlebell</button>` +
     `<button class="chip" type="button" data-gear="band" aria-pressed="${gear.band}">Bänder</button>` +
-    '<span class="lbl">+ Körpergewicht</span>';
+    `<button class="chip" type="button" data-gear="bw" aria-pressed="${gear.bw}">Körpergewicht</button>`;
 }
 function renderHeader() {
   const p = PLANS[plan], ex = exList();
@@ -485,14 +490,15 @@ function renderSettings() {
   const pk = plan;
   const rows = PLANS[pk].slots.map(sl => {
     const r = resolve(pk, sl);
-    const opts = r.avail.map(g => `<option value="${g}" ${g === r.g ? 'selected' : ''}>${esc(GEAR_LABEL[g])}: ${esc(sl.v[g][0])}</option>`).join('');
+    const best = r.avail[0];
+    const opts = `<option value="auto" ${r.auto ? 'selected' : ''}>Automatisch: ${esc(sl.v[best][0])}</option>` + (r.avail.length > 1 ? r.avail.map(g => `<option value="${g}" ${!r.auto && g === r.g ? 'selected' : ''}>${esc(GEAR_LABEL[g])}: ${esc(sl.v[g][0])}</option>`).join('') : '');
     const param = r.g === 'kb' ? `<label class="param"><input type="number" min="0" max="60" step="0.5" inputmode="decimal" value="${r.kg}" data-kg="${sl.id}" aria-label="Gewicht für ${esc(r.name)}"> kg</label>`
       : r.g === 'band' ? `<select data-band="${sl.id}" aria-label="Band für ${esc(r.name)}">${BANDS.map(b => `<option value="${b}" ${b === r.band ? 'selected' : ''}>${esc(bandLabel(b).replace('Band ', ''))}</option>`).join('')}</select>` : '<span class="param">–</span>';
-    const missing = Object.keys(sl.v).filter(g => g !== 'bw' && !gear[g]).map(g => GEAR_LABEL[g]);
-    return `<div class="srow"><div class="sname"><b>${esc(r.name)}</b><small>${r.avail.length > 1 ? r.avail.length + ' Varianten verfügbar' : 'nur diese Variante'}${missing.length ? ' · ohne ' + esc(missing.join(', ')) : ''}</small></div><select data-pref="${sl.id}" ${r.avail.length < 2 ? 'disabled' : ''} aria-label="Variante">${opts}</select>${param}</div>`;
+    const why = sl.why && r.auto && !r.fallback && Object.keys(sl.v).length > 1 ? sl.why : r.fallback ? 'Für deine Auswahl gibt es hier keine Variante – Körpergewicht geht immer.' : !r.auto ? 'Manuell gewählt.' : '';
+    return `<div class="srow"><div class="sname"><b>${esc(r.name)}</b>${why ? `<small>${esc(why)}</small>` : ''}</div><select data-pref="${sl.id}" ${r.avail.length < 2 && r.auto ? 'disabled' : ''} aria-label="Variante">${opts}</select>${param}</div>`;
   }).join('');
   const tbRows = isTabata() ? (() => { const c = tabataCfg(); return `<div class="srow"><div class="sname"><b>Runden je Übung</b><small>Empfehlung zum Einstieg: 6</small></div><select data-tabata="rounds" aria-label="Runden je Übung">${TABATA_ROUNDS.map(v => `<option value="${v}" ${v === c.rounds ? 'selected' : ''}>${v} Runden</option>`).join('')}</select><span class="param">20″ / 10″</span></div><div class="srow"><div class="sname"><b>Pause zwischen Übungen</b><small>Empfehlung zum Einstieg: 90 Sek.</small></div><select data-tabata="blockRest" aria-label="Pause zwischen Übungen">${TABATA_RESTS.map(v => `<option value="${v}" ${v === c.blockRest ? 'selected' : ''}>${v} Sek.</option>`).join('')}</select><span class="param">${Math.round(phaseSecs('tabata', 1) / 60)} Min.</span></div>`; })() : '';
-  $('settings').innerHTML = tbRows + `<p class="tiny">Gilt für „${esc(PLANS[pk].tab)}“. Welche Varianten erscheinen, steuerst du oben mit „Heute dabei“. Einheiten mit anderen Varianten oder Gewichten zählen nicht in den Bestwert.</p>${rows}
+  $('settings').innerHTML = tbRows + `<p class="tiny">Gilt für „${esc(PLANS[pk].tab)}“. Die App wählt je Übung automatisch die wirksamste Variante aus den Geräten bei „Heute dabei“; du kannst sie hier je Übung überschreiben. Einheiten mit anderen Varianten oder Gewichten zählen nicht in den Bestwert.</p>${rows}
   <div class="srow"><div class="sname"><b>Alle Kettlebell-Übungen</b><small>dieses Plans auf ein Gewicht setzen</small></div><label class="param"><input type="number" min="0" max="60" step="0.5" inputmode="decimal" id="allkg" value="${KB_DEFAULT}" aria-label="Gewicht für alle Kettlebell-Übungen"> kg</label><button class="btn small" type="button" id="allkgbtn">Übernehmen</button></div>
   ${gear.band ? `<p class="tiny">${esc(BAND_TEXT)}</p>` : ''}`;
 }
@@ -598,7 +604,7 @@ function importBackup(file) {
       for (const e of wl) if (!days.has(e.date)) { waist.push(e); days.add(e.date); addedW++; }
       persistEntries(); persistWaist();
       if (settings && confirm('Das Backup enthält auch Einstellungen (Geräte, Varianten, Gewichte). Übernehmen?')) {
-        if (isObj(settings.gear)) { gear = { kb: settings.gear.kb !== false, band: settings.gear.band !== false }; store(KEYS.gear, gear); }
+        if (isObj(settings.gear)) { gear = { kb: settings.gear.kb !== false, band: settings.gear.band !== false, bw: settings.gear.bw !== false }; ensureGear(); store(KEYS.gear, gear); }
         if (isObj(settings.choices)) { choices = settings.choices; store(KEYS.choice, choices); }
         if (isObj(settings.stages)) { stages = settings.stages; store(KEYS.stage, stages); }
         if (!sessionActive()) runReps = emptyReps(plan);
@@ -737,8 +743,9 @@ $('tabs').addEventListener('click', e => { const b = e.target.closest('[data-pla
 $('gearbar').addEventListener('click', e => {
   const b = e.target.closest('[data-gear]'); if (!b) return;
   if (settingsLocked()) { alert('Bitte das laufende Training zuerst beenden oder zurücksetzen – sonst passt das Ergebnis nicht mehr zu den Übungen.'); return; }
-  gear[b.dataset.gear] = !gear[b.dataset.gear]; store(KEYS.gear, gear);
-  renderAll(); toast(`${b.dataset.gear === 'kb' ? 'Kettlebell' : 'Bänder'} ${gear[b.dataset.gear] ? 'aktiviert' : 'deaktiviert'} – Übungen angepasst.`);
+  const k = b.dataset.gear, label = { kb: 'Kettlebell', band: 'Bänder', bw: 'Körpergewicht' }[k];
+  gear[k] = !gear[k]; const forced = !gear.kb && !gear.band && !gear.bw; ensureGear(); store(KEYS.gear, gear);
+  renderAll(); toast(forced ? 'Ohne Auswahl wird mit Körpergewicht trainiert.' : `${label} ${gear[k] ? 'aktiviert' : 'deaktiviert'} – beste Übungen gewählt.`);
 });
 $('btnMain').addEventListener('click', play);
 $('btnNext').addEventListener('click', skip);
@@ -772,7 +779,7 @@ $('settings').addEventListener('change', e => {
   }
   const id = t.dataset.pref || t.dataset.kg || t.dataset.band; if (!id) return;
   if (settingsLocked()) { alert('Bitte das laufende Training zuerst beenden oder zurücksetzen.'); renderSettings(); return; }
-  if (t.dataset.pref) updateChoice(id, { pref: t.value });
+  if (t.dataset.pref) updateChoice(id, { pref: t.value === 'auto' ? null : t.value });
   else if (t.dataset.kg) { const v = Number(String(t.value).replace(',', '.')); if (t.value === '' || !Number.isFinite(v) || v < 0 || v > 60) { alert('Bitte ein Gewicht zwischen 0 und 60 kg eingeben.'); renderSettings(); return; } updateChoice(id, { kg: v }); }
   else updateChoice(id, { band: t.value });
   renderAll(); toast('Gespeichert.');
