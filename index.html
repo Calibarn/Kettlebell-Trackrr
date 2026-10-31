@@ -46,6 +46,7 @@
       </div>
     </div>
     <div class="statsline" id="statsline"></div>
+    <div class="alert advice hide" id="planhint" role="status"></div>
     <p class="tiny" id="timehint"></p>
     <button class="linkbtn" id="reset" type="button">Training zurücksetzen</button>
   </div>
@@ -98,6 +99,18 @@
 <section class="area wrap hide" id="area-mehr" aria-labelledby="t-mehr">
   <h1 class="largetitle" id="t-mehr">Mehr</h1>
 
+  <div class="header">Wochenübersicht · Kraft</div>
+  <div class="group"><div class="panel" style="border:0;padding-top:12px">
+    <div class="metrics">
+      <div class="metric"><span>Diese Woche</span><b id="weekcount">0</b><small id="weekrange"></small></div>
+      <div class="metric"><span>Ø Anstrengung</span><b id="weekrpe">–</b><small>diese Woche, 1–10</small></div>
+      <div class="metric"><span>Serie</span><b id="weekstreak">0</b><small>Wochen in Folge</small></div>
+    </div>
+    <div id="weekchart"></div>
+  </div></div>
+  <div class="group" id="weeklist" style="margin-top:12px"></div>
+  <p class="footer">Zählt alle gespeicherten Kraft-Einheiten, Woche von Montag bis Sonntag. Die Anstrengung trägst du nach dem Speichern ein oder später im Verlauf.</p>
+
   <div class="header">Anleitung</div>
   <div class="group manual" id="manualguide">
     <details><summary class="row"><span class="icon" style="background:var(--blue)">📲</span><span class="txt"><b>App installieren</b><small>Einmalig, damit die Daten sicher bleiben</small></span><span class="chev"></span></summary><div class="panel">
@@ -117,25 +130,29 @@
     </div></details>
     <details><summary class="row"><span class="icon" style="background:var(--red)">⏱</span><span class="txt"><b>Tabata</b><small>komplett automatisch, mit oder ohne Geräte</small></span><span class="chev"></span></summary><div class="panel">
       <ol><li>Plan <b>Tabata</b> wählen, bei „Heute dabei“ die Geräte einstellen (die App wählt die besten Übungen) und <b>Starten</b> tippen – danach musst du nichts mehr antippen.</li><li>Je Übung 20 Sek. Arbeit (grüner Ring) und 10 Sek. Pause (oranger Ring). Ein Ton kündigt jeden Wechsel an, 3-2-1 vorher.</li><li>Zwischen den Übungen gibt es eine längere Pause, die Anzeige nennt die nächste Übung.</li><li>Nach dem Cooldown wird die Einheit automatisch gespeichert.</li></ol>
-      <p class="tiny">Runden (6 oder 8) und Pause zwischen den Übungen (60 oder 90 Sek.) stellst du unter „Übungen, Geräte &amp; Gewichte“ ein. Einstieg: 6 Runden, 90 Sek.</p>
+      <p class="tiny">Runden (6 oder 8) und Pause zwischen den Übungen (60 oder 90 Sek.) stellst du unter „Übungen, Geräte &amp; Gewichte“ ein. Einstieg: 6 Runden, 90 Sek. Nach drei kompletten Einheiten in Folge (Anstrengung unter 9) schlägt die App die nächste Steigerung vor.</p>
     </div></details>
     <details><summary class="row"><span class="icon" style="background:var(--accent)">#</span><span class="txt"><b>Sätze eintragen</b><small>Plan „Läufer“</small></span><span class="chev"></span></summary><div class="panel">
       <ol><li>Nach jedem Satz die geschafften Wiederholungen (bzw. Sekunden) in das Feld eintragen.</li><li>Unter jeder Übung steht, was du beim letzten Mal geschafft hast.</li><li>Mit der Auswahl unter der Übung stellst du die Stufe ein, z. B. Bulgarian Split Squat oder Tempo 3-1-1.</li><li>Für den Swing <b>▶ EMOM starten</b>: Zu jeder Minute ertönt ein Signal, danach die Wiederholungen bei Min. 1–3 eintragen.</li></ol>
-      <p class="tiny">Progression: erst Wiederholungen bis 15 steigern, dann Tempo, dann die schwerere Stufe oder mehr Gewicht.</p>
+      <p class="tiny">Progression: erst Wiederholungen bis zur Obergrenze steigern (z. B. 15), dann Tempo, dann die schwerere Stufe oder mehr Gewicht. Schaffst du in allen Sätzen die Obergrenze, zeigt die App unter der Übung <b>↑ Bereit für mehr</b> – bei Stufen mit <b>Übernehmen</b> zum direkten Umstellen.</p>
     </div></details>
     <details><summary class="row"><span class="icon" style="background:var(--orange)">⚙︎</span><span class="txt"><b>Geräte, Varianten &amp; Gewichte</b></span><span class="chev"></span></summary><div class="panel">
       <ol><li>Im Bereich Kraft unten <b>Übungen, Geräte &amp; Gewichte</b> öffnen.</li><li>Standard ist <b>Automatisch</b>: die wirksamste Variante aus „Heute dabei“, mit kurzer Begründung. Je Übung kannst du stattdessen eine bestimmte Variante festlegen.</li><li>Kettlebell-Gewicht eintragen (vorbelegt 12 kg) bzw. die Bandstärke wählen.</li><li>Neue, schwerere Kugel? <b>Alle Kettlebell-Übungen</b> setzt alle Gewichte des Plans auf einmal.</li></ol>
       <p class="tiny">Einstellungen gelten je Plan und werden gemerkt. Während eines laufenden Zirkels sind sie gesperrt, damit das Ergebnis zu den Übungen passt.</p>
     </div></details>
     <details><summary class="row"><span class="icon" style="background:var(--accent)">▥</span><span class="txt"><b>Verlauf &amp; Bestwerte</b></span><span class="chev"></span></summary><div class="panel">
-      <ol><li>Im Bereich Kraft unten <b>Verlauf</b> öffnen: Diagramm und Tagebuch des gewählten Plans.</li><li>Bestwerte zählen nur Einheiten mit gleichem Aufbau (Übungen, Geräte, Gewichte, Stufen).</li><li>Abweichende Einheiten erscheinen blass mit „anderer Aufbau“.</li><li>Ohne App trainiert? <b>Training nachtragen</b> speichert eine Einheit mit beliebigem Datum.</li></ol>
+      <ol><li>Im Bereich Kraft unten <b>Verlauf</b> öffnen: Diagramm und Tagebuch des gewählten Plans. 🏆 markiert den Bestwert.</li><li>Bestwerte zählen nur Einheiten mit gleichem Aufbau (Übungen, Geräte, Gewichte, Stufen).</li><li>Abweichende Einheiten erscheinen blass mit „anderer Aufbau“.</li><li>Ohne App trainiert? <b>Training nachtragen</b> speichert eine Einheit mit beliebigem Datum.</li></ol>
+    </div></details>
+    <details><summary class="row"><span class="icon" style="background:var(--red)">◉</span><span class="txt"><b>Anstrengung, Notiz &amp; Woche</b></span><span class="chev"></span></summary><div class="panel">
+      <ol><li>Nach dem Speichern zeigt die App eine Zusammenfassung mit neuem Bestwert und Hinweisen zur Steigerung.</li><li>Dort die gefühlte <b>Anstrengung von 1 bis 10</b> antippen und optional eine Notiz schreiben (z. B. „schlecht geschlafen“). <b>Später</b> überspringt.</li><li>Nachträglich ändern: im <b>Verlauf</b> auf das Ergebnis tippen.</li><li>Die <b>Wochenübersicht</b> oben unter Mehr zeigt Einheiten pro Woche, die Ø-Anstrengung und wie viele Wochen in Folge du trainiert hast.</li></ol>
+      <p class="tiny">Richtwert: Die meisten Einheiten bei 6–8. Mehrmals 9–10 hintereinander spricht für mehr Erholung.</p>
     </div></details>
     <details><summary class="row"><span class="icon" style="background:var(--blue)">ⓘ</span><span class="txt"><b>Anleitungen zu den Übungen</b></span><span class="chev"></span></summary><div class="panel">
       <ol><li>Jede Übung antippen – in Kraft, Laufen, Mobility sowie bei Aufwärmen und Cooldown.</li><li>Die Skizze zeigt Start und Bewegung, darunter stehen Ausführung, Wirkung und worauf du achten musst.</li><li>Mit <b>Fertig</b> oder Tippen daneben schließen.</li></ol>
     </div></details>
     <details><summary class="row"><span class="icon" style="background:#5e5ce6">🏃</span><span class="txt"><b>Laufen &amp; Mobility</b><small>Anleitungen ohne Tracking</small></span><span class="chev"></span></summary><div class="panel">
-      <ol><li><b>Laufen → Wettkampf:</b> Distanz wählen (5 km bis Marathon) für Warm-up und Cooldown am Renntag.</li><li><b>Laufen → Training:</b> Intervall, Speed oder Longrun.</li><li><b>Laufen → Lauf-ABC:</b> Koordinationsübungen nach dem Einlaufen.</li><li><b>Mobility:</b> Kurzprogramme (Morgens, Nach dem Sitzen, Nach dem Laufen) oder einzelne Übungen nach Körperbereich.</li></ol>
-      <p class="tiny">Läuft gerade ein Kraft-Training, zeigt eine grüne Anzeige unten die Restzeit – antippen führt zurück.</p>
+      <ol><li><b>Laufen → Wettkampf:</b> Distanz wählen (5 km bis Marathon) für Warm-up und Cooldown am Renntag.</li><li><b>Laufen → Training:</b> Intervall, Speed oder Longrun.</li><li><b>Laufen → Lauf-ABC:</b> Koordinationsübungen nach dem Einlaufen.</li><li><b>Mobility:</b> Kurzprogramme (Morgens, Nach dem Sitzen, Nach dem Laufen) oder einzelne Übungen nach Körperbereich.</li><li><b>▶ Geführt</b> bzw. <b>▶ Starten</b> öffnet einen Ablauf Schritt für Schritt: Zeitangaben laufen mit Countdown, Seitenwechsel und Ansage automatisch weiter. Strecken und Wiederholungen (z. B. 2 × 20 m) hakst du mit <b>✓ Erledigt</b> ab. Bei Zeitbereichen (10–15 Min.) gilt die kürzere Zeit, <b>+1 Min.</b> verlängert.</li></ol>
+      <p class="tiny">Läuft gerade ein Kraft-Training, zeigt eine grüne Anzeige unten die Restzeit – antippen führt zurück. Beim Laufen mit Handy in der Tasche: Bei gesperrtem Bildschirm pausiert das iPhone die App, Ansagen kommen dann erst beim Entsperren.</p>
     </div></details>
     <details><summary class="row"><span class="icon" style="background:var(--orange)">📏</span><span class="txt"><b>Bauchumfang</b></span><span class="chev"></span></summary><div class="panel">
       <ol><li>Einmal pro Woche morgens vor dem Frühstück messen: stehend, auf Nabelhöhe, nach normalem Ausatmen.</li><li>Wert hier unter <b>Mehr</b> eintragen und speichern.</li><li>Optional die <b>Wöchentliche Erinnerung</b> als Kalenderdatei laden und in den Kalender übernehmen.</li></ol>
@@ -148,7 +165,7 @@
       <ol><li>Updates kommen automatisch beim nächsten Öffnen mit Internetverbindung.</li><li>Deine Daten bleiben dabei erhalten; nach einem Update erscheint ein kurzer Hinweis.</li><li>Ändert sich das Datenformat, legt die App vorher selbst eine Sicherung an (<b>Sicherung vor dem letzten Update</b>).</li></ol>
     </div></details>
     <details><summary class="row"><span class="icon" style="background:#8e8e93">🔊</span><span class="txt"><b>Ton &amp; Bildschirm</b></span><span class="chev"></span></summary><div class="panel">
-      <ol><li>Vor dem ersten Training <b>Ton testen</b> (weiter unten). Auf dem iPhone den Stummschalter beachten.</li><li>Der Bildschirm bleibt während des Trainings an, sofern das Gerät das unterstützt.</li><li>App geschlossen oder Anruf dazwischen? Beim nächsten Öffnen läuft das Training weiter.</li></ol>
+      <ol><li>Vor dem ersten Training <b>Ton testen</b> (weiter unten).</li><li><b>Sprachansagen</b> nennen die nächste Übung, Seitenwechsel, Rundenende und „Noch eine Minute“. Genutzt werden nur Stimmen, die auf dem Gerät laufen – nichts geht ins Internet.</li><li>iPhone: Normalerweise ist bei eingeschaltetem Stummschalter nichts zu hören. <b>Ton trotz Stummschalter</b> ändert das, kann aber laufende Musik pausieren.</li><li>Der Bildschirm bleibt während des Trainings an, sofern das Gerät das unterstützt.</li><li>App geschlossen oder Anruf dazwischen? Beim nächsten Öffnen läuft das Training weiter.</li></ol>
     </div></details>
   </div>
 
@@ -188,7 +205,9 @@
 
   <div class="header">Einstellungen</div>
   <div class="group">
-    <button class="row" type="button" id="soundrow"><span class="txt"><b>Tonsignale</b></span><span class="val" id="soundval"></span></button>
+    <button class="row" type="button" id="soundrow"><span class="txt"><b>Ton</b><small>Signale und Ansagen; 🔊 in der Timer-Karte schaltet beides stumm</small></span><span class="val" id="soundval"></span></button>
+    <button class="row" type="button" id="voicerow"><span class="txt"><b>Sprachansagen</b><small id="voicehint"></small></span><span class="val" id="voiceval"></span></button>
+    <button class="row hide" type="button" id="loudrow"><span class="txt"><b>Ton trotz Stummschalter</b><small>iPhone · kann laufende Musik pausieren</small></span><span class="val" id="loudval"></span></button>
     <button class="row" type="button" id="testsound"><span class="txt"><b>Ton testen</b></span><span class="chev"></span></button>
   </div>
 
@@ -220,6 +239,41 @@
 <dialog class="sheet" id="guide" aria-labelledby="guide-title">
   <div class="sheethead"><div class="grabber"></div><div class="rowx"><h2 id="guide-title" tabindex="-1" style="outline:none"></h2><button class="btn small" id="guide-close" type="button">Fertig</button></div></div>
   <div class="sheetbody" id="guide-body"></div>
+</dialog>
+
+<dialog class="sheet" id="routine" aria-labelledby="rt-title">
+  <div class="sheethead"><div class="grabber"></div><div class="rowx"><h2 id="rt-title" tabindex="-1" style="outline:none"></h2><button class="btn small" id="rt-close" type="button">Beenden</button></div></div>
+  <div class="sheetbody">
+    <div class="rtcount"><span id="rt-count"></span><div class="rtbar"><div id="rt-bar"></div></div></div>
+    <div class="rtmain">
+      <div class="rtclock" id="rt-clock" aria-live="off">00:00</div>
+      <div class="rtside" id="rt-side"></div>
+      <div class="rtname" id="rt-name"></div>
+      <div class="rtdetail" id="rt-detail"></div>
+      <p class="tiny" id="rt-manual"></p>
+    </div>
+    <div class="rtctl">
+      <button type="button" id="rt-prev" aria-label="Vorheriger Schritt">⏮</button>
+      <button type="button" id="rt-main" class="main"></button>
+      <button type="button" id="rt-next" aria-label="Nächster Schritt">⏭</button>
+    </div>
+    <div class="rtextra"><button type="button" class="btn small" id="rt-plus">+1 Min.</button><button type="button" class="btn small" id="rt-guide">Anleitung</button></div>
+    <p class="tiny" id="rt-next-info"></p>
+    <div id="rt-fig" style="margin-top:10px"></div>
+  </div>
+</dialog>
+
+<dialog class="sheet" id="rate" aria-labelledby="rate-title">
+  <div class="sheethead"><div class="grabber"></div><div class="rowx"><h2 id="rate-title" tabindex="-1" style="outline:none"></h2><button class="btn small" id="rate-skip" type="button">Später</button></div></div>
+  <form class="sheetbody" id="rateform">
+    <p id="rate-summary" class="muted"></p>
+    <div id="rate-progress"></div>
+    <h3>Wie anstrengend war es?</h3>
+    <div class="rpe" id="rpe" role="radiogroup" aria-label="Anstrengung von 1 bis 10"></div>
+    <p class="tiny" id="rpe-text"></p>
+    <div class="field" style="margin-top:12px"><label for="ratenote">Notiz (optional)</label><input id="ratenote" type="text" maxlength="200" placeholder="z. B. gut geschlafen, Knie gezwickt" autocomplete="off"></div>
+    <button class="btn primary" type="submit" style="margin-top:14px;width:100%">Fertig</button>
+  </form>
 </dialog>
 
 <script src="data.js"></script>

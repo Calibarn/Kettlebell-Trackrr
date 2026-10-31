@@ -275,6 +275,11 @@ const MOBILITY = {
   ]
 };
 
+/* Einseitige Dehnungen: Im geführten Ablauf wird bei Angaben ohne „je Seite“ nach der halben Zeit die Seite gewechselt.
+   Wechselseitige Übungen (z. B. 90/90-Hüftrotation, World's Greatest Stretch) stehen bewusst nicht in der Liste. */
+const SIDED = new Set(['Hüftbeuger-Dehnung', 'Brustdehnung am Türrahmen', 'Nackendehnung seitlich', 'Wadendehnung', 'Vorderer Oberschenkel', 'Hintere Oberschenkel',
+  'Tauben-Dehnung', 'Knie-zur-Wand', 'Brustwirbel-Rotation im Vierfüßlerstand', 'Figure-4 Gesäß', 'Adduktoren', 'Open Book']);
+
 /* Erklärungen zu Stufen, Tempo, Bändern und EMOM (Lauftraining) */
 const STAGE_INFO = {
   'Split Squat': 'Beide Füße am Boden, großer Schritt. Einstiegsstufe.',

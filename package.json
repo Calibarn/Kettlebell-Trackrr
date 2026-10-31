@@ -1,0 +1,11 @@
+{
+  "name": "kettlebell-trackrr",
+  "private": true,
+  "description": "Automatische Tests für die KB-Tracker-Web-App (die App selbst braucht kein Node).",
+  "scripts": {
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0"
+  }
+}

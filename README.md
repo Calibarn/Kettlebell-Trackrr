@@ -8,14 +8,17 @@ Mein persönlicher Trainings-Begleiter als Web-App für iPhone und Android – K
   - Ganzkörper (Zirkel), Tabata (komplett automatisch, mit Kettlebell, Band oder Körpergewicht), Läufer (Sätze mit Progression), Oberkörper (z. B. nach dem Longrun), Büro (Haltung & Rücken)
   - „Heute dabei“: Kettlebell, Bänder und Körpergewicht wählen – je Übung wird automatisch die wirksamste Variante aus der Auswahl genommen (Rangfolge mit Begründung in `data.js`, `BEST`). Ohne Auswahl gilt Körpergewicht. Die Auswahl wird gemerkt.
   - Gewicht je Übung (vorbelegt 12 kg) und Bandstärke unter „Übungen, Geräte & Gewichte“
-  - Ton-Countdown, automatische Aufwärm-/Cooldown-Abläufe, Zeitübungen, Swing-EMOM
-  - Bestwerte vergleichen nur Einheiten mit gleichem Aufbau
-- **Laufen** (nur Anleitungen)
+  - Ton-Countdown und Sprachansagen (nächste Übung, Seitenwechsel, Rundenende), automatische Aufwärm-/Cooldown-Abläufe, Zeitübungen, Swing-EMOM
+  - Bestwerte vergleichen nur Einheiten mit gleichem Aufbau; nach dem Speichern Zusammenfassung mit neuem Bestwert
+  - Progressionshinweise: Läufer-Plan bei allen Sätzen an der Obergrenze (nächste Stufe, Gewicht, Band), Tabata nach drei kompletten Einheiten (8 Runden, dann 60 Sek. Pause)
+  - Gefühlte Anstrengung (1–10) und Notiz je Einheit, nachträglich im Verlauf änderbar
+- **Laufen** (Anleitungen ohne Tracking)
   - Warm-up und Cooldown für 5 km, 10 km, Halbmarathon, Marathon
   - Warm-up und Cooldown für Intervall, Speed und Longrun
   - Lauf-ABC
-- **Mobility** (nur Anleitungen): Kurzprogramme sowie Übungen für Hüfte, Rücken, Schultern & Nacken, Beine & Füße
-- **Mehr**: Bauchumfang, Datensicherung, Ton, Hinweise
+  - „Geführt“: Ablauf Schritt für Schritt mit Countdown und Ansage; Strecken und Wiederholungen werden abgehakt
+- **Mobility** (ohne Tracking): Kurzprogramme mit geführtem Timer inkl. Seitenwechsel sowie Übungen für Hüfte, Rücken, Schultern & Nacken, Beine & Füße
+- **Mehr**: Wochenübersicht, Anleitung, Bauchumfang, Datensicherung, Ton & Ansagen, Hinweise
 
 Jede Übung hat eine Anleitung mit Skizze (Start → Bewegung).
 
@@ -28,6 +31,7 @@ Orientiert sich an Apples Gestaltungsrichtlinien: große Titel, gruppierte Liste
 - Trainings, Messungen und Einstellungen liegen ausschließlich im Speicher des Geräts (`localStorage`).
 - Eine **Content-Security-Policy** verbietet der App jede Verbindung zu anderen Servern (`connect-src 'self'`) und lädt nur eigene Dateien. Es gibt keine Analyse, keine externen Schriften oder Skripte.
 - Daten verlassen das Gerät nur, wenn du selbst **„In Datei sichern“** wählst: auf dem iPhone über „Teilen → In Dateien sichern“, auf anderen Geräten über einen Dateidialog oder als Download.
+- Sprachansagen nutzen nur Stimmen, die auf dem Gerät laufen (`localService`). Online-Stimmen, z. B. in Chrome am Desktop, werden bewusst nicht verwendet, weil sie den Text an fremde Server schicken würden. Ohne deutsche Gerätestimme gibt es nur Tonsignale.
 - Hinweis: Alle GitHub-Pages-Projekte unter `calibarn.github.io` teilen sich denselben Browser-Speicherbereich.
 
 ## Einrichtung
@@ -53,7 +57,25 @@ Daten gehen nur verloren, wenn die Adresse (Domain) wechselt, das App-Symbol vom
 
 ## Aktualisieren
 
-Bei Änderungen an Dateien in `sw.js` die Konstante `VERSION` erhöhen (z. B. `kbt-v10`). Online lädt die App immer die neueste Version, offline den Cache.
+Bei Änderungen an Dateien in `sw.js` die Konstante `VERSION` erhöhen (z. B. `kbt-v11`). Online lädt die App immer die neueste Version, offline den Cache.
+
+## Ton auf dem iPhone
+
+Safari spielt Web-Töne normalerweise nicht, wenn der Stummschalter an ist. Unter **Mehr → Ton trotz Stummschalter** stellt die App die Audio-Sitzung auf „playback“ (Audio Session API; die Option erscheint nur, wenn das iPhone sie unterstützt). Nachteil: Laufende Musik kann dabei pausieren. Bei gesperrtem Bildschirm pausiert iOS Web-Apps grundsätzlich; die App hält den Bildschirm deshalb während des Trainings an.
+
+## Tests
+
+Automatische Tests mit Playwright (Chromium) prüfen Zirkel, Tabata, Sätze, Geräte-Auswahl, Ansagen, geführte Routinen, Import/Export, Update-Sicherheit, Content-Security-Policy und dass jede Übung Anleitung und Skizze hat. Sie laufen bei jedem Push über GitHub Actions (`.github/workflows/test.yml`).
+
+Lokal (Node 22 und Python 3 nötig):
+
+```
+npm ci
+npx playwright install chromium
+npm test
+```
+
+Die App selbst braucht kein Node – `package.json` dient nur den Tests.
 
 ## Aufbau
 
@@ -64,5 +86,6 @@ Bei Änderungen an Dateien in `sw.js` die Konstante `VERSION` erhöhen (z. B. `k
 | `styles.css` | Gestaltung (hell/dunkel, iOS/Android) |
 | `data.js` | Pläne, Übungsvarianten, Lauf- und Mobility-Inhalte, Anleitungstexte |
 | `figures.js` | Bewegungsskizzen |
-| `app.js` | Timer, Erfassung, Verlauf, Datensicherung, Navigation |
+| `app.js` | Timer, Ansagen, Erfassung, Verlauf, Fortschritt, Wochenübersicht, geführte Routinen, Datensicherung, Navigation |
 | `sw.js`, `manifest.webmanifest`, Icons | Offline-Betrieb und Installation |
+| `tests/`, `playwright.config.js`, `package.json` | Automatische Tests (nicht Teil der App) |

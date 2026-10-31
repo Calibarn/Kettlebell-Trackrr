@@ -142,6 +142,10 @@ html[data-os=android] input,html[data-os=android] select{background:none;border:
 .setin{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--label2)}
 .setin input{width:72px;text-align:center;font-size:17px;padding:9px 6px}
 .stagesel{margin-top:8px}
+.advice{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;background:var(--accent-soft);color:var(--label);border-radius:10px;padding:8px 10px;margin-top:8px;font-size:14px}
+.advice span{flex:1;min-width:180px}
+.advice b{color:var(--accent-ink);font-weight:600}
+.timercard .advice{margin:6px 0 2px}
 
 /* Einstellungen */
 .srow{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr) 112px;gap:8px;align-items:center;padding:10px 0;border-bottom:.5px solid var(--sep)}
@@ -156,6 +160,10 @@ html[data-os=android] input,html[data-os=android] select{background:none;border:
 .historytable th,.historytable td{padding:9px 6px;border-bottom:.5px solid var(--sep);vertical-align:top}
 .historytable td:last-child,.historytable th:last-child{text-align:right}
 .tag{color:var(--label2);font-size:12px}
+.cellbtn{border:0;background:none;padding:0;text-align:left;font-size:14px;color:var(--label)}
+.cellbtn small{display:block;color:var(--label2);font-size:12px;margin-top:2px}
+.ratehint{color:var(--blue)}
+html[data-os=android] .ratehint{color:var(--accent-ink)}
 .empty{text-align:center;color:var(--label2);padding:22px 10px;background:var(--fill);border-radius:10px;font-size:14px}
 .chart{width:100%;height:auto;display:block;margin-top:8px}
 .chart .bar{fill:var(--accent)}
@@ -181,7 +189,33 @@ html[data-os=ios] .manual [data-os-only=android],html[data-os=android] .manual [
 /* Laufen & Mobility */
 .intro{background:var(--card);border-radius:var(--group-radius);padding:12px 16px;font-size:15px;color:var(--label2);margin-top:4px}
 .dur{flex:0 0 auto;min-width:74px;font-size:13px;font-weight:600;color:var(--accent-ink);font-variant-numeric:tabular-nums}
-.routinehead{display:flex;justify-content:space-between;align-items:baseline}
+.hdrbtn{border:0;background:none;color:var(--blue);font-size:15px;font-weight:600;text-transform:none;letter-spacing:0;padding:0}
+html[data-os=android] .hdrbtn{color:var(--accent-ink)}
+
+/* Geführter Ablauf (Laufen & Mobility) */
+.rtcount{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--label2)}
+.rtbar{flex:1;height:4px;border-radius:2px;background:var(--fill2);overflow:hidden}
+.rtbar div{height:100%;background:var(--accent);transition:width .25s}
+.rtmain{text-align:center;padding:14px 0 6px}
+.rtclock{font-size:clamp(56px,18vw,76px);font-weight:300;font-variant-numeric:tabular-nums;letter-spacing:-1px;line-height:1.05}
+html[data-os=android] .rtclock{font-weight:400}
+.rtside{font-size:13px;font-weight:600;color:var(--accent-ink);text-transform:uppercase;letter-spacing:.04em;margin-top:2px}
+.rtname{font-size:22px;font-weight:600;margin-top:8px}
+.rtdetail{font-size:15px;color:var(--label2);margin-top:2px}
+.rtctl{display:flex;gap:10px;margin-top:10px}
+.rtctl button{border:0;border-radius:14px;min-height:52px;font-size:17px;font-weight:600;background:var(--fill);color:var(--label)}
+.rtctl button:not(.main){flex:0 0 60px;font-size:20px}
+.rtctl .main{flex:1;background:var(--accent);color:var(--on-accent)}
+html[data-os=android] .rtctl button{border-radius:100px}
+.rtextra{display:flex;gap:8px;justify-content:center;margin-top:10px}
+
+/* Anstrengung 1–10 */
+.rpe{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:4px}
+.rpe button{border:0;border-radius:8px;min-height:44px;background:var(--fill);font-weight:600;font-size:16px;color:var(--label);padding:0}
+.rpe button[aria-checked=true]{background:var(--accent);color:var(--on-accent)}
+@media(max-width:380px){.rpe{grid-template-columns:repeat(5,minmax(0,1fr))}}
+.progresslist{list-style:none;padding:10px 12px;margin:4px 0 0;background:var(--accent-soft);border-radius:10px}
+.progresslist li{margin:4px 0;font-size:15px}
 
 /* Aktionsleiste & Tab-Leiste */
 .actionbar{position:fixed;left:0;right:0;bottom:calc(var(--tabbar) + env(safe-area-inset-bottom));z-index:30;padding:8px 12px;background:var(--bar-bg);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border-top:.5px solid var(--sep)}

@@ -5,7 +5,7 @@ const $ = id => document.getElementById(id);
 const KEYS = {
   entries: 'jan-kettlebell-tracker-v1', waist: 'jan-kb-waist-v1', sound: 'jan-kb-sound-v1', gear: 'jan-kb-gear-v1',
   choice: 'jan-kb-choice-v1', stage: 'jan-kb-stage-v1', plan: 'jan-kb-plan-v1', session: 'jan-kb-session-v1',
-  backup: 'jan-kb-lastbackup-v1', hint: 'jan-kb-installhint-v1', area: 'jan-kb-area-v1', run: 'jan-kb-runview-v1'
+  backup: 'jan-kb-lastbackup-v1', hint: 'jan-kb-installhint-v1', area: 'jan-kb-area-v1', run: 'jan-kb-runview-v1', audio: 'jan-kb-audio-v1'
 };
 /* Datensicherheit bei Updates:
    - Einträge, die diese Version nicht versteht, werden nie verworfen, sondern unverändert mitgespeichert.
@@ -130,10 +130,39 @@ function resultText(e) {
   return `${Math.floor(e.total / n)} Runden + ${e.total % n} Übungen`;
 }
 
-/* ---------- Ton & Wake Lock ---------- */
+/* ---------- Ton, Sprachansagen & Wake Lock ---------- */
 let soundEnabled = load(KEYS.sound, true) !== false;
+let audioOpt = load(KEYS.audio, {}); if (!isObj(audioOpt)) audioOpt = {};
+audioOpt = { voice: audioOpt.voice !== false, loud: audioOpt.loud === true };
+// iPhone (Audio Session API): „playback“ klingt auch bei Stummschalter, kann aber laufende Musik unterbrechen – daher nur auf Wunsch
+const hasAudioSession = () => 'audioSession' in navigator;
+function applyAudioSession() { try { if (hasAudioSession()) navigator.audioSession.type = audioOpt.loud ? 'playback' : 'auto'; } catch (e) { } }
+applyAudioSession();
 let audioCtx = null;
-function audioReady() { if (!soundEnabled) return; try { audioCtx ??= new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => { }); } catch (e) { } }
+function audioReady() { if (!soundEnabled) return; applyAudioSession(); try { audioCtx ??= new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => { }); } catch (e) { } primeSpeech(); }
+// Sprachansagen nur mit Stimmen, die auf dem Gerät laufen (localService) – Online-Stimmen würden Text an fremde Server schicken
+let voice = null, speechPrimed = false, sayTimer = null;
+function pickVoice() {
+  try {
+    const vs = speechSynthesis.getVoices().filter(v => v.localService), lang = v => String(v.lang).replace('_', '-').toLowerCase();
+    voice = vs.find(v => lang(v) === 'de-de' && v.default) || vs.find(v => lang(v) === 'de-de') || vs.find(v => lang(v).startsWith('de')) || null;
+  } catch (e) { voice = null; }
+  if (typeof renderAudioRows === 'function') renderAudioRows();
+}
+const speechOk = () => 'speechSynthesis' in window && !!voice;
+const speakable = t => String(t)
+  .replace(/(\d+):(\d{2})\s*Min\./g, (_, m, s) => `${m} ${m === '1' ? 'Minute' : 'Minuten'}${s === '00' ? '' : ' ' + Number(s)}`)
+  .replace(/(\d)\s*[–-]\s*(\d)/g, '$1 bis $2').replace(/\bSek\./g, 'Sekunden').replace(/\bMin\./g, 'Minuten').replace(/\bWdh\./g, 'Wiederholungen')
+  .replace(/(\d)\s*m\b/g, '$1 Meter').replace(/(\d)\s*kg\b/g, '$1 Kilo').replace(/\s*×\s*/g, ' mal ').replace(/\s*·\s*/g, ', ').replace(/([a-zäöü])\/([a-zäöü])/gi, '$1 und $2');
+// iOS spricht erst, nachdem die erste Ansage durch ein Antippen ausgelöst wurde
+function primeSpeech() { if (speechPrimed || !audioOpt.voice || !speechOk()) return; try { const u = new SpeechSynthesisUtterance(' '); u.voice = voice; u.volume = 0; speechSynthesis.speak(u); speechPrimed = true; } catch (e) { } }
+function say(text, delay = 350) {
+  if (!soundEnabled || !audioOpt.voice || !speechOk() || !text) return;
+  const go = () => { try { if (speechSynthesis.speaking || speechSynthesis.pending) speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(speakable(text)); u.voice = voice; u.lang = voice.lang; u.rate = 1.05; speechSynthesis.speak(u); } catch (e) { } };
+  clearTimeout(sayTimer);
+  if (delay > 0) sayTimer = setTimeout(go, delay); else go();
+}
+if ('speechSynthesis' in window) { pickVoice(); try { speechSynthesis.addEventListener('voiceschanged', pickVoice); } catch (e) { } }
 function tone(freq, dur = 0.11, delay = 0, vol = 0.2) {
   if (!soundEnabled || !audioCtx) return;
   const t = audioCtx.currentTime + delay, o = audioCtx.createOscillator(), g = audioCtx.createGain();
@@ -165,7 +194,7 @@ let lastScene = null, lastSecond = null, phaseCueSecond = null, timedPick = {};
 function parseStep(label) { const m = label.match(/^(\d+):(\d+)(?:\s*×\s*(\d+))?/); return { seconds: Number(m[1]) * 60 + Number(m[2]), times: Number(m[3] || 1) }; }
 function buildSteps(items) {
   let at = 0; const out = [];
-  items.forEach(([d, name], group) => { const p = parseStep(d); for (let part = 0; part < p.times; part++) { out.push({ name: name + (p.times === 2 ? (part === 0 ? ' · links' : ' · rechts') : ''), base: name, group, start: at, end: at + p.seconds }); at += p.seconds; } });
+  items.forEach(([d, name], group) => { const p = parseStep(d); for (let part = 0; part < p.times; part++) { out.push({ name: name + (p.times === 2 ? (part === 0 ? ' · links' : ' · rechts') : ''), base: name, group, part, parts: p.times, start: at, end: at + p.seconds }); at += p.seconds; } });
   return out;
 }
 const STEPS = Object.fromEntries(Object.entries(PLANS).map(([k, p]) => [k, { warmup: buildSteps(p.warmup), cooldown: buildSteps(p.cooldown) }]));
@@ -200,8 +229,19 @@ function restoreSession() {
 }
 
 /* ---------- Ablauf ---------- */
-function signalCountdown(id, remaining) {
-  if (lastScene !== id) { if (lastScene !== null) cue('step'); lastScene = id; lastSecond = null; }
+// Ansagen: Phase mit erster Übung, jeder Schritt, Seitenwechsel, Rundenende
+const stepSpeech = s => s.part === 1 ? 'Seitenwechsel' : s.base + (s.parts === 2 ? ', links beginnen' : '');
+function phaseSpeech() {
+  if (phase === 1) {
+    const x = exList()[0];
+    if (isTabata()) return `Tabata. ${x.name}. Los!`;
+    if (isSets()) return `Kraftteil. Erste Übung: ${x.name}, ${x.reps}.`;
+    return `Zirkel, ${Math.round(durationSecs() / 60)} Minuten. Erste Übung: ${x.name}, ${x.reps}.`;
+  }
+  return (phase === 0 ? 'Aufwärmen. ' : 'Cooldown. ') + stepSpeech(currentStep());
+}
+function signalCountdown(id, remaining, speech) {
+  if (lastScene !== id) { if (lastScene !== null) { cue('step'); if (speech) say(speech); } lastScene = id; lastSecond = null; }
   const sec = Math.ceil(remaining);
   if (sec !== lastSecond) { lastSecond = sec; if (running && sec >= 1 && sec <= 3) cue('count'); }
 }
@@ -210,31 +250,40 @@ function tick() {
   let guard = 0;
   while (running && secNow() >= durationSecs() && guard++ < 4) {
     const over = secNow() - durationSecs();
-    if (phase === 2) { elapsed = durationSecs(); running = false; timed = null; emom = null; cue('finish'); keepAwake(false); persistSession(); renderPhase(); if (isTabata()) saveSession(localDay()); else toast('Training geschafft – jetzt speichern.'); return; }
+    if (phase === 2) { elapsed = durationSecs(); running = false; timed = null; emom = null; cue('finish'); keepAwake(false); persistSession(); renderPhase(); if (isTabata()) { say('Training geschafft.', 900); saveSession(localDay()); } else { say('Training geschafft. Jetzt speichern.', 900); toast('Training geschafft – jetzt speichern.'); } return; }
     if (phase === 1 && isTabata()) tabataDone = tabataWorkTotal();
-    phase++; timed = null; emom = null; elapsed = Math.max(0, over); startedAt = Date.now(); resetCues(); cue('phase');
+    phase++; timed = null; emom = null; elapsed = Math.max(0, over); startedAt = Date.now(); resetCues(); cue('phase'); say(phaseSpeech(), 650);
     toast(phase === 1 ? mainName() + ' läuft.' : 'Jetzt Cooldown.');
     persistSession(); renderPhase(); renderList();
   }
-  if (phase !== 1) { const s = currentStep(); signalCountdown(phase + '-' + s.group + '-' + s.start, s.end - secNow()); }
+  if (phase !== 1) { const s = currentStep(); signalCountdown(phase + '-' + s.group + '-' + s.start, s.end - secNow(), stepSpeech(s)); }
   else if (isTabata()) {
     const sg = currentSeg(), id = 'tb-' + sg.start;
-    if (lastScene !== id) { if (lastScene !== null) cue(sg.type === 'work' ? 'work' : 'rest'); lastScene = id; lastSecond = null; if (sg.block !== tbBlock) { tbBlock = sg.block; renderList(); } }
+    if (lastScene !== id) {
+      if (lastScene !== null) {
+        cue(sg.type === 'work' ? 'work' : 'rest');
+        const ex = exList(), last = tabataCfg().rounds - 1;
+        if (sg.type === 'blockrest') say('Pause. Als Nächstes: ' + ex[sg.block + 1].name);
+        else if (sg.type === 'work' && sg.round === 0) say(ex[sg.block].name + '. Los!');
+        else if (sg.type === 'work' && sg.round === last) say('Letzte Runde');
+      }
+      lastScene = id; lastSecond = null; if (sg.block !== tbBlock) { tbBlock = sg.block; renderList(); }
+    }
     const sec = Math.ceil(sg.end - secNow());
     if (sec !== lastSecond) { lastSecond = sec; if (sec >= 1 && sec <= 3) cue('count'); }
   }
   else {
     const rem = Math.ceil(durationSecs() - secNow());
-    if (rem !== phaseCueSecond) { phaseCueSecond = rem; if (rem >= 1 && rem <= 3) cue('count'); }
+    if (rem !== phaseCueSecond) { phaseCueSecond = rem; if (rem >= 1 && rem <= 3) cue('count'); if (rem === 60) say('Noch eine Minute.', 0); }
     if (timed) {
       const pr = Math.max(0, secNow() - timed.start), seg = Math.min(timed.sides - 1, Math.floor(pr / timed.seconds));
       if (pr >= timed.seconds * timed.sides) { cue('step'); timed = null; finishExercise(true); toast('✓ Zeitübung geschafft und gezählt.'); }
-      else signalCountdown('t-' + timed.index + '-' + seg, (seg + 1) * timed.seconds - pr);
+      else signalCountdown('t-' + timed.index + '-' + seg, (seg + 1) * timed.seconds - pr, 'Seitenwechsel');
     }
     if (emom) {
       const pr = Math.max(0, secNow() - emom.start);
-      if (pr >= emom.minutes * 60) { emom = null; cue('finish'); toast('✓ EMOM fertig – Wiederholungen eintragen.'); persistSession(); renderEmom(); }
-      else { const m = Math.floor(pr / 60); signalCountdown('e-' + m, (m + 1) * 60 - pr); }
+      if (pr >= emom.minutes * 60) { emom = null; cue('finish'); say('EMOM fertig. Wiederholungen eintragen.', 900); toast('✓ EMOM fertig – Wiederholungen eintragen.'); persistSession(); renderEmom(); }
+      else { const m = Math.floor(pr / 60); signalCountdown('e-' + m, (m + 1) * 60 - pr, 'Minute ' + (m + 1)); }
     }
   }
   updateClock();
@@ -243,7 +292,7 @@ function play() {
   if (sessionSaved) return;
   if (isFinished()) { saveSession(localDay()); return; }
   if (running) { elapsed = secNow(); running = false; keepAwake(false); toast('Pausiert.'); }
-  else { audioReady(); startedAt = Date.now(); running = true; if (elapsed === 0 && phase === 0) cue('phase'); keepAwake(true); }
+  else { audioReady(); startedAt = Date.now(); running = true; if (elapsed === 0 && phase === 0) { cue('phase'); say(phaseSpeech(), 650); } keepAwake(true); }
   persistSession(); renderControls(); renderCurrent(); renderEmom(); tick();
 }
 function skip() {
@@ -251,7 +300,7 @@ function skip() {
   audioReady();
   if (phase === 2) { elapsed = durationSecs(); running = false; timed = null; emom = null; cue('finish'); keepAwake(false); persistSession(); renderPhase(); toast('Training beendet – jetzt speichern.'); return; }
   if (phase === 1 && isTabata()) tabataDone = workDoneAt(secNow());
-  phase++; elapsed = 0; startedAt = Date.now(); timed = null; emom = null; resetCues(); cue('phase');
+  phase++; elapsed = 0; startedAt = Date.now(); timed = null; emom = null; resetCues(); cue('phase'); if (running) say(phaseSpeech(), 650);
   toast(phase === 1 ? mainName() + ' gestartet.' : 'Jetzt kommt das Cooldown.');
   persistSession(); renderPhase(); renderList();
 }
@@ -267,8 +316,9 @@ function setPlan(p) {
 function finishExercise(fromTimer) {
   if (isSets() || isTabata() || phase !== 1 || sessionSaved || (timed && !fromTimer)) return;
   completions++; resetCues();
-  const n = exList().length;
-  if (!fromTimer) toast(completions % n === 0 ? '🎉 Runde ' + completions / n + ' geschafft!' : '✓ ' + exList()[(completions - 1) % n].name);
+  const ex = exList(), n = ex.length, nx = ex[completions % n];
+  if (!fromTimer) toast(completions % n === 0 ? '🎉 Runde ' + completions / n + ' geschafft!' : '✓ ' + ex[(completions - 1) % n].name);
+  say((completions % n === 0 ? `Runde ${completions / n} geschafft. ` : '') + `${nx.name}, ${nx.reps}`, fromTimer ? 350 : 0);
   persistSession(); renderList(); renderCurrent(); renderControls(); renderStats();
 }
 function undo() {
@@ -281,10 +331,10 @@ function startTimed() {
   const ex = exList(), off = completions % ex.length, tp = timedParams(ex[off].reps); if (!tp) return;
   audioReady();
   const secs = tp.min === tp.max ? tp.min : Number($('timedlength').value) || tp.max;
-  timed = { index: completions, seconds: secs, sides: tp.sides, start: secNow() }; resetCues(); cue('step');
+  timed = { index: completions, seconds: secs, sides: tp.sides, start: secNow() }; resetCues(); cue('step'); say(tp.sides === 2 ? 'Los, links beginnen' : 'Los');
   persistSession(); renderCurrent(); renderControls();
 }
-function startEmom() { if (!isSets() || phase !== 1 || !running || emom) return; audioReady(); emom = { start: secNow(), minutes: 3 }; resetCues(); cue('step'); persistSession(); renderEmom(); }
+function startEmom() { if (!isSets() || phase !== 1 || !running || emom) return; audioReady(); emom = { start: secNow(), minutes: 3 }; resetCues(); cue('step'); say('Minute 1'); persistSession(); renderEmom(); }
 function buildSetsEntry(date) {
   const ex = exList();
   const sets = ex.map(x => runReps[x.slot.id].map(v => v === '' ? null : Math.max(0, Math.round(Number(String(v).replace(',', '.'))) || 0)));
@@ -308,12 +358,56 @@ function saveSession(date, opts = {}) {
     entry = { v: 3, id: uid(), date, plan, total, cfg: currentCfg(), names: ex.map(x => x.name), at: new Date().toISOString() };
   }
   if (manual) entry.manual = true;
+  const sig = entrySig(entry), prev = saved.filter(e => e.plan === entry.plan && entrySig(e) === sig);
   saved.push(entry); persistEntries();
   if (!manual) { sessionSaved = true; running = false; timed = null; emom = null; keepAwake(false); }
   if (isSets()) runReps = emptyReps(plan);
   persistSession(); renderAll();
   toast(isTabata() && !manual ? '✓ Tabata geschafft und gespeichert.' : '✓ Gespeichert. Du findest die Einheit im Verlauf.');
+  openRate(entry.id, progressNotes(entry, prev));
   return true;
+}
+
+/* ---------- Fortschritt: Bestwerte und Hinweise zur Steigerung ---------- */
+const byNewest = (a, b) => b.date.localeCompare(a.date) || String(b.at || '').localeCompare(String(a.at || ''));
+const rpeOf = e => Number.isInteger(e.rpe) && e.rpe >= 1 && e.rpe <= 10 ? e.rpe : null;
+const repTop = reps => { const m = String(reps).match(/(\d+)\s*[–-]\s*(\d+)/) || String(reps).match(/(\d+)/); return m ? Number(m[2] || m[1]) : null; };
+const totalText = e => e.mode === 'sets' ? e.total + ' Wdh.' : `${Math.floor(e.total / entryCount(e))} Runden + ${e.total % entryCount(e)}`;
+// Doppelte Progression: Erst wenn alle Sätze die Obergrenze erreichen, wird es schwerer (Stufe, Gewicht, Band)
+function setsAdvice(e, i) {
+  const ex = exList(), x = ex[i];
+  if (!x || !e || e.mode !== 'sets' || e.plan !== plan || !Array.isArray(e.sets) || (e.cfg || []).length !== ex.length) return null;
+  const st = stageOf(plan, x.slot) || '';
+  if (e.cfg[i] !== x.cfg || ((e.stages || [])[i] || '') !== st) return null;
+  const top = repTop(x.reps), r = e.sets[i];
+  if (!top || !Array.isArray(r) || r.length < x.slot.sets || !r.every(v => typeof v === 'number' && v >= top)) return null;
+  const sl = x.slot, k = sl.stages ? sl.stages.indexOf(st) : -1;
+  if (sl.stages && k >= 0 && k < sl.stages.length - 1) return { text: 'Nächste Stufe: ' + sl.stages[k + 1], stage: sl.stages[k + 1] };
+  if (sl.emom) return { text: x.g === 'kb' ? 'Schwerere Kugel' : x.g === 'band' ? 'Stärkeres Band' : 'Oben 2 Sek. halten' };
+  if (/Sek\./.test(x.reps)) return { text: x.g === 'kb' ? 'Schwerere Kugel oder länger halten' : 'Länger halten' };
+  return { text: x.g === 'kb' ? 'Mehr Gewicht' + (sl.stages ? '' : ' oder 3 Sek. absenken') : x.g === 'band' ? 'Stärkeres Band' : 'Schwerere Variante oder 3 Sek. absenken' };
+}
+function tabataAdvice() {
+  if (!isTabata()) return null;
+  const c = tabataCfg(); if (c.rounds >= 8 && c.blockRest <= 60) return null;
+  const sig = currentSig('tabata'), rows = saved.filter(e => e.plan === 'tabata' && entrySig(e) === sig).sort(byNewest).slice(0, 3);
+  if (rows.length < 3 || !rows.every(e => e.total >= e.of && !(rpeOf(e) >= 9))) return null;
+  return c.rounds < 8 ? { text: `3 × in Folge komplett mit ${c.rounds} Runden – bereit für 8 Runden je Übung.`, patch: { rounds: 8 }, btn: 'Auf 8 Runden' }
+    : { text: '3 × in Folge komplett mit 8 Runden – bereit für 60 Sek. Pause zwischen den Übungen.', patch: { blockRest: 60 }, btn: 'Auf 60 Sek.' };
+}
+function progressNotes(e, prev) {
+  const out = [];
+  if (e.mode === 'tabata') { if (e.total >= e.of) out.push(`✓ Alle ${e.of} Intervalle geschafft.`); }
+  else if (!prev.length) out.push('Erste Einheit mit diesem Aufbau – ab jetzt wird verglichen.');
+  else { const best = prev.reduce((a, b) => b.total > a.total ? b : a); if (e.total > best.total) out.push(`🏆 Neuer Bestwert: ${totalText(e)} (vorher ${totalText(best)}).`); }
+  if (e.mode === 'sets') exList().forEach((x, i) => { const a = setsAdvice(e, i); if (a) out.push(`↑ ${x.name}: ${a.text}`); });
+  const t = tabataAdvice(); if (t) out.push('↑ ' + t.text);
+  return out;
+}
+function renderPlanHint() {
+  const a = sessionActive() ? null : tabataAdvice(), el = $('planhint');
+  el.classList.toggle('hide', !a);
+  el.innerHTML = a ? `<span>↑ ${esc(a.text)}</span><button class="btn small primary" type="button" id="planhintbtn">${esc(a.btn)}</button>` : '';
 }
 
 /* ---------- Darstellung ---------- */
@@ -336,7 +430,7 @@ function renderHeader() {
   $('workoutname').textContent = `${ex.length} Übungen · ${Math.round(phaseSecs(plan, 1) / 60)} Min.`;
   $('intro').textContent = p.intro + ' Übung antippen für Anleitung und Skizze.';
   $('sound').textContent = soundEnabled ? '🔊' : '🔇'; $('sound').setAttribute('aria-pressed', String(soundEnabled)); $('sound').setAttribute('aria-label', soundEnabled ? 'Ton ausschalten' : 'Ton einschalten');
-  $('soundval').textContent = soundEnabled ? 'An' : 'Aus';
+  renderAudioRows();
 }
 function renderPhase() {
   const p = PLANS[plan];
@@ -430,21 +524,23 @@ function renderControls() {
   next.textContent = phase === 2 ? 'Beenden ✓' : phase === 0 ? 'Zum ' + mainName() + ' →' : 'Cooldown →';
   next.setAttribute('aria-label', next.textContent.replace(/[→✓]/g, '').trim());
   if (showDone) next.textContent = '⏭';
+  renderPlanHint();
 }
 function renderStats() {
   const ex = exList(), n = ex.length, all = saved.filter(e => e.plan === plan), comp = all.filter(comparable);
-  const parts = [];
+  const parts = [], week = `<span>Diese Woche <b>${saved.filter(e => weekStart(e.date) === weekStart(localDay())).length}</b></span>`;
+  renderPlanHint();
   if (isTabata()) {
     parts.push(`<span>Einheiten <b>${comp.length}</b>${comp.length !== all.length ? ' von ' + all.length + ' vergleichbar' : ''}</span>`);
     parts.push(`<span>Komplett <b>${comp.filter(e => e.total >= e.of).length}</b></span>`);
     parts.push(`<span>Arbeit <b>${Math.round(tabataWorkTotal() * 20 / 60)} Min.</b></span>`);
-    $('statsline').innerHTML = parts.join(''); return;
+    $('statsline').innerHTML = parts.join('') + week; return;
   }
   let best = null; if (comp.length) best = Math.max(...comp.map(e => e.total));
   if (!isSets()) parts.push(`<span>Runden <b>${Math.floor(completions / n)}</b> + <b>${completions % n}</b></span>`);
   parts.push(`<span>Bestwert <b>${best === null ? '–' : isSets() ? best + ' Wdh.' : Math.floor(best / n) + 'R +' + best % n}</b></span>`);
   parts.push(`<span>Einheiten <b>${comp.length}</b>${comp.length !== all.length ? ' von ' + all.length + ' vergleichbar' : ''}</span>`);
-  $('statsline').innerHTML = parts.join('');
+  $('statsline').innerHTML = parts.join('') + week;
 }
 function lastSetsEntry() { return saved.filter(e => e.plan === plan && e.mode === 'sets' && e.v >= 3).sort((a, b) => b.date.localeCompare(a.date) || String(b.at || '').localeCompare(String(a.at || '')))[0]; }
 function renderList() {
@@ -471,8 +567,10 @@ function renderList() {
     const inputs = runReps[sl.id].map((v, k) => `<label class="setin"><span>${sl.setLabel || 'Satz'} ${k + 1}</span><input type="number" inputmode="numeric" min="0" max="${/Sek\./.test(x.reps) ? 600 : 200}" step="1" data-slot="${sl.id}" data-idx="${k}" value="${esc(v)}" placeholder="${/Sek\./.test(x.reps) ? 'Sek.' : 'Wdh.'}"></label>`).join('');
     let lastTxt = 'Noch kein Eintrag';
     if (last && (last.cfg || []).length === ex.length && last.sets[i]) lastTxt = `Zuletzt (${dateGerman(last.date)}): ${last.sets[i].map(r => r ?? '–').join(' / ')}${last.stages && last.stages[i] ? ' · ' + esc(last.stages[i]) : ''} · ${esc(cfgText(last.cfg[i]))}${last.names && last.names[i] !== x.name ? ' · ' + esc(last.names[i]) : ''}`;
+    const adv = setsAdvice(last, i);
+    const advHtml = adv ? `<div class="advice"><span>↑ Alle Sätze an der Obergrenze – bereit für mehr: <b>${esc(adv.text)}</b></span>${adv.stage ? `<button type="button" class="btn small" data-advance="${sl.id}" data-to="${esc(adv.stage)}">Übernehmen</button>` : ''}</div>` : '';
     const em = sl.emom ? '<div class="timedctl" style="padding:8px 0 0"><button type="button" class="btn small primary" id="emomstart">▶ EMOM starten</button><strong class="stepclock" id="emomclock">03:00</strong></div><p class="tiny" id="emominfo"></p>' : '';
-    html += `<div class="setcard"><div class="sethead"><button type="button" class="setname" data-ex="${i}">${esc(sl.stages && /^Bulgarian/.test(st) ? 'Bulgarian Split Squat' : x.name)} <span class="info">ⓘ</span></button><span class="setmeta">${esc(x.reps)}</span></div><div class="setmeta">${esc(x.gearText)} · ${esc(x.note)}</div>${stageSel}<div class="setrow">${inputs}</div><div class="setmeta">${lastTxt}</div>${em}</div>`;
+    html += `<div class="setcard"><div class="sethead"><button type="button" class="setname" data-ex="${i}">${esc(sl.stages && /^Bulgarian/.test(st) ? 'Bulgarian Split Squat' : x.name)} <span class="info">ⓘ</span></button><span class="setmeta">${esc(x.reps)}</span></div><div class="setmeta">${esc(x.gearText)} · ${esc(x.note)}</div>${stageSel}<div class="setrow">${inputs}</div><div class="setmeta">${lastTxt}</div>${advHtml}${em}</div>`;
   });
   wl.innerHTML = html + '</div>';
   renderEmom();
@@ -514,12 +612,16 @@ function renderHistory() {
   const comp = rows.filter(comparable);
   $('sessioncount').textContent = comp.length === rows.length ? String(rows.length) : `${comp.length}/${rows.length}`;
   $('historyhint').textContent = isSets() ? 'Balken: Summe der Wiederholungen. Blass: anderer Aufbau (Variante, Stufe oder Gewicht).' : 'Balken: abgeschlossene Übungen in der festen Zirkelzeit. Blass: anderer Aufbau (Übungen, Geräte oder Gewichte).';
-  $('history').innerHTML = rows.length ? rows.map(e => `<tr><td>${esc(dateGerman(e.date))}</td><td>${resultText(e)}${comparable(e) ? '' : ' <span class="tag">· anderer Aufbau</span>'}${e.manual ? ' <span class="tag">· nachgetragen</span>' : ''}</td><td><button class="btn small danger" type="button" data-delete="${esc(e.id)}" aria-label="Eintrag vom ${esc(dateGerman(e.date))} löschen">Löschen</button></td></tr>`).join('') : '<tr><td colspan="3" class="tag">Noch keine Einheit gespeichert.</td></tr>';
+  const best = comp.length && !isTabata() ? Math.max(...comp.map(e => e.total)) : null;
+  $('history').innerHTML = rows.length ? rows.map(e => {
+    const r = rpeOf(e), note = typeof e.note === 'string' ? e.note.trim() : '';
+    return `<tr><td>${esc(dateGerman(e.date))}</td><td><button type="button" class="cellbtn" data-rate="${esc(e.id)}" aria-label="Anstrengung und Notiz für ${esc(dateGerman(e.date))} bearbeiten">${esc(resultText(e))}${best !== null && comparable(e) && e.total === best ? ' 🏆' : ''}${comparable(e) ? '' : ' <span class="tag">· anderer Aufbau</span>'}${e.manual ? ' <span class="tag">· nachgetragen</span>' : ''}<small>${r ? `Anstrengung ${r}/10` : '<span class="ratehint">Anstrengung eintragen ›</span>'}${note ? ' · ' + esc(note) : ''}</small></button></td><td><button class="btn small danger" type="button" data-delete="${esc(e.id)}" aria-label="Eintrag vom ${esc(dateGerman(e.date))} löschen">Löschen</button></td></tr>`;
+  }).join('') : '<tr><td colspan="3" class="tag">Noch keine Einheit gespeichert.</td></tr>';
   const box = $('chartbox');
   if (!rows.length) { box.innerHTML = '<div class="empty">Nach der ersten gespeicherten Einheit erscheint hier dein Fortschritt.</div>'; return; }
-  const data = rows.slice(0, 12).reverse(), max = Math.max(1, ...data.map(x => x.total)), w = 740, base = 158, l = 30, plotW = w - l - 14, plotH = base - 18, step = plotW / data.length, barW = Math.min(48, step * 0.56);
-  const bars = data.map((x, i) => { const xx = l + step * i + (step - barW) / 2, hh = Math.max(1, x.total / max * plotH), yy = base - hh, c = comparable(x); return `<rect class="bar" x="${xx}" y="${yy}" width="${barW}" height="${hh}" rx="6" opacity="${c ? 1 : 0.3}"><title>${esc(dateGerman(x.date))}: ${resultText(x)}${c ? '' : ' (anderer Aufbau)'}</title></rect><text class="val" x="${xx + barW / 2}" y="${Math.max(yy - 6, 10)}" text-anchor="middle" font-size="12">${x.total}</text><text class="lbl" x="${xx + barW / 2}" y="178" text-anchor="middle" font-size="11">${x.date.slice(5).split('-').reverse().join('.')}</text>`; }).join('');
-  box.innerHTML = `<svg class="chart" viewBox="0 0 ${w} 190" role="img" aria-label="Balkendiagramm der letzten ${data.length} Einheiten"><line class="axis" x1="${l}" y1="${base}" x2="${w - 4}" y2="${base}"/>${bars}</svg>`;
+  const data = rows.slice(0, 12).reverse(), max = Math.max(1, ...data.map(x => x.total)), w = 380, base = 120, l = 6, plotW = w - l * 2, plotH = base - 20, step = plotW / data.length, barW = Math.min(30, step * 0.62);
+  const bars = data.map((x, i) => { const xx = l + step * i + (step - barW) / 2, hh = Math.max(1, x.total / max * plotH), yy = base - hh, c = comparable(x); return `<rect class="bar" x="${xx}" y="${yy}" width="${barW}" height="${hh}" rx="6" opacity="${c ? 1 : 0.3}"><title>${esc(dateGerman(x.date))}: ${esc(resultText(x))}${c ? '' : ' (anderer Aufbau)'}</title></rect><text class="val" x="${xx + barW / 2}" y="${Math.max(yy - 5, 10)}" text-anchor="middle" font-size="12">${x.total}</text><text class="lbl" x="${xx + barW / 2}" y="137" text-anchor="middle" font-size="11">${x.date.slice(5).split('-').reverse().join('.')}</text>`; }).join('');
+  box.innerHTML = `<svg class="chart" viewBox="0 0 ${w} 142" role="img" aria-label="Balkendiagramm der letzten ${data.length} Einheiten"><line class="axis" x1="${l}" y1="${base}" x2="${w - 4}" y2="${base}"/>${bars}</svg>`;
 }
 function renderManual() {
   const sets = isSets(), tb = isTabata(), n = exList().length;
@@ -547,20 +649,20 @@ function renderWaist() {
   $('waisthistory').innerHTML = rows.length ? rows.slice().reverse().map(e => `<tr><td>${dateGerman(e.date)}</td><td><b>${cmString(e.cm)} cm</b></td><td>${esc(e.note || '–')}</td><td><button class="btn small danger" type="button" data-waist-delete="${esc(e.date)}" aria-label="Messung vom ${dateGerman(e.date)} löschen">Löschen</button></td></tr>`).join('') : '<tr><td colspan="4" class="tag">Noch keine Messung gespeichert.</td></tr>';
   const t = $('waistchart');
   if (!rows.length) { t.innerHTML = '<div class="empty">Nach der ersten Messung erscheint hier der Verlauf.</div>'; return; }
-  const data = rows.slice(-12), w = 730, h = 226, left = 48, right = 29, top = 28, bottom = 190, pw = w - left - right;
+  const data = rows.slice(-12), w = 380, h = 184, left = 40, right = 14, top = 16, bottom = 156, pw = w - left - right;
   let lo = Math.min(...data.map(e => e.cm)), hi = Math.max(...data.map(e => e.cm)); const m = Math.max(1, (hi - lo) * 0.25);
   lo = Math.floor((lo - m) * 2) / 2; hi = Math.ceil((hi + m) * 2) / 2; if (hi <= lo) hi = lo + 2;
   const y = v => bottom - ((v - lo) / (hi - lo)) * (bottom - top), x = i => left + (data.length === 1 ? pw / 2 : i * pw / (data.length - 1));
-  const grid = [0, .25, .5, .75, 1].map(f => { const yy = top + (bottom - top) * f, v = hi - (hi - lo) * f; return `<line class="axis" x1="${left}" y1="${yy}" x2="${w - right}" y2="${yy}" stroke-dasharray="4 5"/><text class="lbl" x="${left - 9}" y="${yy + 4}" text-anchor="end" font-size="12">${cmString(v)}</text>`; }).join('');
+  const grid = [0, .25, .5, .75, 1].map(f => { const yy = top + (bottom - top) * f, v = hi - (hi - lo) * f; return `<line class="axis" x1="${left}" y1="${yy}" x2="${w - right}" y2="${yy}" stroke-dasharray="4 5"/><text class="lbl" x="${left - 6}" y="${yy + 4}" text-anchor="end" font-size="10.5">${cmString(v)}</text>`; }).join('');
   const path = data.map((e, i) => `${i ? 'L' : 'M'} ${x(i).toFixed(1)} ${y(e.cm).toFixed(1)}`).join(' ');
-  const dots = data.map((e, i) => `<circle class="dot" cx="${x(i)}" cy="${y(e.cm)}" r="5.5" stroke-width="2"><title>${dateGerman(e.date)}: ${cmString(e.cm)} cm</title></circle>`).join('');
-  const labels = data.map((e, i) => i === 0 || i === data.length - 1 || data.length <= 5 ? `<text class="lbl" x="${x(i)}" y="${h - 12}" text-anchor="middle" font-size="12">${e.date.slice(5).split('-').reverse().join('.')}</text>` : '').join('');
-  t.innerHTML = `<svg class="chart" role="img" aria-label="Bauchumfang der letzten ${data.length} Messungen, von ${cmString(data[0].cm)} bis ${cmString(data.at(-1).cm)} cm" viewBox="0 0 ${w} ${h}">${grid}<path class="line" d="${path}" fill="none" stroke-width="3" stroke-linejoin="round"/>${dots}${labels}</svg>`;
+  const dots = data.map((e, i) => `<circle class="dot" cx="${x(i)}" cy="${y(e.cm)}" r="4.5" stroke-width="2"><title>${dateGerman(e.date)}: ${cmString(e.cm)} cm</title></circle>`).join('');
+  const labels = data.map((e, i) => i === 0 || i === data.length - 1 || data.length <= 5 ? `<text class="lbl" x="${x(i)}" y="${h - 8}" text-anchor="middle" font-size="10.5">${e.date.slice(5).split('-').reverse().join('.')}</text>` : '').join('');
+  t.innerHTML = `<svg class="chart" role="img" aria-label="Bauchumfang der letzten ${data.length} Messungen, von ${cmString(data[0].cm)} bis ${cmString(data.at(-1).cm)} cm" viewBox="0 0 ${w} ${h}">${grid}<path class="line" d="${path}" fill="none" stroke-width="2.5" stroke-linejoin="round"/>${dots}${labels}</svg>`;
 }
 
 /* ---------- Dateien: Backup, CSV, Kalender ---------- */
 function download(name, content, type) { const blob = new Blob([content], { type }), url = URL.createObjectURL(blob), a = document.createElement('a'); a.href = url; a.download = name; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 3000); }
-function backupJson() { return JSON.stringify({ version: 3, entries: saved.concat(savedKeep), waist: waist.concat(waistKeep), settings: { gear, choices, stages }, exportedAt: new Date().toISOString() }, null, 2); }
+function backupJson() { return JSON.stringify({ version: 3, entries: saved.concat(savedKeep), waist: waist.concat(waistKeep), settings: { gear, choices, stages, audio: audioOpt }, exportedAt: new Date().toISOString() }, null, 2); }
 function schemaCheck() {
   const prev = load(SCHEMA_KEY, null);
   if (prev === SCHEMA || (typeof prev === 'number' && prev > SCHEMA)) return; // neuere Daten mit älterer App: nichts verändern
@@ -608,26 +710,31 @@ function importBackup(file) {
         if (isObj(settings.gear)) { gear = { kb: settings.gear.kb !== false, band: settings.gear.band !== false, bw: settings.gear.bw !== false }; ensureGear(); store(KEYS.gear, gear); }
         if (isObj(settings.choices)) { choices = settings.choices; store(KEYS.choice, choices); }
         if (isObj(settings.stages)) { stages = settings.stages; store(KEYS.stage, stages); }
+        if (isObj(settings.audio)) { audioOpt = { voice: settings.audio.voice !== false, loud: settings.audio.loud === true }; store(KEYS.audio, audioOpt); applyAudioSession(); }
         if (!sessionActive()) runReps = emptyReps(plan);
       }
       renderAll(); renderWaist();
       alert(`${added} Trainings- und ${addedW} Bauchumfang-Einträge importiert.${entries.length - added + wl.length - addedW > 0 ? ' Bereits vorhandene Einträge wurden übersprungen.' : ''}`);
     } catch (e) { alert('Import fehlgeschlagen: ' + e.message); }
   };
+  r.onerror = () => alert('Die Datei konnte nicht gelesen werden.');
   r.readAsText(file);
 }
 function exportCsv() {
-  const head = ['Datum', 'Plan', 'Runden', 'Weitere Übungen', 'Übungen bzw. Wdh. gesamt', 'Vergleichbar mit aktuellem Aufbau', 'Details'];
+  const head = ['Datum', 'Plan', 'Runden', 'Weitere Übungen', 'Übungen bzw. Wdh. gesamt', 'Vergleichbar mit aktuellem Aufbau', 'Details', 'Anstrengung (1-10)', 'Notiz'];
   const rows = saved.slice().sort((a, b) => a.date.localeCompare(b.date)).map(e => {
-    const cmp = comparable(e) ? 'ja' : 'nein';
+    const cmp = comparable(e) ? 'ja' : 'nein', tail = [rpeOf(e) ?? '', typeof e.note === 'string' ? e.note : ''];
     if (e.mode === 'sets') {
       const det = e.v >= 3 ? e.sets.map((r, i) => `${e.names[i]}${e.stages && e.stages[i] ? ' (' + e.stages[i] + ')' : ''} ${cfgText(e.cfg[i])}: ${r.map(v => v ?? '-').join('/')}`).join(' | ') : resultText(e);
-      return [e.date, PLANS[e.plan].short, '', '', e.total, cmp, det];
+      return [e.date, PLANS[e.plan].short, '', '', e.total, cmp, det, ...tail];
     }
+    if (e.mode === 'tabata') return [e.date, PLANS[e.plan].short, '', '', e.total, cmp, resultText(e) + ' | ' + (e.names || []).join(' | '), ...tail];
     const n = entryCount(e), det = e.v >= 3 ? e.names.map((nm, i) => `${nm} ${cfgText(e.cfg[i])}`).join(' | ') : '';
-    return [e.date, PLANS[e.plan].short, Math.floor(e.total / n), e.total % n, e.total, cmp, det];
+    return [e.date, PLANS[e.plan].short, Math.floor(e.total / n), e.total % n, e.total, cmp, det, ...tail];
   });
-  download('trainingstagebuch.csv', '﻿' + [head, ...rows].map(r => r.map(c => String(c).replace(/;/g, ',').replace(/\r?\n/g, ' ')).join(';')).join('\r\n'), 'text/csv;charset=utf-8');
+  // Freitext nie als Formel interpretieren lassen (Tabellenprogramme)
+  const cell = c => { const s = String(c).replace(/;/g, ',').replace(/\r?\n/g, ' '); return typeof c === 'string' && /^[=+\-@]/.test(s) ? "'" + s : s; };
+  download('trainingstagebuch.csv', '﻿' + [head, ...rows].map(r => r.map(cell).join(';')).join('\r\n'), 'text/csv;charset=utf-8');
 }
 function exportWaistCsv() {
   const rows = [['Datum', 'Bauchumfang (cm)', 'Notiz'], ...waistSorted().map(e => [e.date, cmString(e.cm), (e.note || '').replace(/;/g, ',').replace(/\r?\n/g, ' ')])];
@@ -689,7 +796,7 @@ function openExerciseGuide(i, origin) {
 }
 
 function renderAll() {
-  renderTabs(); renderGear(); renderHeader(); renderPhase(); renderList(); renderSettings(); renderHistory(); renderManual(); renderBackupBanner();
+  renderTabs(); renderGear(); renderHeader(); renderPhase(); renderList(); renderSettings(); renderHistory(); renderManual(); renderBackupBanner(); renderWeek();
 }
 
 /* ---------- Bereiche: Kraft, Laufen, Mobility, Mehr ---------- */
@@ -721,23 +828,161 @@ function renderRun() {
   const sub = $('runsub');
   if (runView.tab === 'abc') {
     sub.classList.add('hide');
-    $('runcontent').innerHTML = `<div class="intro">${esc(RUN_GUIDE.abc.intro)}</div><div class="header">Übungen</div><div class="group">${RUN_GUIDE.abc.drills.map(d => stepRow(...d)).join('')}</div><p class="footer">Bei Beschwerden in Fuß oder Wade Sprungübungen (Hopserlauf, Seitgalopp) auslassen.</p>`;
+    $('runcontent').innerHTML = `<div class="intro">${esc(RUN_GUIDE.abc.intro)}</div><div class="header">Übungen<button type="button" class="hdrbtn" data-routine="abc">▶ Geführt</button></div><div class="group">${RUN_GUIDE.abc.drills.map(d => stepRow(...d)).join('')}</div><p class="footer">Bei Beschwerden in Fuß oder Wade Sprungübungen (Hopserlauf, Seitgalopp) auslassen.</p>`;
     return;
   }
-  const list = RUN_GUIDE[runView.tab], cur = list.find(r => r.id === runView[runView.tab]) || list[0];
+  const list = RUN_GUIDE[runView.tab], cur = runCurrent();
   sub.classList.remove('hide');
   sub.innerHTML = list.map(r => `<button role="tab" type="button" data-runsub="${r.id}" aria-selected="${r.id === cur.id}">${esc(r.label)}</button>`).join('');
   $('runcontent').innerHTML = `<div class="intro">${esc(cur.intro)}</div>
-    <div class="header">Warm-up</div><div class="group">${cur.warmup.map(x => stepRow(...x)).join('')}</div>
-    <div class="header">Cooldown</div><div class="group">${cur.cooldown.map(x => stepRow(...x)).join('')}</div>
-    <p class="footer">Zeiten sind Richtwerte. Am Wettkampftag nichts Neues ausprobieren – den Ablauf vorher im Training testen.</p>`;
+    <div class="header">Warm-up<button type="button" class="hdrbtn" data-routine="warmup">▶ Geführt</button></div><div class="group">${cur.warmup.map(x => stepRow(...x)).join('')}</div>
+    <div class="header">Cooldown<button type="button" class="hdrbtn" data-routine="cooldown">▶ Geführt</button></div><div class="group">${cur.cooldown.map(x => stepRow(...x)).join('')}</div>
+    <p class="footer">Zeiten sind Richtwerte. „Geführt“ startet einen Ablauf mit Countdown und Ansage; Strecken und Wiederholungen hakst du selbst ab. Am Wettkampftag nichts Neues ausprobieren – den Ablauf vorher im Training testen.</p>`;
 }
 function renderMobility() {
   let h = '<div class="header">Kurzprogramme</div>';
-  h += MOBILITY.routines.map((r, i) => `<div class="group" style="margin-top:${i ? 12 : 0}px"><div class="row" style="font-weight:600"><span class="txt"><b style="font-weight:600">${esc(r.title)}</b></span><span class="val">${esc(r.time)}</span></div>${r.steps.map(s => stepRow(s[0], s[1], '')).join('')}</div>`).join('');
+  h += MOBILITY.routines.map((r, i) => `<div class="group" style="margin-top:${i ? 12 : 0}px"><div class="row"><span class="txt"><b style="font-weight:600">${esc(r.title)}</b><small>${esc(r.time)} · Countdown, Seitenwechsel und Ansage</small></span><button type="button" class="btn small primary" data-mob="${i}">▶ Starten</button></div>${r.steps.map(s => stepRow(s[0], s[1], '')).join('')}</div>`).join('');
   h += MOBILITY.groups.map(g => `<div class="header">${esc(g.title)}</div><div class="group">${g.items.map(s => stepRow(s[0], s[1], '')).join('')}</div>`).join('');
   h += '<p class="footer">Dehnen und mobilisieren im angenehmen Bereich – ziehen ja, Schmerz nein. Ruhig weiteratmen.</p>';
   $('mobcontent').innerHTML = h;
+}
+
+/* ---------- Routine-Timer für Laufen und Mobility (ohne Tracking) ---------- */
+const routineDlg = $('routine'); let rt = null;
+// Zeitangaben laufen automatisch (bei Bereichen die kürzere Zeit), Strecken und Wiederholungen werden abgehakt
+function routineStep([label, name, detail = '']) {
+  const L = String(label || ''), perSide = /je Seite/.test(L), guide = !!GUIDES[name]; let secs = null, m;
+  if ((m = L.match(/^(\d+):(\d{2})\s*Min\./))) secs = Number(m[1]) * 60 + Number(m[2]);
+  else if ((m = L.match(/^(\d+)(?:\s*[–-]\s*\d+)?\s*Min\./))) secs = Number(m[1]) * 60;
+  else if ((m = L.match(/^(\d+)(?:\s*[–-]\s*\d+)?\s*Sek\./))) secs = Number(m[1]);
+  if (secs && !guide && secs > 300) secs = null; // z. B. Essen oder Beine hochlegen: nur abhaken
+  const sides = perSide || (secs && SIDED.has(name) && secs >= 40) ? 2 : 1;
+  return { label: L, name, detail, guide, sides, secs: secs && !perSide && sides === 2 ? Math.round(secs / 2) : secs };
+}
+const rtStep = () => rt.steps[rt.i];
+const rtElapsed = () => rt.acc + (rt.running ? (Date.now() - rt.since) / 1000 : 0);
+const rtPart = () => { const s = rtStep(); return Math.min(s.sides - 1, Math.floor(rtElapsed() / s.secs)); };
+const rtRemaining = () => { const s = rtStep(), p = rtPart(); return (p === s.sides - 1 ? s.secs * s.sides + rt.extra : (p + 1) * s.secs) - rtElapsed(); };
+const durWords = n => { const m = Math.floor(n / 60), s = n % 60; return (m ? `${m} ${m === 1 ? 'Minute' : 'Minuten'}` : '') + (m && s ? ' ' : '') + (s ? `${s} Sekunden` : ''); };
+const rtSpeech = s => s.name + (s.secs ? ', ' + durWords(s.secs) + (s.sides === 2 ? ' je Seite, links beginnen' : '') : s.label ? ', ' + s.label : '');
+function startRoutine(title, items) {
+  if (rt || !items.length) return;
+  if (running) { if (!confirm('Das Kraft-Training läuft gerade. Pausieren und die Routine starten?')) return; play(); }
+  audioReady();
+  rt = { title, steps: items.map(routineStep), i: 0, acc: 0, since: Date.now(), running: true, extra: 0, lastSec: null, lastPart: 0, done: false };
+  keepAwake(true); cue('phase'); say(title + '. ' + rtSpeech(rt.steps[0]), 650);
+  routineDlg.showModal(); renderRoutine(); $('rt-title').focus();
+}
+function rtGo(i) {
+  if (!rt) return;
+  if (i >= rt.steps.length) { rt.done = true; rt.running = false; cue('finish'); say('Geschafft. Gut gemacht!', 900); keepAwake(false); renderRoutine(); return; }
+  Object.assign(rt, { i: Math.max(0, i), acc: 0, since: Date.now(), running: true, extra: 0, lastSec: null, lastPart: 0, done: false });
+  keepAwake(true); say(rtSpeech(rtStep())); renderRoutine();
+}
+function routineTick() {
+  if (!rt || rt.done || !rt.running || !rtStep().secs) return;
+  const s = rtStep();
+  if (rtElapsed() >= s.secs * s.sides + rt.extra) { cue('step'); rtGo(rt.i + 1); return; }
+  const p = rtPart();
+  if (p !== rt.lastPart) { rt.lastPart = p; cue('step'); say('Seitenwechsel'); renderRoutine(); }
+  const sec = Math.ceil(rtRemaining());
+  if (sec !== rt.lastSec) { rt.lastSec = sec; if (sec >= 1 && sec <= 3) cue('count'); }
+  renderRoutineClock();
+}
+function renderRoutineClock() {
+  if (!rt || rt.done) return;
+  const s = rtStep(); if (!s.secs) return;
+  $('rt-clock').textContent = clock(rtRemaining());
+  $('rt-side').textContent = s.sides === 2 ? (rtPart() === 0 ? 'Linke Seite' : 'Rechte Seite') : '';
+}
+function renderRoutine() {
+  if (!rt) return;
+  const n = rt.steps.length, s = rtStep(), nx = rt.steps[rt.i + 1], timedStep = !rt.done && !!s.secs;
+  $('rt-title').textContent = rt.title;
+  $('rt-count').textContent = rt.done ? `${n} von ${n} geschafft` : `Schritt ${rt.i + 1} von ${n}`;
+  $('rt-bar').style.width = (rt.done ? 100 : rt.i / n * 100) + '%';
+  $('rt-name').textContent = rt.done ? 'Geschafft!' : s.name;
+  $('rt-detail').textContent = rt.done ? 'Routine beendet. Gut gemacht.' : [s.label, s.detail].filter(Boolean).join(' · ') || ' ';
+  $('rt-clock').classList.toggle('hide', !timedStep);
+  $('rt-side').classList.toggle('hide', !timedStep || s.sides !== 2);
+  $('rt-manual').classList.toggle('hide', rt.done || timedStep);
+  $('rt-manual').textContent = 'Im eigenen Tempo – danach „Erledigt“ tippen.';
+  const main = $('rt-main');
+  main.textContent = rt.done ? 'Schließen' : !timedStep ? '✓ Erledigt' : rt.running ? 'Ⅱ Pause' : '▶ Weiter';
+  $('rt-prev').disabled = rt.done || rt.i === 0;
+  $('rt-next').disabled = rt.done;
+  $('rt-plus').classList.toggle('hide', !timedStep || s.secs * s.sides < 180);
+  $('rt-guide').classList.toggle('hide', rt.done || !s.guide);
+  $('rt-fig').innerHTML = !rt.done && s.guide ? renderFigure(s.name, 'bw') : '';
+  $('rt-next-info').textContent = rt.done ? '' : nx ? `Danach: ${nx.name}${nx.label ? ' · ' + nx.label : ''}` : 'Danach: fertig';
+  renderRoutineClock();
+}
+function stopRoutine() { rt = null; if (!running) keepAwake(false); }
+const runCurrent = () => { const list = RUN_GUIDE[runView.tab]; return Array.isArray(list) ? list.find(r => r.id === runView[runView.tab]) || list[0] : null; };
+
+/* ---------- Anstrengung (1–10) & Notiz je Einheit ---------- */
+const RPE_TEXT = ['', 'sehr leicht', 'sehr leicht', 'leicht', 'leicht', 'mittel', 'fordernd', 'hart', 'hart', 'sehr hart', 'maximal'];
+const rateDlg = $('rate'); let rateId = null, rateVal = null;
+function openRate(id, notes = null) {
+  const e = saved.find(x => String(x.id) === String(id)); if (!e) return;
+  rateId = String(e.id); rateVal = rpeOf(e);
+  $('rate-title').textContent = notes ? 'Einheit gespeichert' : 'Einheit bewerten';
+  $('rate-summary').textContent = `${PLANS[e.plan].label} · ${dateGerman(e.date)} · ${resultText(e)}`;
+  $('rate-progress').innerHTML = notes && notes.length ? `<ul class="progresslist">${notes.map(t => `<li>${esc(t)}</li>`).join('')}</ul>` : '';
+  $('ratenote').value = typeof e.note === 'string' ? e.note : '';
+  renderRpe();
+  if (!rateDlg.open) rateDlg.showModal();
+}
+function renderRpe() {
+  $('rpe').innerHTML = Array.from({ length: 10 }, (_, i) => i + 1).map(v => `<button type="button" role="radio" aria-checked="${v === rateVal}" aria-label="${v} – ${RPE_TEXT[v]}" data-rpe="${v}">${v}</button>`).join('');
+  $('rpe-text').textContent = rateVal ? `${rateVal} = ${RPE_TEXT[rateVal]}` : '1 = sehr leicht · 5 = mittel · 8 = hart · 10 = maximal';
+}
+function saveRate() {
+  const e = saved.find(x => String(x.id) === rateId);
+  if (e) {
+    if (rateVal) e.rpe = rateVal; else delete e.rpe;
+    const n = $('ratenote').value.trim().slice(0, 200); if (n) e.note = n; else delete e.note;
+    persistEntries(); renderHistory(); renderStats(); renderWeek();
+  }
+  rateDlg.close();
+}
+
+/* ---------- Wochenübersicht ---------- */
+function weekStart(day) { const d = new Date(day + 'T12:00:00'); d.setDate(d.getDate() - (d.getDay() + 6) % 7); return localDay(d); }
+function isoWeek(day) { const d = new Date(day + 'T12:00:00'); d.setDate(d.getDate() + 3 - (d.getDay() + 6) % 7); const w1 = new Date(d.getFullYear(), 0, 4, 12); return 1 + Math.round(((d - w1) / 864e5 - 3 + (w1.getDay() + 6) % 7) / 7); }
+const addDays = (day, n) => { const d = new Date(day + 'T12:00:00'); d.setDate(d.getDate() + n); return localDay(d); };
+const WEEKDAY = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+function renderWeek() {
+  const cur = weekStart(localDay()), byWeek = new Map();
+  for (const e of saved) { const w = weekStart(e.date); byWeek.set(w, (byWeek.get(w) || []).concat(e)); }
+  const now = (byWeek.get(cur) || []).slice().sort((a, b) => a.date.localeCompare(b.date) || String(a.at || '').localeCompare(String(b.at || '')));
+  const rated = now.map(rpeOf).filter(Boolean);
+  let streak = 0, w = byWeek.has(cur) ? cur : addDays(cur, -7);
+  while (byWeek.has(w)) { streak++; w = addDays(w, -7); }
+  $('weekcount').textContent = String(now.length);
+  $('weekrange').textContent = `KW ${isoWeek(cur)} · ${dateGerman(cur).slice(0, 6)}–${dateGerman(addDays(cur, 6)).slice(0, 6)}`;
+  $('weekrpe').textContent = rated.length ? (rated.reduce((a, b) => a + b, 0) / rated.length).toLocaleString('de-DE', { maximumFractionDigits: 1 }) : '–';
+  $('weekstreak').textContent = String(streak);
+  const weeks = Array.from({ length: 8 }, (_, i) => addDays(cur, (i - 7) * 7)), counts = weeks.map(x => (byWeek.get(x) || []).length);
+  // Kompaktes Diagramm: schmale viewBox, damit die Beschriftung auf dem Handy lesbar bleibt
+  const max = Math.max(2, ...counts), wd = 360, base = 112, l = 4, step = (wd - l * 2) / 8, bw = Math.min(30, step * 0.62);
+  $('weekchart').innerHTML = `<svg class="chart" viewBox="0 0 ${wd} 134" role="img" aria-label="Einheiten pro Woche, letzte 8 Wochen: ${counts.join(', ')}"><line class="axis" x1="${l}" y1="${base}" x2="${wd - l}" y2="${base}"/>${weeks.map((x, i) => {
+    const xx = l + step * i + (step - bw) / 2, hh = counts[i] ? Math.max(4, counts[i] / max * (base - 22)) : 0;
+    return `${hh ? `<rect class="bar" x="${xx}" y="${base - hh}" width="${bw}" height="${hh}" rx="5" opacity="${x === cur ? 1 : 0.55}"><title>KW ${isoWeek(x)}: ${counts[i]} Einheiten</title></rect>` : ''}<text class="val" x="${xx + bw / 2}" y="${base - hh - 5}" text-anchor="middle" font-size="12">${counts[i] || ''}</text><text class="lbl" x="${xx + bw / 2}" y="129" text-anchor="middle" font-size="10.5"${x === cur ? ' font-weight="700"' : ''}>KW${isoWeek(x)}</text>`;
+  }).join('')}</svg>`;
+  $('weeklist').innerHTML = now.length ? now.map(e => { const d = new Date(e.date + 'T12:00:00'), r = rpeOf(e), note = typeof e.note === 'string' ? e.note.trim() : ''; return `<div class="row"><span class="dur">${WEEKDAY[d.getDay()]} ${dateGerman(e.date).slice(0, 6)}</span><span class="txt"><b>${esc(PLANS[e.plan].label)}</b><small>${esc(resultText(e))}${r ? ` · Anstrengung ${r}/10` : ''}${note ? ' · ' + esc(note) : ''}</small></span></div>`; }).join('')
+    : '<div class="row"><span class="txt"><small>Diese Woche noch keine Kraft-Einheit gespeichert.</small></span></div>';
+}
+
+/* ---------- Einstellungen: Ton & Ansagen ---------- */
+function renderAudioRows() {
+  const vOk = speechOk();
+  $('soundval').textContent = soundEnabled ? 'An' : 'Aus';
+  $('voiceval').textContent = vOk ? (audioOpt.voice ? 'An' : 'Aus') : 'Nicht verfügbar';
+  $('voicehint').textContent = vOk ? `Übung, Seitenwechsel, Runden · Stimme: ${voice.name}` : 'Keine deutsche Stimme auf dem Gerät gefunden. Online-Stimmen werden aus Datenschutzgründen nicht genutzt.';
+  $('voicerow').disabled = !vOk;
+  $('loudrow').classList.toggle('hide', !hasAudioSession());
+  $('loudval').textContent = audioOpt.loud ? 'An' : 'Aus';
 }
 /* ---------- Ereignisse ---------- */
 $('tabs').addEventListener('click', e => { const b = e.target.closest('[data-plan]'); if (b) setPlan(b.dataset.plan); });
@@ -758,12 +1003,14 @@ $('timedlength').addEventListener('change', e => { timedPick[plan + '-' + (compl
 const toggleSound = () => { soundEnabled = !soundEnabled; store(KEYS.sound, soundEnabled); renderHeader(); if (soundEnabled) { audioReady(); cue('step'); } toast(soundEnabled ? 'Ton an.' : 'Ton aus.'); };
 $('sound').addEventListener('click', toggleSound);
 $('soundrow').addEventListener('click', toggleSound);
-$('testsound').addEventListener('click', () => { audioReady(); cue('finish'); });
+$('testsound').addEventListener('click', () => { audioReady(); cue('finish'); say('Ton und Ansagen funktionieren.', 900); });
 $('current').addEventListener('click', e => openExerciseGuide(Number(e.currentTarget.dataset.index || 0), e.currentTarget));
 $('stepstatus').addEventListener('click', e => { if (isTabata() && phase === 1) { const sg = currentSeg(); openExerciseGuide(sg.type === 'blockrest' ? sg.block + 1 : sg.block, e.currentTarget); return; } const s = currentStep(); openGuide(s.base, 'bw', { origin: e.currentTarget }); });
 for (const id of ['warmup', 'cooldown']) $(id).addEventListener('click', e => { const b = e.target.closest('[data-guide-name]'); if (b) openGuide(b.dataset.guideName, 'bw', { origin: b }); });
 $('worklist').addEventListener('click', e => {
   if (e.target.closest('#emomstart')) { startEmom(); return; }
+  const a = e.target.closest('[data-advance]');
+  if (a) { stages[plan + '.' + a.dataset.advance] = a.dataset.to; store(KEYS.stage, stages); renderList(); renderStats(); renderHistory(); toast('Stufe umgestellt: ' + a.dataset.to); return; }
   const b = e.target.closest('[data-ex]'); if (b) openExerciseGuide(Number(b.dataset.ex), b);
 });
 $('worklist').addEventListener('input', e => { const t = e.target; if (t.dataset.slot && runReps[t.dataset.slot]) { runReps[t.dataset.slot][Number(t.dataset.idx)] = t.value.trim(); persistSession(); } });
@@ -792,7 +1039,7 @@ $('settings').addEventListener('click', e => {
   for (const sl of PLANS[plan].slots) if (sl.v.kb) updateChoice(sl.id, { kg: v });
   renderAll(); toast(`Alle Kettlebell-Übungen: ${kgText(v)} kg.`);
 });
-$('history').addEventListener('click', e => { const b = e.target.closest('[data-delete]'); if (!b || !confirm('Diesen Trainingseintrag wirklich löschen?')) return; saved = saved.filter(x => String(x.id) !== b.dataset.delete); persistEntries(); renderHistory(); renderStats(); if (isSets()) renderList(); });
+$('history').addEventListener('click', e => { const rb = e.target.closest('[data-rate]'); if (rb) { openRate(rb.dataset.rate); return; } const b = e.target.closest('[data-delete]'); if (!b || !confirm('Diesen Trainingseintrag wirklich löschen?')) return; saved = saved.filter(x => String(x.id) !== b.dataset.delete); persistEntries(); renderHistory(); renderStats(); renderWeek(); if (isSets()) renderList(); });
 $('manualdate').value = localDay();
 $('manual').addEventListener('submit', e => {
   e.preventDefault(); const date = $('manualdate').value; if (!date) { alert('Bitte ein Datum wählen.'); return; }
@@ -822,14 +1069,44 @@ $('waistcalendar').addEventListener('click', exportWaistReminder);
 $('guide-close').addEventListener('click', () => guide.close());
 guide.addEventListener('click', e => { if (e.target === guide) { const r = guide.getBoundingClientRect(); if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) guide.close(); } });
 guide.addEventListener('close', () => { if (guideOrigin && document.contains(guideOrigin)) guideOrigin.focus(); });
-document.addEventListener('visibilitychange', () => { if (!document.hidden) { tick(); if (running) keepAwake(true); } else persistSession(); });
+document.addEventListener('visibilitychange', () => { if (!document.hidden) { tick(); routineTick(); if (running || (rt && rt.running)) keepAwake(true); renderWeek(); } else persistSession(); });
 window.addEventListener('pagehide', persistSession);
 
 $('tabbar').addEventListener('click', e => { const b = e.target.closest('[data-area]'); if (b) showArea(b.dataset.area); });
 $('livepill').addEventListener('click', () => showArea('kraft'));
 $('runtabs').addEventListener('click', e => { const b = e.target.closest('[data-runtab]'); if (!b) return; runView.tab = b.dataset.runtab; store(KEYS.run, runView); renderRun(); });
 $('runsub').addEventListener('click', e => { const b = e.target.closest('[data-runsub]'); if (!b) return; runView[runView.tab] = b.dataset.runsub; store(KEYS.run, runView); renderRun(); });
-for (const id of ['runcontent', 'mobcontent']) $(id).addEventListener('click', e => { const b = e.target.closest('[data-guide-name]'); if (b) openGuide(b.dataset.guideName, 'bw', { origin: b }); });
+for (const id of ['runcontent', 'mobcontent']) $(id).addEventListener('click', e => {
+  const r = e.target.closest('[data-routine]'), m = e.target.closest('[data-mob]');
+  if (r) { const k = r.dataset.routine, cur = runCurrent(); if (k === 'abc') startRoutine('Lauf-ABC', RUN_GUIDE.abc.drills); else if (cur) startRoutine(`${cur.label} · ${k === 'warmup' ? 'Warm-up' : 'Cooldown'}`, cur[k]); return; }
+  if (m) { const x = MOBILITY.routines[Number(m.dataset.mob)]; if (x) startRoutine('Mobility · ' + x.title, x.steps); return; }
+  const b = e.target.closest('[data-guide-name]'); if (b) openGuide(b.dataset.guideName, 'bw', { origin: b });
+});
+$('rt-main').addEventListener('click', () => {
+  if (!rt) return;
+  if (rt.done) { routineDlg.close(); return; }
+  if (!rtStep().secs) { cue('step'); rtGo(rt.i + 1); return; }
+  audioReady();
+  if (rt.running) { rt.acc = rtElapsed(); rt.running = false; keepAwake(false); } else { rt.since = Date.now(); rt.running = true; keepAwake(true); }
+  renderRoutine();
+});
+$('rt-next').addEventListener('click', () => { if (rt) { audioReady(); rtGo(rt.i + 1); } });
+$('rt-prev').addEventListener('click', () => { if (rt && rt.i > 0) { audioReady(); rtGo(rt.i - 1); } });
+$('rt-plus').addEventListener('click', () => { if (rt && !rt.done) { rt.extra += 60; rt.lastSec = null; renderRoutine(); toast('+1 Minute'); } });
+$('rt-guide').addEventListener('click', e => { if (rt && !rt.done) openGuide(rtStep().name, 'bw', { origin: e.currentTarget }); });
+$('rt-close').addEventListener('click', () => routineDlg.close());
+routineDlg.addEventListener('close', stopRoutine);
+$('rpe').addEventListener('click', e => { const b = e.target.closest('[data-rpe]'); if (!b) return; const v = Number(b.dataset.rpe); rateVal = rateVal === v ? null : v; renderRpe(); });
+$('rateform').addEventListener('submit', e => { e.preventDefault(); saveRate(); });
+$('rate-skip').addEventListener('click', () => rateDlg.close());
+$('planhint').addEventListener('click', e => {
+  if (e.target.id !== 'planhintbtn') return;
+  const a = tabataAdvice(); if (!a || settingsLocked()) return;
+  choices['tabata.cfg'] = Object.assign({}, isObj(choices['tabata.cfg']) ? choices['tabata.cfg'] : {}, a.patch); store(KEYS.choice, choices);
+  renderAll(); toast('Umgestellt – viel Erfolg!');
+});
+$('voicerow').addEventListener('click', () => { audioOpt.voice = !audioOpt.voice; store(KEYS.audio, audioOpt); renderAudioRows(); if (audioOpt.voice) { audioReady(); say('Sprachansagen an.', 0); } toast(audioOpt.voice ? 'Sprachansagen an.' : 'Sprachansagen aus.'); });
+$('loudrow').addEventListener('click', () => { audioOpt.loud = !audioOpt.loud; store(KEYS.audio, audioOpt); applyAudioSession(); renderAudioRows(); audioReady(); cue('step'); toast(audioOpt.loud ? 'Ton auch bei Stummschalter.' : 'Stummschalter wird wieder beachtet.'); });
 
 /* ---------- Start ---------- */
 schemaCheck();
@@ -838,7 +1115,7 @@ if (!restored) runReps = emptyReps(plan);
 renderAll(); renderWaist(); renderStorageInfo(); renderRun(); renderMobility(); showArea(area, false);
 if (/iPad|iPhone|iPod/.test(navigator.userAgent) || document.documentElement.dataset.os === 'ios') $('savefilehint').textContent = 'Öffnet „Teilen“ → „In Dateien sichern“';
 if (restored) { toast(running ? 'Laufendes Training wiederhergestellt.' : 'Unterbrochenes Training wiederhergestellt.'); if (running) keepAwake(true); }
-setInterval(tick, 200);
+setInterval(() => { tick(); routineTick(); }, 200);
 try { navigator.storage?.persist?.().then(renderStorageInfo).catch(() => { }); } catch (e) { }
 renderPreUpdate();
 if (loadIssues.length) toast('Ein Teil der gespeicherten Daten war unlesbar und wurde separat aufbewahrt. Bitte Backup prüfen.');
