@@ -67,6 +67,24 @@ test('geführte Mobility-Routine: Countdown, Seitenwechsel, Pause, Ende', async 
   await expect.poll(() => page.evaluate(() => rt)).toBeNull(); // „close“ kommt asynchron
 });
 
+test('Hüfte für Läufer und Sprunggelenk: Seiten, Zeiten und Abhaken', async ({ page }) => {
+  await page.evaluate(() => showArea('mobility'));
+  const idx = await page.evaluate(() => ['Hüfte für Läufer', 'Sprunggelenk'].map(t => MOBILITY.routines.findIndex(r => r.title === t)));
+  await page.click(`[data-mob="${idx[0]}"]`);
+  expect(await page.evaluate(() => rt.steps.map(s => [s.name, s.secs, s.sides]))).toEqual([
+    ['Hüft-CARs', 60, 2], ['Beinheben im Sitzen', 30, 2], ['Beinüberheben im Sitzen', 30, 2], ['Knieheben im Stand', 30, 2], ['90/90 mit Aufrichten', 90, 1], ['Copenhagen Hip Dips', null, 2]]);
+  await expect(page.locator('#rt-fig svg')).toHaveCount(1);
+  for (let i = 0; i < 5; i++) await page.click('#rt-next');
+  await expect(page.locator('#rt-name')).toHaveText('Copenhagen Hip Dips');
+  await expect(page.locator('#rt-main')).toHaveText('✓ Erledigt');
+  await page.click('#rt-close');
+  await expect.poll(() => page.evaluate(() => rt)).toBeNull();
+  await page.click(`[data-mob="${idx[1]}"]`);
+  expect(await page.evaluate(() => rt.steps.map(s => [s.name, s.secs, s.sides]))).toEqual([
+    ['Fußgelenkkreisen', 30, 2], ['Sprunggelenk mit Kettlebell', 45, 2], ['Soleus-Dehnung', 45, 2], ['Schienbeinheben', 60, 1], ['Einbeinstand', 30, 2]]);
+  await page.click('#rt-close');
+});
+
 test('geführtes Lauf-Warm-up: Zeitschritte automatisch, Strecken zum Abhaken, +1 Min.', async ({ page }) => {
   await page.evaluate(() => showArea('laufen'));
   await page.click('[data-runtab="race"]');

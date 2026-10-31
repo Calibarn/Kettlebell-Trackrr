@@ -17,7 +17,7 @@ Mein persönlicher Trainings-Begleiter als Web-App für iPhone und Android – K
   - Warm-up und Cooldown für Intervall, Speed und Longrun
   - Lauf-ABC
   - „Geführt“: Ablauf Schritt für Schritt mit Countdown und Ansage; Strecken und Wiederholungen werden abgehakt
-- **Mobility** (ohne Tracking): Kurzprogramme mit geführtem Timer inkl. Seitenwechsel sowie Übungen für Hüfte, Rücken, Schultern & Nacken, Beine & Füße
+- **Mobility** (ohne Tracking): Kurzprogramme mit geführtem Timer inkl. Seitenwechsel (Morgens, Nach dem Sitzen, Nach dem Laufen, Hüfte für Läufer, Sprunggelenk) sowie Übungen für Hüfte, Hüfte aktiv & stark, Rücken, Schultern & Nacken, Beine, Sprunggelenk & Fuß
 - **Mehr**: Wochenübersicht, Anleitung, Bauchumfang, Datensicherung, Ton & Ansagen, Hinweise
 
 Jede Übung hat eine Anleitung mit Skizze (Start → Bewegung).
@@ -57,7 +57,7 @@ Daten gehen nur verloren, wenn die Adresse (Domain) wechselt, das App-Symbol vom
 
 ## Aktualisieren
 
-Bei Änderungen an Dateien in `sw.js` die Konstante `VERSION` erhöhen (z. B. `kbt-v11`). Online lädt die App immer die neueste Version, offline den Cache.
+Bei Änderungen an Dateien in `sw.js` die Konstante `VERSION` erhöhen (z. B. `kbt-v12`). Online lädt die App immer die neueste Version, offline den Cache.
 
 ## Ton auf dem iPhone
 

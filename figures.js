@@ -190,6 +190,26 @@ Object.assign(FIG, {
 });
 const FIG_RT = FIG['Russian Twist (Kugel)']; delete FIG['Russian Twist (Kugel)'];
 
+// Mobility: Hüfte aktiv & stark, Sprunggelenk & Fuß
+const SEAT = { h: [62, 108], n: [66, 128], p: [80, 176], k1: [120, 180], f1: [158, 182], t1: [162, 170], k2: [118, 182], f2: [156, 184], t2: [160, 172], e1: [64, 154], w1: [58, 180], e2: [62, 154], w2: [56, 180] };
+const HANDS_HIP = { e1: [72, 88], w1: [90, 112], e2: [128, 88], w2: [110, 112] };
+const CP_A = { h: [162, 154], n: [144, 160], p: [94, 164], k1: [58, 140], f1: [22, 138], k2: [60, 178], f2: [30, 186], e1: [146, 187], w1: [176, 187], e2: [126, 152], w2: [106, 160] };
+const CP_B = P(CP_A, { p: [101, 136], k2: [66, 154], f2: [36, 170], e2: [124, 140], w2: [106, 138] });
+const WD_B = FIG['Wadendehnung'].b.P;
+const TR_A = { h: [46, 42], n: [44, 62], p: [46, 114], k1: [64, 150], f1: [80, 186], t1: [94, 188], k2: [62, 150], f2: [78, 187], t2: [92, 189], e1: [48, 88], w1: [54, 112], e2: [44, 88], w2: [50, 112] };
+Object.assign(FIG, {
+  'Hüft-CARs': { a: fr(P(QP, { k1: [116, 170], f1: [80, 180] })), b: fr(P(QP, { k1: [42, 146], f1: [28, 112] }), [{ loop: [78, 156, 40, 16] }]), la: 'Knie nach vorne zur Brust', lb: 'außen herum nach hinten' },
+  'Beinheben im Sitzen': { a: fr(SEAT), b: fr(P(SEAT, { k1: [118, 162], f1: [153, 149], t1: [151, 137] }), [{ arrow: 'M174 178 V152' }]), la: 'aufrecht sitzen, Beine lang', lb: 'gestrecktes Bein anheben' },
+  'Beinüberheben im Sitzen': { a: fr(SEAT, [KB(140, 174)]), b: fr(P(SEAT, { k1: [114, 156], f1: [148, 136], t1: [142, 126] }), [KB(140, 174), { arrow: 'M180 172 Q176 130 158 118' }]), la: 'Kugel zwischen den Beinen', lb: 'Bein im Bogen darüber' },
+  'Knieheben im Stand': { a: fr(P(FS, HANDS_HIP), [KB(128, 178)]), b: fr(P(FS, Object.assign({ k2: [128, 118], f2: [140, 150] }, HANDS_HIP)), [KB(128, 178), { arrow: 'M112 172 Q130 132 150 166' }]), la: 'Kugel außen neben dem Fuß', lb: 'Knie hoch, Fuß über die Kugel' },
+  '90/90 mit Aufrichten': { a: fr(NN), b: fr({ h: [90, 78], n: [88, 98], p: [86, 150], k1: [116, 182], f1: [128, 158], k2: [62, 182], f2: [58, 158], e1: [100, 122], w1: [112, 104], e2: [96, 122], w2: [108, 104] }), la: '90/90-Sitz', lb: 'Hüfte hoch auf die Knie' },
+  'Copenhagen Hip Dips': { a: fr(CP_A, [{ box: [6, 144, 58, 46] }]), b: fr(CP_B, [{ box: [6, 144, 58, 46] }, { arrow: 'M112 176 V150' }]), la: 'oberes Knie aufgelegt', lb: 'Becken hochdrücken' },
+  'Soleus-Dehnung': { a: fr(WD_B, [{ wall: 168 }]), b: fr({ h: [134, 66], n: [122, 80], p: [98, 128], k1: [128, 158], f1: [124, 188], t1: [138, 189], k2: [92, 160], f2: [66, 188], t2: [80, 189], e1: [144, 76], w1: [166, 70], e2: [142, 78], w2: [164, 72] }, [{ wall: 168 }, { arrow: 'M76 136 L86 154' }]), la: 'Schrittstellung an der Wand', lb: 'Knie beugen, Ferse unten' },
+  'Sprunggelenk mit Kettlebell': { a: fr(P(HF_A, { e1: [110, 116], w1: [124, 132], e2: [106, 116], w2: [120, 132] }), [KB(130, 136)]), b: fr(P(HF_A, { h: [118, 76], n: [117, 96], p: [116, 150], k1: [156, 156], k2: [96, 186], f2: [62, 186], e1: [128, 118], w1: [142, 138], e2: [124, 118], w2: [138, 138] }), [KB(148, 142), { arrow: 'M164 128 H186' }]), la: 'Kugel auf dem vorderen Knie', lb: 'Knie vor, Ferse bleibt unten' },
+  'Schienbeinheben': { a: fr(TR_A, [{ wall: 26 }]), b: fr(P(TR_A, { t1: [90, 174], t2: [88, 175] }), [{ wall: 26 }, { arrow: 'M108 186 V162' }]), la: 'Rücken an der Wand, Füße vor', lb: 'Zehen zum Schienbein ziehen' },
+  'Einbeinstand': { a: fr(P(FS, Object.assign({ k2: [114, 132], f2: [120, 162] }, HANDS_HIP))), la: 'auf einem Bein, Knie leicht gebeugt' }
+});
+
 function getFigure(name, gear) { const f = FIG[name]; return typeof f === 'function' ? f(gear) : f || null; }
 
 function figLine(a, b, cls, w) { return `<path class="${cls}" d="M${a[0]} ${a[1]}L${b[0]} ${b[1]}" stroke-width="${w || 8}" stroke-linecap="round" fill="none"/>`; }
