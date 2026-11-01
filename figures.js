@@ -192,6 +192,14 @@ Object.assign(FIG, {
 });
 const FIG_RT = FIG['Russian Twist (Kugel)']; delete FIG['Russian Twist (Kugel)'];
 
+// Core im Knien: halber Kniestand (HF_A) und aufrechter Kniestand (TK)
+const TK = { h: [100, 74], n: [99, 94], p: [98, 146], k1: [102, 186], f1: [64, 188], k2: [98, 186], f2: [60, 188] };
+Object.assign(FIG, {
+  'Clean & Press im halben Kniestand': { a: fr(P(HF_A, { e1: [104, 120], w1: [108, 144], e2: [108, 118], w2: [112, 96] }), [KB(118, 90)]), b: fr(P(HF_A, { e1: [104, 120], w1: [108, 144], e2: [103, 68], w2: [104, 42] }), [KB(106, 30)]), la: 'Kugel in der Rack-Position', lb: 'senkrecht über Kopf drücken' },
+  'Pullover im Kniestand': { a: fr(P(TK, { e1: [110, 118], w1: [118, 100], e2: [106, 118], w2: [114, 100] }), [KB(124, 94)]), b: fr(P(TK, { e1: [106, 68], w1: [88, 56], e2: [102, 68], w2: [84, 56] }), [KB(78, 62), { arrow: 'M136 96 Q138 42 96 36' }]), la: 'Kugel vor der Brust', lb: 'über den Kopf nach hinten' },
+  'Wrestler-Halo': { a: fr(P(TK, { e1: [106, 118], w1: [112, 140], e2: [102, 118], w2: [108, 140] }), [KB(116, 150)]), b: fr(P(TK, { e1: [110, 70], w1: [98, 50], e2: [106, 70], w2: [94, 50] }), [{ loop: [100, 70, 30, 13] }, KB(96, 40), { arrow: 'M136 84 Q144 122 124 146' }]), la: 'Kugel an der Hüfte', lb: 'um den Kopf zur anderen Hüfte' }
+});
+
 // Mobility: Hüfte aktiv & stark, Sprunggelenk & Fuß
 const SEAT = { h: [62, 108], n: [66, 128], p: [80, 176], k1: [120, 180], f1: [158, 182], t1: [162, 170], k2: [118, 182], f2: [156, 184], t2: [160, 172], e1: [64, 154], w1: [58, 180], e2: [62, 154], w2: [56, 180] };
 const HANDS_HIP = { e1: [72, 88], w1: [90, 112], e2: [128, 88], w2: [110, 112] };

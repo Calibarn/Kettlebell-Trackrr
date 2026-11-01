@@ -42,6 +42,10 @@ html[data-os=android] .largetitle{font-size:28px;font-weight:500;letter-spacing:
 .segmented{display:flex;background:var(--fill);border-radius:9px;padding:2px;gap:2px;margin:0 0 12px}
 .segmented button{flex:1 1 auto;border:0;background:none;border-radius:7px;padding:7px 6px;font-size:13px;font-weight:600;color:var(--label);white-space:nowrap;min-width:0;overflow:hidden;text-overflow:ellipsis}
 .segmented button[aria-selected=true]{background:var(--elev);box-shadow:0 3px 8px rgba(0,0,0,.12),0 0 0 .5px rgba(0,0,0,.04)}
+/* Kraft hat sechs Pläne: engere Abstände, und lieber wischen als Namen abkürzen */
+#tabs{overflow-x:auto;scrollbar-width:none}
+#tabs::-webkit-scrollbar{display:none}
+#tabs button{flex:1 0 auto;padding-left:4px;padding-right:4px;font-size:12.5px}
 html[data-os=android] .segmented{background:none;border:1px solid var(--label3);border-radius:100px;padding:0;gap:0;overflow:hidden}
 html[data-os=android] .segmented button{border-radius:0;padding:10px 4px;border-right:1px solid var(--label3);font-weight:500}
 html[data-os=android] .segmented button:last-child{border-right:0}

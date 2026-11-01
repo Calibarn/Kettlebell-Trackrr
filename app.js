@@ -43,9 +43,9 @@ let stages = load(KEYS.stage, {}); if (!isObj(stages)) stages = {};
 const slotKey = (pk, sl) => pk + '.' + sl.id;
 function validKg(v) { const n = Number(v); return v !== undefined && v !== null && v !== '' && Number.isFinite(n) && n >= 0 && n <= 60 ? n : KB_DEFAULT; }
 // Gewählte Geräte in der Rangfolge der Wirksamkeit; gibt es keine passende Variante, bleibt Körpergewicht (geht immer)
-function availableGears(sl) { return (sl.order || ['kb', 'band', 'bw']).filter(g => sl.v[g] && gear[g]); }
+function availableGears(sl, pk) { if (pk && PLANS[pk].kbOnly) return ['kb']; return (sl.order || ['kb', 'band', 'bw']).filter(g => sl.v[g] && gear[g]); }
 function resolve(pk, sl) {
-  const avail = availableGears(sl), c = isObj(choices[slotKey(pk, sl)]) ? choices[slotKey(pk, sl)] : {};
+  const avail = availableGears(sl, pk), c = isObj(choices[slotKey(pk, sl)]) ? choices[slotKey(pk, sl)] : {};
   // Ersatz nur, wenn es die Übung mit Geräten gäbe, aber nicht mit den gewählten; reine Körpergewicht-Übungen gehen immer
   const bwOnly = Object.keys(sl.v).every(k => k === 'bw'), fallback = !avail.length && !bwOnly, auto = !avail.includes(c.pref);
   const g = !auto ? c.pref : (avail[0] || (sl.v.bw ? 'bw' : Object.keys(sl.v)[0]));
@@ -60,6 +60,8 @@ function stageOf(pk, sl) { if (!sl.stages) return null; const s = stages[slotKey
 const exList = (pk = plan) => PLANS[pk].slots.map(sl => resolve(pk, sl));
 const isSets = (pk = plan) => PLANS[pk].mode === 'sets';
 const isTabata = (pk = plan) => PLANS[pk].mode === 'tabata';
+const isEmomPlan = (pk = plan) => PLANS[pk].mode === 'emom';
+const isInterval = (pk = plan) => isTabata(pk) || isEmomPlan(pk);
 function tabataCfg() { const c = isObj(choices['tabata.cfg']) ? choices['tabata.cfg'] : {}; return { rounds: TABATA_ROUNDS.includes(c.rounds) ? c.rounds : TABATA_DEFAULT.rounds, blockRest: TABATA_RESTS.includes(c.blockRest) ? c.blockRest : TABATA_DEFAULT.blockRest, work: 20, rest: 10 }; }
 let tbCache = { key: '', seg: [] };
 function tabataSegments() {
@@ -75,8 +77,20 @@ function tabataSegments() {
   }
   tbCache = { key, seg }; return seg;
 }
-const tabataWorkTotal = () => tabataSegments().filter(x => x.type === 'work').length;
-function phaseSecs(pk, i) { return isTabata(pk) && i === 1 ? tabataSegments().at(-1).end : PLANS[pk].durations[i] * 60; }
+function emomCfg(pk = plan) { const c = isObj(choices[pk + '.cfg']) ? choices[pk + '.cfg'] : {}; return { rounds: EMOM_ROUNDS.includes(c.rounds) ? c.rounds : EMOM_DEFAULT.rounds, work: 60 }; }
+const intervalCfg = (pk = plan) => isTabata(pk) ? tabataCfg() : emomCfg(pk);
+// EMOM: jede Minute die nächste Übung, Runde für Runde (Übung 1, 2, 3, 1, 2, 3, …)
+let emCache = { key: '', seg: [] };
+function emomSegments(pk) {
+  const c = emomCfg(pk), n = PLANS[pk].slots.length, key = pk + '/' + c.rounds;
+  if (emCache.key === key) return emCache.seg;
+  const seg = []; let t = 0;
+  for (let r = 0; r < c.rounds; r++) for (let b = 0; b < n; b++) { seg.push({ type: 'work', block: b, round: r, start: t, end: t + c.work }); t += c.work; }
+  emCache = { key, seg }; return seg;
+}
+const segments = (pk = plan) => isTabata(pk) ? tabataSegments() : emomSegments(pk);
+const workTotal = (pk = plan) => segments(pk).filter(x => x.type === 'work').length;
+function phaseSecs(pk, i) { return isInterval(pk) && i === 1 ? segments(pk).at(-1).end : PLANS[pk].durations[i] * 60; }
 const cfgText = c => !c ? '' : c === 'bw' ? 'Körpergewicht' : c.startsWith('kb:') ? kgText(c.slice(3)) + ' kg' : c.startsWith('band:') ? bandLabel(c.slice(5)) : c;
 
 /* ---------- Einträge & Vergleichbarkeit ---------- */
@@ -110,6 +124,7 @@ function entrySig(e) {
 function currentCfg(pk = plan) {
   const c = exList(pk).map(x => x.cfg);
   if (isTabata(pk)) { const t = tabataCfg(); c.push('rounds:' + t.rounds, 'pause:' + t.blockRest); }
+  else if (isEmomPlan(pk)) c.push('rounds:' + emomCfg(pk).rounds);
   return c;
 }
 function currentSig(pk = plan) {
@@ -125,7 +140,7 @@ function resultText(e) {
       : Object.entries(e.sets).map(([n, x]) => `${shortName(n)} ${(x.reps || []).map(r => r ?? '–').join('/')}`);
     return parts.join(' · ') + ` · Σ ${e.total} Wdh.`;
   }
-  if (e.mode === 'tabata') { const r = (e.cfg || []).find(c => String(c).startsWith('rounds:')); return `${e.total} von ${e.of} Intervallen${e.total >= e.of ? ' · komplett' : ''}${r ? ' · ' + r.slice(7) + ' Runden' : ''}`; }
+  if (e.mode === 'tabata' || e.mode === 'emom') { const r = (e.cfg || []).find(c => String(c).startsWith('rounds:')); return `${e.total} von ${e.of} ${e.mode === 'emom' ? 'Minuten' : 'Intervallen'}${e.total >= e.of ? ' · komplett' : ''}${r ? ' · ' + r.slice(7) + ' Runden' : ''}`; }
   const n = entryCount(e);
   return `${Math.floor(e.total / n)} Runden + ${e.total % n} Übungen`;
 }
@@ -153,7 +168,7 @@ const speechOk = () => 'speechSynthesis' in window && !!voice;
 const speakable = t => String(t)
   .replace(/(\d+):(\d{2})\s*Min\./g, (_, m, s) => `${m} ${m === '1' ? 'Minute' : 'Minuten'}${s === '00' ? '' : ' ' + Number(s)}`)
   .replace(/(\d)\s*[–-]\s*(\d)/g, '$1 bis $2').replace(/\bSek\./g, 'Sekunden').replace(/\bMin\./g, 'Minuten').replace(/\bWdh\./g, 'Wiederholungen')
-  .replace(/(\d)\s*m\b/g, '$1 Meter').replace(/(\d)\s*kg\b/g, '$1 Kilo').replace(/\s*×\s*/g, ' mal ').replace(/\s*·\s*/g, ', ').replace(/([a-zäöü])\/([a-zäöü])/gi, '$1 und $2');
+  .replace(/(\d)\s*m\b/g, '$1 Meter').replace(/(\d)\s*kg\b/g, '$1 Kilo').replace(/\s*×\s*/g, ' mal ').replace(/\s*·\s*/g, ', ').replace(/\s&\s/g, ' und ').replace(/([a-zäöü])\/([a-zäöü])/gi, '$1 und $2');
 // iOS spricht erst, nachdem die erste Ansage durch ein Antippen ausgelöst wurde
 function primeSpeech() { if (speechPrimed || !audioOpt.voice || !speechOk()) return; try { const u = new SpeechSynthesisUtterance(' '); u.voice = voice; u.volume = 0; speechSynthesis.speak(u); speechPrimed = true; } catch (e) { } }
 function say(text, delay = 350) {
@@ -199,15 +214,15 @@ function buildSteps(items) {
 }
 const STEPS = Object.fromEntries(Object.entries(PLANS).map(([k, p]) => [k, { warmup: buildSteps(p.warmup), cooldown: buildSteps(p.cooldown) }]));
 const durationSecs = () => phaseSecs(plan, phase);
-function currentSeg() { const t = secNow(), sg = tabataSegments(); return sg.find(x => t < x.end) || sg.at(-1); }
-const workDoneAt = t => tabataSegments().filter(x => x.type === 'work' && x.end <= t + 0.01).length;
+function currentSeg() { const t = secNow(), sg = segments(); return sg.find(x => t < x.end) || sg.at(-1); }
+const workDoneAt = t => segments().filter(x => x.type === 'work' && x.end <= t + 0.01).length;
 const secNow = () => running ? elapsed + (Date.now() - startedAt) / 1000 : elapsed;
 const isFinished = () => phase === 2 && !running && elapsed >= durationSecs();
 function currentStep() { const st = phase === 0 ? STEPS[plan].warmup : STEPS[plan].cooldown, t = secNow(); return st.find(s => t < s.end) || st[st.length - 1]; }
 function emptyReps(pk) { return isSets(pk) ? Object.fromEntries(PLANS[pk].slots.map(sl => [sl.id, Array(sl.sets).fill('')])) : {}; }
 const hasReps = () => Object.values(runReps).some(a => a.some(v => v !== ''));
 const sessionActive = () => !sessionSaved && (running || elapsed > 0 || phase > 0 || completions > 0 || hasReps());
-const mainName = () => isTabata() ? 'Tabata' : isSets() ? 'Kraftteil' : 'Zirkel';
+const mainName = () => isTabata() ? 'Tabata' : isEmomPlan() ? 'EMOM' : isSets() ? 'Kraftteil' : 'Zirkel';
 function resetCues() { lastScene = null; lastSecond = null; phaseCueSecond = null; }
 function resetState() { tabataDone = 0; tbBlock = -1; phase = 0; elapsed = 0; running = false; startedAt = 0; completions = 0; sessionSaved = false; timed = null; emom = null; runReps = emptyReps(plan); resetCues(); keepAwake(false); }
 runReps = emptyReps(plan);
@@ -235,6 +250,7 @@ function phaseSpeech() {
   if (phase === 1) {
     const x = exList()[0];
     if (isTabata()) return `Tabata. ${x.name}. Los!`;
+    if (isEmomPlan()) return `EMOM, ${Math.round(durationSecs() / 60)} Minuten. Erste Übung: ${x.name}, ${x.reps}.`;
     if (isSets()) return `Kraftteil. Erste Übung: ${x.name}, ${x.reps}.`;
     return `Zirkel, ${Math.round(durationSecs() / 60)} Minuten. Erste Übung: ${x.name}, ${x.reps}.`;
   }
@@ -250,20 +266,21 @@ function tick() {
   let guard = 0;
   while (running && secNow() >= durationSecs() && guard++ < 4) {
     const over = secNow() - durationSecs();
-    if (phase === 2) { elapsed = durationSecs(); running = false; timed = null; emom = null; cue('finish'); keepAwake(false); persistSession(); renderPhase(); if (isTabata()) { say('Training geschafft.', 900); saveSession(localDay()); } else { say('Training geschafft. Jetzt speichern.', 900); toast('Training geschafft – jetzt speichern.'); } return; }
-    if (phase === 1 && isTabata()) tabataDone = tabataWorkTotal();
+    if (phase === 2) { elapsed = durationSecs(); running = false; timed = null; emom = null; cue('finish'); keepAwake(false); persistSession(); renderPhase(); if (isInterval()) { say('Training geschafft.', 900); saveSession(localDay()); } else { say('Training geschafft. Jetzt speichern.', 900); toast('Training geschafft – jetzt speichern.'); } return; }
+    if (phase === 1 && isInterval()) tabataDone = workTotal();
     phase++; timed = null; emom = null; elapsed = Math.max(0, over); startedAt = Date.now(); resetCues(); cue('phase'); say(phaseSpeech(), 650);
     toast(phase === 1 ? mainName() + ' läuft.' : 'Jetzt Cooldown.');
     persistSession(); renderPhase(); renderList();
   }
   if (phase !== 1) { const s = currentStep(); signalCountdown(phase + '-' + s.group + '-' + s.start, s.end - secNow(), stepSpeech(s)); }
-  else if (isTabata()) {
+  else if (isInterval()) {
     const sg = currentSeg(), id = 'tb-' + sg.start;
     if (lastScene !== id) {
       if (lastScene !== null) {
         cue(sg.type === 'work' ? 'work' : 'rest');
-        const ex = exList(), last = tabataCfg().rounds - 1;
-        if (sg.type === 'blockrest') say('Pause. Als Nächstes: ' + ex[sg.block + 1].name);
+        const ex = exList(), last = intervalCfg().rounds - 1;
+        if (isEmomPlan()) say((sg.block === 0 ? (sg.round === last ? 'Letzte Runde. ' : `Runde ${sg.round + 1}. `) : '') + `${ex[sg.block].name}, ${ex[sg.block].reps}`);
+        else if (sg.type === 'blockrest') say('Pause. Als Nächstes: ' + ex[sg.block + 1].name);
         else if (sg.type === 'work' && sg.round === 0) say(ex[sg.block].name + '. Los!');
         else if (sg.type === 'work' && sg.round === last) say('Letzte Runde');
       }
@@ -299,7 +316,7 @@ function skip() {
   if (sessionSaved || isFinished()) return;
   audioReady();
   if (phase === 2) { elapsed = durationSecs(); running = false; timed = null; emom = null; cue('finish'); keepAwake(false); persistSession(); renderPhase(); toast('Training beendet – jetzt speichern.'); return; }
-  if (phase === 1 && isTabata()) tabataDone = workDoneAt(secNow());
+  if (phase === 1 && isInterval()) tabataDone = workDoneAt(secNow());
   phase++; elapsed = 0; startedAt = Date.now(); timed = null; emom = null; resetCues(); cue('phase'); if (running) say(phaseSpeech(), 650);
   toast(phase === 1 ? mainName() + ' gestartet.' : 'Jetzt kommt das Cooldown.');
   persistSession(); renderPhase(); renderList();
@@ -314,7 +331,7 @@ function setPlan(p) {
   plan = p; store(KEYS.plan, p); resetState(); persistSession(); renderAll(); window.scrollTo({ top: 0 });
 }
 function finishExercise(fromTimer) {
-  if (isSets() || isTabata() || phase !== 1 || sessionSaved || (timed && !fromTimer)) return;
+  if (isSets() || isInterval() || phase !== 1 || sessionSaved || (timed && !fromTimer)) return;
   completions++; resetCues();
   const ex = exList(), n = ex.length, nx = ex[completions % n];
   if (!fromTimer) toast(completions % n === 0 ? '🎉 Runde ' + completions / n + ' geschafft!' : '✓ ' + ex[(completions - 1) % n].name);
@@ -322,7 +339,7 @@ function finishExercise(fromTimer) {
   persistSession(); renderList(); renderCurrent(); renderControls(); renderStats();
 }
 function undo() {
-  if (isSets() || isTabata() || completions < 1 || sessionSaved || timed) return;
+  if (isSets() || isInterval() || completions < 1 || sessionSaved || timed) return;
   completions--; persistSession(); renderList(); renderCurrent(); renderControls(); renderStats(); toast('Letzte Übung zurückgenommen.');
 }
 function timedParams(reps) { const m = String(reps).match(/(\d+)(?:\s*[–-]\s*(\d+))?\s*Sek\./); return m ? { min: Number(m[1]), max: Number(m[2] || m[1]), sides: /je Seite/.test(reps) ? 2 : 1 } : null; }
@@ -348,9 +365,9 @@ function saveSession(date, opts = {}) {
   if (isSets()) {
     if (!hasReps() && !confirm('Du hast noch keine Sätze eingetragen. Trotzdem speichern?')) return false;
     entry = buildSetsEntry(date);
-  } else if (isTabata()) {
-    const of = tabataWorkTotal(), total = manual ? of : (phase === 1 ? workDoneAt(secNow()) : tabataDone);
-    entry = { v: 3, id: uid(), date, plan, mode: 'tabata', total, of, cfg: currentCfg(), names: exList().map(x => x.name), at: new Date().toISOString() };
+  } else if (isInterval()) {
+    const of = workTotal(), total = manual ? of : (phase === 1 ? workDoneAt(secNow()) : tabataDone);
+    entry = { v: 3, id: uid(), date, plan, mode: PLANS[plan].mode, total, of, cfg: currentCfg(), names: exList().map(x => x.name), at: new Date().toISOString() };
   } else {
     const total = manual ? opts.total : completions;
     if (total === 0 && !confirm('Du hast noch keine Übung erfasst. Trotzdem speichern?')) return false;
@@ -363,7 +380,7 @@ function saveSession(date, opts = {}) {
   if (!manual) { sessionSaved = true; running = false; timed = null; emom = null; keepAwake(false); }
   if (isSets()) runReps = emptyReps(plan);
   persistSession(); renderAll();
-  toast(isTabata() && !manual ? '✓ Tabata geschafft und gespeichert.' : '✓ Gespeichert. Du findest die Einheit im Verlauf.');
+  toast(isInterval() && !manual ? `✓ ${mainName()} geschafft und gespeichert.` : '✓ Gespeichert. Du findest die Einheit im Verlauf.');
   openRate(entry.id, progressNotes(entry, prev));
   return true;
 }
@@ -387,25 +404,30 @@ function setsAdvice(e, i) {
   if (/Sek\./.test(x.reps)) return { text: x.g === 'kb' ? 'Schwerere Kugel oder länger halten' : 'Länger halten' };
   return { text: x.g === 'kb' ? 'Mehr Gewicht' + (sl.stages ? '' : ' oder 3 Sek. absenken') : x.g === 'band' ? 'Stärkeres Band' : 'Schwerere Variante oder 3 Sek. absenken' };
 }
-function tabataAdvice() {
-  if (!isTabata()) return null;
+function intervalAdvice() {
+  if (!isInterval()) return null;
+  const sig = currentSig(plan), rows = saved.filter(e => e.plan === plan && entrySig(e) === sig).sort(byNewest).slice(0, 3);
+  const ready = rows.length >= 3 && rows.every(e => e.total >= e.of && !(rpeOf(e) >= 9));
+  if (isEmomPlan()) {
+    const c = emomCfg(), nx = EMOM_ROUNDS.find(v => v > c.rounds), n = PLANS[plan].slots.length;
+    return ready && nx ? { text: `3 × in Folge komplett mit ${c.rounds} Runden – bereit für ${nx} Runden (${nx * n} Min.).`, patch: { rounds: nx }, btn: `Auf ${nx} Runden` } : null;
+  }
   const c = tabataCfg(); if (c.rounds >= 8 && c.blockRest <= 60) return null;
-  const sig = currentSig('tabata'), rows = saved.filter(e => e.plan === 'tabata' && entrySig(e) === sig).sort(byNewest).slice(0, 3);
-  if (rows.length < 3 || !rows.every(e => e.total >= e.of && !(rpeOf(e) >= 9))) return null;
+  if (!ready) return null;
   return c.rounds < 8 ? { text: `3 × in Folge komplett mit ${c.rounds} Runden – bereit für 8 Runden je Übung.`, patch: { rounds: 8 }, btn: 'Auf 8 Runden' }
     : { text: '3 × in Folge komplett mit 8 Runden – bereit für 60 Sek. Pause zwischen den Übungen.', patch: { blockRest: 60 }, btn: 'Auf 60 Sek.' };
 }
 function progressNotes(e, prev) {
   const out = [];
-  if (e.mode === 'tabata') { if (e.total >= e.of) out.push(`✓ Alle ${e.of} Intervalle geschafft.`); }
+  if (e.mode === 'tabata' || e.mode === 'emom') { if (e.total >= e.of) out.push(`✓ Alle ${e.of} ${e.mode === 'emom' ? 'Minuten' : 'Intervalle'} geschafft.`); }
   else if (!prev.length) out.push('Erste Einheit mit diesem Aufbau – ab jetzt wird verglichen.');
   else { const best = prev.reduce((a, b) => b.total > a.total ? b : a); if (e.total > best.total) out.push(`🏆 Neuer Bestwert: ${totalText(e)} (vorher ${totalText(best)}).`); }
   if (e.mode === 'sets') exList().forEach((x, i) => { const a = setsAdvice(e, i); if (a) out.push(`↑ ${x.name}: ${a.text}`); });
-  const t = tabataAdvice(); if (t) out.push('↑ ' + t.text);
+  const t = intervalAdvice(); if (t) out.push('↑ ' + t.text);
   return out;
 }
 function renderPlanHint() {
-  const a = sessionActive() ? null : tabataAdvice(), el = $('planhint');
+  const a = sessionActive() ? null : intervalAdvice(), el = $('planhint');
   el.classList.toggle('hide', !a);
   el.innerHTML = a ? `<span>↑ ${esc(a.text)}</span><button class="btn small primary" type="button" id="planhintbtn">${esc(a.btn)}</button>` : '';
 }
@@ -415,9 +437,14 @@ let toastTimer = null;
 function toast(t) { const el = $('toast'); el.textContent = t; el.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), 3200); }
 
 function renderTabs() {
-  $('tabs').innerHTML = PLAN_ORDER.map(k => `<button role="tab" type="button" data-plan="${k}" aria-selected="${k === plan}">${esc(PLANS[k].tab)}</button>`).join('');
+  const t = $('tabs');
+  t.innerHTML = PLAN_ORDER.map(k => `<button role="tab" type="button" data-plan="${k}" aria-selected="${k === plan}">${esc(PLANS[k].tab)}</button>`).join('');
+  // Auf schmalen Displays lässt sich die Leiste wischen – der gewählte Plan bleibt sichtbar
+  const sel = t.querySelector('[aria-selected="true"]');
+  if (sel && t.scrollWidth > t.clientWidth) t.scrollLeft += sel.getBoundingClientRect().left - t.getBoundingClientRect().left - (t.clientWidth - sel.offsetWidth) / 2;
 }
 function renderGear() {
+  if (PLANS[plan].kbOnly) { $('gearbar').innerHTML = '<span class="lbl">Fest mit Kettlebell – „Heute dabei“ gilt für diesen Plan nicht.</span>'; return; }
   $('gearbar').innerHTML = '<span class="lbl">Heute dabei:</span>' +
     `<button class="chip" type="button" data-gear="kb" aria-pressed="${gear.kb}">Kettlebell</button>` +
     `<button class="chip" type="button" data-gear="band" aria-pressed="${gear.band}">Bänder</button>` +
@@ -426,7 +453,7 @@ function renderGear() {
 function renderHeader() {
   const p = PLANS[plan], ex = exList();
   $('plan-title').textContent = p.label;
-  $('listkicker').textContent = isTabata() ? 'Tabata · ' + tabataCfg().rounds + ' Runden je Übung' : isSets() ? 'Sätze' : 'Zirkel';
+  $('listkicker').textContent = isTabata() ? 'Tabata · ' + tabataCfg().rounds + ' Runden je Übung' : isEmomPlan() ? `EMOM · ${emomCfg().rounds} Runden · jede Minute eine Übung` : isSets() ? 'Sätze' : 'Zirkel';
   $('workoutname').textContent = `${ex.length} Übungen · ${Math.round(phaseSecs(plan, 1) / 60)} Min.`;
   $('intro').textContent = p.intro + ' Übung antippen für Anleitung und Skizze.';
   $('sound').textContent = soundEnabled ? '🔊' : '🔇'; $('sound').setAttribute('aria-pressed', String(soundEnabled)); $('sound').setAttribute('aria-label', soundEnabled ? 'Ton ausschalten' : 'Ton einschalten');
@@ -434,22 +461,23 @@ function renderHeader() {
 }
 function renderPhase() {
   const p = PLANS[plan];
-  const names = ['Aufwärmen', isTabata() ? 'Tabata' : isSets() ? 'Kraft' : 'Zirkel', 'Cooldown'];
+  const names = ['Aufwärmen', isInterval() ? mainName() : isSets() ? 'Kraft' : 'Zirkel', 'Cooldown'];
   $('phase-badge').textContent = sessionSaved ? 'Gespeichert' : isFinished() ? 'Geschafft' : names[phase];
   $('timeline').innerHTML = names.map((n, i) => `<span class="${i === phase && !sessionSaved ? 'on' : ''}">${n} ${Math.round(phaseSecs(plan, i) / 60)}′</span>`).join('');
   $('timehint').textContent = sessionSaved ? 'Diese Einheit ist gespeichert. „Training zurücksetzen“ startet eine neue.'
     : phase === 0 ? 'Die Aufwärmübungen laufen automatisch mit Countdown und Seitenwechsel.'
-      : phase === 1 ? (isTabata() ? 'Läuft automatisch: 20 Sek. Arbeit, 10 Sek. Pause, Ton bei jedem Wechsel und 3-2-1 vorher. Einfach mitmachen.' : isSets() ? 'Wiederholungen je Satz eintragen: Kraft, Läufer-Block, dann Swing-EMOM. Die Zeit ist ein Richtwert.' : 'Übungen der Reihe nach abhaken. Bei Zeitübungen den Übungs-Timer starten.')
+      : phase === 1 ? (isTabata() ? 'Läuft automatisch: 20 Sek. Arbeit, 10 Sek. Pause, Ton bei jedem Wechsel und 3-2-1 vorher. Einfach mitmachen.' : isEmomPlan() ? 'Läuft automatisch: Jede Minute beginnt die nächste Übung – Wiederholungen machen, im Rest der Minute Pause. Ton und Ansage bei jedem Wechsel, 3-2-1 vorher.' : isSets() ? 'Wiederholungen je Satz eintragen: Kraft, Läufer-Block, dann Swing-EMOM. Die Zeit ist ein Richtwert.' : 'Übungen der Reihe nach abhaken. Bei Zeitübungen den Übungs-Timer starten.')
         : 'Die Dehnungen und Seitenwechsel werden automatisch per Ton angesagt.';
   renderStepsList(); renderCurrent(); renderControls(); renderStats(); updateClock();
 }
 function updateClock() {
-  const done = sessionSaved || isFinished(), tb = isTabata() && phase === 1 && !done, sg = tb ? currentSeg() : null;
+  const done = sessionSaved || isFinished(), tb = isInterval() && phase === 1 && !done, sg = tb ? currentSeg() : null;
   const frac = done ? 1 : tb ? Math.min(1, (secNow() - sg.start) / (sg.end - sg.start)) : Math.min(1, secNow() / durationSecs());
   $('timer').textContent = done ? '00:00' : tb ? clock(sg.end - secNow()) : clock(durationSecs() - secNow());
   $('ringprog').classList.toggle('rest', !!sg && sg.type !== 'work');
   $('ringprog').style.strokeDashoffset = String(552.9 * (1 - frac)); $('ringprog').style.opacity = frac > 0.002 ? '1' : '0';
-  if (tb) { const ex = exList(), c = tabataCfg(); $('phase-badge').textContent = sg.type === 'work' ? 'Arbeit' : sg.type === 'rest' ? 'Pause' : 'Übungswechsel'; $('ringsub').textContent = sg.type === 'blockrest' ? 'gleich: ' + ex[sg.block + 1].name : `Übung ${sg.block + 1}/${ex.length} · Runde ${sg.round + 1}/${c.rounds}`; }
+  if (tb && isEmomPlan()) { const ex = exList(); $('phase-badge').textContent = `Minute ${sg.round * ex.length + sg.block + 1}/${workTotal()}`; $('ringsub').textContent = `Runde ${sg.round + 1}/${emomCfg().rounds} · ${ex[sg.block].reps}`; }
+  else if (tb) { const ex = exList(), c = tabataCfg(); $('phase-badge').textContent = sg.type === 'work' ? 'Arbeit' : sg.type === 'rest' ? 'Pause' : 'Übungswechsel'; $('ringsub').textContent = sg.type === 'blockrest' ? 'gleich: ' + ex[sg.block + 1].name : `Übung ${sg.block + 1}/${ex.length} · Runde ${sg.round + 1}/${c.rounds}`; }
   else $('ringsub').textContent = done ? (sessionSaved ? 'Einheit gespeichert' : 'Jetzt speichern') : running ? 'verbleibend' : (elapsed > 0 || phase > 0 ? 'pausiert' : 'bereit');
   const showStep = (phase !== 1 || tb) && !done;
   $('stepstatus').classList.toggle('hide', !showStep);
@@ -457,7 +485,7 @@ function updateClock() {
     const ex = exList(), nx = sg.type === 'work' ? null : sg.type === 'rest' ? ex[sg.block] : ex[sg.block + 1];
     $('steplabel').textContent = sg.type === 'work' ? 'Jetzt' : 'Gleich';
     $('stepname').textContent = sg.type === 'work' ? ex[sg.block].name : nx.name;
-    $('stepdesc').textContent = 'Tabata gesamt noch ' + clock(durationSecs() - secNow()) + ' · antippen für Anleitung';
+    $('stepdesc').textContent = isEmomPlan() ? `${ex[sg.block].reps} · danach ${sg.end >= durationSecs() ? 'Cooldown' : ex[(sg.block + 1) % ex.length].name} · antippen für Anleitung` : 'Tabata gesamt noch ' + clock(durationSecs() - secNow()) + ' · antippen für Anleitung';
     $('stepclock').textContent = clock(sg.end - secNow());
   } else if (showStep) {
     const s = currentStep(), list = phase === 0 ? PLANS[plan].warmup : PLANS[plan].cooldown;
@@ -482,7 +510,7 @@ function renderStepsList() {
 }
 function renderCurrent() {
   const ex = exList(), cur = $('current'), tw = $('timerwork');
-  if (isSets() || isTabata() || sessionSaved || isFinished()) { cur.classList.add('hide'); tw.classList.add('hide'); return; }
+  if (isSets() || isInterval() || sessionSaved || isFinished()) { cur.classList.add('hide'); tw.classList.add('hide'); return; }
   const n = ex.length, off = completions % n, x = ex[off];
   cur.classList.remove('hide');
   $('currentlabel').textContent = phase === 1 ? 'Jetzt' : 'Erste Übung';
@@ -506,7 +534,7 @@ function renderCurrent() {
   }
 }
 function renderControls() {
-  const main = $('btnMain'), done = $('btnDone'), undoB = $('btnUndo'), next = $('btnNext'), circuit = !isSets() && !isTabata();
+  const main = $('btnMain'), done = $('btnDone'), undoB = $('btnUndo'), next = $('btnNext'), circuit = !isSets() && !isInterval();
   if (sessionSaved) { main.textContent = '✓ Gespeichert'; main.disabled = true; }
   else if (isFinished()) { main.textContent = '💾 Speichern'; main.disabled = false; }
   else { main.textContent = running ? 'Ⅱ Pause' : (elapsed > 0 || phase > 0 ? '▶ Weiter' : '▶ Starten'); main.disabled = false; }
@@ -530,10 +558,10 @@ function renderStats() {
   const ex = exList(), n = ex.length, all = saved.filter(e => e.plan === plan), comp = all.filter(comparable);
   const parts = [], week = `<span>Diese Woche <b>${saved.filter(e => weekStart(e.date) === weekStart(localDay())).length}</b></span>`;
   renderPlanHint();
-  if (isTabata()) {
+  if (isInterval()) {
     parts.push(`<span>Einheiten <b>${comp.length}</b>${comp.length !== all.length ? ' von ' + all.length + ' vergleichbar' : ''}</span>`);
     parts.push(`<span>Komplett <b>${comp.filter(e => e.total >= e.of).length}</b></span>`);
-    parts.push(`<span>Arbeit <b>${Math.round(tabataWorkTotal() * 20 / 60)} Min.</b></span>`);
+    parts.push(isTabata() ? `<span>Arbeit <b>${Math.round(workTotal() * 20 / 60)} Min.</b></span>` : `<span>Dauer <b>${workTotal()} Min.</b></span>`);
     $('statsline').innerHTML = parts.join('') + week; return;
   }
   let best = null; if (comp.length) best = Math.max(...comp.map(e => e.total));
@@ -545,10 +573,10 @@ function renderStats() {
 function lastSetsEntry() { return saved.filter(e => e.plan === plan && e.mode === 'sets' && e.v >= 3).sort((a, b) => b.date.localeCompare(a.date) || String(b.at || '').localeCompare(String(a.at || '')))[0]; }
 function renderList() {
   const ex = exList(), wl = $('worklist');
-  if (isTabata()) {
+  if (isInterval()) {
     wl.className = 'group';
-    const c = tabataCfg(), cur = phase === 1 && !sessionSaved && !isFinished() ? currentSeg().block : phase === 0 && !sessionSaved ? 0 : -1;
-    wl.innerHTML = ex.map((x, i) => { const d = (phase === 1 && i < cur) || (phase === 2 && !sessionSaved); return `<button type="button" class="row ${i === cur ? 'focus' : ''} ${d ? 'done' : ''}" data-ex="${i}"><span class="num">${d ? '✓' : i + 1}</span><span class="txt"><b>${esc(x.name)}</b><small>${esc(x.gearText)} · ${esc(x.note)}</small></span><span class="val">${c.rounds} × 20″</span><span class="chev"></span></button>`; }).join('');
+    const c = intervalCfg(), em = isEmomPlan(), cur = phase === 1 && !sessionSaved && !isFinished() ? currentSeg().block : phase === 0 && !sessionSaved ? 0 : -1;
+    wl.innerHTML = ex.map((x, i) => { const d = (phase === 1 && !em && i < cur) || (phase === 2 && !sessionSaved); return `<button type="button" class="row ${i === cur ? 'focus' : ''} ${d ? 'done' : ''}" data-ex="${i}"><span class="num">${d ? '✓' : i + 1}</span><span class="txt"><b>${esc(x.name)}</b><small>${esc(x.gearText)} · ${esc(x.note)}</small></span><span class="val">${em ? esc(x.reps) : c.rounds + ' × 20″'}</span><span class="chev"></span></button>`; }).join('');
     return;
   }
   if (!isSets()) {
@@ -597,11 +625,13 @@ function renderSettings() {
     return `<div class="srow"><div class="sname"><b>${esc(r.name)}</b>${why ? `<small>${esc(why)}</small>` : ''}</div><select data-pref="${sl.id}" ${r.avail.length < 2 && r.auto ? 'disabled' : ''} aria-label="Variante">${opts}</select>${param}</div>`;
   }).join('');
   const tbRows = isTabata() ? (() => { const c = tabataCfg(); return `<div class="srow"><div class="sname"><b>Runden je Übung</b><small>Empfehlung zum Einstieg: 6</small></div><select data-tabata="rounds" aria-label="Runden je Übung">${TABATA_ROUNDS.map(v => `<option value="${v}" ${v === c.rounds ? 'selected' : ''}>${v} Runden</option>`).join('')}</select><span class="param">20″ / 10″</span></div><div class="srow"><div class="sname"><b>Pause zwischen Übungen</b><small>Empfehlung zum Einstieg: 90 Sek.</small></div><select data-tabata="blockRest" aria-label="Pause zwischen Übungen">${TABATA_RESTS.map(v => `<option value="${v}" ${v === c.blockRest ? 'selected' : ''}>${v} Sek.</option>`).join('')}</select><span class="param">${Math.round(phaseSecs('tabata', 1) / 60)} Min.</span></div>`; })() : '';
-  $('settings').innerHTML = tbRows + `<p class="tiny">Gilt für „${esc(PLANS[pk].tab)}“. Die App wählt je Übung automatisch die wirksamste Variante aus den Geräten bei „Heute dabei“; du kannst sie hier je Übung überschreiben. Einheiten mit anderen Varianten oder Gewichten zählen nicht in den Bestwert.</p>${rows}
+  const emRows = isEmomPlan() ? (() => { const c = emomCfg(), n = PLANS[pk].slots.length; return `<div class="srow"><div class="sname"><b>Runden</b><small>Empfehlung zum Einstieg: 5 (${5 * n} Min.)</small></div><select data-icfg="rounds" aria-label="Runden">${EMOM_ROUNDS.map(v => `<option value="${v}" ${v === c.rounds ? 'selected' : ''}>${v} Runden · ${v * n} Min.</option>`).join('')}</select><span class="param">1 Übung je Min.</span></div>`; })() : '';
+  const info = PLANS[pk].kbOnly ? 'Dieser Plan ist fest auf Kettlebell – „Heute dabei“ gilt hier nicht. Das Gewicht stellst du je Übung ein.' : 'Die App wählt je Übung automatisch die wirksamste Variante aus den Geräten bei „Heute dabei“; du kannst sie hier je Übung überschreiben.';
+  $('settings').innerHTML = tbRows + emRows + `<p class="tiny">Gilt für „${esc(PLANS[pk].tab)}“. ${info} Einheiten mit anderen Varianten oder Gewichten zählen nicht in den Bestwert.</p>${rows}
   <div class="srow"><div class="sname"><b>Alle Kettlebell-Übungen</b><small>dieses Plans auf ein Gewicht setzen</small></div><label class="param"><input type="number" min="0" max="60" step="0.5" inputmode="decimal" id="allkg" value="${KB_DEFAULT}" aria-label="Gewicht für alle Kettlebell-Übungen"> kg</label><button class="btn small" type="button" id="allkgbtn">Übernehmen</button></div>
-  ${gear.band ? `<p class="tiny">${esc(BAND_TEXT)}</p>` : ''}`;
+  ${gear.band && !PLANS[pk].kbOnly ? `<p class="tiny">${esc(BAND_TEXT)}</p>` : ''}`;
 }
-function settingsLocked() { return isTabata() ? sessionActive() : !isSets() && !sessionSaved && (running || completions > 0); }
+function settingsLocked() { return isInterval() ? sessionActive() : !isSets() && !sessionSaved && (running || completions > 0); }
 function updateChoice(slotId, patch) {
   const k = plan + '.' + slotId; choices[k] = Object.assign({}, isObj(choices[k]) ? choices[k] : {}, patch); store(KEYS.choice, choices);
 }
@@ -611,8 +641,8 @@ function renderHistory() {
   const rows = saved.filter(e => e.plan === plan).sort((a, b) => b.date.localeCompare(a.date) || String(b.at || '').localeCompare(String(a.at || '')));
   const comp = rows.filter(comparable);
   $('sessioncount').textContent = comp.length === rows.length ? String(rows.length) : `${comp.length}/${rows.length}`;
-  $('historyhint').textContent = isSets() ? 'Balken: Summe der Wiederholungen. Blass: anderer Aufbau (Variante, Stufe oder Gewicht).' : 'Balken: abgeschlossene Übungen in der festen Zirkelzeit. Blass: anderer Aufbau (Übungen, Geräte oder Gewichte).';
-  const best = comp.length && !isTabata() ? Math.max(...comp.map(e => e.total)) : null;
+  $('historyhint').textContent = isInterval() ? `Balken: geschaffte ${isEmomPlan() ? 'Minuten' : 'Intervalle'}. Blass: anderer Aufbau (Runden, Varianten oder Gewichte).` : isSets() ? 'Balken: Summe der Wiederholungen. Blass: anderer Aufbau (Variante, Stufe oder Gewicht).' : 'Balken: abgeschlossene Übungen in der festen Zirkelzeit. Blass: anderer Aufbau (Übungen, Geräte oder Gewichte).';
+  const best = comp.length && !isInterval() ? Math.max(...comp.map(e => e.total)) : null;
   $('history').innerHTML = rows.length ? rows.map(e => {
     const r = rpeOf(e), note = typeof e.note === 'string' ? e.note.trim() : '';
     return `<tr><td>${esc(dateGerman(e.date))}</td><td><button type="button" class="cellbtn" data-rate="${esc(e.id)}" aria-label="Anstrengung und Notiz für ${esc(dateGerman(e.date))} bearbeiten">${esc(resultText(e))}${best !== null && comparable(e) && e.total === best ? ' 🏆' : ''}${comparable(e) ? '' : ' <span class="tag">· anderer Aufbau</span>'}${e.manual ? ' <span class="tag">· nachgetragen</span>' : ''}<small>${r ? `Anstrengung ${r}/10` : '<span class="ratehint">Anstrengung eintragen ›</span>'}${note ? ' · ' + esc(note) : ''}</small></button></td><td><button class="btn small danger" type="button" data-delete="${esc(e.id)}" aria-label="Eintrag vom ${esc(dateGerman(e.date))} löschen">Löschen</button></td></tr>`;
@@ -624,10 +654,10 @@ function renderHistory() {
   box.innerHTML = `<svg class="chart" viewBox="0 0 ${w} 142" role="img" aria-label="Balkendiagramm der letzten ${data.length} Einheiten"><line class="axis" x1="${l}" y1="${base}" x2="${w - 4}" y2="${base}"/>${bars}</svg>`;
 }
 function renderManual() {
-  const sets = isSets(), tb = isTabata(), n = exList().length;
+  const sets = isSets(), tb = isInterval(), n = exList().length;
   $('manualroundfield').classList.toggle('hide', sets || tb); $('manualextrafield').classList.toggle('hide', sets || tb);
   $('manualextra').max = String(n - 1);
-  $('manualhint').textContent = tb ? 'Tabata: speichert eine vollständige Einheit mit den aktuellen Einstellungen und dem gewählten Datum.' : sets ? 'Lauftraining: Sätze oben im Plan eintragen und hier mit dem gewählten Datum speichern.' : `Für „${PLANS[plan].tab}“ mit den aktuell eingestellten Varianten und Gewichten.`;
+  $('manualhint').textContent = tb ? mainName() + ': speichert eine vollständige Einheit mit den aktuellen Einstellungen und dem gewählten Datum.' : sets ? 'Lauftraining: Sätze oben im Plan eintragen und hier mit dem gewählten Datum speichern.' : `Für „${PLANS[plan].tab}“ mit den aktuell eingestellten Varianten und Gewichten.`;
 }
 /* ---------- Bauchumfang ---------- */
 function validWaist(e) { return isObj(e) && typeof e.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(e.date) && typeof e.cm === 'number' && Number.isFinite(e.cm) && e.cm >= 40 && e.cm <= 250; }
@@ -728,7 +758,7 @@ function exportCsv() {
       const det = e.v >= 3 ? e.sets.map((r, i) => `${e.names[i]}${e.stages && e.stages[i] ? ' (' + e.stages[i] + ')' : ''} ${cfgText(e.cfg[i])}: ${r.map(v => v ?? '-').join('/')}`).join(' | ') : resultText(e);
       return [e.date, PLANS[e.plan].short, '', '', e.total, cmp, det, ...tail];
     }
-    if (e.mode === 'tabata') return [e.date, PLANS[e.plan].short, '', '', e.total, cmp, resultText(e) + ' | ' + (e.names || []).join(' | '), ...tail];
+    if (e.mode === 'tabata' || e.mode === 'emom') return [e.date, PLANS[e.plan].short, '', '', e.total, cmp, resultText(e) + ' | ' + (e.names || []).join(' | '), ...tail];
     const n = entryCount(e), det = e.v >= 3 ? e.names.map((nm, i) => `${nm} ${cfgText(e.cfg[i])}`).join(' | ') : '';
     return [e.date, PLANS[e.plan].short, Math.floor(e.total / n), e.total % n, e.total, cmp, det, ...tail];
   });
@@ -783,6 +813,7 @@ function openGuide(name, g, opts = {}) {
   if (sl && sl.stages && sl.stages.some(s => /Tempo/.test(s))) extra += `<h3>Was heißt Tempo 3-1-1?</h3><p class="guidecue">${esc(TEMPO_TEXT)}</p>`;
   if (sl && sl.emom) extra += `<h3>Was heißt EMOM?</h3><p>${esc(EMOM_TEXT)}</p>`;
   if (g === 'band') extra += `<h3>Bänder</h3><p>${esc(BAND_TEXT)}</p>`;
+  if (opts.emomPlan) extra += `<h3>So läuft EMOM</h3><p>${esc(EMOM_PLAN_TEXT)}</p>`;
   if (opts.tabata) extra += `<h3>So läuft Tabata</h3><p>${esc(TABATA_TEXT)}</p><p class="guidecue">In 20 Sekunden zählt Qualität: lieber eine Wiederholung weniger als eine unsaubere.</p>`;
   $('guide-body').innerHTML = (opts.gearText ? `<span class="guidegear">${esc(opts.gearText)}${opts.reps ? ' · ' + esc(opts.reps) : ''}</span>` : '') + renderFigure(name, g || 'kb') +
     '<p class="guidecaption">Schematische Skizze. Maßgeblich sind die Hinweise unten.</p><h3>So geht’s</h3><ol>' + info.steps.map(t => `<li>${esc(t)}</li>`).join('') +
@@ -792,7 +823,7 @@ function openGuide(name, g, opts = {}) {
 function openExerciseGuide(i, origin) {
   const x = exList()[i]; if (!x) return;
   const st = stageOf(plan, x.slot), name = x.slot.stages && /^Bulgarian/.test(st || '') ? 'Bulgarian Split Squat' : x.name;
-  openGuide(name, x.g, { origin, slot: x.slot, stage: st, gearText: x.gearText, reps: isTabata() ? tabataCfg().rounds + ' × 20 Sek.' : x.reps, tabata: isTabata() });
+  openGuide(name, x.g, { origin, slot: x.slot, stage: st, gearText: x.gearText, reps: isTabata() ? tabataCfg().rounds + ' × 20 Sek.' : x.reps, tabata: isTabata(), emomPlan: isEmomPlan() });
 }
 
 function renderAll() {
@@ -1018,7 +1049,7 @@ $('sound').addEventListener('click', toggleSound);
 $('soundrow').addEventListener('click', toggleSound);
 $('testsound').addEventListener('click', () => { audioReady(); cue('finish'); say('Ton und Ansagen funktionieren.', 900); });
 $('current').addEventListener('click', e => openExerciseGuide(Number(e.currentTarget.dataset.index || 0), e.currentTarget));
-$('stepstatus').addEventListener('click', e => { if (isTabata() && phase === 1) { const sg = currentSeg(); openExerciseGuide(sg.type === 'blockrest' ? sg.block + 1 : sg.block, e.currentTarget); return; } const s = currentStep(); openGuide(s.base, 'bw', { origin: e.currentTarget }); });
+$('stepstatus').addEventListener('click', e => { if (isInterval() && phase === 1) { const sg = currentSeg(); openExerciseGuide(sg.type === 'blockrest' ? sg.block + 1 : sg.block, e.currentTarget); return; } const s = currentStep(); openGuide(s.base, 'bw', { origin: e.currentTarget }); });
 for (const id of ['warmup', 'cooldown']) $(id).addEventListener('click', e => { const b = e.target.closest('[data-guide-name]'); if (b) openGuide(b.dataset.guideName, 'bw', { origin: b }); });
 $('worklist').addEventListener('click', e => {
   if (e.target.closest('#emomstart')) { startEmom(); return; }
@@ -1033,9 +1064,10 @@ $('worklist').addEventListener('change', e => {
 });
 $('settings').addEventListener('change', e => {
   const t = e.target;
-  if (t.dataset.tabata) {
+  const ck = t.dataset.tabata || t.dataset.icfg;
+  if (ck) {
     if (settingsLocked()) { alert('Bitte das laufende Training zuerst beenden oder zurücksetzen.'); renderSettings(); return; }
-    const c = Object.assign({}, isObj(choices['tabata.cfg']) ? choices['tabata.cfg'] : {}, { [t.dataset.tabata]: Number(t.value) }); choices['tabata.cfg'] = c; store(KEYS.choice, choices);
+    const k = plan + '.cfg'; choices[k] = Object.assign({}, isObj(choices[k]) ? choices[k] : {}, { [ck]: Number(t.value) }); store(KEYS.choice, choices);
     renderAll(); toast('Gespeichert.'); return;
   }
   const id = t.dataset.pref || t.dataset.kg || t.dataset.band; if (!id) return;
@@ -1056,7 +1088,7 @@ $('history').addEventListener('click', e => { const rb = e.target.closest('[data
 $('manualdate').value = localDay();
 $('manual').addEventListener('submit', e => {
   e.preventDefault(); const date = $('manualdate').value; if (!date) { alert('Bitte ein Datum wählen.'); return; }
-  if (isTabata()) { saveSession(date, { manual: true }); return; }
+  if (isInterval()) { saveSession(date, { manual: true }); return; }
   if (isSets()) { if (!hasReps()) { alert('Bitte zuerst oben im Plan die Wiederholungen eintragen.'); return; } saveSession(date, { manual: true }); return; }
   const r = Number($('manualround').value), x = Number($('manualextra').value), n = exList().length;
   if (!Number.isInteger(r) || r < 0 || !Number.isInteger(x) || x < 0 || x >= n) { alert(`Bitte gültige Werte eingeben. Weitere Übungen: 0 bis ${n - 1}.`); return; }
@@ -1116,8 +1148,8 @@ $('rateform').addEventListener('submit', e => { e.preventDefault(); saveRate(); 
 $('rate-skip').addEventListener('click', () => rateDlg.close());
 $('planhint').addEventListener('click', e => {
   if (e.target.id !== 'planhintbtn') return;
-  const a = tabataAdvice(); if (!a || settingsLocked()) return;
-  choices['tabata.cfg'] = Object.assign({}, isObj(choices['tabata.cfg']) ? choices['tabata.cfg'] : {}, a.patch); store(KEYS.choice, choices);
+  const a = intervalAdvice(); if (!a || settingsLocked()) return;
+  const k = plan + '.cfg'; choices[k] = Object.assign({}, isObj(choices[k]) ? choices[k] : {}, a.patch); store(KEYS.choice, choices);
   renderAll(); toast('Umgestellt – viel Erfolg!');
 });
 $('voicerow').addEventListener('click', () => { audioOpt.voice = !audioOpt.voice; store(KEYS.audio, audioOpt); renderAudioRows(); if (audioOpt.voice) { audioReady(); say('Sprachansagen an.', 0); } toast(audioOpt.voice ? 'Sprachansagen an.' : 'Sprachansagen aus.'); });

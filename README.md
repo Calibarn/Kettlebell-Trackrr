@@ -5,12 +5,12 @@ Mein persönlicher Trainings-Begleiter als Web-App für iPhone und Android – K
 ## Bereiche
 
 - **Kraft** (mit Timer und Verlauf)
-  - Ganzkörper (Zirkel), Tabata (komplett automatisch, mit Kettlebell, Band oder Körpergewicht), Läufer (Sätze mit Progression), Oberkörper (z. B. nach dem Longrun), Büro (Haltung & Rücken)
+  - Ganzkörper (Zirkel), Tabata (komplett automatisch, mit Kettlebell, Band oder Körpergewicht), Läufer (Sätze mit Progression), Oberkörper (z. B. nach dem Longrun), Core (EMOM im Knien, fest mit Kettlebell), Büro (Haltung & Rücken)
   - „Heute dabei“: Kettlebell, Bänder und Körpergewicht wählen – je Übung wird automatisch die wirksamste Variante aus der Auswahl genommen (Rangfolge mit Begründung in `data.js`, `BEST`). Ohne Auswahl gilt Körpergewicht. Die Auswahl wird gemerkt.
   - Gewicht je Übung (vorbelegt 12 kg) und Bandstärke unter „Übungen, Geräte & Gewichte“
   - Ton-Countdown und Sprachansagen (nächste Übung, Seitenwechsel, Rundenende), automatische Aufwärm-/Cooldown-Abläufe, Zeitübungen, Swing-EMOM
   - Bestwerte vergleichen nur Einheiten mit gleichem Aufbau; nach dem Speichern Zusammenfassung mit neuem Bestwert
-  - Progressionshinweise: Läufer-Plan bei allen Sätzen an der Obergrenze (nächste Stufe, Gewicht, Band), Tabata nach drei kompletten Einheiten (8 Runden, dann 60 Sek. Pause)
+  - Progressionshinweise: Läufer-Plan bei allen Sätzen an der Obergrenze (nächste Stufe, Gewicht, Band), Tabata nach drei kompletten Einheiten (8 Runden, dann 60 Sek. Pause), Core nach drei kompletten Einheiten eine Runde mehr
   - Gefühlte Anstrengung (1–10) und Notiz je Einheit, nachträglich im Verlauf änderbar
 - **Laufen** (Anleitungen ohne Tracking)
   - Warm-up und Cooldown für 5 km, 10 km, Halbmarathon, Marathon
@@ -61,7 +61,7 @@ Daten gehen nur verloren, wenn die Adresse (Domain) wechselt, das App-Symbol vom
 
 ## Aktualisieren
 
-Bei Änderungen an Dateien in `sw.js` die Konstante `VERSION` erhöhen (z. B. `kbt-v14`). Online lädt die App immer die neueste Version, offline den Cache.
+Bei Änderungen an Dateien in `sw.js` die Konstante `VERSION` erhöhen (z. B. `kbt-v15`). Online lädt die App immer die neueste Version, offline den Cache.
 
 ## Ton auf dem iPhone
 
@@ -69,7 +69,7 @@ Safari spielt Web-Töne normalerweise nicht, wenn der Stummschalter an ist. Unte
 
 ## Tests
 
-Automatische Tests mit Playwright (Chromium) prüfen Zirkel, Tabata, Sätze, Geräte-Auswahl, Ansagen, geführte Routinen, Import/Export, Update-Sicherheit, Content-Security-Policy und dass jede Übung Anleitung und Skizze hat. Sie laufen bei jedem Push über GitHub Actions (`.github/workflows/test.yml`).
+Automatische Tests mit Playwright (Chromium) prüfen Zirkel, Tabata, Core-EMOM, Sätze, Geräte-Auswahl, Ansagen, geführte Routinen, Import/Export, Update-Sicherheit, Content-Security-Policy und dass jede Übung Anleitung und Skizze hat. Sie laufen bei jedem Push über GitHub Actions (`.github/workflows/test.yml`).
 
 Lokal (Node 22 und Python 3 nötig):
 

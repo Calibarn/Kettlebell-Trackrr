@@ -1,7 +1,7 @@
 const { test, expect, forward, closeRating } = require('./fixtures');
 
 test('lädt ohne Fehler und zeigt alle Kraft-Pläne', async ({ page }) => {
-  await expect(page.locator('#tabs button')).toHaveText(['Ganzkörper', 'Tabata', 'Läufer', 'Oberkörper', 'Büro']);
+  await expect(page.locator('#tabs button')).toHaveText(['Ganzkörper', 'Tabata', 'Läufer', 'Oberkörper', 'Core', 'Büro']);
   await expect(page.locator('#gearbar [data-gear]')).toHaveCount(3);
 });
 
@@ -10,10 +10,10 @@ test('Geräte-Auswahl: ein Gerät → nur dieses Gerät, nichts gewählt → Kö
     const out = {};
     for (const g of ['kb', 'band', 'bw']) {
       gear = { kb: g === 'kb', band: g === 'band', bw: g === 'bw' };
-      out[g] = PLAN_ORDER.flatMap(pk => exList(pk).map(x => x.g));
+      out[g] = PLAN_ORDER.filter(pk => !PLANS[pk].kbOnly).flatMap(pk => exList(pk).map(x => x.g));
     }
     gear = { kb: false, band: false, bw: false }; ensureGear();
-    out.none = PLAN_ORDER.flatMap(pk => exList(pk).map(x => x.g));
+    out.none = PLAN_ORDER.filter(pk => !PLANS[pk].kbOnly).flatMap(pk => exList(pk).map(x => x.g));
     return out;
   });
   for (const g of ['kb', 'band', 'bw']) expect(new Set(result[g])).toEqual(new Set([g]));
@@ -125,6 +125,55 @@ test('Tabata: nach drei kompletten Einheiten wird die Steigerung vorgeschlagen',
   await expect(page.locator('#planhint')).toContainText('bereit für 8 Runden');
   await page.click('#planhintbtn');
   expect(await page.evaluate(() => tabataCfg().rounds)).toBe(8);
+  await expect(page.locator('#planhint')).toBeHidden();
+});
+
+test('Core: fest mit Kettlebell, egal was bei „Heute dabei“ steht', async ({ page }) => {
+  const r = await page.evaluate(() => [1, 2, 4, 7].map(m => { gear = { kb: !!(m & 1), band: !!(m & 2), bw: !!(m & 4) }; return exList('core').map(x => x.g + (x.fallback ? '!' : '')).join(','); }));
+  expect(r).toEqual(Array(4).fill('kb,kb,kb'));
+  await page.click('[data-gear="kb"]');
+  await page.click('[data-plan="core"]');
+  await expect(page.locator('#gearbar')).toContainText('Fest mit Kettlebell');
+  await expect(page.locator('#gearbar [data-gear]')).toHaveCount(0);
+  await expect(page.locator('#worklist .row small').first()).toContainText('Kettlebell 12 kg');
+  await expect(page.locator('#worklist')).not.toContainText('Ersatz');
+});
+
+test('Core: EMOM läuft automatisch, jede Minute die nächste Übung, Speichern nach dem Cooldown', async ({ page }) => {
+  await page.click('[data-plan="core"]');
+  await expect(page.locator('#workoutname')).toHaveText('3 Übungen · 15 Min.');
+  await page.click('#btnMain');
+  await forward(page, 4 * 60 + 1);
+  expect(await page.evaluate(() => phase)).toBe(1);
+  await expect(page.locator('#phase-badge')).toHaveText('Minute 1/15');
+  await expect(page.locator('#stepname')).toHaveText('Clean & Press im halben Kniestand');
+  await expect.poll(() => page.evaluate(() => (__spoken.at(-1) || {}).text)).toBe('EMOM, 15 Minuten. Erste Übung: Clean und Press im halben Kniestand, 5 je Seite.');
+  await forward(page, 60);
+  await expect(page.locator('#phase-badge')).toHaveText('Minute 2/15');
+  await expect(page.locator('#stepname')).toHaveText('Pullover im Kniestand');
+  await expect.poll(() => page.evaluate(() => (__spoken.at(-1) || {}).text)).toBe('Pullover im Kniestand, 10');
+  await forward(page, 120);
+  await expect(page.locator('#ringsub')).toHaveText('Runde 2/5 · 5 je Seite');
+  await expect.poll(() => page.evaluate(() => (__spoken.at(-1) || {}).text)).toBe('Runde 2. Clean und Press im halben Kniestand, 5 je Seite');
+  await forward(page, await page.evaluate(() => durationSecs() - secNow() + 1));
+  expect(await page.evaluate(() => phase)).toBe(2);
+  await forward(page, 4 * 60 + 1);
+  await expect(page.locator('#rate-progress')).toContainText('Alle 15 Minuten geschafft');
+  const e = await page.evaluate(() => saved.at(-1));
+  expect([e.plan, e.mode, e.total, e.of, e.cfg]).toEqual(['core', 'emom', 15, 15, ['kb:12', 'kb:12', 'kb:12', 'rounds:5']]);
+  await closeRating(page);
+  await expect(page.locator('#history')).toContainText('15 von 15 Minuten · komplett · 5 Runden');
+});
+
+test('Core: nach drei kompletten Einheiten eine Runde mehr vorschlagen', async ({ page }) => {
+  await page.click('[data-plan="core"]');
+  await page.evaluate(() => {
+    for (let i = 0; i < 3; i++) saved.push({ v: 3, id: 'c' + i, date: '2026-10-2' + i, plan: 'core', mode: 'emom', total: 15, of: 15, cfg: currentCfg('core'), names: exList('core').map(x => x.name), at: '2026-10-2' + i + 'T10:00:00Z' });
+    persistEntries(); renderAll();
+  });
+  await expect(page.locator('#planhint')).toContainText('bereit für 6 Runden (18 Min.)');
+  await page.click('#planhintbtn');
+  expect(await page.evaluate(() => [emomCfg().rounds, Math.round(phaseSecs('core', 1) / 60)])).toEqual([6, 18]);
   await expect(page.locator('#planhint')).toBeHidden();
 });
 
