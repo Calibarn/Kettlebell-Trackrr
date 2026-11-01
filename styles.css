@@ -43,9 +43,9 @@ html[data-os=android] .largetitle{font-size:28px;font-weight:500;letter-spacing:
 .segmented button{flex:1 1 auto;border:0;background:none;border-radius:7px;padding:7px 6px;font-size:13px;font-weight:600;color:var(--label);white-space:nowrap;min-width:0;overflow:hidden;text-overflow:ellipsis}
 .segmented button[aria-selected=true]{background:var(--elev);box-shadow:0 3px 8px rgba(0,0,0,.12),0 0 0 .5px rgba(0,0,0,.04)}
 /* Kraft hat sechs Pläne: engere Abstände, und lieber wischen als Namen abkürzen */
-#tabs{overflow-x:auto;scrollbar-width:none}
-#tabs::-webkit-scrollbar{display:none}
-#tabs button{flex:1 0 auto;padding-left:4px;padding-right:4px;font-size:12.5px}
+#tabs,#runtabs{overflow-x:auto;scrollbar-width:none}
+#tabs::-webkit-scrollbar,#runtabs::-webkit-scrollbar{display:none}
+#tabs button,#runtabs button{flex:1 0 auto;padding-left:4px;padding-right:4px;font-size:12.5px}
 html[data-os=android] .segmented{background:none;border:1px solid var(--label3);border-radius:100px;padding:0;gap:0;overflow:hidden}
 html[data-os=android] .segmented button{border-radius:0;padding:10px 4px;border-right:1px solid var(--label3);font-weight:500}
 html[data-os=android] .segmented button:last-child{border-right:0}
@@ -176,6 +176,21 @@ html[data-os=android] .ratehint{color:var(--accent-ink)}
 .chart .axis{stroke:var(--sep)}
 .chart .line{stroke:var(--accent)}
 .chart .dot{fill:var(--accent);stroke:var(--card)}
+/* Laufumfang */
+.kmrow{display:grid;grid-template-columns:minmax(0,1fr) 92px 92px;gap:8px;align-items:center;padding:10px 0;border-bottom:.5px solid var(--sep)}
+.kmrow:last-child{border-bottom:0}
+.kmrow small{display:block;color:var(--label2);font-size:12px}
+.kmin{display:flex;flex-direction:column;gap:3px;font-size:11px;color:var(--label2)}
+.kmin input{width:100%;text-align:center;font-variant-numeric:tabular-nums}
+.kmin input[aria-invalid=true]{box-shadow:0 0 0 2px var(--red) inset}
+.chart .zlow{fill:var(--fill)}
+.chart .zkeep{fill:var(--accent);opacity:.3}
+.chart .zbuild{fill:var(--accent)}
+.chart .zbuild.band{opacity:.55}
+.chart .zover{fill:var(--orange);opacity:.55}
+.chart .zmark{stroke:var(--label)}
+.chart .bar.over{fill:var(--orange)}
+.loadstatus{margin:6px 0 2px;font-size:15px}
 .metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:10px}
 .metric{background:var(--fill);border-radius:10px;padding:10px}
 .metric span{display:block;font-size:12px;color:var(--label2)}
@@ -218,6 +233,7 @@ html[data-os=android] .rtctl button{border-radius:100px}
 .rpe button{border:0;border-radius:8px;min-height:44px;background:var(--fill);font-weight:600;font-size:16px;color:var(--label);padding:0}
 .rpe button[aria-checked=true]{background:var(--accent);color:var(--on-accent)}
 @media(max-width:380px){.rpe{grid-template-columns:repeat(5,minmax(0,1fr))}}
+@media(max-width:360px){.kmrow{grid-template-columns:1fr 1fr}.kmrow .sname{grid-column:1/-1}}
 .progresslist{list-style:none;padding:10px 12px;margin:4px 0 0;background:var(--accent-soft);border-radius:10px}
 .progresslist li{margin:4px 0;font-size:15px}
 
