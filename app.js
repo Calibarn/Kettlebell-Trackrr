@@ -5,7 +5,7 @@ const $ = id => document.getElementById(id);
 const KEYS = {
   entries: 'jan-kettlebell-tracker-v1', waist: 'jan-kb-waist-v1', sound: 'jan-kb-sound-v1', gear: 'jan-kb-gear-v1',
   choice: 'jan-kb-choice-v1', stage: 'jan-kb-stage-v1', plan: 'jan-kb-plan-v1', session: 'jan-kb-session-v1',
-  backup: 'jan-kb-lastbackup-v1', hint: 'jan-kb-installhint-v1', area: 'jan-kb-area-v1', run: 'jan-kb-runview-v1', audio: 'jan-kb-audio-v1', mob: 'jan-kb-mobview-v1', runweeks: 'jan-kb-runweeks-v1'
+  backup: 'jan-kb-lastbackup-v1', hint: 'jan-kb-installhint-v1', area: 'jan-kb-area-v1', run: 'jan-kb-runview-v1', audio: 'jan-kb-audio-v1', mob: 'jan-kb-mobview-v1', runweeks: 'jan-kb-runweeks-v1', runlog: 'jan-kb-runlog-v1'
 };
 /* Datensicherheit bei Updates:
    - Einträge, die diese Version nicht versteht, werden nie verworfen, sondern unverändert mitgespeichert.
@@ -690,16 +690,23 @@ function renderWaist() {
   t.innerHTML = `<svg class="chart" role="img" aria-label="Bauchumfang der letzten ${data.length} Messungen, von ${cmString(data[0].cm)} bis ${cmString(data.at(-1).cm)} cm" viewBox="0 0 ${w} ${h}">${grid}<path class="line" d="${path}" fill="none" stroke-width="2.5" stroke-linejoin="round"/>${dots}${labels}</svg>`;
 }
 
-/* ---------- Laufumfang: Wochen-km, Schnitt der letzten 4 Wochen, Zielbereich ---------- */
+/* ---------- Laufumfang: einzelne Läufe, Wochensummen, langer Lauf und Zielbereich der Woche ---------- */
 // Eingaben mit Komma oder Punkt; leer = nicht eingetragen (nicht 0)
 const kmNum = v => { const t = String(v ?? '').trim().replace(',', '.'); if (t === '') return null; const n = Number(t); return Number.isFinite(n) && n >= 0 && n <= 1000 ? Math.round(n * 10) / 10 : NaN; };
 const kmText = n => Number(n).toLocaleString('de-DE', { maximumFractionDigits: 1 });
+const rd1 = x => Math.round(x * 10) / 10;
 const okKm = v => v === null || v === undefined || (typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= 1000);
-const validRunWeek = e => isObj(e) && typeof e.week === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(e.week) && okKm(e.km) && okKm(e.long);
-const runWeeksLoaded = loadList(KEYS.runweeks, validRunWeek);
-let runWeeks = runWeeksLoaded.ok; const runWeeksKeep = runWeeksLoaded.keep;
+const isDay = d => typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d);
+const validRunWeek = e => isObj(e) && isDay(e.week) && okKm(e.km) && okKm(e.long);
+const validRun = e => isObj(e) && typeof e.id === 'string' && isDay(e.date) && typeof e.km === 'number' && Number.isFinite(e.km) && e.km > 0 && e.km <= 300;
+const runWeeksLoaded = loadList(KEYS.runweeks, validRunWeek), runLogLoaded = loadList(KEYS.runlog, validRun);
+let runWeeks = runWeeksLoaded.ok, runLog = runLogLoaded.ok; const runWeeksKeep = runWeeksLoaded.keep, runLogKeep = runLogLoaded.keep;
 function persistRunWeeks() { if (!store(KEYS.runweeks, runWeeks.concat(runWeeksKeep))) toast('Speichern im Browser nicht möglich – bitte Backup exportieren.'); renderBackupBanner(); }
-const weekKm = (w, f = 'km') => { const e = runWeeks.find(x => x.week === w); return e && typeof e[f] === 'number' ? e[f] : null; };
+function persistRunLog() { if (!store(KEYS.runlog, runLog.concat(runLogKeep))) toast('Speichern im Browser nicht möglich – bitte Backup exportieren.'); renderBackupBanner(); }
+const weekRuns = w => { const e = addDays(w, 6); return runLog.filter(r => r.date >= w && r.date <= e); };
+const manualKm = (w, f = 'km') => { const e = runWeeks.find(x => x.week === w); return e && typeof e[f] === 'number' ? e[f] : null; };
+// Wochenwert: aus den einzelnen Läufen, sonst die eingetragene Wochensumme (bleibt gespeichert, falls Läufe gelöscht werden)
+const weekKm = (w, f = 'km') => { const rs = weekRuns(w); if (!rs.length) return manualKm(w, f); return f === 'km' ? rd1(rs.reduce((a, r) => a + r.km, 0)) : Math.max(...rs.map(r => r.km)); };
 function setWeekKm(w, f, v) {
   let e = runWeeks.find(x => x.week === w);
   if (!e) { if (v === null) return; e = { week: w, km: null, long: null }; runWeeks.push(e); }
@@ -707,14 +714,29 @@ function setWeekKm(w, f, v) {
   if (e.km === null && e.long === null) runWeeks = runWeeks.filter(x => x !== e);
   runWeeks.sort((a, b) => a.week.localeCompare(b.week)); persistRunWeeks();
 }
-// Für die Woche w: Schnitt der 4 Wochen davor, Zielbereich und Obergrenze für den langen Lauf
+function addRun(date, km) { runLog.push({ id: uid(), date, km }); runLog.sort((a, b) => a.date.localeCompare(b.date)); persistRunLog(); }
+function deleteRun(id) { runLog = runLog.filter(r => r.id !== id); persistRunLog(); }
+// Längster Lauf der 30 Tage bis „day“ (before: nur die Tage davor – zum Prüfen eines Laufs).
+// Einzelne Läufe zählen taggenau; Wochen ohne Einzelläufe über ihren „längsten Lauf“, wenn die ganze Woche im Zeitraum liegt.
+function longestIn(day, before = false, skip = null) {
+  const from = addDays(day, -30), cand = runLog.filter(r => r !== skip && r.date >= from && (before ? r.date < day : r.date <= day)).map(r => ({ km: r.km, date: r.date }));
+  for (let w = weekStart(day); w >= from; w = addDays(w, -7)) {
+    if (before && addDays(w, 6) >= day) continue;
+    const v = weekRuns(w).length ? null : manualKm(w, 'long');
+    if (v !== null) cand.push({ km: v, week: w });
+  }
+  if (!cand.length) return null;
+  const best = cand.reduce((a, b) => b.km > a.km ? b : a);
+  return Object.assign({ max: rd1(best.km * (1 + LOAD.longPlus)) }, best);
+}
+// Sprung: wie viel % ein Lauf über dem längsten der 30 Tage davor lag (nur über 10 %)
+const runSpike = r => { const ref = longestIn(r.date, true, r); if (!ref || !ref.km) return null; const p = r.km / ref.km - 1; return p > LOAD.longPlus + 1e-9 ? Math.round(p * 100) : null; };
+// Für die Woche w: Schnitt der 4 Wochen davor und Zielbereich
 function loadFor(w) {
   const prev = [1, 2, 3, 4].map(i => weekKm(addDays(w, -7 * i))).filter(v => v !== null);
-  const avg = prev.length ? prev.reduce((a, b) => a + b, 0) / prev.length : null, rd = x => Math.round(x * 10) / 10;
-  const longs = [0, 1, 2, 3].map(i => weekKm(addDays(w, -7 * i), 'long')).filter(v => v !== null), refLong = longs.length ? Math.max(...longs) : null;
-  const cur = weekKm(w);
-  return { n: prev.length, avg: avg === null ? null : rd(avg), cur, refLong, maxLong: refLong ? rd(refLong * (1 + LOAD.longPlus)) : null,
-    keep: avg ? rd(avg * LOAD.keep) : null, build: avg ? rd(avg * LOAD.build) : null, cap: avg ? rd(avg * LOAD.cap) : null };
+  const avg = prev.length ? prev.reduce((a, b) => a + b, 0) / prev.length : null;
+  return { n: prev.length, avg: avg === null ? null : rd1(avg), cur: weekKm(w),
+    keep: avg ? rd1(avg * LOAD.keep) : null, build: avg ? rd1(avg * LOAD.build) : null, cap: avg ? rd1(avg * LOAD.cap) : null };
 }
 function loadStatus(L) {
   if (L.n === 0) return 'Trag zuerst deine km der letzten Wochen ein. Nach einer längeren Pause: klein anfangen und 3–4 Wochen auf gleichem Niveau laufen, bevor du steigerst.';
@@ -754,35 +776,55 @@ function loadChart() {
   return `<svg class="chart" viewBox="0 0 ${W} 140" role="img" aria-label="Wochen-km der letzten 8 Wochen: ${info.map(d => d.km === null ? 'keine Angabe' : kmText(d.km)).join(', ')}"><line class="axis" x1="${l}" y1="${base}" x2="${W - l}" y2="${base}"/>${bars}</svg>
     <p class="tiny">Balken: km je Woche, die laufende Woche heller. Fläche: Zielbereich der Woche (hell Erhalt, kräftig Aufbau). Orange: über der Obergrenze.</p>`;
 }
+const dayLabel = d => `${WEEKDAY[new Date(d + 'T12:00:00').getDay()]} ${dateGerman(d).slice(0, 6)}`;
 function renderUmfang() {
-  const cur = weekStart(localDay()), weeks = [0, 1, 2, 3, 4].map(i => addDays(cur, -7 * i));
-  const inp = (w, f, label) => { const v = weekKm(w, f); return `<label class="kmin"><span>${label}</span><input type="text" inputmode="decimal" autocomplete="off" data-wk="${w}" data-f="${f}" value="${v === null ? '' : esc(kmText(v))}" placeholder="${f === 'km' && w !== cur ? 'fehlt' : '–'}" aria-label="${label} KW ${isoWeek(w)}"></label>`; };
-  const rows = weeks.map((w, i) => `<div class="kmrow"><div class="sname"><b>KW ${isoWeek(w)}${i === 0 ? ' · diese Woche' : ''}</b><small>${dateGerman(w).slice(0, 6)}–${dateGerman(addDays(w, 6)).slice(0, 6)}</small></div>${inp(w, 'km', 'km gesamt')}${inp(w, 'long', 'längster Lauf')}</div>`).join('');
+  const today = localDay(), cur = weekStart(today);
   return `<div class="intro">${esc(LOAD_INTRO)}</div>
+    <div class="header">Nächster langer Lauf</div><div class="group"><div class="panel" style="border:0;padding-top:12px" id="longresult"></div></div>
+    <div class="header">Lauf eintragen</div><div class="group"><div class="runadd"><input type="date" id="rundate" value="${today}" max="${today}" aria-label="Datum des Laufs"><input type="text" inputmode="decimal" autocomplete="off" id="runkm" placeholder="km" aria-label="Kilometer des Laufs"><button type="button" class="btn small primary" id="runaddbtn">Hinzufügen</button></div><div id="runlist"></div></div>
+    <p class="footer">Mit Datum rechnet die App die 30 Tage exakt und markiert Läufe, die mehr als 10 % über dem längsten der 30 Tage davor lagen. Wochen mit eingetragenen Läufen werden automatisch zusammengezählt.</p>
     <div class="header">Diese Woche · KW ${isoWeek(cur)}</div><div class="group"><div class="panel" style="border:0;padding-top:12px" id="loadresult"></div></div>
-    <div class="header">Wochen eintragen</div><div class="group" style="padding:0 16px">${rows}</div>
-    <p class="footer">km je Woche von Montag bis Sonntag, z. B. aus deiner Uhr. Pausenwoche: 0 eintragen. Die Werte bleiben nur auf diesem Gerät und sind im Backup enthalten.</p>
+    <div class="header">Wochensummen</div><div class="group" style="padding:0 16px" id="kmweeks"></div>
+    <p class="footer">Für Wochen ohne einzelne Läufe: km von Montag bis Sonntag und den längsten Lauf, z. B. aus deiner Uhr. Pausenwoche: 0. Alles bleibt nur auf diesem Gerät und ist im Backup enthalten.</p>
     <div class="header">Verlauf · 8 Wochen</div><div class="group"><div class="panel" style="border:0;padding-top:4px" id="loadchart"></div></div>
     <p class="footer">${esc(LOAD_NOTE)}</p>`;
 }
+// Wochenzeilen nur nach Hinzufügen/Löschen neu zeichnen – beim Tippen bleibt der Fokus im Feld
+function renderWeekRows() {
+  const box = $('kmweeks'); if (!box) return;
+  const cur = weekStart(localDay());
+  const inp = (w, f, label, n) => { const v = weekKm(w, f); return `<label class="kmin"><span>${label}</span><input type="text" inputmode="decimal" autocomplete="off" data-wk="${w}" data-f="${f}" value="${v === null ? '' : esc(kmText(v))}" placeholder="${f === 'km' && w !== cur ? 'fehlt' : '–'}" ${n ? 'disabled' : ''} aria-label="${label} KW ${isoWeek(w)}"></label>`; };
+  box.innerHTML = [0, 1, 2, 3, 4].map(i => addDays(cur, -7 * i)).map((w, i) => { const n = weekRuns(w).length; return `<div class="kmrow"><div class="sname"><b>KW ${isoWeek(w)}${i === 0 ? ' · diese Woche' : ''}</b><small>${dateGerman(w).slice(0, 6)}–${dateGerman(addDays(w, 6)).slice(0, 6)}${n ? ` · aus ${n} ${n === 1 ? 'Lauf' : 'Läufen'}` : ''}</small></div>${inp(w, 'km', 'km gesamt', n)}${inp(w, 'long', 'längster Lauf', n)}</div>`; }).join('');
+}
 function renderLoad() {
   const box = $('loadresult'); if (!box) return;
-  const L = loadFor(weekStart(localDay()));
-  box.innerHTML = (L.n ? `<div class="metrics">
+  const today = localDay(), L = loadFor(weekStart(today)), R = longestIn(today);
+  $('longresult').innerHTML = R ? `<div class="longnext"><b>höchstens ${kmText(R.max)} km</b><span>Längster Lauf der letzten 30 Tage: ${kmText(R.km)} km ${R.date ? 'am ' + dayLabel(R.date) : `(KW ${isoWeek(R.week)}, aus der Wochensumme)`} – plus 10 %.</span></div>`
+    : '<p class="loadstatus">Trag Läufe mit Datum ein (oder bei den Wochensummen den längsten Lauf) – dann steht hier, wie lang dein nächster langer Lauf höchstens sein sollte.</p>';
+  const recent = runLog.filter(r => r.date >= addDays(today, -30) && r.date <= today).slice().reverse();
+  $('runlist').innerHTML = recent.length ? recent.map(r => { const sp = runSpike(r); return `<div class="row"><span class="dur">${dayLabel(r.date)}</span><span class="txt"><b>${kmText(r.km)} km</b>${sp ? `<small class="spike">+${sp} % gegenüber dem längsten der 30 Tage davor</small>` : ''}</span><button type="button" class="btn small danger" data-rundel="${esc(r.id)}" aria-label="Lauf vom ${dateGerman(r.date)} löschen">Löschen</button></div>`; }).join('')
+    : '<div class="row"><span class="txt"><small>Noch keine einzelnen Läufe in den letzten 30 Tagen.</small></span></div>';
+  box.innerHTML = (L.n ? `<div class="metrics two">
       <div class="metric"><span>Schnitt 4 Wochen</span><b>${L.avg === null ? '–' : kmText(L.avg) + ' km'}</b><small>${L.n < 4 ? `vorläufig: ${L.n} von 4 Wochen` : 'Basis für diese Woche'}</small></div>
       <div class="metric"><span>Diese Woche</span><b>${kmText(L.cur || 0)} km</b><small>${L.avg ? kmText((L.cur || 0) / L.avg) + ' × Schnitt' : '–'}</small></div>
-      <div class="metric"><span>Langer Lauf</span><b>${L.maxLong ? '≤ ' + kmText(L.maxLong) + ' km' : '–'}</b><small>${L.refLong ? `längster: ${kmText(L.refLong)} km + 10 %` : 'längsten Lauf eintragen'}</small></div>
     </div>` : '') + loadBar(L) + `<p class="loadstatus">${esc(loadStatus(L))}</p>`;
   $('loadchart').innerHTML = loadChart();
+}
+function addRunFromForm() {
+  const d = $('rundate').value, today = localDay(), km = kmNum($('runkm').value);
+  if (!isDay(d) || d > today) { toast('Bitte ein Datum bis heute wählen.'); return; }
+  if (km === null || Number.isNaN(km) || km <= 0 || km > 300) { $('runkm').setAttribute('aria-invalid', 'true'); toast('Bitte die Kilometer des Laufs eingeben.'); return; }
+  addRun(d, km); $('runkm').value = ''; $('runkm').removeAttribute('aria-invalid');
+  renderWeekRows(); renderLoad(); toast(`✓ ${kmText(km)} km am ${dayLabel(d)} gespeichert.`);
 }
 
 /* ---------- Dateien: Backup, CSV, Kalender ---------- */
 function download(name, content, type) { const blob = new Blob([content], { type }), url = URL.createObjectURL(blob), a = document.createElement('a'); a.href = url; a.download = name; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 3000); }
-function backupJson() { return JSON.stringify({ version: 3, entries: saved.concat(savedKeep), waist: waist.concat(waistKeep), runWeeks: runWeeks.concat(runWeeksKeep), settings: { gear, choices, stages, audio: audioOpt }, exportedAt: new Date().toISOString() }, null, 2); }
+function backupJson() { return JSON.stringify({ version: 3, entries: saved.concat(savedKeep), waist: waist.concat(waistKeep), runWeeks: runWeeks.concat(runWeeksKeep), runLog: runLog.concat(runLogKeep), settings: { gear, choices, stages, audio: audioOpt }, exportedAt: new Date().toISOString() }, null, 2); }
 function schemaCheck() {
   const prev = load(SCHEMA_KEY, null);
   if (prev === SCHEMA || (typeof prev === 'number' && prev > SCHEMA)) return; // neuere Daten mit älterer App: nichts verändern
-  if (saved.length + savedKeep.length + waist.length + waistKeep.length + runWeeks.length + runWeeksKeep.length > 0) store(PRE_UPDATE_KEY, { savedAt: new Date().toISOString(), fromSchema: prev, json: backupJson() });
+  if (saved.length + savedKeep.length + waist.length + waistKeep.length + runWeeks.length + runWeeksKeep.length + runLog.length + runLogKeep.length > 0) store(PRE_UPDATE_KEY, { savedAt: new Date().toISOString(), fromSchema: prev, json: backupJson() });
   store(SCHEMA_KEY, SCHEMA);
 }
 function renderPreUpdate() {
@@ -816,8 +858,9 @@ function importBackup(file) {
       entries = entries.filter(validEntry).map(e => Object.assign({}, e, { id: String(e.id || `legacy-${e.plan}-${e.date}-${e.total}-${e.at || ''}`) }));
       wl = wl.filter(validWaist).map(e => Object.assign({}, e, { note: String(e.note || '').slice(0, 120) }));
       const rw = isObj(x) && Array.isArray(x.runWeeks) ? x.runWeeks.filter(validRunWeek) : [];
+      const rl = isObj(x) && Array.isArray(x.runLog) ? x.runLog.filter(validRun) : [];
       const settings = isObj(x) && isObj(x.settings) ? x.settings : null;
-      if (!entries.length && !wl.length && !rw.length && !settings) throw Error('Keine gültigen Daten gefunden');
+      if (!entries.length && !wl.length && !rw.length && !rl.length && !settings) throw Error('Keine gültigen Daten gefunden');
       const ids = new Set(saved.map(e => String(e.id))); let added = 0, addedW = 0;
       for (const e of entries) if (!ids.has(e.id)) { saved.push(e); ids.add(e.id); added++; }
       const days = new Set(waist.map(e => e.date));
@@ -826,7 +869,10 @@ function importBackup(file) {
       const have = new Set(runWeeks.map(e => e.week)); let addedR = 0;
       for (const e of rw) if (!have.has(e.week)) { runWeeks.push({ week: e.week, km: e.km ?? null, long: e.long ?? null }); have.add(e.week); addedR++; }
       runWeeks.sort((a, b) => a.week.localeCompare(b.week));
-      persistEntries(); persistWaist(); if (addedR) persistRunWeeks();
+      const runIds = new Set(runLog.map(e => e.id)); let addedL = 0;
+      for (const e of rl) if (!runIds.has(e.id)) { runLog.push({ id: e.id, date: e.date, km: e.km }); runIds.add(e.id); addedL++; }
+      runLog.sort((a, b) => a.date.localeCompare(b.date));
+      persistEntries(); persistWaist(); if (addedR) persistRunWeeks(); if (addedL) persistRunLog();
       if (settings && confirm('Das Backup enthält auch Einstellungen (Geräte, Varianten, Gewichte). Übernehmen?')) {
         if (isObj(settings.gear)) { gear = { kb: settings.gear.kb !== false, band: settings.gear.band !== false, bw: settings.gear.bw !== false }; ensureGear(); store(KEYS.gear, gear); }
         if (isObj(settings.choices)) { choices = settings.choices; store(KEYS.choice, choices); }
@@ -835,7 +881,7 @@ function importBackup(file) {
         if (!sessionActive()) runReps = emptyReps(plan);
       }
       renderAll(); renderWaist(); renderRun();
-      alert(`${added} Trainings-, ${addedW} Bauchumfang- und ${addedR} Laufwochen-Einträge importiert.${entries.length - added + wl.length - addedW + rw.length - addedR > 0 ? ' Bereits vorhandene Einträge wurden übersprungen.' : ''}`);
+      alert(`${added} Trainings-, ${addedW} Bauchumfang-, ${addedR} Laufwochen- und ${addedL} Lauf-Einträge importiert.${entries.length - added + wl.length - addedW + rw.length - addedR + rl.length - addedL > 0 ? ' Bereits vorhandene Einträge wurden übersprungen.' : ''}`);
     } catch (e) { alert('Import fehlgeschlagen: ' + e.message); }
   };
   r.onerror = () => alert('Die Datei konnte nicht gelesen werden.');
@@ -948,7 +994,7 @@ function renderRun() {
   const tabs = [['race', 'Wettkampf'], ['training', 'Training'], ['abc', 'Lauf-ABC'], ['umfang', 'Umfang']];
   $('runtabs').innerHTML = tabs.map(([k, l]) => `<button role="tab" type="button" data-runtab="${k}" aria-selected="${runView.tab === k}">${l}</button>`).join('');
   const sub = $('runsub');
-  if (runView.tab === 'umfang') { sub.classList.add('hide'); $('runcontent').innerHTML = renderUmfang(); renderLoad(); return; }
+  if (runView.tab === 'umfang') { sub.classList.add('hide'); $('runcontent').innerHTML = renderUmfang(); renderWeekRows(); renderLoad(); return; }
   if (runView.tab === 'abc') {
     sub.classList.add('hide');
     $('runcontent').innerHTML = `<div class="intro">${esc(RUN_GUIDE.abc.intro)}</div><div class="header">Übungen<button type="button" class="hdrbtn" data-routine="abc">▶ Geführt</button></div><div class="group">${RUN_GUIDE.abc.drills.map(d => stepRow(...d)).join('')}</div><p class="footer">Bei Beschwerden in Fuß oder Wade Sprungübungen (Hopserlauf, Seitgalopp) auslassen.</p>`;
@@ -1222,6 +1268,12 @@ $('runcontent').addEventListener('input', e => {
   t.setAttribute('aria-invalid', String(bad)); if (bad) return;
   setWeekKm(t.dataset.wk, t.dataset.f, v); renderLoad();
 });
+$('runcontent').addEventListener('click', e => {
+  if (e.target.closest('#runaddbtn')) { addRunFromForm(); return; }
+  const d = e.target.closest('[data-rundel]');
+  if (d && confirm('Diesen Lauf löschen?')) { deleteRun(d.dataset.rundel); renderWeekRows(); renderLoad(); toast('Lauf gelöscht.'); }
+});
+$('runcontent').addEventListener('keydown', e => { if (e.target.id === 'runkm' && e.key === 'Enter') { e.preventDefault(); addRunFromForm(); } });
 $('runcontent').addEventListener('change', e => { const t = e.target; if (t.dataset && t.dataset.wk && t.getAttribute('aria-invalid') !== 'true') { const v = weekKm(t.dataset.wk, t.dataset.f); t.value = v === null ? '' : kmText(v); } });
 for (const id of ['runcontent', 'mobcontent']) $(id).addEventListener('click', e => {
   const r = e.target.closest('[data-routine]'), m = e.target.closest('[data-mob]');

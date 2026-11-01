@@ -263,10 +263,10 @@ Object.assign(GUIDES, {
 
 /* Laufumfang: Wochen-km im Verhältnis zum Schnitt der 4 abgeschlossenen Wochen davor (Acute:Chronic Workload Ratio).
    0,8–1,0 × Schnitt = Erhalt, 1,0–1,3 × = Aufbau (verbreiteter „Sweet Spot“ 0,8–1,3; das Video nannte 1,4).
-   Einzelne Läufe: höchstens 10 % länger als der längste der letzten 4 Wochen (BJSM 2025: Sprünge über 10 % gegenüber
+   Einzelne Läufe: höchstens 10 % länger als der längste der letzten 30 Tage (BJSM 2025: Sprünge über 10 % gegenüber
    dem längsten Lauf der letzten 30 Tage gingen mit deutlich mehr Verletzungen einher; Wochen-Verhältnisse kaum). */
 const LOAD = { keep: 0.8, build: 1.0, cap: 1.3, longPlus: 0.1 };
-const LOAD_INTRO = 'Wie viel diese Woche? Basis ist dein Schnitt der letzten 4 Wochen. 0,8–1,0 × Schnitt hält dein Niveau, 1,0–1,3 × baut auf, mehr ist ein großer Sprung. Für einzelne Läufe gilt: höchstens 10 % länger als dein längster Lauf der letzten 4 Wochen.';
+const LOAD_INTRO = 'Zuerst der lange Lauf: höchstens 10 % länger als dein längster Lauf der letzten 30 Tage – das ist die am besten belegte Regel. Für die Woche: 0,8–1,0 × Schnitt der letzten 4 Wochen hält dein Niveau, 1,0–1,3 × baut auf.';
 const LOAD_NOTE = 'Richtwerte, keine Garantie gegen Verletzungen. Die Wochen-Rechnung stammt aus dem Teamsport und ist wissenschaftlich umstritten. In der bisher größten Läuferstudie (BJSM 2025, über 5.000 Läufer) hing das Risiko vor allem an einzelnen Läufen, die deutlich länger waren als der längste der letzten 30 Tage – deshalb zeigt die App beides.';
 
 /* Laufen: Warm-up und Cooldown. Schritt: [Dauer, Übung, Hinweis] – Übungen mit Anleitung sind antippbar. */

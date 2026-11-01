@@ -16,7 +16,7 @@ Mein persönlicher Trainings-Begleiter als Web-App für iPhone und Android – K
   - Warm-up und Cooldown für 5 km, 10 km, Halbmarathon, Marathon
   - Warm-up und Cooldown für Intervall, Speed und Longrun
   - Lauf-ABC
-  - Umfang: Wochen-km und längster Lauf; Zielbereich für die laufende Woche (Erhalt 0,8–1,0 × Schnitt der letzten 4 Wochen, Aufbau bis 1,3 ×), Obergrenze für den langen Lauf (+10 %), Verlauf über 8 Wochen
+  - Umfang: Läufe mit Datum oder Wochensummen; nächster langer Lauf höchstens 10 % über dem längsten der letzten 30 Tage (Sprünge werden markiert), Zielbereich für die laufende Woche (Erhalt 0,8–1,0 × Schnitt der letzten 4 Wochen, Aufbau bis 1,3 ×), Verlauf über 8 Wochen
   - „Geführt“: Ablauf Schritt für Schritt mit Countdown und Ansage; Strecken und Wiederholungen werden abgehakt
 - **Mobility** (ohne Tracking), in Reitern wie Laufen
   - Läufer: Nach dem Lauf, Hüfte, Sprunggelenk
@@ -62,7 +62,7 @@ Daten gehen nur verloren, wenn die Adresse (Domain) wechselt, das App-Symbol vom
 
 ## Aktualisieren
 
-Bei Änderungen an Dateien in `sw.js` die Konstante `VERSION` erhöhen (z. B. `kbt-v16`). Online lädt die App immer die neueste Version, offline den Cache.
+Bei Änderungen an Dateien in `sw.js` die Konstante `VERSION` erhöhen (z. B. `kbt-v17`). Online lädt die App immer die neueste Version, offline den Cache.
 
 ## Ton auf dem iPhone
 

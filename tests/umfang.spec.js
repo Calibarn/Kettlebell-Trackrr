@@ -1,43 +1,42 @@
 const fs = require('fs');
 const { test, expect } = require('./fixtures');
 
-// Wochen relativ zu heute: 0 = laufende Woche, 1 = Vorwoche usw.
-const weeksAgo = page => page.evaluate(() => [0, 1, 2, 3, 4, 5].map(i => addDays(weekStart(localDay()), -7 * i)));
+// Wochen relativ zu heute: 0 = laufende Woche (Montag), 1 = Vorwoche usw.
+const weeksAgo = page => page.evaluate(() => [0, 1, 2, 3, 4, 5, 6].map(i => addDays(weekStart(localDay()), -7 * i)));
 async function openUmfang(page) {
   await page.evaluate(() => showArea('laufen'));
   await page.click('[data-runtab="umfang"]');
   await expect(page.locator('#runsub')).toBeHidden();
 }
 const field = (w, f = 'km') => `[data-wk="${w}"][data-f="${f}"]`;
+async function addRun(page, date, km) {
+  await page.fill('#rundate', date);
+  await page.fill('#runkm', km);
+  await page.click('#runaddbtn');
+}
 
-test('Umfang: Schnitt der letzten 4 Wochen, Zielbereich, langer Lauf – bleibt gespeichert', async ({ page }) => {
+test('Umfang mit Wochensummen: Schnitt, Zielbereich, langer Lauf – bleibt gespeichert', async ({ page }) => {
   const w = await weeksAgo(page);
   await openUmfang(page);
   await expect(page.locator('#loadresult')).toContainText('Trag zuerst deine km');
+  await expect(page.locator('#longresult')).toContainText('Trag Läufe mit Datum ein');
   for (let i = 1; i <= 4; i++) await page.fill(field(w[i]), '15');
   await page.fill(field(w[1], 'long'), '8');
-  await page.fill(field(w[2], 'long'), '9');
-  await page.fill(field(w[3], 'long'), '10');
-  await page.fill(field(w[4], 'long'), '14'); // älter als 4 Wochen inkl. dieser – zählt nicht für den langen Lauf
+  await page.fill(field(w[2], 'long'), '10');
+  await page.evaluate(ws => setWeekKm(ws[6], 'long', 14), w); // liegt sicher außerhalb der 30 Tage
   await page.fill(field(w[0]), '8');
-  await page.fill(field(w[0], 'long'), '6');
-  const m = page.locator('#loadresult .metric b');
-  await expect(m).toHaveText(['15 km', '8 km', '≤ 11 km']);
+  await expect(page.locator('#loadresult .metric b')).toHaveText(['15 km', '8 km']);
   await expect(page.locator('#loadresult .loadstatus')).toHaveText('Bisher 8 km. Noch 4 km bis zum Erhalt (12–15 km), Aufbau bis 19,5 km.');
-  await expect(page.locator('#loadresult svg')).toHaveCount(1);
+  await expect(page.locator('#longresult b')).toHaveText('höchstens 11 km');
+  await expect(page.locator('#longresult')).toContainText('aus der Wochensumme');
   await expect(page.locator('#loadchart rect.bar')).toHaveCount(5);
 
-  // Komma-Eingabe
   await page.fill(field(w[0]), '12,5');
-  await expect(m.nth(1)).toHaveText('12,5 km');
   await expect(page.locator('#loadresult .loadstatus')).toHaveText('Im Erhalt. Für Aufbau 15–19,5 km – noch bis zu 7 km diese Woche.');
-  await page.fill(field(w[0]), '17');
-  await expect(page.locator('#loadresult .loadstatus')).toHaveText('Im Aufbau. Obergrenze 19,5 km – noch 2,5 km diese Woche.');
   await page.fill(field(w[0]), '21');
   await expect(page.locator('#loadresult .loadstatus')).toContainText('Über der Obergrenze von 19,5 km (1,4 × Schnitt)');
   await expect(page.locator('#loadchart rect.bar.over')).toHaveCount(1);
 
-  // Ungültige Eingabe wird markiert und nicht gespeichert
   await page.fill(field(w[1]), 'abc');
   await expect(page.locator(field(w[1]))).toHaveAttribute('aria-invalid', 'true');
   expect(await page.evaluate(wk => weekKm(wk), w[1])).toBe(15);
@@ -48,7 +47,38 @@ test('Umfang: Schnitt der letzten 4 Wochen, Zielbereich, langer Lauf – bleibt 
   await expect(page.locator('[data-runtab="umfang"]')).toHaveAttribute('aria-selected', 'true');
   await expect(page.locator(field(w[2]))).toHaveValue('15');
   await expect(page.locator(field(w[0]))).toHaveValue('21');
-  await expect(page.locator('#loadresult .metric b').first()).toHaveText('15 km');
+});
+
+test('Umfang mit einzelnen Läufen: Wochen werden summiert, 30 Tage taggenau, Sprünge markiert', async ({ page }) => {
+  const w = await weeksAgo(page);
+  await openUmfang(page);
+  await addRun(page, w[5], '20');          // 35+ Tage her: zählt nicht mehr für den langen Lauf
+  await addRun(page, w[1], '12');
+  await addRun(page, await page.evaluate(x => addDays(x, 2), w[1]), '9,5');
+  await addRun(page, w[0], '15');          // +25 % gegenüber dem längsten der 30 Tage davor (12 km)
+  await expect(page.locator(field(w[1]))).toHaveValue('21,5');
+  await expect(page.locator(field(w[1]))).toBeDisabled();
+  await expect(page.locator(field(w[1], 'long'))).toHaveValue('12');
+  await expect(page.locator('#kmweeks')).toContainText('aus 2 Läufen');
+  await expect(page.locator('#longresult b')).toHaveText('höchstens 16,5 km');
+  await expect(page.locator('#runlist .row')).toHaveCount(3);
+  await expect(page.locator('#runlist .spike')).toHaveText(['+25 % gegenüber dem längsten der 30 Tage davor']);
+  await expect(page.locator('#loadresult .metric b').nth(1)).toHaveText('15 km');
+
+  // Ungültige km werden nicht gespeichert
+  await page.fill('#runkm', '0');
+  await page.click('#runaddbtn');
+  await expect(page.locator('#runkm')).toHaveAttribute('aria-invalid', 'true');
+  expect(await page.evaluate(() => runLog.length)).toBe(4);
+
+  // Löschen: Wochenwert fällt auf die (leere) Wochensumme zurück, Feld wird wieder editierbar
+  await page.locator('#runlist [data-rundel]').first().click();
+  await expect(page.locator('#runlist .row')).toHaveCount(2);
+  await expect(page.locator(field(w[0]))).toBeEnabled();
+  await expect(page.locator('#longresult b')).toHaveText('höchstens 13,2 km');
+
+  await page.reload();
+  expect(await page.evaluate(() => runLog.map(r => r.km))).toEqual([20, 12, 9.5]);
 });
 
 test('Umfang: weniger als 4 Wochen → vorläufig; Pausenwochen zählen als 0', async ({ page }) => {
@@ -66,17 +96,24 @@ test('Umfang: weniger als 4 Wochen → vorläufig; Pausenwochen zählen als 0', 
   await expect(page.locator('#loadresult .loadstatus')).toContainText('Die letzten Wochen stehen auf 0 km');
 });
 
-test('Umfang: im Backup enthalten, Import ergänzt nur fehlende Wochen', async ({ page }) => {
+test('Umfang: Wochen und Läufe im Backup, Import ergänzt nur Fehlendes', async ({ page }) => {
   const w = await weeksAgo(page);
   await openUmfang(page);
-  await page.fill(field(w[1]), '30');
+  await page.fill(field(w[2]), '30');
+  await addRun(page, w[1], '10');
   await page.evaluate(() => showArea('mehr'));
   const dl = page.waitForEvent('download');
   await page.click('#savefile');
   const backup = JSON.parse(fs.readFileSync(await (await dl).path(), 'utf8'));
-  expect(backup.runWeeks).toEqual([{ week: w[1], km: 30, long: null }]);
+  expect(backup.runWeeks).toEqual([{ week: w[2], km: 30, long: null }]);
+  expect(backup.runLog.map(r => [r.date, r.km])).toEqual([[w[1], 10]]);
 
-  await page.setInputFiles('#importfile', { name: 'b.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({ version: 3, entries: [], runWeeks: [{ week: w[1], km: 99, long: null }, { week: w[2], km: 25, long: 12 }, { week: 'kaputt', km: 1 }] })) });
-  await expect.poll(() => page.evaluate(() => runWeeks.length)).toBe(2);
-  expect(await page.evaluate(ws => [weekKm(ws[1]), weekKm(ws[2]), weekKm(ws[2], 'long')], w)).toEqual([30, 25, 12]);
+  const runId = backup.runLog[0].id;
+  await page.setInputFiles('#importfile', { name: 'b.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({
+    version: 3, entries: [],
+    runWeeks: [{ week: w[2], km: 99, long: null }, { week: w[3], km: 25, long: 12 }, { week: 'kaputt', km: 1 }],
+    runLog: [{ id: runId, date: w[1], km: 50 }, { id: 'neu', date: w[4], km: 8 }, { id: 'x', date: w[4], km: -3 }]
+  })) });
+  await expect.poll(() => page.evaluate(() => [runWeeks.length, runLog.length])).toEqual([2, 2]);
+  expect(await page.evaluate(ws => [weekKm(ws[2]), weekKm(ws[3]), weekKm(ws[1]), weekKm(ws[4])], w)).toEqual([30, 25, 10, 8]);
 });
