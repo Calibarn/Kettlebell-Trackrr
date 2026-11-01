@@ -194,7 +194,11 @@ html[data-os=android] .ratehint{color:var(--accent-ink)}
 .longnext b{display:block;font-size:28px;font-weight:700;color:var(--accent-ink);font-variant-numeric:tabular-nums}
 .longnext span{display:block;color:var(--label2);font-size:14px;margin-top:2px}
 .runadd{display:grid;grid-template-columns:minmax(0,1fr) 84px auto;gap:8px;align-items:center;padding:12px 16px;border-bottom:.5px solid var(--sep)}
-.runadd input{width:100%}
+.runadd input{width:100%;height:40px;padding-top:0;padding-bottom:0}
+/* iOS: Das Datumsfeld hat sonst eine feste Mindestbreite und eigene Höhe und ragt ins km-Feld */
+.runadd input[type=date]{-webkit-appearance:none;appearance:none;min-width:0;display:block;line-height:40px;text-align:left}
+.runadd input[type=date]::-webkit-date-and-time-value{text-align:left;margin:0}
+.runadd .btn{height:40px}
 .runadd input[aria-invalid=true]{box-shadow:0 0 0 2px var(--red) inset}
 .row small.spike{color:var(--orange)}
 .metrics.two{grid-template-columns:1fr 1fr}
@@ -241,7 +245,7 @@ html[data-os=android] .rtctl button{border-radius:100px}
 .rpe button{border:0;border-radius:8px;min-height:44px;background:var(--fill);font-weight:600;font-size:16px;color:var(--label);padding:0}
 .rpe button[aria-checked=true]{background:var(--accent);color:var(--on-accent)}
 @media(max-width:380px){.rpe{grid-template-columns:repeat(5,minmax(0,1fr))}}
-@media(max-width:360px){.kmrow{grid-template-columns:1fr 1fr}.kmrow .sname{grid-column:1/-1}}
+@media(max-width:360px){.kmrow{grid-template-columns:1fr 1fr}.kmrow .sname{grid-column:1/-1}.runadd{grid-template-columns:minmax(0,1fr) auto}.runadd input[type=date]{grid-column:1/-1}}
 .progresslist{list-style:none;padding:10px 12px;margin:4px 0 0;background:var(--accent-soft);border-radius:10px}
 .progresslist li{margin:4px 0;font-size:15px}
 
