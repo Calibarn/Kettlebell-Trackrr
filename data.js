@@ -87,7 +87,7 @@ PLANS.tabata = {
     { id: 'goblet', band: '20', v: { kb: ['Kniebeugen (Goblet)', '20 Sek. je Runde', 'Kugel vor der Brust, tief und kontrolliert'], band: ['Kniebeugen mit Band', '20 Sek. je Runde', 'Band unter den Füßen, Enden an den Schultern'], bw: ['Kniebeugen', '20 Sek. je Runde', 'zügig, Fersen am Boden'] } },
     { id: 'row2', band: '20', v: { kb: ['Vorgebeugtes Rudern beidarmig', '20 Sek. je Runde', 'Rücken lang, Kugel zum Bauch'], band: ['Rudern beidarmig mit Band', '20 Sek. je Runde', 'Band unter beiden Füßen'], bw: ['Y-T-W in Bauchlage', '20 Sek. je Runde', 'Y und T im Wechsel, Blick zum Boden'] } },
     { id: 'press2', band: '10', v: { kb: ['Überkopfdrücken beidarmig', '20 Sek. je Runde', 'Kugel an den Hörnern, Bauch fest'], band: ['Überkopfdrücken mit Band', '20 Sek. je Runde', 'Band unter beiden Füßen'], bw: ['Liegestütze erhöht', '20 Sek. je Runde', 'Hände auf Tisch oder Sofalehne'] } },
-    { id: 'twist', band: '10', v: { kb: ['Russian Twist', '20 Sek. je Runde', 'Füße am Boden, Kugel nah am Körper'], band: ['Holzhacker mit Band', '20 Sek. je Runde', 'Seite jede Runde wechseln'], bw: ['Bergsteiger erhöht', '20 Sek. je Runde', 'Hände erhöht, Knie im Wechsel zur Brust'] } }
+    { id: 'twist', band: '10', v: { kb: ['Übergabe im Grätschsitz', '20 Sek. je Runde', 'Aufrecht bleiben, Kugel kurz absetzen'], band: ['Holzhacker mit Band', '20 Sek. je Runde', 'Seite jede Runde wechseln'], bw: ['Bergsteiger erhöht', '20 Sek. je Runde', 'Hände erhöht, Knie im Wechsel zur Brust'] } }
   ],
   warmup: [['1:00', 'Marschieren auf der Stelle'], ['0:45', 'Schulter- und Armkreisen'], ['0:45', 'Hüftkreisen'], ['0:45', 'Kniebeugen ohne Gewicht'], ['0:45', 'Kettlebell-Kreuzheben']],
   cooldown: [['0:30', 'Locker marschieren'], ['0:45 × 2', 'Hüftbeuger-Dehnung'], ['0:30 × 2', 'Brustdehnung am Türrahmen'], ['1:00', 'Kindhaltung']]
@@ -202,7 +202,7 @@ Object.assign(GUIDES, {
   'Überkopfdrücken beidarmig': { steps: ['Kugel an den Hörnern (seitlich am Griff) vor der Brust halten, Ellenbogen unten.', 'Bauch und Gesäß anspannen und die Kugel senkrecht über den Kopf drücken.', 'Kontrolliert zurück vor die Brust.'], effect: 'Schultern, Trizeps und oberer Rücken; der Rumpf stabilisiert gegen das Hohlkreuz.', cue: 'Kein Hohlkreuz, Rippen unten. Den Kopf beim Drücken leicht zurücknehmen, damit die Kugel gerade nach oben gehen kann.' },
   'Rudern beidarmig mit Band': { steps: ['Mit beiden Füßen hüftbreit auf die Bandmitte stellen, je ein Ende in einer Hand.', 'Hüfte nach hinten schieben, Oberkörper etwa 45 Grad vorneigen, Rücken lang.', 'Beide Hände zum Bauch ziehen, Ellenbogen nach hinten, Schulterblätter zusammen. Kontrolliert zurück.'], effect: 'Oberer und breiter Rückenmuskel, hintere Schulter, Bizeps.', cue: 'Rücken bleibt lang, auch in den letzten Sekunden. Band sicher unter den Füßen, Enden nicht um die Hände wickeln.' },
   'Bergsteiger erhöht': { steps: ['Hände schulterbreit auf eine stabile Erhöhung (Sofalehne, Tisch, Treppenstufe), Körper in einer Linie.', 'Abwechselnd ein Knie zügig Richtung Brust ziehen und zurücksetzen.', 'Tempo nur so hoch, wie Becken und Rücken ruhig bleiben.'], effect: 'Rumpf, Hüftbeuger und Schultern – bringt den Puls hoch, ohne zu springen.', cue: 'Je höher die Erhöhung, desto leichter. Becken nicht hochschieben oder durchhängen lassen.' },
-  'Russian Twist': { steps: ['Hinsetzen, Knie gebeugt, Füße am Boden. Oberkörper leicht nach hinten lehnen, Rücken lang.', 'Kugel mit beiden Händen nah vor dem Bauch halten.', 'Oberkörper abwechselnd nach rechts und links drehen, die Kugel neben die Hüfte führen.'], effect: 'Schräge und gerade Bauchmuskeln, Rumpfrotation.', cue: 'Bewegung kommt aus dem Oberkörper, nicht nur aus den Armen. Bei Rückenbeschwerden ohne Kugel oder mit geringerem Bewegungsumfang.' },
+  'Übergabe im Grätschsitz': { steps: ['Im Grätschsitz auf den Boden setzen, Beine gestreckt oder leicht gebeugt. Kippt das Becken nach hinten, auf ein Kissen oder einen gefalteten Pullover setzen.', 'Aufrichten: Brust raus, Schultern nach hinten unten. Kugel mit beiden Händen am Griff neben der rechten Hüfte.', 'Kugel anheben, vor dem Körper zur linken Seite führen und neben der linken Hüfte kurz absetzen. Dann zurück – je eine Wiederholung pro Seite.'], effect: 'Schräge Bauchmuskeln, oberer Rücken und Schultern. Der Rücken bleibt aufrecht – Haltung und Drehung in einer Übung, ohne Drehen im runden Rücken wie beim Russian Twist.', cue: 'Der Rücken bleibt lang, auch wenn es schwer wird. Lieber ein höheres Kissen oder leicht gebeugte Knie als ein runder Rücken. Kugel nah am Körper führen und absetzen statt durchschwingen.' },
 
   // Kraft · Büro
   'Kettlebell-Kreuzheben': { steps: ['Kugel zwischen die Füße stellen, Füße hüftbreit.', 'Hüfte nach hinten schieben, Knie leicht beugen, Rücken lang, Griff mit beiden Händen fassen.', 'Füße in den Boden drücken und aufrichten, oben Gesäß anspannen. Kontrolliert wieder absetzen.'], effect: 'Gesäß, hintere Oberschenkel, Rückenstrecker – das Gegenteil von langem Sitzen. Basis für den Swing.', cue: 'Rücken bleibt lang, kein Rundrücken. Die Kugel bleibt nah am Körper.' },
@@ -351,7 +351,7 @@ const EXTRA = {
     lunge: { band: ['Ausfallschritte mit Band', '10 je Seite', 'Band unter dem vorderen Fuß, Enden an den Schultern'], _band: '20' },
     march: { band: ['Suitcase March mit Band', '20 Sek. je Seite', 'Band unter dem Fuß, Ende seitlich halten'], _band: '20' },
     balance: { band: ['Einbeiniges Kreuzheben mit Band', '6–10 je Seite', 'Band unter dem Standfuß'], _band: '20' },
-    crunch: { kb: ['Russian Twist', '10 je Seite', 'Füße am Boden, Kugel nah am Körper'], band: ['Dead Bug mit Band', '8 je Seite', 'Band zwischen Händen und Füßen'], _band: '10' }
+    crunch: { kb: ['Übergabe im Grätschsitz', '8 je Seite', 'Aufrecht sitzen, Kugel vorne überheben'], band: ['Dead Bug mit Band', '8 je Seite', 'Band zwischen Händen und Füßen'], _band: '10' }
   },
   run: {
     split: { band: ['Split Squat mit Band', '8–15 je Seite', 'Band unter dem vorderen Fuß'], _band: '20' },
@@ -390,7 +390,7 @@ const BEST = {
     tri: [['kb', 'band', 'bw'], 'Gezielter Reiz für den Trizeps; enge Liegestütze sind die Alternative ohne Gerät.'],
     curl: [['kb', 'band', 'bw'], 'Bewegung mit Gewicht über den vollen Weg; das Halten gegen das Handtuch ist die Notlösung.'],
     balance: [['bw', 'kb', 'band'], 'Im Zirkel unter Ermüdung zuerst ohne Gewicht – Gleichgewicht und saubere Hüftbeugung gehen vor Last.'],
-    crunch: [['bw', 'kb', 'band'], 'Ohne Gerät am einfachsten sauber auszuführen; Russian Twist und Dead Bug mit Band sind gleichwertige Rumpfübungen.']
+    crunch: [['bw', 'kb', 'band'], 'Ohne Gerät am einfachsten sauber auszuführen; die Übergabe im Grätschsitz und der Dead Bug mit Band sind gleichwertige Rumpfübungen.']
   },
   tabata: {
     swing: [['kb', 'band', 'bw'], 'Der Swing ist die wirksamste Tabata-Übung für Hüfte und Puls.'],

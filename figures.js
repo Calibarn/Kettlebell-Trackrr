@@ -129,14 +129,14 @@ const AF_A = { h: [102, 40], n: [101, 60], p: [98, 112], k1: [98, 150], f1: [80,
 const AF_B = P(AF_A, { k1: [100, 150], f1: [100, 186], t1: [112, 190], k2: [98, 150], f2: [80, 118], t2: [72, 126], e1: [88, 86], w1: [92, 108], e2: [114, 84], w2: [122, 66] });
 
 const BR = { h: [146, 74], n: [130, 82], p: [82, 110], k1: [102, 148], f1: [98, 188], t1: [112, 189], k2: [98, 148], f2: [94, 188], t2: [108, 189] };
-const RT = { front: true, h: [100, 96], n: [100, 116], s1: [88, 118], s2: [112, 118], p: [100, 170], q1: [93, 170], q2: [107, 170], k1: [82, 148], f1: [78, 186], k2: [118, 148], f2: [122, 186] };
+// Grätschsitz von vorne: Becken am Boden, Beine gestreckt zur Seite
+const GS = { front: true, h: [100, 96], n: [100, 116], s1: [86, 118], s2: [114, 118], p: [100, 170], q1: [93, 170], q2: [107, 170], k1: [62, 178], f1: [26, 186], t1: [22, 175], k2: [138, 178], f2: [174, 186], t2: [178, 175] };
 Object.assign(FIG, {
   'Vorgebeugtes Rudern beidarmig': { a: fr(P(BR, { e1: [128, 110], w1: [126, 136], e2: [124, 110], w2: [122, 136] }), [KB(124, 148)]), b: fr(P(BR, { e1: [108, 84], w1: [114, 108], e2: [104, 86], w2: [110, 110] }), [KB(112, 120)]), la: 'vorgebeugt, Arme lang', lb: 'Kugel zum Bauch ziehen' },
   'Überkopfdrücken beidarmig': { a: fr(P(FS, { e1: [84, 94], w1: [96, 80], e2: [116, 94], w2: [104, 80] }), [KB(100, 72)]), b: fr(P(FS, { e1: [88, 36], w1: [96, 12], e2: [112, 36], w2: [104, 12] }), [KB(100, 2)]), la: 'Kugel vor der Brust', lb: 'senkrecht nach oben' },
   'Rudern beidarmig mit Band': { a: fr(P(BR, { e1: [128, 110], w1: [126, 136], e2: [124, 110], w2: [122, 136] }), [BAND([98, 188], [126, 136])]), b: fr(P(BR, { e1: [108, 84], w1: [114, 108], e2: [104, 86], w2: [110, 110] }), [BAND([98, 188], [114, 108])]), la: 'vorgebeugt, Band unter den Füßen', lb: 'zum Bauch ziehen' },
   'Bergsteiger erhöht': { a: fr(PU_A, [{ table: [112, 148, 78] }]), b: fr(P(PU_A, { k1: [108, 148], f1: [84, 168], t1: [78, 176] }), [{ table: [112, 148, 78] }]), la: 'Hände erhöht, Körper gerade', lb: 'Knie zügig zur Brust, Wechsel' },
-  'Russian Twist': g => g === 'kb' ? FIG_RT : { a: fr(FIG_RT.a.P), b: fr(FIG_RT.b.P), la: FIG_RT.la.replace('Kugel', 'Hände'), lb: FIG_RT.lb },
-  'Russian Twist (Kugel)': { a: fr(P(RT, { e1: [104, 142], w1: [124, 156], e2: [122, 140], w2: [128, 156] }), [KB(130, 168), { loop: [100, 156, 34, 8] }]), b: fr(P(RT, { e1: [78, 140], w1: [72, 156], e2: [96, 142], w2: [76, 156] }), [KB(70, 168), { loop: [100, 156, 34, 8] }]), la: 'Kugel neben der rechten Hüfte', lb: 'zur anderen Seite drehen' },
+  'Übergabe im Grätschsitz': { a: fr(P(GS, { e1: [80, 140], w1: [74, 160], e2: [100, 140], w2: [82, 160] }), [KB(76, 176)]), b: fr(P(GS, { e1: [88, 142], w1: [100, 128], e2: [114, 142], w2: [108, 128] }), [KB(104, 118), { arrow: 'M66 156 Q100 92 136 156' }]), la: 'aufrecht, Kugel neben der Hüfte', lb: 'vorne überheben, absetzen' },
   'Kettlebell-Kreuzheben': { a: fr({ h: [136, 92], n: [120, 100], p: [74, 132], k1: [104, 152], f1: [98, 188], t1: [112, 189], k2: [100, 154], f2: [94, 188], t2: [108, 189], e1: [118, 130], w1: [116, 160], e2: [114, 130], w2: [112, 160] }, [KB(114, 176)]), b: fr(SS, [KB(104, 124)]), la: 'Hüfte zurück, Rücken lang', lb: 'aufrichten, Gesäß anspannen' },
   'Wand-Engel': { a: fr(P(FS, { e1: [66, 72], w1: [68, 46], e2: [134, 72], w2: [132, 46] })), b: fr(P(FS, { e1: [74, 38], w1: [64, 12], e2: [126, 38], w2: [136, 12] })), la: 'Arme in W-Form an der Wand', lb: 'nach oben schieben' },
   'Bird Dog': { a: fr(QP), b: fr(P(QP, { e1: [158, 132], w1: [184, 128], k2: [46, 148], f2: [10, 146] })), la: 'Vierfüßlerstand', lb: 'Arm und Gegenbein strecken' },
@@ -190,7 +190,6 @@ Object.assign(FIG, {
   'Butterfly mit Band': { a: fr(P(FS, { e1: [66, 70], w1: [42, 74], e2: [134, 70], w2: [158, 74] }), [BAND([42, 74], [100, 66], [158, 74])]), b: fr(P(FS, { e1: [78, 82], w1: [94, 76], e2: [122, 82], w2: [106, 76] }), [BAND([94, 76], [100, 66], [106, 76])]), la: 'Arme seitlich, Band im Rücken', lb: 'vor der Brust schließen' },
   'Seitlicher Ausfallschritt mit Kettlebell': { a: fr(P(FS, { k1: [80, 150], f1: [64, 188], k2: [120, 150], f2: [136, 188], e1: [86, 96], w1: [96, 82], e2: [114, 96], w2: [104, 82] }), [KB(100, 74)]), b: fr(P(FS, { p: [112, 132], q1: [105, 132], q2: [119, 132], n: [110, 80], s1: [96, 82], s2: [124, 82], h: [110, 60], k1: [86, 160], f1: [64, 188], k2: [134, 152], f2: [136, 188], e1: [98, 112], w1: [108, 98], e2: [122, 112], w2: [114, 98] }), [KB(111, 90)]), la: 'breit stehen, Kugel vor der Brust', lb: 'zur Seite absenken' }
 });
-const FIG_RT = FIG['Russian Twist (Kugel)']; delete FIG['Russian Twist (Kugel)'];
 
 // Core im Knien: halber Kniestand (HF_A) und aufrechter Kniestand (TK)
 const TK = { h: [100, 74], n: [99, 94], p: [98, 146], k1: [102, 186], f1: [64, 188], k2: [98, 186], f2: [60, 188] };
