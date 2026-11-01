@@ -65,7 +65,7 @@ const PLANS = {
   }
 };
 PLANS.office = {
-  tab: 'Büro', label: 'Büro · Haltung & Rücken', short: 'Büro', mode: 'circuit', durations: [3, 12, 4],
+  tab: 'Büro', label: 'Büro · Haltung & Rücken', short: 'Büro', mode: 'circuit', durations: [4, 12, 4],
   intro: 'Gegen langes Sitzen: Hüftstreckung, oberer Rücken, Rumpf und Beweglichkeit. Ruhig und sauber – Tempo ist hier Nebensache.',
   slots: [
     { id: 'hinge', band: '20', v: { kb: ['Kettlebell-Kreuzheben', '10', 'Kugel zwischen den Füßen, Rücken lang'], band: ['Hüftheben mit Band', '15', 'Band über der Hüfte'], bw: ['Hüftheben', '15', 'Oben kurz halten'] } },
@@ -76,7 +76,7 @@ PLANS.office = {
     { id: 'clam', order: ['band', 'bw'], band: '10', v: { band: ['Clamshells mit Band', '12 je Seite', 'Band doppelt um die Knie'], bw: ['Clamshells', '15 je Seite', 'Seitlage, Füße zusammen'] } },
     { id: 'tspine', v: { bw: ['Brustwirbel-Rotation im Vierfüßlerstand', '8 je Seite', 'Blick folgt dem Ellenbogen'] } }
   ],
-  warmup: [['0:45', 'Marschieren auf der Stelle'], ['0:45', 'Schulter- und Armkreisen'], ['0:45', 'Katze-Kuh'], ['0:45', 'Hüftbeuge ohne Gewicht']],
+  warmup: [['0:30', 'Marschieren auf der Stelle'], ['0:30', 'Schulter- und Armkreisen'], ['0:45', 'Katze-Kuh'], ['0:45', 'Hüftbeuge ohne Gewicht'], ['0:30', 'Kniebeugen ohne Gewicht'], ['0:30 × 2', 'Beinpendel seitlich']],
   cooldown: [['0:45 × 2', 'Hüftbeuger-Dehnung'], ['0:30 × 2', 'Brustdehnung am Türrahmen'], ['1:30', 'Kindhaltung']]
 };
 PLANS.tabata = {

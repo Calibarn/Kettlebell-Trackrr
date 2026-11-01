@@ -27,6 +27,21 @@ test('jede Kraftübung hat für jede Geräte-Auswahl eine Anleitung mit Skizze',
   expect(problems).toEqual([]);
 });
 
+test('Aufwärmen und Cooldown brauchen kein Gerät (außer im reinen Kettlebell-Plan) und füllen die Phasen genau aus', async ({ page }) => {
+  const problems = await page.evaluate(() => {
+    const out = [], sec = l => { const m = l.match(/^(\d+):(\d+)(?:\s*×\s*(\d+))?/); return (Number(m[1]) * 60 + Number(m[2])) * Number(m[3] || 1); };
+    for (const pk of PLAN_ORDER) {
+      const p = PLANS[pk];
+      for (const [type, i] of [['warmup', 0], ['cooldown', 2]]) {
+        if (p[type].reduce((a, x) => a + sec(x[0]), 0) !== p.durations[i] * 60) out.push(`${pk} ${type}: Dauer passt nicht`);
+        if (!p.kbOnly) for (const [, n] of p[type]) if (/Kettlebell|Kugel|mit Band|Halo/.test(n)) out.push(`${pk} ${type}: ${n} braucht ein Gerät`);
+      }
+    }
+    return out;
+  });
+  expect(problems).toEqual([]);
+});
+
 test('Laufen und Mobility: jede antippbare Übung hat Anleitung und Skizze', async ({ page }) => {
   const problems = await page.evaluate(() => {
     const out = [], names = new Set();
