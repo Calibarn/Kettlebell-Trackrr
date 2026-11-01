@@ -27,8 +27,8 @@ const PLANS = {
       { id: 'balance', order: ['bw', 'kb'], v: { bw: ['Standwaage', '6–10 je Seite', 'Zunächst ohne Gewicht'], kb: ['Einbeiniges Kreuzheben', '6–10 je Seite', 'Kugel in der Hand gegenüber dem Standbein'] } },
       { id: 'crunch', v: { bw: ['Stehende Knie-Ellenbogen-Crunches', '10 je Seite', 'Ohne Gewicht'] } }
     ],
-    warmup: [['1:00', 'Marschieren auf der Stelle'], ['0:45', 'Seitliche Schritte'], ['0:45', 'Schulter- und Armkreisen'], ['0:45', 'Hüftkreisen'], ['0:45', 'Kniebeugen ohne Gewicht']],
-    cooldown: [['0:45 × 2', 'Hüftbeuger-Dehnung'], ['0:30 × 2', 'Vorderer Oberschenkel'], ['0:30 × 2', 'Figure-4 Gesäß'], ['0:30 × 2', 'Adduktoren'], ['0:30', 'Hüftkreisen']]
+    warmup: [['0:45', 'Marschieren auf der Stelle'], ['0:45', 'Schulter- und Armkreisen'], ['0:45', 'Hüftbeuge ohne Gewicht'], ['0:45', 'Kniebeugen ohne Gewicht'], ['1:00', 'Ausfallschritt mit Rotation']],
+    cooldown: [['0:45 × 2', 'Hüftbeuger-Dehnung'], ['0:30 × 2', 'Vorderer Oberschenkel'], ['0:30 × 2', 'Figure-4 Gesäß'], ['0:30 × 2', 'Brustdehnung am Türrahmen'], ['0:30', 'Kindhaltung']]
   },
   run: {
     tab: 'Läufer', label: 'Kraft für Läufer', short: 'Lauftraining', mode: 'sets', durations: [4, 23, 3],
@@ -42,8 +42,8 @@ const PLANS = {
       { id: 'march', sets: 2, block: 'Läufer-Block · 2 Runden', v: { kb: ['Suitcase March', '20–30 Sek. je Seite', 'Kugel einseitig'], bw: ['Seitstütz', '20–30 Sek. je Seite', 'Auf Unterarm, Knie dürfen am Boden bleiben'] } },
       { id: 'swing', sets: 3, block: 'Finisher · EMOM 3 Minuten', emom: true, setLabel: 'Min.', band: '20', v: { kb: ['Kettlebell-Swing', '10–15 pro Minute', 'Nur saubere Wiederholungen'], band: ['Hüftheben mit Band', '12–20 pro Minute', 'Oben kurz halten'], bw: ['Hüftheben', '12–20 pro Minute', 'Oben kurz halten'] } }
     ],
-    warmup: [['1:00', 'Marschieren auf der Stelle'], ['0:45', 'Seitliche Schritte'], ['0:45', 'Schulter- und Armkreisen'], ['0:45', 'Hüftkreisen'], ['0:45', 'Kniebeugen ohne Gewicht']],
-    cooldown: [['0:45 × 2', 'Hüftbeuger-Dehnung'], ['0:45 × 2', 'Wadendehnung']]
+    warmup: [['0:30', 'Marschieren auf der Stelle'], ['0:30', 'Wadenpumpe'], ['0:30 × 2', 'Beinpendel vor/zurück'], ['0:45', 'Hüftbeuge ohne Gewicht'], ['0:45', 'Ausfallschritt mit Rotation'], ['0:30', 'Schulter- und Armkreisen']],
+    cooldown: [['0:30 × 2', 'Hüftbeuger-Dehnung'], ['0:30 × 2', 'Wadendehnung'], ['0:30 × 2', 'Hintere Oberschenkel']]
   },
   sun: {
     tab: 'Oberkörper', label: 'Oberkörper · Schultern, Arme, Brust, Bauch', short: 'Oberkörper', mode: 'circuit', durations: [3, 16, 6],
@@ -60,8 +60,8 @@ const PLANS = {
       { id: 'deadbug', v: { bw: ['Dead Bug', '8 je Seite', 'Unterer Rücken bleibt am Boden'] } },
       { id: 'hold', v: { kb: ['Suitcase Hold', '20–30 Sek. je Seite', 'Kugel ruhig halten'], bw: ['Seitstütz', '20–30 Sek. je Seite', 'Auf Unterarm, Knie dürfen am Boden bleiben'] } }
     ],
-    warmup: [['1:00', 'Locker marschieren'], ['1:00', 'Schulter- und Armkreisen'], ['1:00', 'Hüftkreisen und Oberkörperrotation']],
-    cooldown: [['0:45 × 2', 'Hüftbeuger-Dehnung'], ['0:30 × 2', 'Vorderer Oberschenkel'], ['0:30 × 2', 'Figure-4 Gesäß'], ['0:30 × 2', 'Brustdehnung am Türrahmen'], ['1:30', 'Hüftkreisen und lockeres Marschieren']]
+    warmup: [['0:45', 'Locker marschieren'], ['0:45', 'Schulter- und Armkreisen'], ['0:45', 'Wand-Engel'], ['0:45', 'Katze-Kuh']],
+    cooldown: [['0:30 × 2', 'Brustdehnung am Türrahmen'], ['1:00', 'Kindhaltung'], ['0:45 × 2', 'Hüftbeuger-Dehnung'], ['0:30 × 2', 'Figure-4 Gesäß'], ['0:45 × 2', 'Wadendehnung']]
   }
 };
 PLANS.office = {
@@ -76,7 +76,7 @@ PLANS.office = {
     { id: 'clam', order: ['band', 'bw'], band: '10', v: { band: ['Clamshells mit Band', '12 je Seite', 'Band doppelt um die Knie'], bw: ['Clamshells', '15 je Seite', 'Seitlage, Füße zusammen'] } },
     { id: 'tspine', v: { bw: ['Brustwirbel-Rotation im Vierfüßlerstand', '8 je Seite', 'Blick folgt dem Ellenbogen'] } }
   ],
-  warmup: [['1:00', 'Marschieren auf der Stelle'], ['1:00', 'Schulter- und Armkreisen'], ['1:00', 'Katze-Kuh']],
+  warmup: [['0:45', 'Marschieren auf der Stelle'], ['0:45', 'Schulter- und Armkreisen'], ['0:45', 'Katze-Kuh'], ['0:45', 'Hüftbeuge ohne Gewicht']],
   cooldown: [['0:45 × 2', 'Hüftbeuger-Dehnung'], ['0:30 × 2', 'Brustdehnung am Türrahmen'], ['1:30', 'Kindhaltung']]
 };
 PLANS.tabata = {
@@ -89,8 +89,8 @@ PLANS.tabata = {
     { id: 'press2', band: '10', v: { kb: ['Überkopfdrücken beidarmig', '20 Sek. je Runde', 'Kugel an den Hörnern, Bauch fest'], band: ['Überkopfdrücken mit Band', '20 Sek. je Runde', 'Band unter beiden Füßen'], bw: ['Liegestütze erhöht', '20 Sek. je Runde', 'Hände auf Tisch oder Sofalehne'] } },
     { id: 'twist', band: '10', v: { kb: ['Übergabe im Grätschsitz', '20 Sek. je Runde', 'Aufrecht bleiben, Kugel kurz absetzen'], band: ['Holzhacker mit Band', '20 Sek. je Runde', 'Seite jede Runde wechseln'], bw: ['Bergsteiger erhöht', '20 Sek. je Runde', 'Hände erhöht, Knie im Wechsel zur Brust'] } }
   ],
-  warmup: [['1:00', 'Marschieren auf der Stelle'], ['0:45', 'Schulter- und Armkreisen'], ['0:45', 'Hüftkreisen'], ['0:45', 'Kniebeugen ohne Gewicht'], ['0:45', 'Kettlebell-Kreuzheben']],
-  cooldown: [['0:30', 'Locker marschieren'], ['0:45 × 2', 'Hüftbeuger-Dehnung'], ['0:30 × 2', 'Brustdehnung am Türrahmen'], ['1:00', 'Kindhaltung']]
+  warmup: [['0:45', 'Marschieren auf der Stelle'], ['0:45', 'Schulter- und Armkreisen'], ['0:45', 'Hüftbeuge ohne Gewicht'], ['0:45', 'Kniebeugen ohne Gewicht'], ['1:00', 'Ausfallschritt mit Rotation']],
+  cooldown: [['1:00', 'Locker marschieren'], ['0:30 × 2', 'Hintere Oberschenkel'], ['0:30 × 2', 'Hüftbeuger-Dehnung'], ['1:00', 'Kindhaltung']]
 };
 /* Core: EMOM mit einer Kettlebell, komplett im Knien. Fest auf Kettlebell – „Heute dabei“ gilt hier nicht (kbOnly). */
 PLANS.core = {
@@ -101,7 +101,7 @@ PLANS.core = {
     { id: 'pullover', v: { kb: ['Pullover im Kniestand', '10', 'Kugel an den Hörnern, Rippen unten'] } },
     { id: 'wrestler', v: { kb: ['Wrestler-Halo', '10 abwechselnd', 'Diagonal von Hüfte zu Hüfte, einmal um den Kopf'] } }
   ],
-  warmup: [['1:00', 'Marschieren auf der Stelle'], ['1:00', 'Schulter- und Armkreisen'], ['1:00', 'Katze-Kuh'], ['0:30', 'Hüftkreisen'], ['0:30', 'Kettlebell-Kreuzheben']],
+  warmup: [['0:30', 'Marschieren auf der Stelle'], ['0:45', 'Schulter- und Armkreisen'], ['0:45', 'Katze-Kuh'], ['1:00', 'Ausfallschritt mit Rotation'], ['0:30', 'Kettlebell-Kreuzheben'], ['0:30', 'Halo um den Kopf']],
   cooldown: [['0:45 × 2', 'Hüftbeuger-Dehnung'], ['0:30 × 2', 'Brustdehnung am Türrahmen'], ['1:30', 'Kindhaltung']]
 };
 const EMOM_DEFAULT = { rounds: 5 }, EMOM_ROUNDS = [4, 5, 6];
@@ -205,6 +205,7 @@ Object.assign(GUIDES, {
   'Übergabe im Grätschsitz': { steps: ['Im Grätschsitz auf den Boden setzen, Beine gestreckt oder leicht gebeugt. Kippt das Becken nach hinten, auf ein Kissen oder einen gefalteten Pullover setzen.', 'Aufrichten: Brust raus, Schultern nach hinten unten. Kugel mit beiden Händen am Griff neben der rechten Hüfte.', 'Kugel anheben, vor dem Körper zur linken Seite führen und neben der linken Hüfte kurz absetzen. Dann zurück – je eine Wiederholung pro Seite.'], effect: 'Schräge Bauchmuskeln, oberer Rücken und Schultern. Der Rücken bleibt aufrecht – Haltung und Drehung in einer Übung, ohne Drehen im runden Rücken wie beim Russian Twist.', cue: 'Der Rücken bleibt lang, auch wenn es schwer wird. Lieber ein höheres Kissen oder leicht gebeugte Knie als ein runder Rücken. Kugel nah am Körper führen und absetzen statt durchschwingen.' },
 
   // Kraft · Büro
+  'Hüftbeuge ohne Gewicht': { steps: ['Hüftbreit stehen, Hände an die Hüfte, Knie leicht gebeugt.', 'Gesäß nach hinten schieben und den Oberkörper mit langem Rücken nach vorne neigen, bis es hinten in den Oberschenkeln zieht.', 'Hüfte nach vorne strecken und oben das Gesäß kurz anspannen. Zügig, aber kontrolliert wiederholen.'], effect: 'Bereitet die Hüftbeuge vor – das Grundmuster für Swing, Kreuzheben, Rudern vorgebeugt und Hüftheben.', cue: 'Die Bewegung kommt aus der Hüfte, der Rücken bleibt lang. Die Knie beugen sich nur leicht – das ist keine Kniebeuge.' },
   'Kettlebell-Kreuzheben': { steps: ['Kugel zwischen die Füße stellen, Füße hüftbreit.', 'Hüfte nach hinten schieben, Knie leicht beugen, Rücken lang, Griff mit beiden Händen fassen.', 'Füße in den Boden drücken und aufrichten, oben Gesäß anspannen. Kontrolliert wieder absetzen.'], effect: 'Gesäß, hintere Oberschenkel, Rückenstrecker – das Gegenteil von langem Sitzen. Basis für den Swing.', cue: 'Rücken bleibt lang, kein Rundrücken. Die Kugel bleibt nah am Körper.' },
   'Wand-Engel': { steps: ['Mit Rücken, Gesäß und Hinterkopf an die Wand stellen, Füße eine Fußlänge vor der Wand.', 'Arme in W-Form an die Wand legen, Ellenbogen und Handrücken möglichst an der Wand.', 'Arme langsam nach oben schieben und zurück in die W-Form ziehen.'], effect: 'Oberer Rücken, Schulterblattkontrolle, Brust- und Schulteröffnung.', cue: 'Unterer Rücken bleibt an der Wand – lieber kleinerer Bewegungsumfang.' },
   'Bird Dog': { steps: ['Vierfüßlerstand: Hände unter den Schultern, Knie unter der Hüfte.', 'Einen Arm und das gegenüberliegende Bein lang ausstrecken, bis sie mit dem Rücken eine Linie bilden.', 'Kurz halten, zurück, Seite wechseln.'], effect: 'Rückenstrecker, Gesäß und Rumpfstabilität.', cue: 'Becken bleibt waagerecht, nicht ins Hohlkreuz. Langsam bewegen.' },
