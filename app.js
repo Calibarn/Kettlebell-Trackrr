@@ -1666,7 +1666,8 @@ function renderNotesRows() {
 }
 const notesEntry = c => `<h3>${esc(c.title)}</h3><p class="tiny" style="margin-top:0">${dateGerman(c.date)}</p><ul class="notes">${c.items.map(([t, d]) => `<li><b>${esc(t)}:</b> ${esc(d)}</li>`).join('')}</ul>`;
 function openNotes(all) {
-  const i = CHANGELOG.findIndex(c => c.id === notesOpt.seen), fresh = all ? CHANGELOG : CHANGELOG.slice(0, i > 0 ? i : 1);
+  // Gesehenen Eintrag kennt die App: alles Neuere. Noch nie etwas gesehen (oder unbekannt): alles, also auch den Grundstand.
+  const i = CHANGELOG.findIndex(c => c.id === notesOpt.seen), fresh = all || i < 0 ? CHANGELOG : CHANGELOG.slice(0, Math.max(1, i));
   $('notes-title').textContent = all ? 'Neuigkeiten' : 'Neu in der App';
   $('notes-body').innerHTML = fresh.map(notesEntry).join('') + (all ? '' : '<p class="tiny">Alle Neuigkeiten findest du jederzeit unter <b>Mehr → Was ist neu?</b></p>');
   if (!notesDlg.open) notesDlg.showModal();

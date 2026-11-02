@@ -39,3 +39,18 @@ test('jeder Neuigkeiten-Eintrag hat eine eindeutige id, ein gültiges Datum und 
   for (const x of c) { expect(x.date).toMatch(/^\d{4}-\d{2}-\d{2}$/); expect(x.items.length).toBeGreaterThan(0); }
   expect(c.map(x => x.date)).toEqual(c.map(x => x.date).slice().sort().reverse());
 });
+
+test('Neuigkeiten: wer nichts gesehen hat, bekommt alle; wer den Grundstand kennt, nur Neueres', async ({ page }) => {
+  const shown = seen => page.evaluate(sv => {
+    const real = CHANGELOG.slice();
+    CHANGELOG.splice(0, CHANGELOG.length, { id: 'neu2', date: '2026-12-01', title: 'Zweites Update', items: [['A', 'b']] }, { id: 'neu1', date: '2026-11-20', title: 'Erstes Update', items: [['A', 'b']] }, ...real);
+    notesOpt.seen = sv; openNotes(false);
+    const t = [...document.querySelectorAll('#notes-body h3')].map(h => h.textContent);
+    $('notes').close(); CHANGELOG.splice(0, CHANGELOG.length, ...real); return t;
+  }, seen);
+  expect(await shown(null)).toEqual(['Zweites Update', 'Erstes Update', 'Grundstand: alle Funktionen']);
+  expect(await shown('gibtsnicht')).toEqual(['Zweites Update', 'Erstes Update', 'Grundstand: alle Funktionen']);
+  expect(await shown('2026-11-02')).toEqual(['Zweites Update', 'Erstes Update']);
+  expect(await shown('neu1')).toEqual(['Zweites Update']);
+  expect(await shown('neu2')).toEqual(['Zweites Update']);
+});
