@@ -242,3 +242,16 @@ test.describe('iPhone mit Audio Session API', () => {
     expect(await page.evaluate(() => navigator.audioSession.type)).toBe('playback');
   });
 });
+
+test('Plan-Leiste: zweizeilig, wenn nicht alle Pläne in eine Zeile passen; breit oder mit weniger Plänen einzeilig', async ({ page }) => {
+  await expect(page.locator('#tabs')).toHaveClass(/wrap/);
+  expect(await page.evaluate(() => $('tabs').scrollWidth <= $('tabs').clientWidth + 1)).toBe(true);
+  await page.setViewportSize({ width: 1024, height: 800 });
+  await expect(page.locator('#tabs')).not.toHaveClass(/wrap/);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.locator('#tabs')).toHaveClass(/wrap/);
+  // ohne Kettlebell fallen AMRAP und Core weg – dann passt es in eine Zeile
+  await page.evaluate(() => { profile.kit.kb = []; profileChanged('kit'); showArea('kraft'); });
+  await expect(page.locator('#tabs button')).toHaveCount(5);
+  await expect(page.locator('#tabs')).not.toHaveClass(/wrap/);
+});

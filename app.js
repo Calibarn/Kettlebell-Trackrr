@@ -502,10 +502,16 @@ function toast(t) { const el = $('toast'); el.textContent = t; el.classList.add(
 
 function renderTabs() {
   const t = $('tabs');
-  t.innerHTML = PLAN_ORDER.filter(planOwned).map(k => `<button role="tab" type="button" data-plan="${k}" aria-selected="${k === plan}">${esc(PLANS[k].tab)}</button>`).join('');
-  // Auf schmalen Displays lässt sich die Leiste wischen – der gewählte Plan bleibt sichtbar
-  const sel = t.querySelector('[aria-selected="true"]');
-  if (sel && t.scrollWidth > t.clientWidth) t.scrollLeft += sel.getBoundingClientRect().left - t.getBoundingClientRect().left - (t.clientWidth - sel.offsetWidth) / 2;
+  const list = PLAN_ORDER.filter(planOwned), cols = Math.ceil(list.length / 2);
+  t.style.setProperty('--cols', cols);
+  t.innerHTML = list.map((k, i) => `<button role="tab" type="button" data-plan="${k}" aria-selected="${k === plan}" class="${(i + 1) % cols === 0 || i === list.length - 1 ? 'rowend' : ''}${i >= cols ? ' row2' : ''}">${esc(PLANS[k].tab)}</button>`).join('');
+  fitTabs();
+}
+// Passen alle Pläne in eine Zeile (iPad, Rechner, ohne Kettlebell weniger Pläne), bleibt es einzeilig; sonst zwei Zeilen statt Wischen
+function fitTabs() {
+  const t = $('tabs'); if (!t.offsetParent) return; // Bereich nicht sichtbar: beim Öffnen von Kraft erneut prüfen
+  t.classList.remove('wrap');
+  if (t.scrollWidth > t.clientWidth + 1) t.classList.add('wrap');
 }
 function renderGear() {
   if (PLANS[plan].kbOnly) { $('gearbar').innerHTML = `<span class="lbl">${T('Fest mit Kettlebell – „Heute dabei“ gilt für diesen Plan nicht.', 'Kettlebell only – “With me today” does not apply to this plan.')}</span>`; return; }
@@ -1947,6 +1953,7 @@ function showArea(a, scroll = true) {
   document.body.style.setProperty('--actbar', bar ? '66px' : '0px');
   renderLivePill();
   if (scroll) window.scrollTo({ top: 0 });
+  if (a === 'kraft') fitTabs();
 }
 function renderLivePill() {
   const pill = $('livepill'), show = area !== 'kraft' && sessionActive();
@@ -2138,6 +2145,7 @@ function renderAudioRows() {
   $('loudval').textContent = audioOpt.loud ? T('An', 'On') : T('Aus', 'Off');
 }
 /* ---------- Ereignisse ---------- */
+window.addEventListener('resize', () => fitTabs());
 $('tabs').addEventListener('click', e => { const b = e.target.closest('[data-plan]'); if (b) setPlan(b.dataset.plan); });
 $('gearbar').addEventListener('click', e => {
   const b = e.target.closest('[data-gear]'); if (!b) return;
