@@ -54,3 +54,19 @@ test('Neuigkeiten: wer nichts gesehen hat, bekommt alle; wer den Grundstand kenn
   expect(await shown('neu1')).toEqual(['Zweites Update']);
   expect(await shown('neu2')).toEqual(['Zweites Update']);
 });
+
+test('Neuigkeiten für Neulinge: höchstens die 3 neuesten Updates plus Grundstand', async ({ page }) => {
+  const r = await page.evaluate(() => {
+    const real = CHANGELOG.slice(), up = [5, 4, 3, 2, 1].map(n => ({ id: 'u' + n, date: `2027-0${n}-01`, title: 'Update ' + n, items: [['A', 'b']] }));
+    CHANGELOG.splice(0, CHANGELOG.length, ...up, ...real);
+    notesOpt.seen = null; openNotes(false);
+    const t = [...document.querySelectorAll('#notes-body h3')].map(h => h.textContent), txt = $('notes-body').textContent;
+    notesOpt.seen = 'u2'; openNotes(false);
+    const t2 = [...document.querySelectorAll('#notes-body h3')].map(h => h.textContent);
+    $('notes').close(); CHANGELOG.splice(0, CHANGELOG.length, ...real);
+    return { t, t2, hint: txt.includes('2 ältere Updates') };
+  });
+  expect(r.t).toEqual(['Update 5', 'Update 4', 'Update 3', 'Grundstand: alle Funktionen']);
+  expect(r.hint).toBe(true);
+  expect(r.t2).toEqual(['Update 5', 'Update 4', 'Update 3']); // wer u2 kennt, bekommt alles Neuere
+});

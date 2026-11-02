@@ -551,7 +551,7 @@ const BEST = {
 for (const [pk, m] of Object.entries(BEST)) for (const sl of PLANS[pk].slots) if (m[sl.id]) { sl.order = m[sl.id][0]; sl.why = m[sl.id][1]; }
 
 /* Neuigkeiten („Patch Notes“): neueste zuerst. Neuer Eintrag = neue id; die App zeigt ihn beim nächsten Start einmal an.
-   Der erste Eintrag ist der Grundstand mit allen Funktionen. */
+   Der älteste (letzte) Eintrag ist der Grundstand mit allen Funktionen; Neulinge sehen ihn plus die 3 neuesten Updates. */
 const CHANGELOG = [
   { id: '2026-11-02', date: '2026-11-02', title: 'Grundstand: alle Funktionen', items: [
     ['Kraft', 'Sechs Pläne für zu Hause: Ganzkörper-Zirkel, Tabata, Läufer (Sätze), Oberkörper-Zirkel, Core (EMOM mit Kettlebell) und Büro – jeweils mit Aufwärmen, Cooldown, Timer, Sprachansagen und Abhaken.'],

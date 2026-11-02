@@ -1666,10 +1666,13 @@ function renderNotesRows() {
 }
 const notesEntry = c => `<h3>${esc(c.title)}</h3><p class="tiny" style="margin-top:0">${dateGerman(c.date)}</p><ul class="notes">${c.items.map(([t, d]) => `<li><b>${esc(t)}:</b> ${esc(d)}</li>`).join('')}</ul>`;
 function openNotes(all) {
-  // Gesehenen Eintrag kennt die App: alles Neuere. Noch nie etwas gesehen (oder unbekannt): alles, also auch den Grundstand.
-  const i = CHANGELOG.findIndex(c => c.id === notesOpt.seen), fresh = all || i < 0 ? CHANGELOG : CHANGELOG.slice(0, Math.max(1, i));
+  // Gesehenen Eintrag kennt die App: alles Neuere. Noch nie etwas gesehen (oder unbekannt): die letzten Updates plus Grundstand (ältester Eintrag).
+  const NEW_FOR_NEWCOMERS = 3, i = CHANGELOG.findIndex(c => c.id === notesOpt.seen), base = CHANGELOG.at(-1);
+  const updates = CHANGELOG.slice(0, -1), skipped = i < 0 && updates.length > NEW_FOR_NEWCOMERS;
+  const fresh = all ? CHANGELOG : i >= 0 ? CHANGELOG.slice(0, Math.max(1, i)) : updates.slice(0, NEW_FOR_NEWCOMERS).concat(base);
   $('notes-title').textContent = all ? 'Neuigkeiten' : 'Neu in der App';
-  $('notes-body').innerHTML = fresh.map(notesEntry).join('') + (all ? '' : '<p class="tiny">Alle Neuigkeiten findest du jederzeit unter <b>Mehr → Was ist neu?</b></p>');
+  $('notes-body').innerHTML = fresh.map((c, k) => (skipped && c === base ? `<p class="tiny">… ${updates.length - NEW_FOR_NEWCOMERS} ältere Updates unter <b>Mehr → Was ist neu?</b></p>` : '') + notesEntry(c)).join('')
+    + (all ? '' : '<p class="tiny">Alle Neuigkeiten findest du jederzeit unter <b>Mehr → Was ist neu?</b></p>');
   if (!notesDlg.open) notesDlg.showModal();
 }
 notesDlg.addEventListener('close', () => { if (CHANGELOG.length) { notesOpt.seen = CHANGELOG[0].id; store(KEYS.notes, notesOpt); } });
