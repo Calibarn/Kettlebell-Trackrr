@@ -1472,7 +1472,12 @@ function renderPlan() {
   if (runView.plan === 'wissen') { $('runcontent').innerHTML = renderPlanGuide(); renderPace(); return; }
   const S = seasonPlan();
   if (!S.weeks.length) {
-    $('runcontent').innerHTML = `<div class="intro">${esc(SEASON.intro)}</div><div class="group"><div class="row"><span class="txt"><b>${T('Noch kein A-Rennen geplant', 'No A race planned yet')}</b><small>${T('Unter „Rennen“ ein Hauptrennen mit Datum und Distanz eintragen.', 'Enter a main race with date and distance under “Races”.')}</small></span><button type="button" class="btn small primary" data-runsub-go="rennen">${T('Rennen eintragen', 'Add race')}</button></div></div>`;
+    // Kein A-Rennen mehr geplant, aber eines liegt kurz zurück: Erholung trotzdem anzeigen (Rennwoche + Erholungswochen der Distanz)
+    const today = localDay(), lastA = races.filter(r => r.prio === 'A' && r.date <= today && SEASON.dist[r.dist]).sort((a, b) => a.date.localeCompare(b.date)).at(-1);
+    const sinceW = lastA ? weeksBetween(weekStart(lastA.date), weekStart(today)) : 99;
+    const recBox = lastA && sinceW <= SEASON.dist[lastA.dist].recover.length && SEASON.recoverNote[lastA.dist]
+      ? `<div class="header">${T('Erholung', 'Recovery')}</div><div class="group"><div class="panel" style="border:0;padding-top:12px" id="planrecover"><div class="phasebadge ph-recover">${esc(SEASON.phase.recover[0])}</div><p class="loadstatus">${T(`<b>${esc(lastA.name)}</b> am ${dayLabel(lastA.date)}`, `<b>${esc(lastA.name)}</b> on ${dayLabel(lastA.date)}`)}</p><p class="tiny" style="margin-top:2px">${esc(SEASON.phase.recover[1])}</p><div class="alert">${esc(SEASON.recoverNote[lastA.dist])}</div></div></div>` : '';
+    $('runcontent').innerHTML = `<div class="intro">${esc(SEASON.intro)}</div>${recBox}<div class="group"><div class="row"><span class="txt"><b>${T('Noch kein A-Rennen geplant', 'No A race planned yet')}</b><small>${T('Unter „Rennen“ ein Hauptrennen mit Datum und Distanz eintragen.', 'Enter a main race with date and distance under “Races”.')}</small></span><button type="button" class="btn small primary" data-runsub-go="rennen">${T('Rennen eintragen', 'Add race')}</button></div></div>`;
     return;
   }
   $('runcontent').innerHTML = (S.warn.length ? S.warn.map(w => `<div class="alert due">${esc(w)}</div>`).join('') : '') + renderPlanWeek(S) + renderPlanSeason(S) + `<p class="footer">${esc(SEASON.note)}</p>`;

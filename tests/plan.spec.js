@@ -338,6 +338,15 @@ test('Erholung: in der Rennwoche und in den Erholungswochen steht, wie lange die
   await page.evaluate(() => renderRun());
   await expect(page.locator('#planweek .phasebadge')).toHaveText('Erholung');
   await expect(page.locator('#planweek')).toContainText('Nach dem Halbmarathon: etwa 10–14 Tage');
+  // Kein weiteres A-Rennen: Erholung steht trotzdem da, nach Ablauf nicht mehr
+  await setRaces(page, [{ id: 'h', name: 'Mein HM', date: past, dist: 'hm', prio: 'A', goal: null }]);
+  await page.evaluate(() => renderRun());
+  await expect(page.locator('#planrecover')).toContainText('Nach dem Halbmarathon: etwa 10–14 Tage');
+  await expect(page.locator('#runcontent')).toContainText('Noch kein A-Rennen geplant');
+  const old = await page.evaluate(() => addDays(localDay(), -40));
+  await setRaces(page, [{ id: 'h', name: 'Mein HM', date: old, dist: 'hm', prio: 'A', goal: null }]);
+  await page.evaluate(() => renderRun());
+  await expect(page.locator('#planrecover')).toHaveCount(0);
   await page.click('[data-runsub="wissen"]');
   await expect(page.locator('#runcontent')).toContainText('Erholung nach dem Rennen');
 });
