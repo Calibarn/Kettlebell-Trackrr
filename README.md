@@ -12,7 +12,8 @@ Mein persönlicher Trainings-Begleiter als Web-App für iPhone und Android – K
   - Bestwerte vergleichen nur Einheiten mit gleichem Aufbau; nach dem Speichern Zusammenfassung mit neuem Bestwert
   - Progressionshinweise: Läufer-Plan bei allen Sätzen an der Obergrenze (nächste Stufe, Gewicht, Band), Tabata nach drei kompletten Einheiten (8 Runden, dann 60 Sek. Pause), Core nach drei kompletten Einheiten eine Runde mehr
   - Gefühlte Anstrengung (1–10) und Notiz je Einheit, nachträglich im Verlauf änderbar
-- **Laufen** (Anleitungen ohne Tracking)
+- **Laufen** (Anleitungen, Saisonplan und Umfang)
+  - Plan: A- und B-Rennen mit Datum, Distanz (5 km bis Marathon) und optional Zielzeit. Die A-Rennen werden nach Datum abgearbeitet: je ein Block aus Grundlage, Aufbau, spezifischer Phase und Tapering, danach Erholung und Basis bis zum nächsten Block. B-Rennen laufen ohne eigenen Block mit. Longrun und Wochen-km kommen aus dem Umfang (höchstens +10 % pro Woche, nach drei Aufbauwochen Entlastung); Warnung, wenn A-Rennen zu dicht liegen oder das Longrun-Ziel nicht erreichbar ist. Dazu Renntempo-Rechner, Pacing, Tapering, Verpflegung und Checkliste für die Rennwoche
   - Warm-up und Cooldown für 5 km, 10 km, Halbmarathon, Marathon
   - Warm-up und Cooldown für Intervall, Speed und Longrun
   - Lauf-ABC
@@ -70,7 +71,7 @@ Safari spielt Web-Töne normalerweise nicht, wenn der Stummschalter an ist. Unte
 
 ## Tests
 
-Automatische Tests mit Playwright (Chromium) prüfen Zirkel, Tabata, Core-EMOM, Sätze, Geräte-Auswahl, Ansagen, geführte Routinen, Import/Export, Update-Sicherheit, Content-Security-Policy und dass jede Übung Anleitung und Skizze hat. Sie laufen bei jedem Push über GitHub Actions (`.github/workflows/test.yml`).
+Automatische Tests mit Playwright (Chromium) prüfen Zirkel, Tabata, Core-EMOM, Sätze, Geräte-Auswahl, Ansagen, geführte Routinen, Import/Export, Update-Sicherheit, Saisonplan und Rennen, Content-Security-Policy und dass jede Übung Anleitung und Skizze hat. Sie laufen bei jedem Push über GitHub Actions (`.github/workflows/test.yml`).
 
 Lokal (Node 22 und Python 3 nötig):
 
@@ -89,8 +90,8 @@ Die App selbst braucht kein Node – `package.json` dient nur den Tests.
 | `index.html` | Seitenstruktur, Content-Security-Policy |
 | `platform.js` | Erkennt iOS/Android für die passende Darstellung |
 | `styles.css` | Gestaltung (hell/dunkel, iOS/Android) |
-| `data.js` | Pläne, Übungsvarianten, Lauf- und Mobility-Inhalte, Anleitungstexte |
+| `data.js` | Pläne, Übungsvarianten, Lauf-, Saisonplan- und Mobility-Inhalte, Anleitungstexte |
 | `figures.js` | Bewegungsskizzen |
-| `app.js` | Timer, Ansagen, Erfassung, Verlauf, Fortschritt, Wochenübersicht, geführte Routinen, Datensicherung, Navigation |
+| `app.js` | Timer, Ansagen, Erfassung, Verlauf, Fortschritt, Wochenübersicht, Saisonplan, geführte Routinen, Datensicherung, Navigation |
 | `sw.js`, `manifest.webmanifest`, Icons | Offline-Betrieb und Installation |
 | `tests/`, `playwright.config.js`, `package.json` | Automatische Tests (nicht Teil der App) |

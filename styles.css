@@ -318,3 +318,27 @@ html[data-os=android] .sheet{border-radius:28px 28px 0 0}
   .metrics .metric:last-child{grid-column:1/-1}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* Laufen → Plan: Phasen, Saison, Rennen, Renntempo */
+.phasebadge{display:inline-block;border-radius:100px;padding:3px 10px;font-size:13px;font-weight:600;color:#fff;background:var(--ph)}
+.phasedot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--ph);margin-right:7px;vertical-align:1px}
+.ph-basis{--ph:#8e8e93}.ph-base{--ph:var(--blue)}.ph-build{--ph:#5e5ce6}.ph-spec{--ph:var(--accent-ink)}.ph-taper{--ph:var(--orange)}.ph-recover{--ph:#30b0c7}.ph-cut{--ph:#a2845e}
+.planrows{margin:10px -16px 0;border-top:.5px solid var(--sep)}
+.planweek .dur small{display:block;font-weight:400;color:var(--label2);font-size:12px}
+.planweek .txt b{font-size:15px}
+.planweek.now{background:var(--accent-soft)}
+.planweek.race .txt b{font-weight:600}
+.prio{display:inline-block;font-size:11px;font-weight:700;border-radius:5px;padding:1px 5px;vertical-align:2px;background:var(--fill2);color:var(--label2)}
+.prio-A{background:var(--accent);color:var(--on-accent)}
+.row.past{opacity:.55}
+.raceform{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;padding:12px 16px}
+.raceform .wide,.raceform .raceactions{grid-column:1/-1}
+.raceform input,.raceform select{width:100%;height:40px;padding-top:0;padding-bottom:0}
+.raceform input[type=date]{-webkit-appearance:none;appearance:none;min-width:0;display:block;line-height:40px;text-align:left}
+.raceform input[type=date]::-webkit-date-and-time-value{text-align:left;margin:0}
+.raceform input[aria-invalid=true]{box-shadow:0 0 0 2px var(--red) inset}
+.raceactions{display:flex;justify-content:flex-end;gap:8px}
+.splits{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:6px;margin-top:10px}
+.splits span{background:var(--fill);border-radius:8px;padding:6px 8px;font-variant-numeric:tabular-nums;font-weight:600;font-size:15px}
+.splits small{display:block;font-weight:400;font-size:11px;color:var(--label2)}
+.manual .panel ul{margin:8px 0 0;padding-left:18px;font-size:15px}

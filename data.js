@@ -302,6 +302,113 @@ const RUN_GUIDE = {
     drills: [['2 × 20 m', 'Fußgelenksarbeit', 'Fuß und Wade'], ['2 × 20 m', 'Skippings', 'Frequenz'], ['2 × 20 m', 'Kniehebelauf', 'Kniehub und Haltung'], ['2 × 20 m', 'Anfersen', 'Rückschwung'], ['2 × 20–30 m', 'Hopserlauf', 'Sprungkraft'], ['2 × 20 m', 'Seitgalopp', 'seitliche Hüfte'], ['2 × 20 m', 'Überkreuzlauf', 'Hüftbeweglichkeit'], ['3–4 ×', 'Steigerungsläufe', 'zum Abschluss']]
   }
 };
+/* Laufen → Plan: Vorbereitung auf A-Rennen. B-Rennen laufen im Plan mit, ohne eigenen Block.
+   phases: Wochen je Phase, die Rennwoche zählt zum Tapering. longPeak/weekPeak: Ziel-Longrun bzw. Wochen-km am Ende der
+   spezifischen Phase für Hobbyläufer mit 3–4 Läufen pro Woche. taper/recover: Anteil der Spitzenwerte je Woche
+   (long 0 = kein Longrun). Steigerung höchstens 10 % pro Woche, nach drei Aufbauwochen eine Entlastungswoche. */
+const SEASON = {
+  dist: {
+    '5k': { label: '5 km', km: 5, phases: { base: 2, build: 3, spec: 2, taper: 1 }, minWeeks: 6, longPeak: 14, weekPeak: 30,
+      taper: [{ wk: 0.7 }], recover: [{ wk: 0.7, long: 0.7 }] },
+    '10k': { label: '10 km', km: 10, phases: { base: 3, build: 3, spec: 3, taper: 1 }, minWeeks: 6, longPeak: 16, weekPeak: 35,
+      taper: [{ wk: 0.7 }], recover: [{ wk: 0.7, long: 0.7 }] },
+    hm: { label: 'Halbmarathon', km: 21.0975, phases: { base: 4, build: 4, spec: 3, taper: 2 }, minWeeks: 8, longPeak: 20, weekPeak: 45,
+      taper: [{ wk: 0.8, long: 0.7 }, { wk: 0.6 }], recover: [{ wk: 0.5, long: 0.4 }, { wk: 0.75, long: 0.65 }] },
+    marathon: { label: 'Marathon', km: 42.195, phases: { base: 6, build: 6, spec: 4, taper: 3 }, minWeeks: 12, longPeak: 30, weekPeak: 55,
+      taper: [{ wk: 0.8, long: 0.7 }, { wk: 0.65, long: 0.5 }, { wk: 0.45 }], recover: [{ wk: 0.3, long: 0 }, { wk: 0.5, long: 0.4 }, { wk: 0.7, long: 0.6 }] }
+  },
+  // Obergrenze je Phase als Anteil der Spitzenwerte; Basis = zwischen den Blöcken bzw. vor dem ersten
+  cap: { basis: 0.6, base: 0.7, build: 0.85, spec: 1 },
+  grow: 0.1, cutLong: 0.8, cutWeek: 0.75, cutEvery: 3,
+  phase: {
+    basis: ['Basis', 'Locker laufen und das Niveau halten. Der nächste Block startet später.'],
+    base: ['Grundlage', 'Umfang aufbauen, fast alles locker in Zone 2. Kurze, schnelle Reize halten die Beine flink.'],
+    build: ['Aufbau', 'Schwelle und längere Intervalle kommen dazu, der Longrun wächst weiter.'],
+    spec: ['Spezifisch', 'Renntempo üben und Verpflegung testen. Die längsten Läufe des Blocks.'],
+    taper: ['Tapering', 'Umfang runter, kurze Abschnitte im Renntempo bleiben. Frisch an den Start.'],
+    recover: ['Erholung', 'Nur locker laufen, kein Tempo. Bei Beschwerden lieber Pause.'],
+    cut: ['Entlastung', 'Bewusst weniger: Longrun und Qualitätseinheit kürzer, damit der Körper das Training umsetzt.']
+  },
+  // Qualitätseinheit je Phase und Distanz; [ungerade KW, gerade KW] – Intervall und Speed im Wechsel
+  key: {
+    basis: { all: ['Intervall: 6 × 400 m zügig, 400 m Trabpause', 'Speed: 8 × 100 m Steigerung, Gehpause'] },
+    base: { all: ['Intervall: 5–6 × 800 m zügig, 2 Min. Trabpause', 'Speed: 10 × 200 m schnell, 200 m Trabpause'] },
+    build: {
+      '5k': ['6 × 800 m im 5-km-Tempo, 2 Min. Trabpause', '3 × 8 Min. Schwelle, 2 Min. Trabpause'],
+      '10k': ['5 × 1 km im 10-km-Tempo, 90 Sek. Trabpause', '3 × 10 Min. Schwelle, 2 Min. Trabpause'],
+      hm: ['3 × 10 Min. Schwelle, 2 Min. Trabpause', '2 × 15 Min. Schwelle, 3 Min. Trabpause'],
+      marathon: ['3 × 10 Min. Schwelle, 2 Min. Trabpause', '2 × 15 Min. Schwelle, 3 Min. Trabpause']
+    },
+    spec: {
+      '5k': ['5 × 1 km im 5-km-Tempo, 2 Min. Trabpause', '12 × 400 m etwas schneller als 5-km-Tempo'],
+      '10k': ['3 × 3 km im 10-km-Tempo, 3 Min. Trabpause', '6 × 1,5 km im 10-km-Tempo, 90 Sek. Trabpause'],
+      hm: ['2 × 5 km im HM-Tempo, 3 Min. Trabpause', '3 × 3 km im HM-Tempo, 2 Min. Trabpause'],
+      marathon: ['2 × 15 Min. Schwelle', '8 km im Marathontempo nach 3 km Einlaufen']
+    },
+    taper: { all: ['3–4 × 1 km im Renntempo, sonst locker', '3–4 × 1 km im Renntempo, sonst locker'] },
+    recover: { all: ['keine – nur locker', 'keine – nur locker'] }
+  },
+  // Hinweis zum Longrun je Phase
+  long: {
+    basis: 'locker in Zone 2',
+    base: 'komplett locker in Zone 2',
+    build: 'locker, die letzten 10 Min. zügig',
+    spec: { '5k': 'locker, mit 4 × 1 Min. zügig am Ende', '10k': 'locker, die letzten 3 km im 10-km-Tempo', hm: 'die letzten 5–8 km im HM-Tempo, Verpflegung wie im Rennen', marathon: '2 × 6–8 km im Marathontempo, Gels wie im Rennen' },
+    taper: 'kürzer und locker',
+    recover: 'locker, höchstens 60–75 Min.'
+  },
+  bRace: 'B-Rennen: 2–3 lockere Tage davor, das Rennen ersetzt die Qualitätseinheit (ab Halbmarathon auch den Longrun). Danach 2–4 Tage locker.',
+  bInTaper: 'Fällt ins Tapering vor dem A-Rennen: nur locker mitlaufen, nicht auf Zeit.',
+  intro: 'Trag deine A-Rennen mit Datum und Distanz ein – dafür baut der Plan je einen Block aus Grundlage, Aufbau, spezifischer Phase und Tapering. B-Rennen laufen ohne eigenen Block mit. Longrun und Wochen-km rechnet der Plan aus deinem Umfang: höchstens 10 % mehr pro Woche, jede 4. Woche Entlastung.',
+  note: 'Richtwerte für Hobbyläufer, kein Ersatz für Trainerin oder Arzt. Schmerzen, die am nächsten Tag noch da sind: Umfang halten statt steigern, bei anhaltenden Beschwerden abklären lassen.'
+};
+
+/* Laufen → Plan → Wissen. Texte als Listen, alles wird escaped dargestellt. */
+const SEASON_GUIDE = [
+  { title: 'Wie der Plan rechnet', sub: 'Phasen, Entlastung, Grenzen', items: [
+    'Rückwärts ab jedem A-Rennen: Tapering (5/10 km 1 Woche, HM 2, Marathon 3), davor die spezifische Phase, Aufbau und Grundlage.',
+    'Liegen zwei A-Rennen zu dicht beieinander, wird der zweite Block vorne gekürzt – zuerst die Grundlage. Unter der Mindestdauer warnt der Plan.',
+    'Nach jedem A-Rennen folgt Erholung (5/10 km 1 Woche, HM 2, Marathon 3), danach Basis bis zum nächsten Block.',
+    'Longrun und Wochen-km wachsen höchstens 10 % pro Woche, ausgehend von deinem Umfang. Nach drei Aufbauwochen folgt eine Entlastungswoche.',
+    'Die Ziel-Longruns (5 km: 14, 10 km: 16, HM: 20, Marathon: 30 km) sind Richtwerte. Reicht die Zeit mit +10 % nicht, zeigt der Plan früh eine Warnung.'
+  ] },
+  { title: 'Tempo & Pacing', sub: 'gleichmäßig statt schnell los', items: [
+    'Gleichmäßig laufen oder die zweite Hälfte leicht schneller. Jede Sekunde, die du auf den ersten Kilometern zu schnell bist, zahlst du hinten doppelt.',
+    'Die ersten 2–3 km bewusst 5–10 Sek./km langsamer als das Zieltempo – im Gedränge ohnehin realistischer.',
+    'Wer ab km 15–17 einbricht, ist meist zu schnell gestartet, hatte zu wenig Energie oder zu wenig lange Läufe mit Tempo am Ende. Genau das übt die spezifische Phase.',
+    'Herzfrequenz als Bremse: Steigt sie in der ersten Hälfte deutlich über deinen Trainingswert für das Tempo, Tempo rausnehmen.',
+    'Schwelle = „kontrolliert hart“: Du könntest nur noch einzelne Wörter sprechen, etwa das Tempo, das du rund eine Stunde halten könntest.'
+  ] },
+  { title: 'Tapering', sub: 'die letzten Wochen vor dem A-Rennen', items: [
+    'Umfang deutlich runter, Intensität bleibt: kurze Abschnitte im Renntempo halten die Beine wach.',
+    'Nichts nachholen: Verpasste Einheiten im Tapering nicht ersetzen.',
+    'Unruhige Beine und das Gefühl „zu wenig trainiert“ sind normal – das ist der Effekt.',
+    'Kraft-Training in der letzten Woche weglassen oder nur leicht, in der Woche davor ohne schwere Beinübungen.'
+  ] },
+  { title: 'Verpflegung', sub: 'im Training testen, am Renntag nichts Neues', items: [
+    '5 und 10 km: kein Gel nötig, vorher normal frühstücken (2–3 Std. vor dem Start).',
+    'Halbmarathon: 1–2 Gels, das erste nach etwa 40–50 Minuten, dazu Wasser an den Stationen.',
+    'Marathon: ab etwa 30–45 Minuten alle 25–30 Minuten ein Gel, insgesamt etwa 60–90 g Kohlenhydrate pro Stunde – nur so viel, wie dein Magen im Training vertragen hat.',
+    'Marathon: an den 2 Tagen vor dem Rennen kohlenhydratbetont und ballaststoffarm essen, nicht einfach mehr.',
+    'Jeden Longrun der spezifischen Phase wie das Rennen verpflegen: gleiche Gels, gleiche Abstände.'
+  ] },
+  { title: 'Rennwoche', sub: 'Checkliste', items: [
+    'Startunterlagen abholen, Startnummer und Zeitmessung prüfen.',
+    'Schuhe und Kleidung, die du schon lange gelaufen bist. Nichts Neues.',
+    'Wetter checken, Wegwerfschicht für den Startblock.',
+    'Gels, Uhr laden, Herzfrequenzgurt, Pflaster und Vaseline für Scheuerstellen.',
+    'Anreise und Startblock planen, Zeitpuffer für Toilette und Warm-up einrechnen.',
+    'Warm-up für die Distanz unter Laufen → Wettkampf ansehen und vorher einmal im Training testen.',
+    'Die Nacht vor der Nacht vor dem Rennen ist für den Schlaf wichtiger als die letzte.'
+  ] },
+  { title: 'Wann nicht steigern', sub: 'Warnzeichen', items: [
+    'Schmerzen, die am nächsten Tag noch da sind oder beim Laufen stärker werden.',
+    'Ruhepuls morgens mehrere Tage deutlich erhöht, schlechter Schlaf, ständige Müdigkeit.',
+    'Erkältung oder Fieber: kein Tempo, bei Fieber gar nicht laufen.',
+    'Dann: Woche wie eine Entlastungswoche laufen. Der Plan rechnet in der Folgewoche mit deinem echten Umfang weiter.'
+  ] }
+];
+
 
 /* Mobility (ohne Tracking): Reiter Läufer / Alltag mit je einem geführten Kurzprogramm pro Auswahl, Reiter Übungen nach Körperbereich.
    Die Reihenfolge von routines nicht ändern: data-mob verweist auf den Index. */

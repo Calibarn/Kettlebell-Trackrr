@@ -5,7 +5,7 @@ const $ = id => document.getElementById(id);
 const KEYS = {
   entries: 'jan-kettlebell-tracker-v1', waist: 'jan-kb-waist-v1', sound: 'jan-kb-sound-v1', gear: 'jan-kb-gear-v1',
   choice: 'jan-kb-choice-v1', stage: 'jan-kb-stage-v1', plan: 'jan-kb-plan-v1', session: 'jan-kb-session-v1',
-  backup: 'jan-kb-lastbackup-v1', hint: 'jan-kb-installhint-v1', area: 'jan-kb-area-v1', run: 'jan-kb-runview-v1', audio: 'jan-kb-audio-v1', mob: 'jan-kb-mobview-v1', runweeks: 'jan-kb-runweeks-v1', runlog: 'jan-kb-runlog-v1'
+  backup: 'jan-kb-lastbackup-v1', hint: 'jan-kb-installhint-v1', area: 'jan-kb-area-v1', run: 'jan-kb-runview-v1', audio: 'jan-kb-audio-v1', mob: 'jan-kb-mobview-v1', runweeks: 'jan-kb-runweeks-v1', runlog: 'jan-kb-runlog-v1', races: 'jan-kb-races-v1'
 };
 /* Datensicherheit bei Updates:
    - Einträge, die diese Version nicht versteht, werden nie verworfen, sondern unverändert mitgespeichert.
@@ -818,13 +818,216 @@ function addRunFromForm() {
   renderWeekRows(); renderLoad(); toast(`✓ ${kmText(km)} km am ${dayLabel(d)} gespeichert.`);
 }
 
+/* ---------- Laufen → Plan: Rennen und Saisonplan ---------- */
+const validRace = e => isObj(e) && typeof e.id === 'string' && typeof e.name === 'string' && e.name.length <= 60 && isDay(e.date)
+  && Object.prototype.hasOwnProperty.call(SEASON.dist, e.dist) && (e.prio === 'A' || e.prio === 'B')
+  && (e.goal === null || e.goal === undefined || (Number.isInteger(e.goal) && e.goal >= 60 && e.goal <= 86400));
+const racesLoaded = loadList(KEYS.races, validRace);
+let races = racesLoaded.ok; const racesKeep = racesLoaded.keep;
+const sortRaces = () => races.sort((a, b) => a.date.localeCompare(b.date) || a.prio.localeCompare(b.prio));
+function persistRaces() { sortRaces(); if (!store(KEYS.races, races.concat(racesKeep))) toast('Speichern im Browser nicht möglich – bitte Backup exportieren.'); renderBackupBanner(); }
+sortRaces();
+// Zeiten: h:mm:ss, mm:ss; bei HM/Marathon heißt „1:59“ Stunden:Minuten
+function parseGoal(txt, dist) {
+  const t = String(txt || '').trim(); if (!t) return null;
+  if (!/^\d{1,2}(:\d{1,2}){1,2}$/.test(t)) return NaN;
+  const p = t.split(':').map(Number);
+  if (p.slice(1).some(v => v > 59)) return NaN;
+  const s = p.length === 3 ? p[0] * 3600 + p[1] * 60 + p[2] : (dist === 'hm' || dist === 'marathon') ? p[0] * 3600 + p[1] * 60 : p[0] * 60 + p[1];
+  return s >= 60 && s <= 86400 ? s : NaN;
+}
+const hms = s => { s = Math.round(s); const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60; return (h ? h + ':' + String(m).padStart(2, '0') : String(m)) + ':' + String(x).padStart(2, '0'); };
+const paceText = (sec, km) => hms(sec / km) + ' /km';
+const weeksBetween = (a, b) => Math.round((new Date(b + 'T12:00:00') - new Date(a + 'T12:00:00')) / 6048e5);
+
+// Saisonplan ab der laufenden Woche bis zum letzten A-Rennen.
+// start/L0/W0 nur für Tests überschreibbar; sonst aus Umfang: längster Lauf der 30 Tage und Schnitt der 4 Wochen.
+function seasonPlan(today = localDay(), opt = {}) {
+  const start = weekStart(today), D = k => SEASON.dist[k];
+  const A = races.filter(r => r.prio === 'A');
+  const prev = A.filter(r => weekStart(r.date) < start).at(-1) || null, next = A.filter(r => weekStart(r.date) >= start);
+  const warn = [];
+  if (!next.length) return { weeks: [], warn, races: next };
+  const end = weekStart(next.at(-1).date), n = weeksBetween(start, end) + 1;
+  const weeks = Array.from({ length: n }, (_, i) => ({ week: addDays(start, 7 * i), phase: 'basis', target: null, b: [], a: null }));
+  const idx = w => weeksBetween(start, w);
+  const setW = (w, patch) => { const i = idx(w); if (i >= 0 && i < n) Object.assign(weeks[i], patch); };
+  let last = prev;
+  for (const r of next) {
+    const d = D(r.dist), rw = weekStart(r.date), ph = d.phases, total = ph.base + ph.build + ph.spec + ph.taper;
+    if (last) { const ld = D(last.dist), lw = weekStart(last.date); ld.recover.forEach((_, k) => { const w = addDays(lw, 7 * (k + 1)); if (w < rw) setW(w, { phase: 'recover', k, target: last }); }); }
+    const earliest = last ? addDays(weekStart(last.date), 7 * (D(last.dist).recover.length + 1)) : null;
+    let from = addDays(rw, -7 * (total - 1));
+    if (earliest && from < earliest) from = earliest > rw ? rw : earliest;
+    const avail = weeksBetween(from, rw) + 1;
+    if (earliest && avail < total) warn.push(avail < d.minWeeks
+      ? `${r.name}: nur ${avail} ${avail === 1 ? 'Woche' : 'Wochen'} nach der Erholung von ${last.name} – empfohlen sind mindestens ${d.minWeeks}. Eines der beiden besser als B-Rennen laufen.`
+      : `${r.name}: Block auf ${avail} statt ${total} Wochen gekürzt, weil ${last.name} davor liegt – die Grundlage fällt kürzer aus.`);
+    const fromStart = weeksBetween(start, rw) + 1;
+    if (!earliest && fromStart < d.minWeeks) warn.push(`${r.name}: nur noch ${fromStart} ${fromStart === 1 ? 'Woche' : 'Wochen'} – für ${d.label} sind mindestens ${d.minWeeks} sinnvoll. Ziel eher locker angehen.`);
+    // rückwärts ab der Rennwoche: Tapering, spezifisch, Aufbau, Grundlage
+    const seq = [].concat(Array(ph.base).fill('base'), Array(ph.build).fill('build'), Array(ph.spec).fill('spec'), Array(ph.taper).fill('taper'));
+    for (let i = 0; i < avail; i++) {
+      const w = addDays(rw, -7 * i), p = seq[seq.length - 1 - i];
+      setW(w, { phase: p, target: r, k: p === 'taper' ? ph.taper - 1 - i : undefined });
+    }
+    setW(rw, { a: r });
+    last = r;
+  }
+  // Basis-Wochen: Ziel ist das nächste A-Rennen
+  for (const x of weeks) if (!x.target) x.target = next.find(r => weekStart(r.date) >= x.week) || next.at(-1);
+  for (const r of races.filter(x => x.prio === 'B')) { const i = idx(weekStart(r.date)); if (i >= 0 && i < n) weeks[i].b.push(r); }
+
+  // Vorwärts: Longrun (L) und Wochen-km (W) mit höchstens +10 % pro Woche und Entlastung nach drei Aufbauwochen
+  const R = longestIn(today), Ld = loadFor(start);
+  let L = opt.L0 !== undefined ? opt.L0 : R ? R.km : null, W = opt.W0 !== undefined ? opt.W0 : Ld.avg;
+  let streak = 0, peakL = L, peakW = W;
+  const grow = (v, cap) => v === null ? null : v >= cap ? v : Math.min(cap, v * (1 + SEASON.grow));
+  weeks.forEach((x, i) => {
+    const d = D(x.target.dist), p = x.phase, nextPh = weeks[i + 1] && weeks[i + 1].phase;
+    if (p === 'recover') {
+      const f = D(x.target.dist).recover[x.k];
+      x.long = peakL === null || !f.long ? null : peakL * f.long; x.km = peakW === null ? null : peakW * f.wk;
+      x.noLong = !f.long; if (x.long !== null) L = x.long; if (x.km !== null) W = x.km; streak = 0; return;
+    }
+    if (p === 'taper') {
+      if (x.k === 0 || peakL === null) { peakL = L; peakW = W; }
+      const f = d.taper[x.k];
+      x.long = L === null || !f.long ? null : peakL * f.long; x.km = W === null ? null : peakW * f.wk; streak = 0; return;
+    }
+    const share = SEASON.cap[p], capL = Math.max(8, d.longPeak * share), capW = Math.max(15, d.weekPeak * share);
+    if (streak >= SEASON.cutEvery && nextPh !== 'taper') {
+      x.cut = true; streak = 0;
+      x.long = L === null ? null : L * SEASON.cutLong; x.km = W === null ? null : W * SEASON.cutWeek; return;
+    }
+    L = grow(L, capL); W = grow(W, capW); x.long = L; x.km = W; streak++; peakL = L; peakW = W;
+  });
+  // Machbarkeit: erreicht der Longrun vor dem Tapering das Ziel?
+  for (const r of next) {
+    const d = D(r.dist), i0 = weeks.findIndex(x => x.target === r && x.phase === 'taper');
+    const pre = weeks.slice(0, i0 < 0 ? 0 : i0).filter(x => x.target === r && x.long !== null && x.long !== undefined).at(-1);
+    if (pre && pre.long < d.longPeak * 0.9) warn.push(`${r.name}: Mit +10 % pro Woche schaffst du bis zum Tapering einen Longrun von etwa ${Math.round(pre.long)} km – das Ziel sind ${d.longPeak} km. Mehr Vorlauf einplanen oder das Ziel locker angehen.`);
+  }
+  return { weeks, warn, races: next, hasData: L !== null || W !== null, start };
+}
+const phaseKey = x => x.cut ? 'cut' : x.phase;
+function weekKey(x) {
+  const t = SEASON.key[x.phase] || SEASON.key.basis, list = t[x.target.dist] || t.all, odd = isoWeek(x.week) % 2;
+  if (x.a) return `Rennen: ${x.a.name} (${SEASON.dist[x.a.dist].label})`;
+  return (x.cut ? 'kürzer: ' : '') + list[odd ? 0 : 1];
+}
+function weekLongNote(x) {
+  if (x.a) return 'kein Longrun – Rennwoche';
+  if (x.noLong) return 'kein Longrun';
+  const t = SEASON.long[x.phase]; return typeof t === 'string' ? t : t[x.target.dist];
+}
+const kmRound = v => v === null || v === undefined ? null : Math.round(v);
+function goalLine(r) {
+  if (!r.goal) return '';
+  return ` · Ziel ${hms(r.goal)} = ${paceText(r.goal, SEASON.dist[r.dist].km)}`;
+}
+function renderPlanWeek(S) {
+  const x = S.weeks[0], [pl, pt] = SEASON.phase[phaseKey(x)];
+  const nxt = S.races[0], wk = weeksBetween(x.week, weekStart(nxt.date));
+  const R = longestIn(localDay()), longVal = kmRound(x.long === null || x.long === undefined ? null : (R ? Math.min(x.long, R.max) : x.long));
+  const kmVal = kmRound(x.km);
+  const bs = x.b.map(b => `<div class="alert"><b>${esc(b.name)}</b> (${esc(SEASON.dist[b.dist].label)}, ${dayLabel(b.date)}): ${esc(x.phase === 'taper' ? SEASON.bInTaper : SEASON.bRace)}</div>`).join('');
+  return `<div class="header">Diese Woche · KW ${isoWeek(x.week)}</div><div class="group"><div class="panel" style="border:0;padding-top:12px" id="planweek">
+    <div class="phasebadge ph-${phaseKey(x)}">${esc(pl)}</div>
+    <p class="loadstatus">${wk === 0 ? `Rennwoche: <b>${esc(nxt.name)}</b> am ${dayLabel(nxt.date)}` : `Noch ${wk} ${wk === 1 ? 'Woche' : 'Wochen'} bis <b>${esc(nxt.name)}</b> (${esc(SEASON.dist[nxt.dist].label)}, ${dateGerman(nxt.date)})`}${esc(goalLine(nxt))}</p>
+    <p class="tiny" style="margin-top:2px">${esc(pt)}</p>
+    <div class="metrics two">
+      <div class="metric"><span>Longrun</span><b>${x.a || x.noLong ? '–' : longVal === null ? '?' : 'ca. ' + longVal + ' km'}</b><small>${esc(weekLongNote(x))}</small></div>
+      <div class="metric"><span>Woche</span><b>${kmVal === null ? '?' : 'ca. ' + kmVal + ' km'}</b><small>${x.cut ? 'Entlastungswoche' : x.phase === 'taper' ? 'reduziert' : 'höchstens +10 %'}</small></div>
+    </div>
+    <div class="planrows">
+      <div class="row"><span class="dur">Qualität</span><span class="txt"><b>${esc(weekKey(x))}</b>${x.a ? '' : `<small>${x.phase === 'recover' ? 'diese Woche kein Tempo' : 'Intervall und Speed bzw. Schwelle im Wochenwechsel'}</small>`}</span></div>
+      <div class="row"><span class="dur">Mi</span><span class="txt"><b>Laufgruppe locker</b><small>Zone 2</small></span></div>
+      <div class="row"><span class="dur">So</span><span class="txt"><b>${x.a ? 'Rennen bzw. frei' : 'Longrun'}</b><small>${esc(weekLongNote(x))}</small></span></div>
+    </div>
+    ${bs}
+    ${S.hasData ? '' : '<p class="tiny">Für Longrun und Wochen-km: unter <b>Umfang</b> deine Läufe oder Wochensummen der letzten Wochen eintragen.</p>'}
+    ${R && !x.a && !x.noLong && x.long > R.max ? `<p class="tiny">Longrun auf ${kmText(R.max)} km begrenzt: längster Lauf der letzten 30 Tage plus 10 %.</p>` : ''}
+  </div></div>`;
+}
+function renderPlanSeason(S) {
+  const SHOW = 8, row = (x, i) => {
+    const [pl] = SEASON.phase[phaseKey(x)], lv = kmRound(x.long), kv = kmRound(x.km);
+    const marks = (x.a ? [`🏁 ${esc(x.a.name)} · A`] : []).concat(x.b.map(b => `${esc(b.name)} · B`)).join(' · ');
+    const nums = [x.a ? 'Rennen' : x.noLong ? 'kein Longrun' : lv === null || lv === undefined ? '' : `Longrun ${lv} km`, kv === null || kv === undefined ? '' : `Woche ${kv} km`].filter(Boolean).join(' · ');
+    return `<div class="row planweek${i === 0 ? ' now' : ''}${x.a ? ' race' : ''}"><span class="dur">KW ${isoWeek(x.week)}<small>${dateGerman(x.week).slice(0, 6)}</small></span><span class="txt"><b><span class="phasedot ph-${phaseKey(x)}"></span>${esc(pl)}${marks ? ` · ${marks}` : ''}</b>${nums ? `<small>${nums}</small>` : ''}</span></div>`;
+  };
+  const rest = S.weeks.length - SHOW;
+  return `<div class="header">Saison · ${S.weeks.length} Wochen</div><div class="group" id="planseason">${S.weeks.slice(0, SHOW).map(row).join('')}${rest > 0 ? `<details id="planmore"><summary class="row"><span class="txt"><b>Weitere ${rest} Wochen</b><small>bis ${esc(S.races.at(-1).name)} am ${dateGerman(S.races.at(-1).date)}</small></span><span class="chev"></span></summary>${S.weeks.slice(SHOW).map((x, i) => row(x, i + SHOW)).join('')}</details>` : ''}</div>
+  <p class="footer">Spätere Wochen sind eine Vorschau: Jede Woche rechnet der Plan mit deinem echten Umfang neu.</p>`;
+}
+let raceEdit = null;
+function renderRaces() {
+  const today = localDay(), e = races.find(r => r.id === raceEdit) || null;
+  const opt = (v, l, cur) => `<option value="${v}"${v === cur ? ' selected' : ''}>${esc(l)}</option>`;
+  const list = races.length ? races.map(r => `<button type="button" class="row${r.date < today ? ' past' : ''}" data-raceedit="${esc(r.id)}"><span class="dur">${dateGerman(r.date)}</span><span class="txt"><b>${esc(r.name)} <span class="prio prio-${r.prio}">${r.prio}</span></b><small>${esc(SEASON.dist[r.dist].label)}${esc(goalLine(r))}${r.date < today ? ' · vorbei' : ''}</small></span><span class="chev"></span></button>`).join('')
+    : '<div class="row"><span class="txt"><small>Noch keine Rennen eingetragen.</small></span></div>';
+  return `<div class="intro">${esc(SEASON.intro)}</div>
+    <div class="header">${e ? 'Rennen bearbeiten' : 'Rennen eintragen'}</div><div class="group"><div class="raceform">
+      <div class="field wide"><label for="racename">Name</label><input id="racename" type="text" maxlength="60" autocomplete="off" placeholder="z. B. Berliner Halbmarathon" value="${e ? esc(e.name) : ''}"></div>
+      <div class="field"><label for="racedate">Datum</label><input id="racedate" type="date" value="${e ? e.date : ''}"></div>
+      <div class="field"><label for="racedist">Distanz</label><select id="racedist">${Object.entries(SEASON.dist).map(([k, d]) => opt(k, d.label, e ? e.dist : 'hm')).join('')}</select></div>
+      <div class="field"><label for="raceprio">Priorität</label><select id="raceprio">${opt('A', 'A-Rennen', e ? e.prio : 'A')}${opt('B', 'B-Rennen', e ? e.prio : 'A')}</select></div>
+      <div class="field"><label for="racegoal">Zielzeit (optional)</label><input id="racegoal" type="text" inputmode="numeric" autocomplete="off" placeholder="z. B. 1:59:00" value="${e && e.goal ? hms(e.goal) : ''}"></div>
+      <div class="raceactions">${e ? '<button type="button" class="btn small danger" id="racedel">Löschen</button><button type="button" class="btn small" id="racecancel">Abbrechen</button>' : ''}<button type="button" class="btn small primary" id="racesave">${e ? 'Speichern' : 'Hinzufügen'}</button></div>
+    </div></div>
+    <p class="footer">A-Rennen bekommen einen eigenen Vorbereitungsblock, B-Rennen laufen als harte Einheit mit. Antippen zum Bearbeiten.</p>
+    <div class="header">Deine Rennen</div><div class="group" id="racelist">${list}</div>`;
+}
+function saveRaceFromForm() {
+  const name = $('racename').value.trim(), date = $('racedate').value, dist = $('racedist').value, prio = $('raceprio').value, goal = parseGoal($('racegoal').value, dist);
+  for (const id of ['racename', 'racedate', 'racegoal']) $(id).removeAttribute('aria-invalid');
+  if (!name) { $('racename').setAttribute('aria-invalid', 'true'); toast('Bitte einen Namen eingeben.'); return; }
+  if (!isDay(date)) { $('racedate').setAttribute('aria-invalid', 'true'); toast('Bitte ein Datum wählen.'); return; }
+  if (Number.isNaN(goal)) { $('racegoal').setAttribute('aria-invalid', 'true'); toast('Zielzeit als h:mm:ss oder mm:ss, z. B. 1:59:00.'); return; }
+  const r = { id: raceEdit || uid(), name: name.slice(0, 60), date, dist, prio, goal };
+  races = races.filter(x => x.id !== r.id).concat(r); persistRaces();
+  toast(raceEdit ? '✓ Rennen gespeichert.' : `✓ ${name} eingetragen.`); raceEdit = null; renderRun();
+}
+function renderPlanGuide() {
+  const dists = Object.entries(SEASON.dist);
+  return `<div class="header">Renntempo-Rechner</div><div class="group"><div class="raceform">
+      <div class="field"><label for="pcdist">Distanz</label><select id="pcdist">${dists.map(([k, d]) => `<option value="${k}"${k === 'hm' ? ' selected' : ''}>${esc(d.label)}</option>`).join('')}</select></div>
+      <div class="field"><label for="pctime">Zielzeit</label><input id="pctime" type="text" inputmode="numeric" autocomplete="off" placeholder="1:59:00"></div>
+    </div><div class="panel" id="pcout"></div></div>
+    <div class="header">Wissen</div><div class="group manual">${SEASON_GUIDE.map(g => `<details><summary class="row"><span class="txt"><b>${esc(g.title)}</b><small>${esc(g.sub)}</small></span><span class="chev"></span></summary><div class="panel"><ul>${g.items.map(t => `<li>${esc(t)}</li>`).join('')}</ul></div></details>`).join('')}</div>
+    <p class="footer">${esc(SEASON.note)}</p>`;
+}
+function renderPace() {
+  const out = $('pcout'); if (!out) return;
+  const dist = $('pcdist').value, d = SEASON.dist[dist], s = parseGoal($('pctime').value, dist);
+  $('pctime').setAttribute('aria-invalid', String(Number.isNaN(s)));
+  if (s === null || Number.isNaN(s)) { out.innerHTML = `<p class="tiny">${Number.isNaN(s) ? 'Zielzeit als h:mm:ss oder mm:ss eingeben.' : 'Zielzeit eingeben, z. B. 1:59:00 oder 24:30.'}</p>`; return; }
+  const marks = { '5k': [1, 2, 3, 4, 5], '10k': [2, 4, 5, 6, 8, 10], hm: [5, 10, 15, 20, d.km], marathon: [5, 10, 15, 20, 21.0975, 25, 30, 35, 40, d.km] }[dist];
+  out.innerHTML = `<div class="longnext"><b>${paceText(s, d.km)}</b><span>${esc(d.label)} in ${hms(s)} · ${kmText(Math.round(d.km / (s / 3600) * 10) / 10)} km/h · erste 2–3 km etwa ${hms(s / d.km + 7)} /km</span></div>
+    <div class="splits">${marks.map(k => `<span><small>${k === d.km ? 'Ziel' : k === 21.0975 ? 'Halbzeit' : kmText(k) + ' km'}</small>${hms(s / d.km * k)}</span>`).join('')}</div>`;
+}
+function renderPlan() {
+  const sub = $('runsub');
+  sub.classList.remove('hide');
+  sub.innerHTML = [['woche', 'Übersicht'], ['rennen', 'Rennen'], ['wissen', 'Wissen']].map(([k, l]) => `<button role="tab" type="button" data-runsub="${k}" aria-selected="${runView.plan === k}">${l}</button>`).join('');
+  if (runView.plan === 'rennen') { $('runcontent').innerHTML = renderRaces(); return; }
+  if (runView.plan === 'wissen') { $('runcontent').innerHTML = renderPlanGuide(); renderPace(); return; }
+  const S = seasonPlan();
+  if (!S.weeks.length) {
+    $('runcontent').innerHTML = `<div class="intro">${esc(SEASON.intro)}</div><div class="group"><div class="row"><span class="txt"><b>Noch kein A-Rennen geplant</b><small>Unter „Rennen“ ein Hauptrennen mit Datum und Distanz eintragen.</small></span><button type="button" class="btn small primary" data-runsub-go="rennen">Rennen eintragen</button></div></div>`;
+    return;
+  }
+  $('runcontent').innerHTML = (S.warn.length ? S.warn.map(w => `<div class="alert due">${esc(w)}</div>`).join('') : '') + renderPlanWeek(S) + renderPlanSeason(S) + `<p class="footer">${esc(SEASON.note)}</p>`;
+}
+
 /* ---------- Dateien: Backup, CSV, Kalender ---------- */
 function download(name, content, type) { const blob = new Blob([content], { type }), url = URL.createObjectURL(blob), a = document.createElement('a'); a.href = url; a.download = name; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 3000); }
-function backupJson() { return JSON.stringify({ version: 3, entries: saved.concat(savedKeep), waist: waist.concat(waistKeep), runWeeks: runWeeks.concat(runWeeksKeep), runLog: runLog.concat(runLogKeep), settings: { gear, choices, stages, audio: audioOpt }, exportedAt: new Date().toISOString() }, null, 2); }
+function backupJson() { return JSON.stringify({ version: 3, entries: saved.concat(savedKeep), waist: waist.concat(waistKeep), runWeeks: runWeeks.concat(runWeeksKeep), runLog: runLog.concat(runLogKeep), races: races.concat(racesKeep), settings: { gear, choices, stages, audio: audioOpt }, exportedAt: new Date().toISOString() }, null, 2); }
 function schemaCheck() {
   const prev = load(SCHEMA_KEY, null);
   if (prev === SCHEMA || (typeof prev === 'number' && prev > SCHEMA)) return; // neuere Daten mit älterer App: nichts verändern
-  if (saved.length + savedKeep.length + waist.length + waistKeep.length + runWeeks.length + runWeeksKeep.length + runLog.length + runLogKeep.length > 0) store(PRE_UPDATE_KEY, { savedAt: new Date().toISOString(), fromSchema: prev, json: backupJson() });
+  if (saved.length + savedKeep.length + waist.length + waistKeep.length + runWeeks.length + runWeeksKeep.length + runLog.length + runLogKeep.length + races.length + racesKeep.length > 0) store(PRE_UPDATE_KEY, { savedAt: new Date().toISOString(), fromSchema: prev, json: backupJson() });
   store(SCHEMA_KEY, SCHEMA);
 }
 function renderPreUpdate() {
@@ -859,8 +1062,9 @@ function importBackup(file) {
       wl = wl.filter(validWaist).map(e => Object.assign({}, e, { note: String(e.note || '').slice(0, 120) }));
       const rw = isObj(x) && Array.isArray(x.runWeeks) ? x.runWeeks.filter(validRunWeek) : [];
       const rl = isObj(x) && Array.isArray(x.runLog) ? x.runLog.filter(validRun) : [];
+      const rc = isObj(x) && Array.isArray(x.races) ? x.races.filter(validRace) : [];
       const settings = isObj(x) && isObj(x.settings) ? x.settings : null;
-      if (!entries.length && !wl.length && !rw.length && !rl.length && !settings) throw Error('Keine gültigen Daten gefunden');
+      if (!entries.length && !wl.length && !rw.length && !rl.length && !rc.length && !settings) throw Error('Keine gültigen Daten gefunden');
       const ids = new Set(saved.map(e => String(e.id))); let added = 0, addedW = 0;
       for (const e of entries) if (!ids.has(e.id)) { saved.push(e); ids.add(e.id); added++; }
       const days = new Set(waist.map(e => e.date));
@@ -872,7 +1076,9 @@ function importBackup(file) {
       const runIds = new Set(runLog.map(e => e.id)); let addedL = 0;
       for (const e of rl) if (!runIds.has(e.id)) { runLog.push({ id: e.id, date: e.date, km: e.km }); runIds.add(e.id); addedL++; }
       runLog.sort((a, b) => a.date.localeCompare(b.date));
-      persistEntries(); persistWaist(); if (addedR) persistRunWeeks(); if (addedL) persistRunLog();
+      const raceIds = new Set(races.map(e => e.id)); let addedC = 0;
+      for (const e of rc) if (!raceIds.has(e.id)) { races.push({ id: e.id, name: e.name, date: e.date, dist: e.dist, prio: e.prio, goal: e.goal ?? null }); raceIds.add(e.id); addedC++; }
+      persistEntries(); persistWaist(); if (addedR) persistRunWeeks(); if (addedL) persistRunLog(); if (addedC) persistRaces();
       if (settings && confirm('Das Backup enthält auch Einstellungen (Geräte, Varianten, Gewichte). Übernehmen?')) {
         if (isObj(settings.gear)) { gear = { kb: settings.gear.kb !== false, band: settings.gear.band !== false, bw: settings.gear.bw !== false }; ensureGear(); store(KEYS.gear, gear); }
         if (isObj(settings.choices)) { choices = settings.choices; store(KEYS.choice, choices); }
@@ -881,7 +1087,7 @@ function importBackup(file) {
         if (!sessionActive()) runReps = emptyReps(plan);
       }
       renderAll(); renderWaist(); renderRun();
-      alert(`${added} Trainings-, ${addedW} Bauchumfang-, ${addedR} Laufwochen- und ${addedL} Lauf-Einträge importiert.${entries.length - added + wl.length - addedW + rw.length - addedR + rl.length - addedL > 0 ? ' Bereits vorhandene Einträge wurden übersprungen.' : ''}`);
+      alert(`${added} Trainings-, ${addedW} Bauchumfang-, ${addedR} Laufwochen- und ${addedL} Lauf-Einträge${addedC ? ` sowie ${addedC} ${addedC === 1 ? 'Rennen' : 'Rennen'}` : ''} importiert.${entries.length - added + wl.length - addedW + rw.length - addedR + rl.length - addedL + rc.length - addedC > 0 ? ' Bereits vorhandene Einträge wurden übersprungen.' : ''}`);
     } catch (e) { alert('Import fehlgeschlagen: ' + e.message); }
   };
   r.onerror = () => alert('Die Datei konnte nicht gelesen werden.');
@@ -969,7 +1175,7 @@ function renderAll() {
 
 /* ---------- Bereiche: Kraft, Laufen, Mobility, Mehr ---------- */
 let area = ['kraft', 'laufen', 'mobility', 'mehr'].includes(load(KEYS.area, 'kraft')) ? load(KEYS.area, 'kraft') : 'kraft';
-let runView = load(KEYS.run, null); if (!isObj(runView)) runView = {}; runView = { tab: ['race', 'training', 'abc', 'umfang'].includes(runView.tab) ? runView.tab : 'race', race: runView.race || '5k', training: runView.training || 'interval' };
+let runView = load(KEYS.run, null); if (!isObj(runView)) runView = {}; runView = { tab: ['race', 'training', 'abc', 'umfang', 'plan'].includes(runView.tab) ? runView.tab : 'race', race: runView.race || '5k', training: runView.training || 'interval', plan: ['woche', 'rennen', 'wissen'].includes(runView.plan) ? runView.plan : 'woche' };
 function showArea(a, scroll = true) {
   area = a; store(KEYS.area, a);
   for (const x of ['kraft', 'laufen', 'mobility', 'mehr']) $('area-' + x).classList.toggle('hide', x !== a);
@@ -991,9 +1197,10 @@ const stepRow = (dur, name, detail) => {
   return `<${has ? 'button type="button"' : 'div'} class="row" ${has ? `data-guide-name="${esc(name)}"` : ''}><span class="dur">${esc(dur)}</span><span class="txt"><b>${esc(name)}</b>${detail ? `<small>${esc(detail)}</small>` : ''}</span>${has ? '<span class="chev"></span>' : ''}</${has ? 'button' : 'div'}>`;
 };
 function renderRun() {
-  const tabs = [['race', 'Wettkampf'], ['training', 'Training'], ['abc', 'Lauf-ABC'], ['umfang', 'Umfang']];
+  const tabs = [['plan', 'Plan'], ['race', 'Wettkampf'], ['training', 'Training'], ['abc', 'ABC'], ['umfang', 'Umfang']];
   $('runtabs').innerHTML = tabs.map(([k, l]) => `<button role="tab" type="button" data-runtab="${k}" aria-selected="${runView.tab === k}">${l}</button>`).join('');
   const sub = $('runsub');
+  if (runView.tab === 'plan') { renderPlan(); return; }
   if (runView.tab === 'umfang') { sub.classList.add('hide'); $('runcontent').innerHTML = renderUmfang(); renderWeekRows(); renderLoad(); return; }
   if (runView.tab === 'abc') {
     sub.classList.add('hide');
@@ -1263,17 +1470,23 @@ $('mobtabs').addEventListener('click', e => { const b = e.target.closest('[data-
 $('mobsub').addEventListener('click', e => { const b = e.target.closest('[data-mobsub]'); if (!b) return; mobView[mobView.tab] = b.dataset.mobsub; store(KEYS.mob, mobView); renderMobility(); });
 // Laufwochen: bei jeder Eingabe speichern und nur Ergebnis und Diagramm neu zeichnen (Fokus bleibt im Feld)
 $('runcontent').addEventListener('input', e => {
-  const t = e.target; if (!t.dataset || !t.dataset.wk) return;
+  const t = e.target; if (t.id === 'pctime' || t.id === 'pcdist') { renderPace(); return; }
+  if (!t.dataset || !t.dataset.wk) return;
   const v = kmNum(t.value), bad = Number.isNaN(v);
   t.setAttribute('aria-invalid', String(bad)); if (bad) return;
   setWeekKm(t.dataset.wk, t.dataset.f, v); renderLoad();
 });
 $('runcontent').addEventListener('click', e => {
   if (e.target.closest('#runaddbtn')) { addRunFromForm(); return; }
+  const go = e.target.closest('[data-runsub-go]'); if (go) { runView.plan = go.dataset.runsubGo; store(KEYS.run, runView); renderRun(); return; }
+  if (e.target.closest('#racesave')) { saveRaceFromForm(); return; }
+  if (e.target.closest('#racecancel')) { raceEdit = null; renderRun(); return; }
+  if (e.target.closest('#racedel')) { if (raceEdit && confirm('Dieses Rennen löschen?')) { races = races.filter(r => r.id !== raceEdit); persistRaces(); raceEdit = null; renderRun(); toast('Rennen gelöscht.'); } return; }
+  const re = e.target.closest('[data-raceedit]'); if (re) { raceEdit = re.dataset.raceedit; renderRun(); $('racename').focus(); window.scrollTo({ top: 0 }); return; }
   const d = e.target.closest('[data-rundel]');
   if (d && confirm('Diesen Lauf löschen?')) { deleteRun(d.dataset.rundel); renderWeekRows(); renderLoad(); toast('Lauf gelöscht.'); }
 });
-$('runcontent').addEventListener('keydown', e => { if (e.target.id === 'runkm' && e.key === 'Enter') { e.preventDefault(); addRunFromForm(); } });
+$('runcontent').addEventListener('keydown', e => { if (e.target.id === 'runkm' && e.key === 'Enter') { e.preventDefault(); addRunFromForm(); } if (['racename', 'racegoal'].includes(e.target.id) && e.key === 'Enter') { e.preventDefault(); saveRaceFromForm(); } });
 $('runcontent').addEventListener('change', e => { const t = e.target; if (t.dataset && t.dataset.wk && t.getAttribute('aria-invalid') !== 'true') { const v = weekKm(t.dataset.wk, t.dataset.f); t.value = v === null ? '' : kmText(v); } });
 for (const id of ['runcontent', 'mobcontent']) $(id).addEventListener('click', e => {
   const r = e.target.closest('[data-routine]'), m = e.target.closest('[data-mob]');
