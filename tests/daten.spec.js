@@ -28,7 +28,7 @@ test('altes Backup importieren, Duplikate überspringen, Sicherung enthält alle
   await page.click('#savefile');
   const backup = JSON.parse(fs.readFileSync(await (await dl).path(), 'utf8'));
   expect([backup.version, backup.entries.length, backup.waist.length]).toEqual([3, 3, 2]);
-  expect(Object.keys(backup.settings)).toEqual(['gear', 'choices', 'stages', 'audio']);
+  expect(Object.keys(backup.settings)).toEqual(['gear', 'choices', 'stages', 'audio', 'profile']);
 });
 
 test('Update-Sicherheit: Unbekanntes bleibt, Unlesbares wird aufbewahrt, Sicherung vor Formatwechsel', async ({ page }) => {

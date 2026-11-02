@@ -199,7 +199,7 @@ test('Läufer: Sätze, EMOM und Hinweis „bereit für mehr“ mit Stufenwechsel
 });
 
 test('Sprachansagen: Phase, Schritte und Übungen – nur mit der Gerätestimme', async ({ page }) => {
-  await page.evaluate(() => showArea('mehr'));
+  await page.evaluate(() => showArea('profil'));
   await expect(page.locator('#voiceval')).toHaveText('An');
   await expect(page.locator('#voicehint')).toContainText('Anna');
   await page.evaluate(() => showArea('kraft'));
@@ -221,7 +221,7 @@ test('Sprachansagen: Phase, Schritte und Übungen – nur mit der Gerätestimme'
 test.describe('ohne deutsche Gerätestimme', () => {
   test.use({ initScripts: ['window.__voices = [{ name: "Google Deutsch", lang: "de-DE", localService: false, default: true }];'] });
   test('werden Online-Stimmen nicht genutzt', async ({ page }) => {
-    await page.evaluate(() => showArea('mehr'));
+    await page.evaluate(() => showArea('profil'));
     await expect(page.locator('#voiceval')).toHaveText('Nicht verfügbar');
     await page.evaluate(() => showArea('kraft'));
     await page.click('#btnMain');
@@ -233,7 +233,7 @@ test.describe('ohne deutsche Gerätestimme', () => {
 test.describe('iPhone mit Audio Session API', () => {
   test.use({ initScripts: ['navigator.audioSession = { type: "auto" };'] });
   test('„Ton trotz Stummschalter“ schaltet auf playback', async ({ page }) => {
-    await page.evaluate(() => showArea('mehr'));
+    await page.evaluate(() => showArea('profil'));
     await expect(page.locator('#loudrow')).toBeVisible();
     expect(await page.evaluate(() => navigator.audioSession.type)).toBe('auto');
     await page.click('#loudrow');

@@ -19,12 +19,18 @@ Mein persönlicher Trainings-Begleiter als Web-App für iPhone und Android – K
   - Lauf-ABC
   - Umfang: Läufe mit Datum oder Wochensummen; nächster langer Lauf höchstens 10 % über dem längsten der letzten 30 Tage (Sprünge werden markiert), Zielbereich für die laufende Woche (Erhalt 0,8–1,0 × Schnitt der letzten 4 Wochen, Aufbau bis 1,3 ×), Verlauf über 8 Wochen
   - „Geführt“: Ablauf Schritt für Schritt mit Countdown und Ansage; Strecken und Wiederholungen werden abgehakt
+- **Profil**
+  - Trainingswoche: Tage für Qualität, Longrun, Laufgruppe, Kraft und eine weitere Einheit – Plan und Kalender-Export nutzen sie, Hinweis bei harten Tagen hintereinander
+  - Herzfrequenz-Zonen: nach Karvonen aus maximaler und Ruhe-HF oder direkt von der Uhr; der Plan zeigt die bpm
+  - Geräte & Gewichte: eigene Kettlebells und Bänder, Standardgewicht; der Kraft-Bereich wählt nur daraus
+  - Körpergewicht (Verlauf, Ø pro Woche über 4 Wochen) und Bauchumfang
+  - Ton & Ansagen
 - **Mobility** (ohne Tracking), in Reitern wie Laufen
   - Läufer: Nach dem Lauf, Hüfte, Sprunggelenk
   - Alltag: Morgens, Nach dem Sitzen
   - Übungen nach Körperbereich: Hüfte, Rücken, Schultern, Beine & Fuß
   - Kurzprogramme mit geführtem Timer inkl. Seitenwechsel und Ansage
-- **Mehr**: Wochenübersicht, Anleitung, Bauchumfang, Datensicherung, Ton & Ansagen, Hinweise
+- **Mehr**: Wochenübersicht, Anleitung, Datensicherung, Hinweise
 
 Jede Übung hat eine Anleitung mit Skizze (Start → Bewegung).
 
@@ -67,11 +73,11 @@ Bei Änderungen an Dateien in `sw.js` die Konstante `VERSION` erhöhen (z. B. `k
 
 ## Ton auf dem iPhone
 
-Safari spielt Web-Töne normalerweise nicht, wenn der Stummschalter an ist. Unter **Mehr → Ton trotz Stummschalter** stellt die App die Audio-Sitzung auf „playback“ (Audio Session API; die Option erscheint nur, wenn das iPhone sie unterstützt). Nachteil: Laufende Musik kann dabei pausieren. Bei gesperrtem Bildschirm pausiert iOS Web-Apps grundsätzlich; die App hält den Bildschirm deshalb während des Trainings an.
+Safari spielt Web-Töne normalerweise nicht, wenn der Stummschalter an ist. Unter **Profil → Ton trotz Stummschalter** stellt die App die Audio-Sitzung auf „playback“ (Audio Session API; die Option erscheint nur, wenn das iPhone sie unterstützt). Nachteil: Laufende Musik kann dabei pausieren. Bei gesperrtem Bildschirm pausiert iOS Web-Apps grundsätzlich; die App hält den Bildschirm deshalb während des Trainings an.
 
 ## Tests
 
-Automatische Tests mit Playwright (Chromium) prüfen Zirkel, Tabata, Core-EMOM, Sätze, Geräte-Auswahl, Ansagen, geführte Routinen, Import/Export, Update-Sicherheit, Saisonplan und Rennen, Content-Security-Policy und dass jede Übung Anleitung und Skizze hat. Sie laufen bei jedem Push über GitHub Actions (`.github/workflows/test.yml`).
+Automatische Tests mit Playwright (Chromium) prüfen Zirkel, Tabata, Core-EMOM, Sätze, Geräte-Auswahl, Ansagen, geführte Routinen, Import/Export, Update-Sicherheit, Saisonplan und Rennen, Profil, Content-Security-Policy und dass jede Übung Anleitung und Skizze hat. Sie laufen bei jedem Push über GitHub Actions (`.github/workflows/test.yml`).
 
 Lokal (Node 22 und Python 3 nötig):
 

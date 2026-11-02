@@ -342,3 +342,15 @@ html[data-os=android] .sheet{border-radius:28px 28px 0 0}
 .splits span{background:var(--fill);border-radius:8px;padding:6px 8px;font-variant-numeric:tabular-nums;font-weight:600;font-size:15px}
 .splits small{display:block;font-weight:400;font-size:11px;color:var(--label2)}
 .manual .panel ul{margin:8px 0 0;padding-left:18px;font-size:15px}
+
+/* Profil */
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.chip.on{display:inline-flex;align-items:center;gap:4px;padding-right:6px;background:var(--accent-soft);color:var(--accent-ink)}
+.chipx{border:0;background:none;color:inherit;font-size:17px;line-height:1;padding:0 4px;min-width:24px;min-height:24px}
+.zonegrid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin-top:10px}
+.zonegrid input{width:100%;text-align:center;font-variant-numeric:tabular-nums}
+.zonegrid input[aria-invalid=true],#weekpanel input[aria-invalid=true],#hrpanel input[aria-invalid=true]{box-shadow:0 0 0 2px var(--red) inset}
+.zonelist{display:grid;gap:4px;margin-top:10px;font-size:14px}
+.zonelist span{display:flex;justify-content:space-between;border-left:4px solid var(--zc);padding:4px 8px;background:var(--fill);border-radius:6px;font-variant-numeric:tabular-nums}
+.ph-z1{--zc:#8e8e93}.ph-z2{--zc:var(--blue)}.ph-z3{--zc:var(--accent)}.ph-z4{--zc:var(--orange)}.ph-z5{--zc:var(--red)}
+.planrows .sched-race .txt b{font-weight:600}

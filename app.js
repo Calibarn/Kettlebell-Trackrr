@@ -5,7 +5,7 @@ const $ = id => document.getElementById(id);
 const KEYS = {
   entries: 'jan-kettlebell-tracker-v1', waist: 'jan-kb-waist-v1', sound: 'jan-kb-sound-v1', gear: 'jan-kb-gear-v1',
   choice: 'jan-kb-choice-v1', stage: 'jan-kb-stage-v1', plan: 'jan-kb-plan-v1', session: 'jan-kb-session-v1',
-  backup: 'jan-kb-lastbackup-v1', hint: 'jan-kb-installhint-v1', area: 'jan-kb-area-v1', run: 'jan-kb-runview-v1', audio: 'jan-kb-audio-v1', mob: 'jan-kb-mobview-v1', runweeks: 'jan-kb-runweeks-v1', runlog: 'jan-kb-runlog-v1', races: 'jan-kb-races-v1'
+  backup: 'jan-kb-lastbackup-v1', hint: 'jan-kb-installhint-v1', area: 'jan-kb-area-v1', run: 'jan-kb-runview-v1', audio: 'jan-kb-audio-v1', mob: 'jan-kb-mobview-v1', runweeks: 'jan-kb-runweeks-v1', runlog: 'jan-kb-runlog-v1', races: 'jan-kb-races-v1', profile: 'jan-kb-profile-v1', weight: 'jan-kb-weight-v1'
 };
 /* Datensicherheit bei Updates:
    - Einträge, die diese Version nicht versteht, werden nie verworfen, sondern unverändert mitgespeichert.
@@ -40,6 +40,47 @@ ensureGear();
 let choices = load(KEYS.choice, {}); if (!isObj(choices)) choices = {};
 let stages = load(KEYS.stage, {}); if (!isObj(stages)) stages = {};
 
+/* ---------- Profil: Herzfrequenz, Geräte & Gewichte, Trainingswoche ---------- */
+// Wochentage wie Date.getDay(): 0 = Sonntag. Angezeigt wird Montag bis Sonntag.
+const WD = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'], WD_LONG = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'], WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0];
+const PROFILE_DEFAULT = { hr: { max: null, rest: null, z: null }, kit: { kb: [KB_DEFAULT], kbDefault: KB_DEFAULT, bands: [10, 20, 30] },
+  week: { group: 3, quality: 2, long: 0, strength: [4, 6], extraName: '', extraDay: null } };
+const HR_PCT = [0.5, 0.6, 0.7, 0.8, 0.9]; // Karvonen: Anteil der Herzfrequenzreserve, ab dem Zone 1–5 beginnt
+const isWd = v => Number.isInteger(v) && v >= 0 && v <= 6;
+const okNum = (v, lo, hi) => typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi;
+const okZones = z => Array.isArray(z) && z.length === 5 && z.every((v, i) => okNum(v, 30, 230) && (i === 0 || v > z[i - 1]));
+function normProfile(p) {
+  p = isObj(p) ? p : {}; const d = PROFILE_DEFAULT;
+  const hr = isObj(p.hr) ? p.hr : {}, kit = isObj(p.kit) ? p.kit : {}, wk = isObj(p.week) ? p.week : {};
+  const kb = Array.isArray(kit.kb) ? [...new Set(kit.kb.filter(v => okNum(v, 0.5, 60)).map(v => Math.round(v * 2) / 2))].sort((a, b) => a - b) : d.kit.kb.slice();
+  const bands = Array.isArray(kit.bands) ? [...new Set(kit.bands.filter(v => okNum(v, 1, 200)).map(Math.round))].sort((a, b) => a - b).slice(0, 6) : d.kit.bands.slice();
+  return {
+    hr: { max: okNum(hr.max, 100, 230) ? Math.round(hr.max) : null, rest: okNum(hr.rest, 30, 120) ? Math.round(hr.rest) : null, z: okZones(hr.z) ? hr.z.map(Math.round) : null },
+    kit: { kb, kbDefault: kb.includes(kit.kbDefault) ? kit.kbDefault : kb.includes(KB_DEFAULT) ? KB_DEFAULT : (kb.length ? kb[0] : KB_DEFAULT), bands },
+    week: { group: wk.group === null ? null : isWd(wk.group) ? wk.group : d.week.group, quality: isWd(wk.quality) ? wk.quality : d.week.quality, long: isWd(wk.long) ? wk.long : d.week.long,
+      strength: Array.isArray(wk.strength) ? [...new Set(wk.strength.filter(isWd))] : d.week.strength.slice(),
+      extraName: typeof wk.extraName === 'string' ? wk.extraName.slice(0, 30) : '', extraDay: isWd(wk.extraDay) ? wk.extraDay : null }
+  };
+}
+// Unbekannte Felder (z. B. aus einer neueren Version) bleiben beim Speichern erhalten
+const profileRaw = load(KEYS.profile, null);
+const profileExtra = isObj(profileRaw) ? Object.fromEntries(Object.entries(profileRaw).filter(([k]) => !['hr', 'kit', 'week'].includes(k))) : {};
+let profile = normProfile(profileRaw);
+function persistProfile() { profile = normProfile(profile); if (!store(KEYS.profile, Object.assign({}, profileExtra, profile))) toast('Speichern im Browser nicht möglich – bitte Backup exportieren.'); }
+// Bänder: einzeln und je zwei kombiniert (z. B. „10+30“)
+function bandOptions() {
+  const b = profile.kit.bands.map(String), out = b.slice();
+  for (let i = 0; i < b.length; i++) for (let j = i + 1; j < b.length; j++) out.push(b[i] + '+' + b[j]);
+  return out.length ? out : BANDS;
+}
+const hrZonesFrom = (max, rest) => HR_PCT.map(p => Math.round(rest + p * (max - rest)));
+function zoneRange(n) {
+  const z = profile.hr.z; if (!z || n < 1 || n > 5) return null;
+  return n < 5 ? `${z[n - 1]}–${z[n] - 1} bpm` : `ab ${z[4]} bpm`;
+}
+// „Zone 2“ im Text um die eigenen bpm ergänzen
+const hrize = t => String(t).replace(/Zone ([1-5])(?! \()/g, (m, n) => { const r = zoneRange(Number(n)); return r ? `${m} (${r})` : m; });
+
 const slotKey = (pk, sl) => pk + '.' + sl.id;
 function validKg(v) { const n = Number(v); return v !== undefined && v !== null && v !== '' && Number.isFinite(n) && n >= 0 && n <= 60 ? n : KB_DEFAULT; }
 // Gewählte Geräte in der Rangfolge der Wirksamkeit; gibt es keine passende Variante, bleibt Körpergewicht (geht immer)
@@ -51,7 +92,8 @@ function resolve(pk, sl) {
   const g = !auto ? c.pref : (avail[0] || (sl.v.bw ? 'bw' : Object.keys(sl.v)[0]));
   if (!avail.length) avail.push(g);
   const [name, reps, note] = sl.v[g];
-  const kg = validKg(c.kg), band = BANDS.includes(String(c.band)) ? String(c.band) : (sl.band || '20');
+  const bo = bandOptions(), kg = c.kg === undefined || c.kg === null ? profile.kit.kbDefault : validKg(c.kg);
+  const band = bo.includes(String(c.band)) ? String(c.band) : bo.includes(sl.band || '20') ? (sl.band || '20') : bo[0];
   const gearText = (g === 'kb' ? (kg > 0 ? `Kettlebell ${kgText(kg)} kg` : 'Kettlebell ohne Gewicht') : g === 'band' ? bandLabel(band) : 'Körpergewicht') + (fallback ? ' (Ersatz)' : '');
   const cfg = g === 'kb' ? 'kb:' + kg : g === 'band' ? 'band:' + band : 'bw';
   return { slot: sl, g, name, reps, note, kg, band, gearText, cfg, avail, auto, fallback };
@@ -613,14 +655,21 @@ function renderEmomClock() {
   if (emom) { const pr = Math.max(0, secNow() - emom.start), m = Math.min(emom.minutes - 1, Math.floor(pr / 60)); c.textContent = clock((m + 1) * 60 - pr); info.textContent = `Minute ${m + 1} von ${emom.minutes} · danach bei Min. ${m + 1} eintragen.`; }
   else { c.textContent = '03:00'; info.textContent = phase === 1 && running ? 'Zu Beginn jeder Minute die Wiederholungen, dann Pause. Ton bei jedem Minutenwechsel.' : 'Startbar in der Kraftphase bei laufendem Timer.'; }
 }
+// Kettlebell-Gewicht: Auswahl aus den eigenen Gewichten (Profil), sonst freie Eingabe
+function kgParam(attr, cur, label) {
+  const own = profile.kit.kb;
+  if (!own.length) return `<label class="param"><input type="number" min="0" max="60" step="0.5" inputmode="decimal" value="${cur}" ${attr} aria-label="${esc(label)}"> kg</label>`;
+  const opts = own.includes(cur) ? own : own.concat(cur).sort((a, b) => a - b);
+  return `<select ${attr} aria-label="${esc(label)}">${opts.map(v => `<option value="${v}"${v === cur ? ' selected' : ''}>${kgText(v)} kg${own.includes(v) ? '' : ' (nicht im Profil)'}</option>`).join('')}</select>`;
+}
 function renderSettings() {
   const pk = plan;
   const rows = PLANS[pk].slots.map(sl => {
     const r = resolve(pk, sl);
     const best = r.avail[0];
     const opts = `<option value="auto" ${r.auto ? 'selected' : ''}>Automatisch: ${esc(sl.v[best][0])}</option>` + (r.avail.length > 1 ? r.avail.map(g => `<option value="${g}" ${!r.auto && g === r.g ? 'selected' : ''}>${esc(GEAR_LABEL[g])}: ${esc(sl.v[g][0])}</option>`).join('') : '');
-    const param = r.g === 'kb' ? `<label class="param"><input type="number" min="0" max="60" step="0.5" inputmode="decimal" value="${r.kg}" data-kg="${sl.id}" aria-label="Gewicht für ${esc(r.name)}"> kg</label>`
-      : r.g === 'band' ? `<select data-band="${sl.id}" aria-label="Band für ${esc(r.name)}">${BANDS.map(b => `<option value="${b}" ${b === r.band ? 'selected' : ''}>${esc(bandLabel(b).replace('Band ', ''))}</option>`).join('')}</select>` : '<span class="param">–</span>';
+    const param = r.g === 'kb' ? kgParam(`data-kg="${sl.id}"`, r.kg, `Gewicht für ${r.name}`)
+      : r.g === 'band' ? `<select data-band="${sl.id}" aria-label="Band für ${esc(r.name)}">${bandOptions().map(b => `<option value="${b}" ${b === r.band ? 'selected' : ''}>${esc(bandLabel(b).replace('Band ', ''))}</option>`).join('')}</select>` : '<span class="param">–</span>';
     const why = sl.why && r.auto && !r.fallback && Object.keys(sl.v).length > 1 ? sl.why : r.fallback ? 'Mit deinen Geräten gibt es hier keine Variante – Körpergewicht als Ersatz.' : !r.auto ? 'Manuell gewählt.' : '';
     return `<div class="srow"><div class="sname"><b>${esc(r.name)}</b>${why ? `<small>${esc(why)}</small>` : ''}</div><select data-pref="${sl.id}" ${r.avail.length < 2 && r.auto ? 'disabled' : ''} aria-label="Variante">${opts}</select>${param}</div>`;
   }).join('');
@@ -628,7 +677,7 @@ function renderSettings() {
   const emRows = isEmomPlan() ? (() => { const c = emomCfg(), n = PLANS[pk].slots.length; return `<div class="srow"><div class="sname"><b>Runden</b><small>Empfehlung zum Einstieg: 5 (${5 * n} Min.)</small></div><select data-icfg="rounds" aria-label="Runden">${EMOM_ROUNDS.map(v => `<option value="${v}" ${v === c.rounds ? 'selected' : ''}>${v} Runden · ${v * n} Min.</option>`).join('')}</select><span class="param">1 Übung je Min.</span></div>`; })() : '';
   const info = PLANS[pk].kbOnly ? 'Dieser Plan ist fest auf Kettlebell – „Heute dabei“ gilt hier nicht. Das Gewicht stellst du je Übung ein.' : 'Die App wählt je Übung automatisch die wirksamste Variante aus den Geräten bei „Heute dabei“; du kannst sie hier je Übung überschreiben.';
   $('settings').innerHTML = tbRows + emRows + `<p class="tiny">Gilt für „${esc(PLANS[pk].tab)}“. ${info} Einheiten mit anderen Varianten oder Gewichten zählen nicht in den Bestwert.</p>${rows}
-  <div class="srow"><div class="sname"><b>Alle Kettlebell-Übungen</b><small>dieses Plans auf ein Gewicht setzen</small></div><label class="param"><input type="number" min="0" max="60" step="0.5" inputmode="decimal" id="allkg" value="${KB_DEFAULT}" aria-label="Gewicht für alle Kettlebell-Übungen"> kg</label><button class="btn small" type="button" id="allkgbtn">Übernehmen</button></div>
+  <div class="srow"><div class="sname"><b>Alle Kettlebell-Übungen</b><small>dieses Plans auf ein Gewicht setzen</small></div>${kgParam('id="allkg"', profile.kit.kbDefault, 'Gewicht für alle Kettlebell-Übungen')}<button class="btn small" type="button" id="allkgbtn">Übernehmen</button></div>
   ${gear.band && !PLANS[pk].kbOnly ? `<p class="tiny">${esc(BAND_TEXT)}</p>` : ''}`;
 }
 function settingsLocked() { return isInterval() ? sessionActive() : !isSets() && !sessionSaved && (running || completions > 0); }
@@ -677,17 +726,144 @@ function renderWaist() {
   if (!newest) b.textContent = 'Noch keine Messung: morgens vor dem Frühstück messen und den ersten Wert eintragen.';
   else { const next = new Date(newest.date + 'T12:00:00'); next.setDate(next.getDate() + 7); const nd = localDay(next), due = localDay() >= nd; b.classList.toggle('due', due); b.textContent = due ? `📏 Zeit für die nächste Messung – die letzte war am ${dateGerman(newest.date)}.` : `✓ Letzte Messung am ${dateGerman(newest.date)}. Nächste ab ${dateGerman(nd)}.`; }
   $('waisthistory').innerHTML = rows.length ? rows.slice().reverse().map(e => `<tr><td>${dateGerman(e.date)}</td><td><b>${cmString(e.cm)} cm</b></td><td>${esc(e.note || '–')}</td><td><button class="btn small danger" type="button" data-waist-delete="${esc(e.date)}" aria-label="Messung vom ${dateGerman(e.date)} löschen">Löschen</button></td></tr>`).join('') : '<tr><td colspan="4" class="tag">Noch keine Messung gespeichert.</td></tr>';
-  const t = $('waistchart');
-  if (!rows.length) { t.innerHTML = '<div class="empty">Nach der ersten Messung erscheint hier der Verlauf.</div>'; return; }
-  const data = rows.slice(-12), w = 380, h = 184, left = 40, right = 14, top = 16, bottom = 156, pw = w - left - right;
-  let lo = Math.min(...data.map(e => e.cm)), hi = Math.max(...data.map(e => e.cm)); const m = Math.max(1, (hi - lo) * 0.25);
+  $('waistchart').innerHTML = rows.length ? measureChart(rows.slice(-12), e => e.cm, cmString, 'Bauchumfang', 'cm') : '<div class="empty">Nach der ersten Messung erscheint hier der Verlauf.</div>';
+}
+// Liniendiagramm für Messwerte (Bauchumfang, Körpergewicht)
+function measureChart(data, val, fmt, name, unit) {
+  const w = 380, h = 184, left = 40, right = 14, top = 16, bottom = 156, pw = w - left - right;
+  let lo = Math.min(...data.map(val)), hi = Math.max(...data.map(val)); const m = Math.max(1, (hi - lo) * 0.25);
   lo = Math.floor((lo - m) * 2) / 2; hi = Math.ceil((hi + m) * 2) / 2; if (hi <= lo) hi = lo + 2;
   const y = v => bottom - ((v - lo) / (hi - lo)) * (bottom - top), x = i => left + (data.length === 1 ? pw / 2 : i * pw / (data.length - 1));
-  const grid = [0, .25, .5, .75, 1].map(f => { const yy = top + (bottom - top) * f, v = hi - (hi - lo) * f; return `<line class="axis" x1="${left}" y1="${yy}" x2="${w - right}" y2="${yy}" stroke-dasharray="4 5"/><text class="lbl" x="${left - 6}" y="${yy + 4}" text-anchor="end" font-size="10.5">${cmString(v)}</text>`; }).join('');
-  const path = data.map((e, i) => `${i ? 'L' : 'M'} ${x(i).toFixed(1)} ${y(e.cm).toFixed(1)}`).join(' ');
-  const dots = data.map((e, i) => `<circle class="dot" cx="${x(i)}" cy="${y(e.cm)}" r="4.5" stroke-width="2"><title>${dateGerman(e.date)}: ${cmString(e.cm)} cm</title></circle>`).join('');
+  const grid = [0, .25, .5, .75, 1].map(f => { const yy = top + (bottom - top) * f, v = hi - (hi - lo) * f; return `<line class="axis" x1="${left}" y1="${yy}" x2="${w - right}" y2="${yy}" stroke-dasharray="4 5"/><text class="lbl" x="${left - 6}" y="${yy + 4}" text-anchor="end" font-size="10.5">${fmt(v)}</text>`; }).join('');
+  const path = data.map((e, i) => `${i ? 'L' : 'M'} ${x(i).toFixed(1)} ${y(val(e)).toFixed(1)}`).join(' ');
+  const dots = data.map((e, i) => `<circle class="dot" cx="${x(i)}" cy="${y(val(e))}" r="4.5" stroke-width="2"><title>${dateGerman(e.date)}: ${fmt(val(e))} ${unit}</title></circle>`).join('');
   const labels = data.map((e, i) => i === 0 || i === data.length - 1 || data.length <= 5 ? `<text class="lbl" x="${x(i)}" y="${h - 8}" text-anchor="middle" font-size="10.5">${e.date.slice(5).split('-').reverse().join('.')}</text>` : '').join('');
-  t.innerHTML = `<svg class="chart" role="img" aria-label="Bauchumfang der letzten ${data.length} Messungen, von ${cmString(data[0].cm)} bis ${cmString(data.at(-1).cm)} cm" viewBox="0 0 ${w} ${h}">${grid}<path class="line" d="${path}" fill="none" stroke-width="2.5" stroke-linejoin="round"/>${dots}${labels}</svg>`;
+  return `<svg class="chart" role="img" aria-label="${name} der letzten ${data.length} Messungen, von ${fmt(val(data[0]))} bis ${fmt(val(data.at(-1)))} ${unit}" viewBox="0 0 ${w} ${h}">${grid}<path class="line" d="${path}" fill="none" stroke-width="2.5" stroke-linejoin="round"/>${dots}${labels}</svg>`;
+}
+
+/* ---------- Körpergewicht ---------- */
+const validWeight = e => isObj(e) && isDay(e.date) && typeof e.kg === 'number' && Number.isFinite(e.kg) && e.kg >= 30 && e.kg <= 350;
+const weightLoaded = loadList(KEYS.weight, validWeight);
+let weights = weightLoaded.ok; const weightKeep = weightLoaded.keep;
+function persistWeight() { weights.sort((a, b) => a.date.localeCompare(b.date)); if (!store(KEYS.weight, weights.concat(weightKeep))) toast('Speichern im Browser nicht möglich – bitte Backup exportieren.'); renderBackupBanner(); }
+weights.sort((a, b) => a.date.localeCompare(b.date));
+const kgOne = v => Number(v).toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+// Ø Veränderung pro Woche: erster und letzter Wert der letzten 28 Tage, mindestens 7 Tage auseinander
+function weightRate(today = localDay()) {
+  const win = weights.filter(e => e.date >= addDays(today, -28) && e.date <= today);
+  if (win.length < 2) return null;
+  const a = win[0], b = win.at(-1), days = Math.round((new Date(b.date + 'T12:00:00') - new Date(a.date + 'T12:00:00')) / 864e5);
+  return days >= 7 ? (b.kg - a.kg) / days * 7 : null;
+}
+function renderWeight() {
+  const rows = weights, newest = rows.at(-1), oldest = rows[0];
+  $('weightlatest').textContent = newest ? kgOne(newest.kg) + ' kg' : '–';
+  $('weightlastdate').textContent = newest ? dateGerman(newest.date) : 'Noch keine Messung';
+  const delta = rows.length > 1 ? newest.kg - oldest.kg : 0, d = $('weightdelta');
+  d.textContent = rows.length < 2 ? '–' : (delta > 0 ? '+' : '') + kgOne(delta) + ' kg';
+  const rate = weightRate(), r = $('weightrate');
+  r.textContent = rate === null ? '–' : (rate > 0 ? '+' : '') + kgOne(rate) + ' kg';
+  $('weighthistory').innerHTML = rows.length ? rows.slice().reverse().map(e => `<tr><td>${dateGerman(e.date)}</td><td><b>${kgOne(e.kg)} kg</b></td><td><button class="btn small danger" type="button" data-weight-delete="${esc(e.date)}" aria-label="Gewicht vom ${dateGerman(e.date)} löschen">Löschen</button></td></tr>`).join('') : '<tr><td colspan="3" class="tag">Noch keine Messung.</td></tr>';
+  $('weightchart').innerHTML = rows.length ? measureChart(rows.slice(-12), e => e.kg, kgOne, 'Körpergewicht', 'kg') : '<div class="empty">Nach der ersten Messung erscheint hier der Verlauf.</div>';
+}
+function saveWeightFromForm() {
+  const date = $('weightdate').value, kg = kmNum($('weightkg').value);
+  if (!isDay(date) || date > localDay()) { toast('Bitte ein Datum bis heute wählen.'); return; }
+  if (kg === null || Number.isNaN(kg) || kg < 30 || kg > 350) { $('weightkg').setAttribute('aria-invalid', 'true'); toast('Bitte das Gewicht in kg eingeben, z. B. 98,4.'); return; }
+  $('weightkg').removeAttribute('aria-invalid');
+  weights = weights.filter(e => e.date !== date).concat({ date, kg }); persistWeight(); renderWeight();
+  $('weightkg').value = ''; toast(`✓ ${kgOne(kg)} kg am ${dateGerman(date)} gespeichert.`);
+}
+
+/* ---------- Profil-Oberfläche ---------- */
+const wdSelect = (id, cur, none) => `<select id="${id}">${none ? `<option value=""${cur === null ? ' selected' : ''}>${esc(none)}</option>` : ''}${WEEK_ORDER.map(d => `<option value="${d}"${d === cur ? ' selected' : ''}>${WD_LONG[d]}</option>`).join('')}</select>`;
+// Hinweise zur Woche: gleiche Tage, harte Tage direkt hintereinander
+function weekWarnings(w = profile.week) {
+  const out = [], next = d => (d + 1) % 7;
+  if (w.quality === w.long) out.push('Qualität und Longrun liegen am selben Tag.');
+  if (w.group !== null && w.group === w.quality) out.push('Laufgruppe und Qualitätseinheit liegen am selben Tag – die Laufgruppe ist als lockerer Lauf gedacht.');
+  if (next(w.quality) === w.long) out.push(`Qualität am ${WD_LONG[w.quality]} direkt vor dem Longrun: zwei harte Tage hintereinander. Besser mindestens einen Tag Abstand.`);
+  if (next(w.long) === w.quality) out.push(`Qualität am ${WD_LONG[w.quality]} direkt nach dem Longrun – die Beine sind dann selten frisch.`);
+  if (w.strength.includes(w.long)) out.push('Kraft am Longrun-Tag: nur Oberkörper oder nach dem Lauf leicht.');
+  return out;
+}
+function renderProfile() {
+  const w = profile.week, h = profile.hr, k = profile.kit;
+  $('weekpanel').innerHTML = `<div class="raceform" style="padding:0">
+      <div class="field"><label for="wkquality">Qualität (Intervall/Tempo)</label>${wdSelect('wkquality', w.quality)}</div>
+      <div class="field"><label for="wklong">Longrun</label>${wdSelect('wklong', w.long)}</div>
+      <div class="field"><label for="wkgroup">Laufgruppe (locker)</label>${wdSelect('wkgroup', w.group, 'keine')}</div>
+      <div class="field"><label for="wkextraday">Weitere Einheit</label>${wdSelect('wkextraday', w.extraDay, 'keine')}</div>
+      <div class="field wide"><label for="wkextraname">Name der weiteren Einheit</label><input id="wkextraname" type="text" maxlength="30" autocomplete="off" placeholder="z. B. Kurs, Radfahren" value="${esc(w.extraName)}"></div>
+    </div>
+    <p class="tiny">Kraft-Tage</p><div class="chips" role="group" aria-label="Kraft-Tage">${WEEK_ORDER.map(d => `<button type="button" class="chip" data-strength="${d}" aria-pressed="${w.strength.includes(d)}">${WD[d]}</button>`).join('')}</div>
+    ${weekWarnings().map(t => `<div class="alert due">${esc(t)}</div>`).join('')}`;
+  const zr = n => zoneRange(n);
+  $('hrpanel').innerHTML = `<div class="raceform" style="padding:0">
+      <div class="field"><label for="hrmax">Maximale HF</label><input id="hrmax" type="text" inputmode="numeric" autocomplete="off" placeholder="z. B. 184" value="${h.max ?? ''}"></div>
+      <div class="field"><label for="hrrest">Ruhe-HF</label><input id="hrrest" type="text" inputmode="numeric" autocomplete="off" placeholder="z. B. 60" value="${h.rest ?? ''}"></div>
+      <div class="raceactions"><button type="button" class="btn small" id="hrcalc">Zonen berechnen</button></div>
+    </div>
+    <p class="tiny">Berechnet nach Karvonen aus der Herzfrequenzreserve (Zone 1 ab 50 %, Zone 2 ab 60 %, Zone 3 ab 70 %, Zone 4 ab 80 %, Zone 5 ab 90 %). Hat deine Uhr andere Grenzen, trag sie unten direkt ein.</p>
+    <div class="zonegrid">${[1, 2, 3, 4, 5].map(n => `<label class="kmin"><span>Zone ${n} ab</span><input type="text" inputmode="numeric" autocomplete="off" data-zone="${n}" value="${h.z ? h.z[n - 1] : ''}" aria-label="Zone ${n} ab bpm"></label>`).join('')}</div>
+    ${h.z ? `<div class="zonelist">${[1, 2, 3, 4, 5].map(n => `<span class="ph-z${n}"><b>Zone ${n}</b>${zr(n)}</span>`).join('')}</div>` : '<p class="tiny">Noch keine Zonen gespeichert.</p>'}`;
+  const kbChips = k.kb.map(v => `<span class="chip on">${kgText(v)} kg<button type="button" class="chipx" data-kbdel="${v}" aria-label="${kgText(v)} kg entfernen">×</button></span>`).join('') || '<span class="tiny">keine</span>';
+  const bandChips = k.bands.map(v => `<span class="chip on">${v} kg<button type="button" class="chipx" data-banddel="${v}" aria-label="Band ${v} kg entfernen">×</button></span>`).join('') || '<span class="tiny">keine</span>';
+  $('kitpanel').innerHTML = `<p class="tiny" style="margin-top:0">Kettlebells</p><div class="chips">${kbChips}</div>
+    <div class="runadd" style="padding:8px 0;border:0"><input type="text" inputmode="decimal" autocomplete="off" id="kbnew" placeholder="Gewicht in kg, z. B. 16" aria-label="Kettlebell-Gewicht hinzufügen"><span></span><button type="button" class="btn small" id="kbadd">Hinzufügen</button></div>
+    ${k.kb.length ? `<div class="field"><label for="kbdefault">Standardgewicht für Kettlebell-Übungen</label><select id="kbdefault">${k.kb.map(v => `<option value="${v}"${v === k.kbDefault ? ' selected' : ''}>${kgText(v)} kg</option>`).join('')}</select></div>` : ''}
+    <p class="tiny">Verstellbare Kettlebell: jede Stufe einzeln eintragen.</p>
+    <p class="tiny">Widerstandsbänder (Zugkraft)</p><div class="chips">${bandChips}</div>
+    <div class="runadd" style="padding:8px 0;border:0"><input type="text" inputmode="numeric" autocomplete="off" id="bandnew" placeholder="Stärke in kg, z. B. 40" aria-label="Band hinzufügen"><span></span><button type="button" class="btn small" id="bandadd">Hinzufügen</button></div>
+    <p class="tiny">In den Übungen stehen die Bänder einzeln und je zwei kombiniert zur Auswahl.</p>`;
+}
+const intNum = v => { const t = String(v ?? '').trim(); if (t === '') return null; return /^\d{2,3}$/.test(t) ? Number(t) : NaN; };
+function profileChanged(what) {
+  persistProfile(); renderProfile();
+  if (what === 'kit') renderAll();
+  renderRun();
+}
+function onProfileClick(e) {
+  const t = e.target;
+  const sd = t.closest('[data-strength]');
+  if (sd) { const d = Number(sd.dataset.strength), s = profile.week.strength; profile.week.strength = s.includes(d) ? s.filter(x => x !== d) : s.concat(d); profileChanged('week'); return; }
+  if (t.id === 'hrcalc') {
+    const max = intNum($('hrmax').value), rest = intNum($('hrrest').value);
+    if (!okNum(max, 100, 230) || !okNum(rest, 30, 120) || rest >= max) { toast('Bitte maximale HF (100–230) und Ruhe-HF (30–120) eingeben.'); return; }
+    profile.hr = { max, rest, z: hrZonesFrom(max, rest) }; profileChanged('hr'); toast('Zonen berechnet.'); return;
+  }
+  if (t.id === 'kbadd') {
+    const v = kmNum($('kbnew').value);
+    if (v === null || Number.isNaN(v) || v < 0.5 || v > 60) { toast('Bitte ein Gewicht zwischen 0,5 und 60 kg eingeben.'); return; }
+    profile.kit.kb = profile.kit.kb.concat(Math.round(v * 2) / 2); if (profile.kit.kb.length === 1) profile.kit.kbDefault = profile.kit.kb[0]; profileChanged('kit'); return;
+  }
+  if (t.id === 'bandadd') {
+    const v = kmNum($('bandnew').value);
+    if (v === null || Number.isNaN(v) || v < 1 || v > 200) { toast('Bitte die Bandstärke in kg eingeben.'); return; }
+    if (profile.kit.bands.length >= 6 && !profile.kit.bands.includes(Math.round(v))) { toast('Höchstens 6 Bänder.'); return; }
+    profile.kit.bands = profile.kit.bands.concat(Math.round(v)); profileChanged('kit'); return;
+  }
+  const kd = t.closest('[data-kbdel]'); if (kd) { profile.kit.kb = profile.kit.kb.filter(v => v !== Number(kd.dataset.kbdel)); profileChanged('kit'); return; }
+  const bd = t.closest('[data-banddel]'); if (bd) { profile.kit.bands = profile.kit.bands.filter(v => v !== Number(bd.dataset.banddel)); profileChanged('kit'); return; }
+  const wd = t.closest('[data-weight-delete]');
+  if (wd && confirm('Diesen Wert löschen?')) { weights = weights.filter(x => x.date !== wd.dataset.weightDelete); persistWeight(); renderWeight(); toast('Gelöscht.'); }
+}
+function onProfileChange(e) {
+  const t = e.target, wk = profile.week, val = t.value === '' ? null : Number(t.value);
+  if (t.id === 'wkquality') wk.quality = val; else if (t.id === 'wklong') wk.long = val; else if (t.id === 'wkgroup') wk.group = val; else if (t.id === 'wkextraday') wk.extraDay = val;
+  else if (t.id === 'wkextraname') wk.extraName = t.value.trim().slice(0, 30);
+  else if (t.id === 'kbdefault') { profile.kit.kbDefault = Number(t.value); profileChanged('kit'); return; }
+  else if (t.id === 'hrmax' || t.id === 'hrrest') {
+    const v = intNum(t.value), ok = v === null || (t.id === 'hrmax' ? okNum(v, 100, 230) : okNum(v, 30, 120));
+    t.setAttribute('aria-invalid', String(!ok)); if (!ok) return;
+    profile.hr[t.id === 'hrmax' ? 'max' : 'rest'] = v; persistProfile(); return;
+  } else if (t.dataset.zone) {
+    const z = [1, 2, 3, 4, 5].map(n => intNum(document.querySelector(`[data-zone="${n}"]`).value));
+    if (z.every(v => v === null)) { profile.hr.z = null; profileChanged('hr'); return; }
+    if (!okZones(z)) { t.setAttribute('aria-invalid', 'true'); toast('Zonen bitte aufsteigend in bpm eintragen (30–230).'); return; }
+    profile.hr.z = z; profileChanged('hr'); return;
+  } else return;
+  profileChanged('week');
 }
 
 /* ---------- Laufumfang: einzelne Läufe, Wochensummen, langer Lauf und Zielbereich der Woche ---------- */
@@ -922,13 +1098,26 @@ const phaseKey = x => x.cut ? 'cut' : x.phase;
 const withPace = (txt, r) => r.goal && /tempo/i.test(txt) ? `${txt} (${paceText(r.goal, SEASON.dist[r.dist].km)})` : txt;
 function weekKey(x) {
   const t = SEASON.key[x.phase] || SEASON.key.basis, list = t[x.target.dist] || t.all, odd = isoWeek(x.week) % 2;
-  if (x.a) return `Rennen: ${x.a.name} (${SEASON.dist[x.a.dist].label})`;
   return (x.cut ? 'kürzer: ' : '') + withPace(list[odd ? 0 : 1], x.target);
 }
 function weekLongNote(x) {
   if (x.a) return 'kein Longrun – Rennwoche';
   if (x.noLong) return 'kein Longrun';
-  const t = SEASON.long[x.phase]; return withPace(typeof t === 'string' ? t : t[x.target.dist], x.target);
+  const t = SEASON.long[x.phase]; return hrize(withPace(typeof t === 'string' ? t : t[x.target.dist], x.target));
+}
+// Einheiten der Woche auf die Tage aus dem Profil verteilt, Montag bis Sonntag
+const dayIdx = d => WEEK_ORDER.indexOf(d);
+function weekSchedule(x) {
+  const w = profile.week, out = [], rd = x.a ? dayIdx(new Date(x.a.date + 'T12:00:00').getDay()) : 9;
+  const add = (d, kind, title, detail) => out.push({ d, kind, title, detail });
+  const before = (d, gap = 1) => dayIdx(d) <= rd - gap;
+  if (x.a) add(new Date(x.a.date + 'T12:00:00').getDay(), 'race', `Rennen: ${x.a.name}`, SEASON.dist[x.a.dist].label + goalLine(x.a));
+  if (!x.a || before(w.quality, 2)) add(w.quality, 'quality', x.phase === 'recover' ? 'Locker laufen' : 'Qualität', weekKey(x));
+  if (w.group !== null && (!x.a || before(w.group))) add(w.group, 'group', 'Laufgruppe', hrize(x.a ? 'ganz locker, Zone 2' : 'locker, Zone 2'));
+  if (!x.a) { const lv = kmRound(x.long); add(w.long, 'long', x.noLong ? 'Locker oder frei' : lv ? `Longrun ca. ${lv} km` : 'Longrun', weekLongNote(x)); }
+  for (const d of w.strength) if (!x.a || before(d, 2)) add(d, 'strength', 'Kraft', x.a ? 'leicht, keine schweren Beinübungen' : x.phase === 'taper' ? 'ohne schwere Beinübungen' : x.phase === 'recover' ? 'leicht' : '');
+  if (w.extraDay !== null && (!x.a || before(w.extraDay))) add(w.extraDay, 'extra', w.extraName || 'Weitere Einheit', '');
+  return out.sort((a, b) => dayIdx(a.d) - dayIdx(b.d));
 }
 const peakText = r => { const p = peaks(r); return `Longrun bis ${p.long} km, Woche bis ${p.week} km${p.fromGoal ? '' : ' (Standard)'}`; };
 const kmRound = v => v === null || v === undefined ? null : Math.round(v);
@@ -951,11 +1140,8 @@ function renderPlanWeek(S) {
       <div class="metric"><span>Longrun</span><b>${x.a || x.noLong ? '–' : longVal === null ? '?' : 'ca. ' + longVal + ' km'}</b><small>${esc(weekLongNote(x))}</small></div>
       <div class="metric"><span>Woche</span><b>${kmVal === null ? '?' : 'ca. ' + kmVal + ' km'}</b><small>${x.cut ? 'Entlastungswoche' : x.phase === 'taper' ? 'reduziert' : 'höchstens +10 %'}</small></div>
     </div>
-    <div class="planrows">
-      <div class="row"><span class="dur">Qualität</span><span class="txt"><b>${esc(weekKey(x))}</b>${x.a ? '' : `<small>${x.phase === 'recover' ? 'diese Woche kein Tempo' : 'Intervall und Speed bzw. Schwelle im Wochenwechsel'}</small>`}</span></div>
-      <div class="row"><span class="dur">Mi</span><span class="txt"><b>Laufgruppe locker</b><small>Zone 2</small></span></div>
-      <div class="row"><span class="dur">So</span><span class="txt"><b>${x.a ? 'Rennen bzw. frei' : 'Longrun'}</b><small>${esc(weekLongNote(x))}</small></span></div>
-    </div>
+    <div class="planrows" id="planschedule">${weekSchedule(x).map(it => `<div class="row sched-${it.kind}"><span class="dur">${WD[it.d]}</span><span class="txt"><b>${esc(it.title)}</b>${it.detail ? `<small>${esc(it.detail)}</small>` : ''}</span></div>`).join('')}</div>
+    <p class="tiny">Tage stellst du unter <b>Profil → Trainingswoche</b> ein.</p>
     ${bs}
     ${S.hasData ? '' : '<p class="tiny">Für Longrun und Wochen-km: unter <b>Umfang</b> deine Läufe oder Wochensummen der letzten Wochen eintragen.</p>'}
     ${R && !x.a && !x.noLong && x.long > R.max ? `<p class="tiny">Longrun auf ${kmText(R.max)} km begrenzt: längster Lauf der letzten 30 Tage plus 10 %.</p>` : ''}
@@ -1036,11 +1222,11 @@ function renderPlan() {
 
 /* ---------- Dateien: Backup, CSV, Kalender ---------- */
 function download(name, content, type) { const blob = new Blob([content], { type }), url = URL.createObjectURL(blob), a = document.createElement('a'); a.href = url; a.download = name; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 3000); }
-function backupJson() { return JSON.stringify({ version: 3, entries: saved.concat(savedKeep), waist: waist.concat(waistKeep), runWeeks: runWeeks.concat(runWeeksKeep), runLog: runLog.concat(runLogKeep), races: races.concat(racesKeep), settings: { gear, choices, stages, audio: audioOpt }, exportedAt: new Date().toISOString() }, null, 2); }
+function backupJson() { return JSON.stringify({ version: 3, entries: saved.concat(savedKeep), waist: waist.concat(waistKeep), runWeeks: runWeeks.concat(runWeeksKeep), runLog: runLog.concat(runLogKeep), races: races.concat(racesKeep), weights: weights.concat(weightKeep), settings: { gear, choices, stages, audio: audioOpt, profile: Object.assign({}, profileExtra, profile) }, exportedAt: new Date().toISOString() }, null, 2); }
 function schemaCheck() {
   const prev = load(SCHEMA_KEY, null);
   if (prev === SCHEMA || (typeof prev === 'number' && prev > SCHEMA)) return; // neuere Daten mit älterer App: nichts verändern
-  if (saved.length + savedKeep.length + waist.length + waistKeep.length + runWeeks.length + runWeeksKeep.length + runLog.length + runLogKeep.length + races.length + racesKeep.length > 0) store(PRE_UPDATE_KEY, { savedAt: new Date().toISOString(), fromSchema: prev, json: backupJson() });
+  if (saved.length + savedKeep.length + waist.length + waistKeep.length + runWeeks.length + runWeeksKeep.length + runLog.length + runLogKeep.length + races.length + racesKeep.length + weights.length + weightKeep.length > 0) store(PRE_UPDATE_KEY, { savedAt: new Date().toISOString(), fromSchema: prev, json: backupJson() });
   store(SCHEMA_KEY, SCHEMA);
 }
 function renderPreUpdate() {
@@ -1076,8 +1262,9 @@ function importBackup(file) {
       const rw = isObj(x) && Array.isArray(x.runWeeks) ? x.runWeeks.filter(validRunWeek) : [];
       const rl = isObj(x) && Array.isArray(x.runLog) ? x.runLog.filter(validRun) : [];
       const rc = isObj(x) && Array.isArray(x.races) ? x.races.filter(validRace) : [];
+      const wg = isObj(x) && Array.isArray(x.weights) ? x.weights.filter(validWeight) : [];
       const settings = isObj(x) && isObj(x.settings) ? x.settings : null;
-      if (!entries.length && !wl.length && !rw.length && !rl.length && !rc.length && !settings) throw Error('Keine gültigen Daten gefunden');
+      if (!entries.length && !wl.length && !rw.length && !rl.length && !rc.length && !wg.length && !settings) throw Error('Keine gültigen Daten gefunden');
       const ids = new Set(saved.map(e => String(e.id))); let added = 0, addedW = 0;
       for (const e of entries) if (!ids.has(e.id)) { saved.push(e); ids.add(e.id); added++; }
       const days = new Set(waist.map(e => e.date));
@@ -1091,16 +1278,19 @@ function importBackup(file) {
       runLog.sort((a, b) => a.date.localeCompare(b.date));
       const raceIds = new Set(races.map(e => e.id)); let addedC = 0;
       for (const e of rc) if (!raceIds.has(e.id)) { races.push({ id: e.id, name: e.name, date: e.date, dist: e.dist, prio: e.prio, goal: e.goal ?? null }); raceIds.add(e.id); addedC++; }
-      persistEntries(); persistWaist(); if (addedR) persistRunWeeks(); if (addedL) persistRunLog(); if (addedC) persistRaces();
+      const wdays = new Set(weights.map(e => e.date)); let addedG = 0;
+      for (const e of wg) if (!wdays.has(e.date)) { weights.push({ date: e.date, kg: e.kg }); wdays.add(e.date); addedG++; }
+      persistEntries(); persistWaist(); if (addedR) persistRunWeeks(); if (addedL) persistRunLog(); if (addedC) persistRaces(); if (addedG) persistWeight();
       if (settings && confirm('Das Backup enthält auch Einstellungen (Geräte, Varianten, Gewichte). Übernehmen?')) {
         if (isObj(settings.gear)) { gear = { kb: settings.gear.kb !== false, band: settings.gear.band !== false, bw: settings.gear.bw !== false }; ensureGear(); store(KEYS.gear, gear); }
         if (isObj(settings.choices)) { choices = settings.choices; store(KEYS.choice, choices); }
         if (isObj(settings.stages)) { stages = settings.stages; store(KEYS.stage, stages); }
+        if (isObj(settings.profile)) { profile = normProfile(settings.profile); persistProfile(); }
         if (isObj(settings.audio)) { audioOpt = { voice: settings.audio.voice !== false, loud: settings.audio.loud === true }; store(KEYS.audio, audioOpt); applyAudioSession(); }
         if (!sessionActive()) runReps = emptyReps(plan);
       }
-      renderAll(); renderWaist(); renderRun();
-      alert(`${added} Trainings-, ${addedW} Bauchumfang-, ${addedR} Laufwochen- und ${addedL} Lauf-Einträge${addedC ? ` sowie ${addedC} ${addedC === 1 ? 'Rennen' : 'Rennen'}` : ''} importiert.${entries.length - added + wl.length - addedW + rw.length - addedR + rl.length - addedL + rc.length - addedC > 0 ? ' Bereits vorhandene Einträge wurden übersprungen.' : ''}`);
+      renderAll(); renderWaist(); renderWeight(); renderProfile(); renderRun();
+      alert(`${added} Trainings-, ${addedW} Bauchumfang-, ${addedR} Laufwochen- und ${addedL} Lauf-Einträge${addedC ? ` sowie ${addedC} Rennen` : ''}${addedG ? `, ${addedG} Gewichtswerte` : ''} importiert.${entries.length - added + wl.length - addedW + rw.length - addedR + rl.length - addedL + rc.length - addedC + wg.length - addedG > 0 ? ' Bereits vorhandene Einträge wurden übersprungen.' : ''}`);
     } catch (e) { alert('Import fehlgeschlagen: ' + e.message); }
   };
   r.onerror = () => alert('Die Datei konnte nicht gelesen werden.');
@@ -1145,16 +1335,20 @@ const icsText = t => String(t).replace(/\\/g, '\\\\').replace(/;/g, '\\;').repla
 const icsDay = d => d.replace(/-/g, '');
 // Saisonplan als Kalender: Woche ganztägig Mo–So, Longrun am Sonntag, Rennen am Renntag (A und B)
 function planIcs(S = seasonPlan()) {
-  const utc = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z'), ev = [];
+  const utc = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z'), ev = [], today = localDay();
   const add = (uid, from, to, summary, desc) => ev.push('BEGIN:VEVENT', `UID:${uid}@kb-tracker.local`, 'DTSTAMP:' + utc, 'DTSTART;VALUE=DATE:' + icsDay(from), 'DTEND;VALUE=DATE:' + icsDay(to),
     'SUMMARY:' + icsText(summary), 'DESCRIPTION:' + icsText(desc), 'TRANSP:TRANSPARENT', 'END:VEVENT');
   for (const x of S.weeks) {
     const [pl, pt] = SEASON.phase[phaseKey(x)], kv = kmRound(x.km), lv = kmRound(x.long);
+    const sched = weekSchedule(x);
     add(`kb-plan-${x.week}`, x.week, addDays(x.week, 7), `Laufplan: ${pl}${kv ? ` · ca. ${kv} km` : ''}`,
-      [`${pl} – ${pt}`, `Qualität: ${weekKey(x)}`, 'Mi: Laufgruppe locker (Zone 2)', `So: ${x.a || x.noLong || !lv ? weekLongNote(x) : `Longrun ca. ${lv} km, ${weekLongNote(x)}`}`, `Ziel: ${x.target.name} am ${dateGerman(x.target.date)}`].join('\n'));
-    if (!x.a && !x.noLong && lv) add(`kb-long-${x.week}`, addDays(x.week, 6), addDays(x.week, 7), `Longrun ca. ${lv} km`, weekLongNote(x));
+      [`${pl} – ${pt}`, ...sched.map(it => `${WD[it.d]}: ${it.title}${it.detail ? ' – ' + it.detail : ''}`), `Ziel: ${x.target.name} am ${dateGerman(x.target.date)}`].join('\n'));
+    for (const it of sched) {
+      const day = addDays(x.week, dayIdx(it.d));
+      if (it.kind === 'race' || day < today) continue;
+      add(`kb-${it.kind}-${day}`, day, addDays(day, 1), it.kind === 'quality' && x.phase !== 'recover' ? `Qualität: ${it.detail}` : it.title, it.detail);
+    }
   }
-  const today = localDay();
   for (const r of races.filter(r => r.date >= today)) add(`kb-race-${r.id}`, r.date, addDays(r.date, 1), `🏁 ${r.name} (${SEASON.dist[r.dist].label})`,
     [`${r.prio}-Rennen`, r.goal ? `Zielzeit ${hms(r.goal)} = ${paceText(r.goal, SEASON.dist[r.dist].km)}` : '', 'Warm-up: KB Tracker → Laufen → Wettkampf'].filter(Boolean).join('\n'));
   return ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//KB Tracker//Laufplan//DE', 'CALSCALE:GREGORIAN', 'X-WR-CALNAME:Laufplan', ...ev, 'END:VCALENDAR'].map(icsFold).join('\r\n') + '\r\n';
@@ -1210,11 +1404,11 @@ function renderAll() {
 }
 
 /* ---------- Bereiche: Kraft, Laufen, Mobility, Mehr ---------- */
-let area = ['kraft', 'laufen', 'mobility', 'mehr'].includes(load(KEYS.area, 'kraft')) ? load(KEYS.area, 'kraft') : 'kraft';
+let area = ['kraft', 'laufen', 'mobility', 'profil', 'mehr'].includes(load(KEYS.area, 'kraft')) ? load(KEYS.area, 'kraft') : 'kraft';
 let runView = load(KEYS.run, null); if (!isObj(runView)) runView = {}; runView = { tab: ['race', 'training', 'abc', 'umfang', 'plan'].includes(runView.tab) ? runView.tab : 'race', race: runView.race || '5k', training: runView.training || 'interval', plan: ['woche', 'rennen', 'wissen'].includes(runView.plan) ? runView.plan : 'woche' };
 function showArea(a, scroll = true) {
   area = a; store(KEYS.area, a);
-  for (const x of ['kraft', 'laufen', 'mobility', 'mehr']) $('area-' + x).classList.toggle('hide', x !== a);
+  for (const x of ['kraft', 'laufen', 'mobility', 'profil', 'mehr']) $('area-' + x).classList.toggle('hide', x !== a);
   for (const b of $('tabbar').children) b.setAttribute('aria-selected', String(b.dataset.area === a));
   const bar = a === 'kraft';
   $('actionbar').classList.toggle('hide', !bar);
@@ -1481,6 +1675,10 @@ $('importfile').addEventListener('change', e => { if (e.target.files[0]) importB
 $('exportcsv').addEventListener('click', exportCsv);
 $('banners').addEventListener('click', e => { if (e.target.id === 'kbon') { gear.kb = true; store(KEYS.gear, gear); renderAll(); return; } if (e.target.id === 'backupnow') exportBackup(); if (e.target.id === 'hintclose') { store(KEYS.hint, true); renderBackupBanner(); } });
 $('waistdate').value = localDay();
+$('weightdate').value = localDay();
+$('weightform').addEventListener('submit', e => { e.preventDefault(); saveWeightFromForm(); });
+$('area-profil').addEventListener('click', onProfileClick);
+$('area-profil').addEventListener('change', onProfileChange);
 $('waistform').addEventListener('submit', e => {
   e.preventDefault();
   const date = $('waistdate').value, cm = Number($('waistcm').value.replace(',', '.')), note = $('waistnote').value.trim().slice(0, 120);
@@ -1561,7 +1759,7 @@ $('loudrow').addEventListener('click', () => { audioOpt.loud = !audioOpt.loud; s
 schemaCheck();
 const restored = restoreSession();
 if (!restored) runReps = emptyReps(plan);
-renderAll(); renderWaist(); renderStorageInfo(); renderRun(); renderMobility(); showArea(area, false);
+renderAll(); renderWaist(); renderWeight(); renderProfile(); renderStorageInfo(); renderRun(); renderMobility(); showArea(area, false);
 if (/iPad|iPhone|iPod/.test(navigator.userAgent) || document.documentElement.dataset.os === 'ios') $('savefilehint').textContent = 'Öffnet „Teilen“ → „In Dateien sichern“';
 if (restored) { toast(running ? 'Laufendes Training wiederhergestellt.' : 'Unterbrochenes Training wiederhergestellt.'); if (running) keepAwake(true); }
 setInterval(() => { tick(); routineTick(); }, 200);
