@@ -32,6 +32,12 @@ Mein persönlicher Trainings-Begleiter als Web-App für iPhone und Android – K
   - Kurzprogramme mit geführtem Timer inkl. Seitenwechsel und Ansage
 - **Mehr**: Wochenübersicht, Anleitung, Geräte-Sync, Datensicherung, Hinweise
 
+## Zurücksetzen
+
+Unter **Mehr → Daten & Datenschutz**:
+- **Einstellungen zurücksetzen**: Profil, Übungs-Varianten und Gewichte, Stufen, „Entfällt“, Ton und Ansichten auf Ausgangszustand; alle Daten bleiben.
+- **Werkseinstellung**: löscht alle Daten auf diesem Gerät (Backup-Angebot, Bestätigung mit „LÖSCHEN“). Auch der Sync-Stand des Geräts wird zurückgesetzt, damit keine Löschung auf andere Geräte übertragen wird; die Sync-Datei in der Cloud bleibt unberührt.
+
 ## Mehrere Geräte (Sync-Datei)
 
 Unter **Mehr → Geräte-Sync** schreibt **Sync speichern** den kompletten Stand in `kb-tracker-sync.json`, **Sync laden** gleicht ihn ab. Die Datei liegt in einem Cloud-Ordner, den alle Geräte sehen (iCloud Drive, Google Drive, OneDrive, Dropbox) – die App selbst verbindet sich mit keinem Server.

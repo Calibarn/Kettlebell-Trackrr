@@ -21,7 +21,8 @@ function loadList(key, valid) {
 }
 function load(k, def) { try { const raw = localStorage.getItem(k); if (raw === null) return def; const v = JSON.parse(raw); return v === null || v === undefined ? def : v; } catch (e) { return def; } }
 let syncHook = null; // wird vom Geräte-Sync gesetzt und erfährt so jede Änderung
-function store(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); if (syncHook) syncHook(k); return true; } catch (e) { return false; } }
+let wiping = false;  // Werkseinstellung läuft: nichts mehr speichern (auch nicht beim Schließen der Seite)
+function store(k, v) { if (wiping) return false; try { localStorage.setItem(k, JSON.stringify(v)); if (syncHook) syncHook(k); return true; } catch (e) { return false; } }
 const isObj = v => !!v && typeof v === 'object' && !Array.isArray(v);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const uid = () => (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2));
@@ -1373,7 +1374,7 @@ const SYNC_SETTINGS = { choices: KEYS.choice, stages: KEYS.stage, profile: KEYS.
 const SYNC_TRACKED = new Set(Object.values(SYNC_COLLS).map(c => c.key).concat(Object.values(SYNC_SETTINGS)));
 const syncHash = s => { let h = 5381; for (let i = 0; i < s.length; i++) h = (h * 33 ^ s.charCodeAt(i)) >>> 0; return h.toString(36) + s.length.toString(36); };
 const rawGet = k => { try { const r = localStorage.getItem(k); return r === null ? null : JSON.parse(r); } catch (e) { return null; } };
-const rawSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } };
+const rawSet = (k, v) => { if (wiping) return false; try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } };
 function syncMetaLoad() {
   const m = rawGet(SYNC_META);
   return isObj(m) && isObj(m.mod) && isObj(m.del) && isObj(m.h) ? m : { device: uid(), init: false, mod: {}, del: {}, h: {}, lastSave: null, lastLoad: null, dirty: false };
@@ -1383,6 +1384,7 @@ const syncSaveMeta = () => rawSet(SYNC_META, syncMeta);
 // Vergleicht den Stand im Browser mit den Prüfwerten: neu/geändert → Zeitstempel, verschwunden → Löschmarke.
 // Beim allerersten Lauf bekommen vorhandene Daten den Zeitstempel 0, damit sie fremde, neuere Änderungen nicht überstimmen.
 function syncTrack() {
+  if (wiping) return false;
   const m = syncMeta, now = Date.now(), first = !m.init; let changed = false;
   const mark = (k, h) => { if (m.h[k] === h) return; m.h[k] = h; m.mod[k] = first ? 0 : now; delete m.del[k]; if (!first) changed = true; };
   for (const [c, d] of Object.entries(SYNC_COLLS)) {
@@ -1527,6 +1529,37 @@ async function renderSyncStatus() {
   $('syncpick').classList.toggle('hide', !canHandle());
   const pl = $('syncplace'); if (pl && document.activeElement !== pl) pl.value = m.place || '';
   el.innerHTML = `Datei: <b>${esc(h ? h.name : SYNC_FILE)}</b>${m.place ? ` in <b>${esc(m.place)}</b>` : ''}<br>Zuletzt geladen: <b>${t(m.lastLoad)}</b> · gespeichert: <b>${t(m.lastSave)}</b>${m.dirty ? '<br><span class="spike">Änderungen seit dem letzten Speichern</span>' : ''}${h ? `<br>Fest verbunden – Laden und Speichern ohne Auswahl. <button type="button" class="linkbtn" id="syncforget">Verbindung lösen</button>` : ''}`;
+}
+
+/* ---------- Einstellungen zurücksetzen: Daten bleiben ---------- */
+const SETTING_KEYS = ['sound', 'gear', 'choice', 'stage', 'plan', 'area', 'run', 'audio', 'mob', 'profile', 'skip', 'hint'].map(k => KEYS[k]);
+function settingsReset() {
+  if (sessionActive()) { alert('Bitte das laufende Training zuerst beenden oder zurücksetzen.'); return; }
+  if (!confirm('Einstellungen zurücksetzen?\n\nZurück auf den Ausgangszustand: Profil (Trainingswoche, Herzfrequenz, Geräte & Gewichte), Übungs-Varianten und Gewichte, Stufen, „Entfällt“, Ton und Ansichten.\n\nTrainings, Läufe, Wochensummen, Rennen, Gewicht und Bauchumfang bleiben erhalten. Gilt nur für dieses Gerät.')) return;
+  wiping = true; clearTimeout(syncTimer);
+  try { for (const k of SETTING_KEYS) localStorage.removeItem(k); } catch (e) { }
+  // Sync: Prüfwerte der Einstellungen vergessen – „Sync laden“ holt sie bei Bedarf aus der Datei zurück
+  for (const k of Object.keys(syncMeta.h)) if (k.startsWith('set:')) { delete syncMeta.h[k]; delete syncMeta.mod[k]; }
+  try { localStorage.setItem(SYNC_META, JSON.stringify(syncMeta)); sessionStorage.setItem(SYNC_MSG, 'Einstellungen zurückgesetzt – deine Daten sind unverändert.'); } catch (e) { }
+  location.reload();
+}
+
+/* ---------- Werkseinstellung: alle Daten dieses Geräts löschen ---------- */
+const APP_KEY = k => k.startsWith('jan-kb') || k.startsWith('jan-kettlebell');
+async function factoryReset() {
+  if (sessionActive() && !confirm('Es läuft gerade ein Training. Trotzdem fortfahren?')) return;
+  if (!confirm('Werkseinstellung: Alle Daten auf diesem Gerät werden gelöscht – Trainings, Läufe, Wochensummen, Rennen, Gewicht, Bauchumfang, Profil und Einstellungen.\n\nDie Sync-Datei in deiner Cloud und andere Geräte bleiben unberührt.\n\nFortfahren?')) return;
+  const has = saved.length + waist.length + runWeeks.length + runLog.length + races.length + weights.length > 0;
+  if (has && confirm('Vorher ein Backup speichern?\n\nOK = Backup speichern\nAbbrechen = ohne Backup weiter')) await exportBackup();
+  const word = prompt('Zum Bestätigen LÖSCHEN eingeben:');
+  if (word === null) return;
+  if (word.trim().toUpperCase() !== 'LÖSCHEN') { toast('Nicht bestätigt – es wurde nichts gelöscht.'); return; }
+  wiping = true; clearTimeout(syncTimer);
+  try { for (const k of Object.keys(localStorage)) if (APP_KEY(k)) localStorage.removeItem(k); } catch (e) { }
+  try { sessionStorage.removeItem(SYNC_MSG); } catch (e) { }
+  try { indexedDB.deleteDatabase('kb-tracker'); } catch (e) { }
+  try { sessionStorage.setItem(SYNC_MSG, 'Auf Werkseinstellung zurückgesetzt – alle Daten auf diesem Gerät wurden gelöscht.'); } catch (e) { }
+  location.reload();
 }
 
 /* ---------- Dateien: Backup, CSV, Kalender ---------- */
@@ -2080,6 +2113,8 @@ syncTrack();
 { const msg = sessionStorage.getItem(SYNC_MSG); if (msg) { sessionStorage.removeItem(SYNC_MSG); setTimeout(() => toast(msg), 300); } }
 $('syncsave').addEventListener('click', syncSave);
 $('syncpick').addEventListener('click', syncPick);
+$('factoryreset').addEventListener('click', factoryReset);
+$('settingsreset').addEventListener('click', settingsReset);
 $('syncplace').addEventListener('change', e => { syncMeta.place = e.target.value.trim().slice(0, 120); syncSaveMeta(); renderSyncStatus(); toast('Speicherort gemerkt.'); });
 $('syncload').addEventListener('click', syncLoad);
 $('syncfile').addEventListener('change', e => { const f = e.target.files[0]; e.target.value = ''; if (!f) return; const r = new FileReader(); r.onload = () => syncApply(r.result); r.readAsText(f); });
