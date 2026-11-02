@@ -15,8 +15,7 @@ Mein persönlicher Trainings-Begleiter als Web-App für iPhone und Android – K
 - **Laufen** (Anleitungen, Saisonplan und Umfang)
   - Bestzeiten: Ergebnisse je Distanz (auch eigene km, aus Rennen übernehmbar), neue Bestzeiten automatisch erkannt, Verlauf als Grafik, Prognose für andere Distanzen (Riegel)
   - Plan: A- und B-Rennen mit Datum, Distanz (5 km bis Marathon) und optional Zielzeit. Die A-Rennen werden nach Datum abgearbeitet: je ein Block aus Grundlage, Aufbau, spezifischer Phase und Tapering, danach Erholung und Basis bis zum nächsten Block. B-Rennen laufen ohne eigenen Block mit. Longrun und Wochen-km kommen aus dem Umfang (höchstens +10 % pro Woche, nach drei Aufbauwochen Entlastung); Warnung, wenn A-Rennen zu dicht liegen oder das Longrun-Ziel nicht erreichbar ist. Dazu Renntempo-Rechner, Pacing, Tapering, Verpflegung und Checkliste für die Rennwoche
-  - Warm-up und Cooldown für 5 km, 10 km, Halbmarathon, Marathon
-  - Warm-up und Cooldown für Intervall, Speed und Longrun
+  - Warm-up: Warm-up und Cooldown für den Renntag (5 km bis Marathon) und fürs Training (Intervall, Speed, Longrun)
   - Lauf-ABC
   - Umfang: Läufe mit Datum (einzeln oder per CSV-Import mit Vorlage) oder Wochensummen; nächster langer Lauf höchstens 10 % über dem längsten der letzten 30 Tage (Sprünge werden markiert), Zielbereich für die laufende Woche (Erhalt 0,8–1,0 × Schnitt der letzten 4 Wochen, Aufbau bis 1,3 ×), Verlauf über 8 Wochen
   - „Geführt“: Ablauf Schritt für Schritt mit Countdown und Ansage; Strecken und Wiederholungen werden abgehakt
@@ -24,14 +23,14 @@ Mein persönlicher Trainings-Begleiter als Web-App für iPhone und Android – K
   - Trainingswoche: Tage für Qualität, Longrun, Laufgruppe, Kraft und eine weitere Einheit – Plan und Kalender-Export nutzen sie, Hinweis bei harten Tagen hintereinander
   - Herzfrequenz-Zonen: nach Karvonen aus maximaler und Ruhe-HF oder direkt von der Uhr; der Plan zeigt die bpm
   - Geräte & Gewichte: eigene Kettlebells und Bänder, Standardgewicht; der Kraft-Bereich wählt nur daraus
-  - Körpergewicht (Verlauf, Ø pro Woche über 4 Wochen) und Bauchumfang
+  - Körpermaße: Gewicht und Bauchumfang in einem Formular und Protokoll, Diagramm umschaltbar, Ø pro Woche (Gewicht, 4 Wochen), Erinnerung, CSV
   - Ton & Ansagen
 - **Mobility** (ohne Tracking), in Reitern wie Laufen
   - Läufer: Nach dem Lauf, Hüfte, Sprunggelenk
   - Alltag: Morgens, Nach dem Sitzen
   - Übungen nach Körperbereich: Hüfte, Rücken, Schultern, Beine & Fuß
   - Kurzprogramme mit geführtem Timer inkl. Seitenwechsel und Ansage
-- **Mehr**: Wochenübersicht, Anleitung, Geräte-Sync, Datensicherung, Hinweise
+- **Mehr**: Neuigkeiten, Anleitung (inkl. Hinweise), Geräte-Sync, Datensicherung, Zurücksetzen
 
 ## Neuigkeiten (Patch Notes)
 

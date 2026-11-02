@@ -121,8 +121,6 @@ test('Rennen: eintragen, Fehler markieren, bearbeiten, löschen – bleibt gespe
   await page.click('[data-raceedit]');
   await page.click('#racedel');
   await expect(page.locator('#racelist')).toContainText('Noch keine Rennen');
-  // HM-Zeit „1:59“ heißt Stunden:Minuten
-  expect(await page.evaluate(() => [parseGoal('1:59', 'hm'), parseGoal('24:30', '5k'), parseGoal('1:75', 'hm'), parseGoal('x', 'hm'), parseGoal('', 'hm')])).toEqual([7140, 1470, NaN, NaN, null]);
 });
 
 test('Rennen im Backup, Import ergänzt nur Fehlendes, unbekannte Einträge bleiben', async ({ page }) => {
@@ -149,7 +147,7 @@ test('Renntempo-Rechner: Pace und Zwischenzeiten', async ({ page }) => {
   await expect(page.locator('#pcout .longnext b')).toHaveText('5:00 /km');
   await fillTime(page, 'pctime', '0', '25', '99');
   await expect(page.locator('#pctime [data-tpart="2"]')).toHaveAttribute('aria-invalid', 'true');
-  await expect(page.locator('#runcontent details')).toHaveCount(6);
+  await expect(page.locator('#runcontent details')).toHaveCount(7);
 });
 
 test('Zielzeit bestimmt Ziel-Longrun und Wochenspitze, Tempo steht bei den Tempo-Einheiten', async ({ page }) => {

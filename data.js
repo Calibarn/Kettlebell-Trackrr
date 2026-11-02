@@ -382,6 +382,15 @@ const SEASON_GUIDE = [
     'Zeigt der Plan Tempo-Abschnitte (z. B. „im HM-Tempo“), steht bei eingetragener Zielzeit das passende Tempo pro Kilometer dahinter.',
     'Kalender-Export: Wochen als ganztägige Termine (Phase und km), Longruns am Sonntag, Rennen am Renntag. Am besten in einen eigenen Kalender „Laufplan“ importieren – bei einem neuen Export diesen Kalender leeren und neu importieren, da der Plan jede Woche mit deinem echten Umfang neu rechnet.'
   ] },
+  { title: 'Zeiten & Prognosen', sub: 'so rechnet die App', items: [
+    'Pace = Zeit ÷ Distanz. Beispiel: Halbmarathon in 1:59:00 → 7.140 s ÷ 21,0975 km = 338 s = 5:38 /km. km/h = Distanz ÷ Stunden.',
+    'Zwischenzeiten = Pace × Kilometer, also gleichmäßiges Tempo ohne Zuschläge. „Erste 2–3 km“ ist die Pace plus 7 Sekunden als ruhiger Start.',
+    'Prognose für andere Distanzen (Riegel-Formel): Zeit₂ = Zeit₁ × (Distanz₂ ÷ Distanz₁)^1,06. Beispiel: 10 km in 55:05 → Halbmarathon 55:05 × 2,10975^1,06 ≈ 2:01:32, Marathon ≈ 4:13:24, 5 km ≈ 26:25.',
+    'Der Exponent 1,06 bildet ab, dass man auf längeren Strecken langsamer wird. Die Formel stammt aus Daten gut trainierter Läufer: Für den Marathon ist sie bei weniger als etwa 50 km pro Woche meist zu optimistisch – eher 5–10 % Puffer einplanen. Am verlässlichsten ist eine Prognose aus einer Bestzeit über eine ähnliche Distanz.',
+    'Eigene Distanz (z. B. 20 km): Für Plan und Trainingsstufe zählt die nächstliegende Kategorie (bis 7,5 km → 5 km, bis 15 km → 10 km, bis 30 km → Halbmarathon, darüber Marathon). Die Zielzeit wird dafür per Riegel auf diese Distanz umgerechnet; Pace und Zwischenzeiten rechnet die App mit den echten km.',
+    'Renntempo in den Einheiten („im HM-Tempo“) ist die Pace aus der Zielzeit deines Rennens. Schwelle hat bewusst keine feste Pace: „kontrolliert hart“, etwa das Tempo, das du eine Stunde halten könntest.',
+    'Herzfrequenz-Zonen (Karvonen): Ruhe-HF + Anteil × (max. HF − Ruhe-HF), Zone 1 ab 50 %, Zone 2 ab 60 %, Zone 3 ab 70 %, Zone 4 ab 80 %, Zone 5 ab 90 %. Beispiel: max. 184, Ruhe 60 → Zone 2 ab 60 + 0,6 × 124 = 134 bpm.'
+  ] },
   { title: 'Tempo & Pacing', sub: 'gleichmäßig statt schnell los', items: [
     'Gleichmäßig laufen oder die zweite Hälfte leicht schneller. Jede Sekunde, die du auf den ersten Kilometern zu schnell bist, zahlst du hinten doppelt.',
     'Die ersten 2–3 km bewusst 5–10 Sek./km langsamer als das Zieltempo – im Gedränge ohnehin realistischer.',
@@ -408,7 +417,7 @@ const SEASON_GUIDE = [
     'Wetter checken, Wegwerfschicht für den Startblock.',
     'Gels, Uhr laden, Herzfrequenzgurt, Pflaster und Vaseline für Scheuerstellen.',
     'Anreise und Startblock planen, Zeitpuffer für Toilette und Warm-up einrechnen.',
-    'Warm-up für die Distanz unter Laufen → Wettkampf ansehen und vorher einmal im Training testen.',
+    'Warm-up für die Distanz unter Laufen → Warm-up ansehen und vorher einmal im Training testen.',
     'Die Nacht vor der Nacht vor dem Rennen ist für den Schlaf wichtiger als die letzte.'
   ] },
   { title: 'Wann nicht steigern', sub: 'Warnzeichen', items: [
@@ -553,19 +562,29 @@ for (const [pk, m] of Object.entries(BEST)) for (const sl of PLANS[pk].slots) if
 /* Neuigkeiten („Patch Notes“): neueste zuerst. Neuer Eintrag = neue id; die App zeigt ihn beim nächsten Start einmal an.
    Der älteste (letzte) Eintrag ist der Grundstand mit allen Funktionen; Neulinge sehen ihn plus die 3 neuesten Updates. */
 const CHANGELOG = [
+  { id: '2026-11-02b', date: '2026-11-02', title: 'Aufgeräumt & übersichtlicher', items: [
+    ['Laufen', '„Wettkampf“ und „Training“ sind jetzt ein Reiter „Warm-up“: oben der Renntag (5 km bis Marathon), darunter Intervall, Speed und Longrun.'],
+    ['Körpermaße', 'Gewicht und Bauchumfang in einem Formular und einem Protokoll, Diagramm zum Umschalten, eine Erinnerung und ein CSV-Export für beides.'],
+    ['Skizzen', 'Ansicht von vorne in Lila, seitlich in Grün – jeweils mit kleiner Beschriftung.'],
+    ['Kraft', 'Die Wochenübersicht steht jetzt im Bereich Kraft; die Einstellung je Übung heißt „Übungen & Varianten“.'],
+    ['Sync & Backup', '„Sync speichern“ zählt als Sicherung; „Aus Datei wiederherstellen“ erkennt Sync-Dateien und gleicht sie richtig ab.'],
+    ['Erklärt', 'Plan → Wissen → „Zeiten & Prognosen“ und bei den Bestzeiten „So wird gerechnet“ zeigen, wie Pace, Zwischenzeiten und Prognosen entstehen.'],
+    ['Overlays', 'Ist eine Anleitung oder ein Fenster offen, scrollt die Seite dahinter nicht mehr mit.'],
+    ['Mehr', 'Doppelte Hinweise entfernt, der Rest steht in der Anleitung.']
+  ] },
   { id: '2026-11-02', date: '2026-11-02', title: 'Grundstand: alle Funktionen', items: [
     ['Kraft', 'Sechs Pläne für zu Hause: Ganzkörper-Zirkel, Tabata, Läufer (Sätze), Oberkörper-Zirkel, Core (EMOM mit Kettlebell) und Büro – jeweils mit Aufwärmen, Cooldown, Timer, Sprachansagen und Abhaken.'],
     ['Geräte & Varianten', '„Heute dabei“ (Kettlebell, Bänder, Körpergewicht) wählt je Übung die wirksamste Variante; Gewicht bzw. Band je Übung einstellbar.'],
     ['Fortschritt', 'Verlauf mit Diagramm, Bestwerte bei gleichem Aufbau, Anstrengung (1–10) und Notiz, Vorschläge zur Steigerung, Training nachtragen und Wochenübersicht mit Serie.'],
     ['Anleitungen', 'Jede Übung antippen: Skizze von Start und Bewegung, Ausführung, Wirkung und worauf du achten musst.'],
-    ['Laufen → Wettkampf & Training', 'Warm-up und Cooldown für 5 km, 10 km, Halbmarathon und Marathon sowie für Intervall, Speed und Longrun, dazu Lauf-ABC – geführt mit Countdown und Ansage.'],
+    ['Laufen → Warm-up', 'Warm-up und Cooldown für den Renntag (5 km bis Marathon) und fürs Training (Intervall, Speed, Longrun), dazu Lauf-ABC – geführt mit Countdown und Ansage.'],
     ['Laufen → Plan', 'A- und B-Rennen mit Datum und Distanz (auch eigene km). Je A-Rennen ein Block aus Grundlage, Aufbau, spezifischer Phase und Tapering, danach Erholung; jede Woche Longrun, Wochen-km und Qualitätseinheit auf deinen Trainingstagen. B-Rennen zählen in die Woche.'],
     ['Zielzeit', 'Bestimmt Ziel-Longrun und Wochenumfang; Tempo-Einheiten zeigen dein Renntempo pro Kilometer. Renntempo-Rechner mit Zwischenzeiten, dazu Wissen zu Pacing, Tapering, Verpflegung und Rennwoche.'],
     ['Bestzeiten', 'Ergebnisse je Distanz eintragen oder aus Rennen übernehmen; neue Bestzeiten werden erkannt, die Verbesserung als Grafik gezeigt, dazu eine Prognose für die anderen Distanzen.'],
     ['Laufen → Umfang', 'Läufe mit Datum oder Wochensummen, CSV-Import mit Vorlage. Nächster Longrun höchstens +10 % gegenüber dem längsten der letzten 30 Tage, Zielbereich der Woche, Verlauf über 8 Wochen.'],
     ['Kalender-Export', 'Saisonplan mit Wochen, Longruns, Qualität, Kraft und Rennen als Kalenderdatei.'],
     ['Mobility', 'Kurzprogramme für Läufer (Nach dem Laufen, Hüfte, Sprunggelenk) und den Alltag (Morgens, Nach dem Sitzen) sowie Einzelübungen nach Körperbereich – geführt Schritt für Schritt.'],
-    ['Profil', 'Trainingswoche mit festen Tagen (abschaltbar, „Entfällt“ für einzelne Wochen), Herzfrequenz-Zonen (der Plan zeigt deine bpm), eigene Kettlebells und Bänder, Körpergewicht mit Trend, Bauchumfang, Ton und Ansagen.'],
+    ['Profil', 'Trainingswoche mit festen Tagen (abschaltbar, „Entfällt“ für einzelne Wochen), Herzfrequenz-Zonen (der Plan zeigt deine bpm), eigene Kettlebells und Bänder, Körpermaße (Gewicht und Bauchumfang mit Trend), Ton und Ansagen.'],
     ['Geräte-Sync (optional)', 'Eine Sync-Datei in iCloud Drive, Google Drive & Co. hält iPhone, iPad, Mac und PC auf dem gleichen Stand. Ohne Sync bleibt alles nur auf dem Gerät.'],
     ['Daten & Datenschutz', 'Alles bleibt lokal auf dem Gerät, keine Verbindung zu fremden Servern. Backup und Wiederherstellen, CSV-Export, automatische Sicherung vor Updates, Einstellungen zurücksetzen und Werkseinstellung.'],
     ['App', 'Als WebApp auf den Home-Bildschirm, funktioniert offline, hell und dunkel, Darstellung für iPhone und Android. Neuigkeiten wie diese erscheinen nach Updates einmal und stehen unter Mehr.']

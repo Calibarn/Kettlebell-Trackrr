@@ -10,7 +10,7 @@
   --bar-bg:rgba(249,249,249,.86);--radius:12px;--group-radius:12px;
   --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",system-ui,sans-serif;
   --tabbar:50px;--actbar:0px;
-  --fig-near:#34c759;--fig-far:rgba(52,199,89,.45);--fig-bg:#f2f2f7;--fig-head:#fff;--fig-prop:#c7c7cc;--fig-propfill:#e5e5ea;--fig-text:rgba(60,60,67,.75);--fig-ground:#d1d1d6
+  --fig-near:#34c759;--fig-far:rgba(52,199,89,.45);--fig-front:#7d5bd6;--fig-front-far:rgba(125,91,214,.45);--fig-bg:#f2f2f7;--fig-head:#fff;--fig-prop:#c7c7cc;--fig-propfill:#e5e5ea;--fig-text:rgba(60,60,67,.75);--fig-ground:#d1d1d6
 }
 @media (prefers-color-scheme:dark){:root{
   --bg:#000;--card:#1c1c1e;--card2:#2c2c2e;--elev:#2c2c2e;
@@ -19,7 +19,7 @@
   --accent:#30d158;--accent-ink:#30d158;--on-accent:#000;--accent-soft:rgba(48,209,88,.16);
   --blue:#0a84ff;--orange:#ff9f0a;--red:#ff453a;--yellow:#ffd60a;
   --bar-bg:rgba(22,22,24,.86);
-  --fig-near:#30d158;--fig-far:rgba(48,209,88,.4);--fig-bg:#2c2c2e;--fig-head:#2c2c2e;--fig-prop:#636366;--fig-propfill:#3a3a3c;--fig-text:rgba(235,235,245,.75);--fig-ground:#48484a
+  --fig-near:#30d158;--fig-far:rgba(48,209,88,.4);--fig-front:#a78bfa;--fig-front-far:rgba(167,139,250,.42);--fig-bg:#2c2c2e;--fig-head:#2c2c2e;--fig-prop:#636366;--fig-propfill:#3a3a3c;--fig-text:rgba(235,235,245,.75);--fig-ground:#48484a
 }}
 html[data-os=android]{--font:Roboto,"Google Sans",system-ui,sans-serif;--radius:16px;--group-radius:20px;--tabbar:72px;--accent-ink:#1e7a3c}
 @media (prefers-color-scheme:dark){html[data-os=android]{--accent-ink:#5ee08a}}
@@ -196,8 +196,8 @@ html[data-os=android] .ratehint{color:var(--accent-ink)}
 .runadd{display:grid;grid-template-columns:minmax(0,1fr) 84px auto;gap:8px;align-items:center;padding:12px 16px;border-bottom:.5px solid var(--sep)}
 .runadd input{width:100%;height:40px;padding-top:0;padding-bottom:0}
 /* iOS: Das Datumsfeld hat sonst eine feste Mindestbreite und eigene Höhe und ragt ins km-Feld */
-.runadd input[type=date]{-webkit-appearance:none;appearance:none;min-width:0;display:block;line-height:40px;text-align:left}
-.runadd input[type=date]::-webkit-date-and-time-value{text-align:left;margin:0}
+.runadd input[type=date],.raceform input[type=date]{-webkit-appearance:none;appearance:none;min-width:0;display:block;line-height:40px;text-align:left}
+.runadd input[type=date]::-webkit-date-and-time-value,.raceform input[type=date]::-webkit-date-and-time-value{text-align:left;margin:0}
 .runadd .btn{height:40px}
 .runadd input[aria-invalid=true]{box-shadow:0 0 0 2px var(--red) inset}
 .row small.spike{color:var(--orange)}
@@ -278,6 +278,10 @@ html[data-os=android] .toast{border-radius:8px;background:#323232;color:#fff;lef
 /* Anleitung als Sheet */
 .sheet{width:100%;max-width:640px;max-height:92dvh;margin:auto auto 0;border:0;border-radius:14px 14px 0 0;padding:0;background:var(--card);color:var(--label);box-shadow:0 -10px 40px rgba(0,0,0,.25)}
 .sheet::backdrop{background:rgba(0,0,0,.4)}
+/* Overlay offen: Seite dahinter festhalten (iOS braucht position:fixed), im Overlay kein Durchscrollen zur Seite */
+.sheet{overscroll-behavior:contain;overflow-y:auto}
+html.locked{overflow:hidden}
+html.locked body{position:fixed;left:0;right:0;width:100%;overflow:hidden}
 @media(min-width:700px){.sheet{margin:auto;border-radius:14px}}
 html[data-os=android] .sheet{border-radius:28px 28px 0 0}
 .sheethead{position:sticky;top:0;z-index:1;background:var(--card);padding:8px 16px 10px;border-bottom:.5px solid var(--sep)}
@@ -309,6 +313,11 @@ html[data-os=android] .sheet{border-radius:28px 28px 0 0}
 .guideart .farrowhead{fill:var(--blue)}
 .guideart .fground{stroke:var(--fig-ground)}
 .guideart .ftext{fill:var(--fig-text)}
+.guideart .vfront .fn{stroke:var(--fig-front)}
+.guideart .vfront .ff{stroke:var(--fig-front-far)}
+.guideart .vfront .fhead{stroke:var(--fig-front)}
+.guideart .fview{fill:var(--fig-near)}
+.guideart .vfront .fview{fill:var(--fig-front)}
 
 @media(min-width:900px){.wrap{width:min(760px,100%)}}
 @media(max-width:420px){
@@ -334,8 +343,6 @@ html[data-os=android] .sheet{border-radius:28px 28px 0 0}
 .raceform{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;padding:12px 16px}
 .raceform .wide,.raceform .raceactions{grid-column:1/-1}
 .raceform input,.raceform select{width:100%;height:40px;padding-top:0;padding-bottom:0}
-.raceform input[type=date]{-webkit-appearance:none;appearance:none;min-width:0;display:block;line-height:40px;text-align:left}
-.raceform input[type=date]::-webkit-date-and-time-value{text-align:left;margin:0}
 .raceform input[aria-invalid=true]{box-shadow:0 0 0 2px var(--red) inset}
 .raceactions{display:flex;justify-content:flex-end;gap:8px}
 .splits{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:6px;margin-top:10px}
@@ -365,3 +372,7 @@ html[data-os=android] .sheet{border-radius:28px 28px 0 0}
 .planrows .row .btn.small{flex:0 0 auto;padding:5px 10px;font-size:13px}
 .chart .dot.other{opacity:.45}
 .notes{padding-left:18px;margin:6px 0 0;font-size:15px}.notes li{margin:7px 0}
+/* Laufen → Warm-up: Renntag und Training in einer Auswahl, zwei Zeilen */
+.segmented.warmupsub{flex-wrap:wrap;row-gap:2px}
+.warmupsub .sublabel{flex:0 0 100%;font-size:11px;font-weight:600;color:var(--label2);text-transform:uppercase;letter-spacing:.03em;padding:5px 8px 1px}
+.warmupsub button{flex:1 1 20%}

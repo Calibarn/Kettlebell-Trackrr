@@ -717,20 +717,8 @@ const waistLoaded = loadList(KEYS.waist, validWaist);
 let waist = waistLoaded.ok; const waistKeep = waistLoaded.keep;
 function persistWaist() { if (!store(KEYS.waist, waist.concat(waistKeep))) toast('Speichern im Browser nicht möglich – bitte Backup exportieren.'); renderBackupBanner(); }
 const waistSorted = () => [...waist].sort((a, b) => a.date.localeCompare(b.date));
-function renderWaist() {
-  const rows = waistSorted(), newest = rows.at(-1), oldest = rows[0];
-  $('waistlatest').textContent = newest ? cmString(newest.cm) + ' cm' : '–';
-  $('waistlastdate').textContent = newest ? dateGerman(newest.date) : 'Noch keine Messung';
-  $('waistcount').textContent = String(rows.length);
-  const delta = rows.length > 1 ? newest.cm - oldest.cm : 0, d = $('waistdelta');
-  d.textContent = rows.length < 2 ? '–' : (delta > 0 ? '+' : '') + cmString(delta) + ' cm';
-  d.style.color = rows.length < 2 ? '' : delta < 0 ? 'var(--accent-ink)' : delta > 0 ? 'var(--orange)' : '';
-  const b = $('waistreminder'); b.classList.remove('due');
-  if (!newest) b.textContent = 'Noch keine Messung: morgens vor dem Frühstück messen und den ersten Wert eintragen.';
-  else { const next = new Date(newest.date + 'T12:00:00'); next.setDate(next.getDate() + 7); const nd = localDay(next), due = localDay() >= nd; b.classList.toggle('due', due); b.textContent = due ? `📏 Zeit für die nächste Messung – die letzte war am ${dateGerman(newest.date)}.` : `✓ Letzte Messung am ${dateGerman(newest.date)}. Nächste ab ${dateGerman(nd)}.`; }
-  $('waisthistory').innerHTML = rows.length ? rows.slice().reverse().map(e => `<tr><td>${dateGerman(e.date)}</td><td><b>${cmString(e.cm)} cm</b></td><td>${esc(e.note || '–')}</td><td><button class="btn small danger" type="button" data-waist-delete="${esc(e.date)}" aria-label="Messung vom ${dateGerman(e.date)} löschen">Löschen</button></td></tr>`).join('') : '<tr><td colspan="4" class="tag">Noch keine Messung gespeichert.</td></tr>';
-  $('waistchart').innerHTML = rows.length ? measureChart(rows.slice(-12), e => e.cm, cmString, 'Bauchumfang', 'cm') : '<div class="empty">Nach der ersten Messung erscheint hier der Verlauf.</div>';
-}
+// Körpermaße: Gewicht und Bauchumfang werden getrennt gespeichert, aber gemeinsam angezeigt und eingetragen
+function renderWaist() { renderMeasures(); }
 // Liniendiagramm für Messwerte (Bauchumfang, Körpergewicht)
 function measureChart(data, val, fmt, name, unit) {
   const w = 380, h = 184, left = 40, right = 14, top = 16, bottom = 156, pw = w - left - right;
@@ -770,24 +758,44 @@ function weightRate(today = localDay()) {
   const a = win[0], b = win.at(-1), days = Math.round((new Date(b.date + 'T12:00:00') - new Date(a.date + 'T12:00:00')) / 864e5);
   return days >= 7 ? (b.kg - a.kg) / days * 7 : null;
 }
-function renderWeight() {
-  const rows = weights, newest = rows.at(-1), oldest = rows[0];
-  $('weightlatest').textContent = newest ? kgOne(newest.kg) + ' kg' : '–';
-  $('weightlastdate').textContent = newest ? dateGerman(newest.date) : 'Noch keine Messung';
-  const delta = rows.length > 1 ? newest.kg - oldest.kg : 0, d = $('weightdelta');
-  d.textContent = rows.length < 2 ? '–' : (delta > 0 ? '+' : '') + kgOne(delta) + ' kg';
-  const rate = weightRate(), r = $('weightrate');
-  r.textContent = rate === null ? '–' : (rate > 0 ? '+' : '') + kgOne(rate) + ' kg';
-  $('weighthistory').innerHTML = rows.length ? rows.slice().reverse().map(e => `<tr><td>${dateGerman(e.date)}</td><td><b>${kgOne(e.kg)} kg</b></td><td><button class="btn small danger" type="button" data-weight-delete="${esc(e.date)}" aria-label="Gewicht vom ${dateGerman(e.date)} löschen">Löschen</button></td></tr>`).join('') : '<tr><td colspan="3" class="tag">Noch keine Messung.</td></tr>';
-  $('weightchart').innerHTML = rows.length ? measureChart(rows.slice(-12), e => e.kg, kgOne, 'Körpergewicht', 'kg') : '<div class="empty">Nach der ersten Messung erscheint hier der Verlauf.</div>';
+let measureView = null;
+function renderWeight() { renderMeasures(); }
+function renderMeasures() {
+  const W = weights, B = waistSorted(), nw = W.at(-1), nb = B.at(-1);
+  const delta = (rows, f, fmt, unit) => rows.length < 2 ? '–' : ((rows.at(-1)[f] - rows[0][f]) > 0 ? '+' : '') + fmt(rows.at(-1)[f] - rows[0][f]) + ' ' + unit;
+  const tint = (el, rows, f) => { const d = rows.length < 2 ? 0 : rows.at(-1)[f] - rows[0][f]; el.style.color = d < 0 ? 'var(--accent-ink)' : d > 0 ? 'var(--orange)' : ''; };
+  $('weightlatest').textContent = nw ? kgOne(nw.kg) + ' kg' : '–'; $('weightlastdate').textContent = nw ? dateGerman(nw.date) : 'Noch keine Messung';
+  $('waistlatest').textContent = nb ? cmString(nb.cm) + ' cm' : '–'; $('waistlastdate').textContent = nb ? dateGerman(nb.date) : 'Noch keine Messung';
+  $('weightdelta').textContent = delta(W, 'kg', kgOne, 'kg'); tint($('weightdelta'), W, 'kg');
+  $('waistdelta').textContent = delta(B, 'cm', cmString, 'cm'); tint($('waistdelta'), B, 'cm');
+  const rate = weightRate(); $('weightrate').textContent = rate === null ? '–' : (rate > 0 ? '+' : '') + kgOne(rate) + ' kg';
+  const days = [...new Set(W.map(e => e.date).concat(B.map(e => e.date)))].sort();
+  const last = days.at(-1), r = $('waistreminder'); r.classList.remove('due');
+  if (!last) r.textContent = 'Noch keine Messung: morgens vor dem Frühstück wiegen und messen und den ersten Wert eintragen.';
+  else { const nd = addDays(last, 7), due = localDay() >= nd; r.classList.toggle('due', due); r.textContent = due ? `📏 Zeit für die nächste Messung – die letzte war am ${dateGerman(last)}.` : `✓ Letzte Messung am ${dateGerman(last)}. Nächste ab ${dateGerman(nd)}.`; }
+  $('measurehistory').innerHTML = days.length ? days.slice().reverse().map(d => {
+    const w = W.find(e => e.date === d), b = B.find(e => e.date === d), note = (b && b.note) || (w && w.note) || '';
+    return `<tr><td>${dateGerman(d)}</td><td>${w ? `<b>${kgOne(w.kg)} kg</b>` : '–'}</td><td>${b ? `<b>${cmString(b.cm)} cm</b>` : '–'}</td><td>${esc(note || '–')}</td><td><button class="btn small danger" type="button" data-measure-delete="${esc(d)}" aria-label="Messung vom ${dateGerman(d)} löschen">Löschen</button></td></tr>`;
+  }).join('') : '<tr><td colspan="5" class="tag">Noch keine Messung gespeichert.</td></tr>';
+  const view = measureView || (W.length || !B.length ? 'weight' : 'waist');
+  for (const t of $('measuretabs').children) t.setAttribute('aria-selected', String(t.dataset.measure === view));
+  const rows = view === 'weight' ? W : B;
+  $('measurechart').innerHTML = rows.length ? (view === 'weight' ? measureChart(W.slice(-12), e => e.kg, kgOne, 'Körpergewicht', 'kg') : measureChart(B.slice(-12), e => e.cm, cmString, 'Bauchumfang', 'cm'))
+    : `<div class="empty">Nach der ersten ${view === 'weight' ? 'Gewichts' : 'Bauchumfang'}-Messung erscheint hier der Verlauf.</div>`;
 }
-function saveWeightFromForm() {
-  const date = $('weightdate').value, kg = kmNum($('weightkg').value);
+function saveMeasureFromForm() {
+  const date = $('measuredate').value, kg = kmNum($('measurekg').value), cm = kmNum($('measurecm').value), note = $('measurenote').value.trim().slice(0, 120);
+  for (const id of ['measurekg', 'measurecm']) $(id).removeAttribute('aria-invalid');
   if (!isDay(date) || date > localDay()) { toast('Bitte ein Datum bis heute wählen.'); return; }
-  if (kg === null || Number.isNaN(kg) || kg < 30 || kg > 350) { $('weightkg').setAttribute('aria-invalid', 'true'); toast('Bitte das Gewicht in kg eingeben, z. B. 98,4.'); return; }
-  $('weightkg').removeAttribute('aria-invalid');
-  weights = weights.filter(e => e.date !== date).concat({ date, kg }); persistWeight(); renderWeight();
-  $('weightkg').value = ''; toast(`✓ ${kgOne(kg)} kg am ${dateGerman(date)} gespeichert.`);
+  const badKg = kg !== null && (Number.isNaN(kg) || kg < 30 || kg > 350), badCm = cm !== null && (Number.isNaN(cm) || cm < 40 || cm > 250);
+  if (badKg) $('measurekg').setAttribute('aria-invalid', 'true'); if (badCm) $('measurecm').setAttribute('aria-invalid', 'true');
+  if (badKg || badCm) { toast(badKg ? 'Gewicht bitte in kg, z. B. 98,4.' : 'Bauchumfang bitte in cm zwischen 40 und 250.'); return; }
+  if (kg === null && cm === null) { toast('Bitte Gewicht oder Bauchumfang eintragen.'); return; }
+  if (kg !== null) { const o = { date, kg }; if (note && cm === null) o.note = note; weights = weights.filter(e => e.date !== date).concat(o); persistWeight(); }
+  if (cm !== null) { const v = { id: uid(), date, cm, note, at: new Date().toISOString() }, i = waist.findIndex(x => x.date === date); if (i >= 0) { v.id = waist[i].id; waist[i] = v; } else waist.push(v); persistWaist(); }
+  if (kg !== null && cm === null) measureView = 'weight'; else if (cm !== null && kg === null) measureView = 'waist';
+  renderMeasures(); for (const id of ['measurekg', 'measurecm', 'measurenote']) $(id).value = '';
+  toast(`✓ ${[kg !== null ? kgOne(kg) + ' kg' : '', cm !== null ? cmString(cm) + ' cm' : ''].filter(Boolean).join(' · ')} am ${dateGerman(date)} gespeichert.`);
 }
 
 /* ---------- Profil-Oberfläche ---------- */
@@ -862,8 +870,9 @@ function onProfileClick(e) {
   }
   const kd = t.closest('[data-kbdel]'); if (kd) { profile.kit.kb = profile.kit.kb.filter(v => v !== Number(kd.dataset.kbdel)); profileChanged('kit'); return; }
   const bd = t.closest('[data-banddel]'); if (bd) { profile.kit.bands = profile.kit.bands.filter(v => v !== Number(bd.dataset.banddel)); profileChanged('kit'); return; }
-  const wd = t.closest('[data-weight-delete]');
-  if (wd && confirm('Diesen Wert löschen?')) { weights = weights.filter(x => x.date !== wd.dataset.weightDelete); persistWeight(); renderWeight(); toast('Gelöscht.'); }
+  const ms = t.closest('[data-measure]'); if (ms && ms.dataset.measure) { measureView = ms.dataset.measure; renderMeasures(); return; }
+  const md = t.closest('[data-measure-delete]');
+  if (md && confirm(`Messung vom ${dateGerman(md.dataset.measureDelete)} löschen (Gewicht und Bauchumfang)?`)) { const d = md.dataset.measureDelete; weights = weights.filter(x => x.date !== d); waist = waist.filter(x => x.date !== d); persistWeight(); persistWaist(); renderMeasures(); toast('Gelöscht.'); }
 }
 function onProfileChange(e) {
   const t = e.target, wk = profile.week, val = t.value === '' ? null : Number(t.value);
@@ -1087,15 +1096,6 @@ let races = racesLoaded.ok; const racesKeep = racesLoaded.keep;
 const sortRaces = () => races.sort((a, b) => a.date.localeCompare(b.date) || a.prio.localeCompare(b.prio));
 function persistRaces() { sortRaces(); if (!store(KEYS.races, races.concat(racesKeep))) toast('Speichern im Browser nicht möglich – bitte Backup exportieren.'); renderBackupBanner(); }
 sortRaces();
-// Zeiten: h:mm:ss, mm:ss; bei HM/Marathon heißt „1:59“ Stunden:Minuten
-function parseGoal(txt, dist) {
-  const t = String(txt || '').trim(); if (!t) return null;
-  if (!/^\d{1,2}(:\d{1,2}){1,2}$/.test(t)) return NaN;
-  const p = t.split(':').map(Number);
-  if (p.slice(1).some(v => v > 59)) return NaN;
-  const s = p.length === 3 ? p[0] * 3600 + p[1] * 60 + p[2] : (dist === 'hm' || dist === 'marathon') ? p[0] * 3600 + p[1] * 60 : p[0] * 60 + p[1];
-  return s >= 60 && s <= 86400 ? s : NaN;
-}
 // Zeit in drei Feldern (Std/Min/Sek): auf dem iPhone reicht der Ziffernblock, der hat keinen Doppelpunkt
 function timeFields(id, sec, label) {
   const v = sec ? [Math.floor(sec / 3600), Math.floor(sec % 3600 / 60), sec % 60] : null;
@@ -1411,7 +1411,11 @@ function renderBests() {
       <p class="tiny">Punkte: alle Ergebnisse, kräftig = neue Bestzeit. Linie: Verlauf deiner Bestzeit.</p>
     </div></div>
     <div class="header">Prognose aus dieser Bestzeit</div><div class="group"><div class="splits" style="padding:12px 16px" id="bestpred">${Object.entries(SEASON.dist).filter(([k]) => k !== g).map(([k, d]) => `<span><small>${esc(d.label)}</small>${hms(riegel(pb.time, km, d.km))}</span>`).join('')}</div></div>
-    <p class="footer">Riegel-Formel. Für längere Distanzen meist zu optimistisch, wenn der Umfang dafür noch fehlt – eher als Obergrenze sehen.</p>
+    <div class="group" style="margin-top:12px"><details id="bestcalc"><summary class="row"><span class="txt"><b>So wird gerechnet</b><small>Riegel-Formel mit deiner Bestzeit</small></span><span class="chev"></span></summary><div class="panel">
+      <p class="tiny">Zeit₂ = Zeit₁ × (Distanz₂ ÷ Distanz₁)<sup>1,06</sup></p>
+      <ul class="notes">${Object.entries(SEASON.dist).filter(([k]) => k !== g).map(([k, d]) => `<li>${esc(d.label)}: ${hms(pb.time)} × (${kmText(Math.round(d.km * 10000) / 10000)} ÷ ${kmText(km)})<sup>1,06</sup> = ${hms(pb.time)} × ${kmText(Math.round(Math.pow(d.km / km, 1.06) * 1000) / 1000)} ≈ <b>${hms(riegel(pb.time, km, d.km))}</b> (${paceText(riegel(pb.time, km, d.km), d.km)})</li>`).join('')}</ul>
+      <p class="tiny">Für längere Distanzen meist zu optimistisch, wenn der Umfang dafür noch fehlt – beim Marathon eher 5–10 % Puffer. Mehr unter <b>Plan → Wissen → Zeiten &amp; Prognosen</b>.</p>
+    </div></details></div>
     <div class="header">Ergebnisse · ${esc(groupLabel(g))}</div><div class="group" id="bestlist">${list.slice().reverse().map(r => `<div class="row"><span class="dur">${dateGerman(r.date)}</span><span class="txt"><b>${hms(r.time)}${isPb.has(r.id) ? ' 🏆' : ''}</b><small>${paceText(r.time, r.km)}${r.name ? ' · ' + esc(r.name) : ''}</small></span><button type="button" class="btn small danger" data-bestdel="${esc(r.id)}" aria-label="Ergebnis vom ${dateGerman(r.date)} löschen">Löschen</button></div>`).join('')}</div>`;
   return html;
 }
@@ -1573,7 +1577,8 @@ async function syncPick() {
     await handleSet(h); renderSyncStatus(); toast(`Sync-Datei festgelegt: „${h.name}“.`); return h;
   } catch (e) { if (e && e.name !== 'AbortError') toast('Die Datei konnte nicht festgelegt werden.'); return null; }
 }
-function syncDone(how) { syncMeta.lastSave = new Date().toISOString(); syncMeta.dirty = false; syncSaveMeta(); renderSyncStatus(); toast(how); }
+// Sync-Datei enthält alle Daten → zählt auch als Sicherung (Backup-Erinnerung wird zurückgesetzt)
+function syncDone(how) { syncMeta.lastSave = new Date().toISOString(); syncMeta.dirty = false; syncSaveMeta(); markBackup(); renderSyncStatus(); toast(how); }
 async function syncSave() {
   const json = JSON.stringify(syncPayload());
   try {
@@ -1657,6 +1662,16 @@ async function factoryReset() {
   location.reload();
 }
 
+/* ---------- Overlays: Hintergrund scrollt nicht mit ---------- */
+// Gilt für alle <dialog>: sobald eines offen ist, wird die Seite an ihrer Position festgehalten; beim Schließen geht es dort weiter.
+let scrollLockY = null;
+function syncScrollLock() {
+  const open = !!document.querySelector('dialog[open]'), b = document.body;
+  if (open && scrollLockY === null) { scrollLockY = window.scrollY; b.style.top = `-${scrollLockY}px`; document.documentElement.classList.add('locked'); }
+  else if (!open && scrollLockY !== null) { const y = scrollLockY; scrollLockY = null; document.documentElement.classList.remove('locked'); b.style.top = ''; window.scrollTo(0, y); }
+}
+new MutationObserver(syncScrollLock).observe(document.body, { subtree: true, attributes: true, attributeFilter: ['open'] });
+
 /* ---------- Neuigkeiten: beim ersten Start nach einem Update, danach unter Mehr ---------- */
 const notesDlg = $('notes');
 let notesOpt = load(KEYS.notes, null); if (!isObj(notesOpt)) notesOpt = { seen: null, auto: true };
@@ -1715,6 +1730,8 @@ function importBackup(file) {
   r.onload = () => {
     try {
       const x = JSON.parse(r.result);
+      // Sync-Datei gewählt: richtig abgleichen (inkl. Änderungen und Löschungen) statt nur Fehlendes zu ergänzen
+      if (isObj(x) && x.kind === 'kb-tracker-sync') { syncApply(r.result); return; }
       let entries = Array.isArray(x) ? x : isObj(x) && Array.isArray(x.entries) ? x.entries : [];
       let wl = isObj(x) && Array.isArray(x.waist) ? x.waist : [];
       entries = entries.filter(validEntry).map(e => Object.assign({}, e, { id: String(e.id || `legacy-${e.plan}-${e.date}-${e.total}-${e.at || ''}`) }));
@@ -1778,8 +1795,9 @@ function exportCsv() {
   download('trainingstagebuch.csv', '﻿' + [head, ...rows].map(r => r.map(cell).join(';')).join('\r\n'), 'text/csv;charset=utf-8');
 }
 function exportWaistCsv() {
-  const rows = [['Datum', 'Bauchumfang (cm)', 'Notiz'], ...waistSorted().map(e => [e.date, cmString(e.cm), (e.note || '').replace(/;/g, ',').replace(/\r?\n/g, ' ')])];
-  download('bauchumfang-verlauf.csv', '﻿' + rows.map(r => r.join(';')).join('\r\n'), 'text/csv;charset=utf-8');
+  const days = [...new Set(weights.map(e => e.date).concat(waist.map(e => e.date)))].sort(), clean = t => String(t || '').replace(/;/g, ',').replace(/\r?\n/g, ' ');
+  const rows = [['Datum', 'Gewicht (kg)', 'Bauchumfang (cm)', 'Notiz'], ...days.map(d => { const w = weights.find(e => e.date === d), b = waist.find(e => e.date === d); return [d, w ? kgOne(w.kg) : '', b ? cmString(b.cm) : '', clean((b && b.note) || (w && w.note))]; })];
+  download('koerpermasse.csv', '﻿' + rows.map(r => r.join(';')).join('\r\n'), 'text/csv;charset=utf-8');
 }
 function exportWaistReminder() {
   const now = new Date(), next = new Date(now); next.setHours(8, 0, 0, 0); next.setDate(next.getDate() + (8 - next.getDay()) % 7); if (next <= now) next.setDate(next.getDate() + 7);
@@ -1790,9 +1808,9 @@ function exportWaistReminder() {
     'BEGIN:DAYLIGHT', 'TZOFFSETFROM:+0100', 'TZOFFSETTO:+0200', 'TZNAME:CEST', 'DTSTART:19700329T020000', 'RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=-1SU', 'END:DAYLIGHT',
     'BEGIN:STANDARD', 'TZOFFSETFROM:+0200', 'TZOFFSETTO:+0100', 'TZNAME:CET', 'DTSTART:19701025T030000', 'RRULE:FREQ=YEARLY;BYMONTH=10;BYDAY=-1SU', 'END:STANDARD', 'END:VTIMEZONE',
     'BEGIN:VEVENT', 'UID:jan-bauchumfang-montag-0800@kb-tracker.local', 'DTSTAMP:' + utc, 'DTSTART;TZID=Europe/Berlin:' + stamp(next), 'DTEND;TZID=Europe/Berlin:' + stamp(until),
-    'RRULE:FREQ=WEEKLY;BYDAY=MO', 'SUMMARY:Bauchumfang messen', 'DESCRIPTION:Morgens vor dem Fruehstueck auf Nabelhoehe messen und im KB Tracker eintragen.',
-    'BEGIN:VALARM', 'ACTION:DISPLAY', 'TRIGGER:PT0M', 'DESCRIPTION:Bauchumfang messen', 'END:VALARM', 'END:VEVENT', 'END:VCALENDAR'];
-  download('bauchumfang-erinnerung.ics', lines.map(icsFold).join('\r\n') + '\r\n', 'text/calendar;charset=utf-8');
+    'RRULE:FREQ=WEEKLY;BYDAY=MO', 'SUMMARY:Körpermaße messen', 'DESCRIPTION:Morgens vor dem Frühstück wiegen\\, Bauchumfang auf Nabelhöhe messen und im KB Tracker unter Profil eintragen.',
+    'BEGIN:VALARM', 'ACTION:DISPLAY', 'TRIGGER:PT0M', 'DESCRIPTION:Körpermaße messen', 'END:VALARM', 'END:VEVENT', 'END:VCALENDAR'];
+  download('koerpermasse-erinnerung.ics', lines.map(icsFold).join('\r\n') + '\r\n', 'text/calendar;charset=utf-8');
 }
 // iCalendar: Zeilen nach 75 Bytes umbrechen, Text escapen
 function icsFold(line) { const enc = new TextEncoder(); let out = '', cur = '', limit = 75; for (const ch of line) { if (enc.encode(cur + ch).length > limit) { out += cur + '\r\n '; cur = ''; limit = 74; } cur += ch; } return out + cur; }
@@ -1815,7 +1833,7 @@ function planIcs(S = seasonPlan()) {
     }
   }
   for (const r of races.filter(r => r.date >= today)) add(`kb-race-${r.id}`, r.date, addDays(r.date, 1), `🏁 ${r.name} (${raceLabel(r)})`,
-    [`${r.prio}-Rennen`, r.goal ? `Zielzeit ${hms(r.goal)} = ${paceText(r.goal, raceKm(r))}` : '', 'Warm-up: KB Tracker → Laufen → Wettkampf'].filter(Boolean).join('\n'));
+    [`${r.prio}-Rennen`, r.goal ? `Zielzeit ${hms(r.goal)} = ${paceText(r.goal, raceKm(r))}` : '', 'Warm-up: KB Tracker → Laufen → Warm-up'].filter(Boolean).join('\n'));
   return ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//KB Tracker//Laufplan//DE', 'CALSCALE:GREGORIAN', 'X-WR-CALNAME:Laufplan', ...ev, 'END:VCALENDAR'].map(icsFold).join('\r\n') + '\r\n';
 }
 function exportPlanIcs() {
@@ -1870,7 +1888,11 @@ function renderAll() {
 
 /* ---------- Bereiche: Kraft, Laufen, Mobility, Mehr ---------- */
 let area = ['kraft', 'laufen', 'mobility', 'profil', 'mehr'].includes(load(KEYS.area, 'kraft')) ? load(KEYS.area, 'kraft') : 'kraft';
-let runView = load(KEYS.run, null); if (!isObj(runView)) runView = {}; runView = { tab: ['race', 'training', 'abc', 'umfang', 'plan'].includes(runView.tab) ? runView.tab : 'race', race: runView.race || '5k', training: runView.training || 'interval', plan: ['woche', 'rennen', 'bestzeiten', 'wissen'].includes(runView.plan) ? runView.plan : 'woche' };
+// Warm-up: Renntag (5 km bis Marathon) und Training (Intervall, Speed, Longrun) in einem Reiter; frühere Auswahl „Wettkampf“/„Training“ wird übernommen
+const WARMUPS = RUN_GUIDE.race.concat(RUN_GUIDE.training);
+let runView = load(KEYS.run, null); if (!isObj(runView)) runView = {};
+{ const old = runView.tab === 'training' ? runView.training : runView.tab === 'race' ? runView.race : null, tab = ['race', 'training'].includes(runView.tab) ? 'warmup' : runView.tab;
+  runView = { tab: ['warmup', 'abc', 'umfang', 'plan'].includes(tab) ? tab : 'warmup', warmup: WARMUPS.some(w => w.id === (old || runView.warmup)) ? (old || runView.warmup) : '5k', plan: ['woche', 'rennen', 'bestzeiten', 'wissen'].includes(runView.plan) ? runView.plan : 'woche' }; }
 function showArea(a, scroll = true) {
   area = a; store(KEYS.area, a);
   for (const x of ['kraft', 'laufen', 'mobility', 'profil', 'mehr']) $('area-' + x).classList.toggle('hide', x !== a);
@@ -1892,9 +1914,10 @@ const stepRow = (dur, name, detail) => {
   return `<${has ? 'button type="button"' : 'div'} class="row" ${has ? `data-guide-name="${esc(name)}"` : ''}><span class="dur">${esc(dur)}</span><span class="txt"><b>${esc(name)}</b>${detail ? `<small>${esc(detail)}</small>` : ''}</span>${has ? '<span class="chev"></span>' : ''}</${has ? 'button' : 'div'}>`;
 };
 function renderRun() {
-  const tabs = [['plan', 'Plan'], ['race', 'Wettkampf'], ['training', 'Training'], ['abc', 'ABC'], ['umfang', 'Umfang']];
+  const tabs = [['plan', 'Plan'], ['warmup', 'Warm-up'], ['abc', 'Lauf-ABC'], ['umfang', 'Umfang']];
   $('runtabs').innerHTML = tabs.map(([k, l]) => `<button role="tab" type="button" data-runtab="${k}" aria-selected="${runView.tab === k}">${l}</button>`).join('');
   const sub = $('runsub');
+  $('runsub').classList.remove('warmupsub');
   if (runView.tab === 'plan') { renderPlan(); return; }
   if (runView.tab === 'umfang') { sub.classList.add('hide'); $('runcontent').innerHTML = renderUmfang(); renderWeekRows(); renderLoad(); return; }
   if (runView.tab === 'abc') {
@@ -1902,9 +1925,10 @@ function renderRun() {
     $('runcontent').innerHTML = `<div class="intro">${esc(RUN_GUIDE.abc.intro)}</div><div class="header">Übungen<button type="button" class="hdrbtn" data-routine="abc">▶ Geführt</button></div><div class="group">${RUN_GUIDE.abc.drills.map(d => stepRow(...d)).join('')}</div><p class="footer">Bei Beschwerden in Fuß oder Wade Sprungübungen (Hopserlauf, Seitgalopp) auslassen.</p>`;
     return;
   }
-  const list = RUN_GUIDE[runView.tab], cur = runCurrent();
+  const cur = runCurrent(), btn = r => `<button role="tab" type="button" data-runsub="${r.id}" aria-selected="${r.id === cur.id}">${esc(r.label)}</button>`;
   sub.classList.remove('hide');
-  sub.innerHTML = list.map(r => `<button role="tab" type="button" data-runsub="${r.id}" aria-selected="${r.id === cur.id}">${esc(r.label)}</button>`).join('');
+  sub.innerHTML = `<span class="sublabel">Renntag</span>${RUN_GUIDE.race.map(btn).join('')}<span class="sublabel">Training</span>${RUN_GUIDE.training.map(btn).join('')}`;
+  sub.classList.add('warmupsub');
   $('runcontent').innerHTML = `<div class="intro">${esc(cur.intro)}</div>
     <div class="header">Warm-up<button type="button" class="hdrbtn" data-routine="warmup">▶ Geführt</button></div><div class="group">${cur.warmup.map(x => stepRow(...x)).join('')}</div>
     <div class="header">Cooldown<button type="button" class="hdrbtn" data-routine="cooldown">▶ Geführt</button></div><div class="group">${cur.cooldown.map(x => stepRow(...x)).join('')}</div>
@@ -2002,7 +2026,7 @@ function renderRoutine() {
   renderRoutineClock();
 }
 function stopRoutine() { rt = null; if (!running) keepAwake(false); }
-const runCurrent = () => { const list = RUN_GUIDE[runView.tab]; return Array.isArray(list) ? list.find(r => r.id === runView[runView.tab]) || list[0] : null; };
+const runCurrent = () => runView.tab === 'warmup' ? WARMUPS.find(r => r.id === runView.warmup) || WARMUPS[0] : null;
 
 /* ---------- Anstrengung (1–10) & Notiz je Einheit ---------- */
 const RPE_TEXT = ['', 'sehr leicht', 'sehr leicht', 'leicht', 'leicht', 'mittel', 'fordernd', 'hart', 'hart', 'sehr hart', 'maximal'];
@@ -2139,21 +2163,11 @@ $('importbtn').addEventListener('click', () => $('importfile').click());
 $('importfile').addEventListener('change', e => { if (e.target.files[0]) importBackup(e.target.files[0]); e.target.value = ''; });
 $('exportcsv').addEventListener('click', exportCsv);
 $('banners').addEventListener('click', e => { if (e.target.id === 'kbon') { gear.kb = true; store(KEYS.gear, gear); renderAll(); return; } if (e.target.id === 'backupnow') exportBackup(); if (e.target.id === 'hintclose') { store(KEYS.hint, true); renderBackupBanner(); } });
-$('waistdate').value = localDay();
-$('weightdate').value = localDay();
-$('weightform').addEventListener('submit', e => { e.preventDefault(); saveWeightFromForm(); });
+$('measuredate').value = localDay();
+$('measureform').addEventListener('submit', e => { e.preventDefault(); saveMeasureFromForm(); });
 $('area-profil').addEventListener('click', onProfileClick);
 $('area-profil').addEventListener('change', onProfileChange);
-$('waistform').addEventListener('submit', e => {
-  e.preventDefault();
-  const date = $('waistdate').value, cm = Number($('waistcm').value.replace(',', '.')), note = $('waistnote').value.trim().slice(0, 120);
-  const value = { id: uid(), date, cm, note, at: new Date().toISOString() };
-  if (!validWaist(value)) { alert('Bitte ein gültiges Datum und einen Wert zwischen 40 und 250 cm eingeben.'); return; }
-  const old = waist.findIndex(x => x.date === date); if (old >= 0) { value.id = waist[old].id; waist[old] = value; } else waist.push(value);
-  persistWaist(); renderWaist(); $('waistcm').value = ''; $('waistnote').value = ''; $('waistdate').value = localDay(); toast('Messung gespeichert.');
-});
-$('waisthistory').addEventListener('click', e => { const b = e.target.closest('[data-waist-delete]'); if (!b || !confirm('Diese Messung wirklich löschen?')) return; waist = waist.filter(x => x.date !== b.dataset.waistDelete); persistWaist(); renderWaist(); });
-$('waistcsv').addEventListener('click', exportWaistCsv);
+$('measurecsv').addEventListener('click', exportWaistCsv);
 $('waistcalendar').addEventListener('click', exportWaistReminder);
 $('guide-close').addEventListener('click', () => guide.close());
 guide.addEventListener('click', e => { if (e.target === guide) { const r = guide.getBoundingClientRect(); if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) guide.close(); } });

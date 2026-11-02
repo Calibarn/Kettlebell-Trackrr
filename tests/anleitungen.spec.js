@@ -134,7 +134,7 @@ test('Hüfte für Läufer und Sprunggelenk: Seiten, Zeiten und Abhaken', async (
 
 test('geführtes Lauf-Warm-up: Zeitschritte automatisch, Strecken zum Abhaken, +1 Min.', async ({ page }) => {
   await page.evaluate(() => showArea('laufen'));
-  await page.click('[data-runtab="race"]');
+  await page.click('[data-runtab="warmup"]');
   await page.click('[data-runsub="5k"]');
   await page.click('[data-routine="warmup"]');
   const steps = await page.evaluate(() => rt.steps.map(s => [s.name, s.secs, s.sides]));
@@ -156,7 +156,7 @@ test('geführtes Lauf-Warm-up: Zeitschritte automatisch, Strecken zum Abhaken, +
 
 test('Cooldown mit Essen: nicht-Übungen werden abgehakt, Dehnungen je Seite', async ({ page }) => {
   await page.evaluate(() => showArea('laufen'));
-  await page.click('[data-runtab="training"]');
+  await page.click('[data-runtab="warmup"]');
   await page.click('[data-runsub="long"]');
   await page.click('[data-routine="cooldown"]');
   const steps = await page.evaluate(() => rt.steps.map(s => [s.name, s.secs, s.sides]));

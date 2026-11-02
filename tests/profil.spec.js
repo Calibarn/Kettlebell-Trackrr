@@ -94,22 +94,42 @@ test('Geräte & Gewichte: eigene Kettlebells und Bänder steuern die Auswahl im 
   await expect(page.locator('#settings select[data-kg]').first().locator('option')).toHaveText(['12 kg (nicht im Profil)', '16 kg']);
 });
 
-test('Körpergewicht: speichern, ersetzen, Trend, löschen, Backup und Import', async ({ page }) => {
+test('Körpermaße: Gewicht und Bauchumfang in einem Formular, ersetzen, Trend, Diagramm-Umschalter, löschen, Backup und Import', async ({ page }) => {
   await openProfil(page);
   const d = await page.evaluate(() => [21, 14, 7, 0].map(n => addDays(localDay(), -n)));
-  for (const [i, kg] of ['123,4', '122,6', '122,3', '121,6'].entries()) { await page.fill('#weightdate', d[i]); await page.fill('#weightkg', kg); await page.click('#weightform button[type=submit]'); }
+  const save = async (date, kg, cm = '') => { await page.fill('#measuredate', date); await page.fill('#measurekg', kg); await page.fill('#measurecm', cm); await page.click('#measureform button[type=submit]'); };
+  for (const [i, kg] of ['123,4', '122,6', '122,3', '121,6'].entries()) await save(d[i], kg, i === 0 ? '118' : i === 3 ? '116,5' : '');
   await expect(page.locator('#weightlatest')).toHaveText('121,6 kg');
   await expect(page.locator('#weightdelta')).toHaveText('-1,8 kg');
   await expect(page.locator('#weightrate')).toHaveText('-0,6 kg');
-  await expect(page.locator('#weightchart svg circle')).toHaveCount(4);
-  await page.fill('#weightdate', d[3]); await page.fill('#weightkg', '121,0'); await page.click('#weightform button[type=submit]');
+  await expect(page.locator('#waistlatest')).toHaveText('116,5 cm');
+  await expect(page.locator('#waistdelta')).toHaveText('-1,5 cm');
+  await page.evaluate(() => { document.querySelector('#measurehistory').closest('details').open = true; });
+  await expect(page.locator('#measurehistory tr')).toHaveCount(4);
+  await expect(page.locator('#measurechart svg circle')).toHaveCount(4);
+  await page.click('[data-measure="waist"]');
+  await expect(page.locator('#measurechart svg circle')).toHaveCount(2);
+  await expect(page.locator('#measurechart svg')).toHaveAttribute('aria-label', /Bauchumfang/);
+  // nur Bauchumfang ändern: Gewicht des Tages bleibt
+  await save(d[3], '', '116');
+  expect(await page.evaluate(ds => [weights.find(e => e.date === ds).kg, waist.find(e => e.date === ds).cm], d[3])).toEqual([121.6, 116]);
+  await save(d[3], '121,0');
   expect(await page.evaluate(() => weights.length)).toBe(4);
   await expect(page.locator('#weightlatest')).toHaveText('121,0 kg');
-  await page.fill('#weightkg', '12'); await page.click('#weightform button[type=submit]');
-  await expect(page.locator('#weightkg')).toHaveAttribute('aria-invalid', 'true');
-  await page.evaluate(() => { document.querySelector('#weighthistory').closest('details').open = true; });
-  await page.click(`[data-weight-delete="${d[0]}"]`);
+  await save(d[3], '12');
+  await expect(page.locator('#measurekg')).toHaveAttribute('aria-invalid', 'true');
+  await save(d[3], '', '');
+  await expect(page.locator('#toast')).toContainText('Gewicht oder Bauchumfang');
+  await page.evaluate(() => { document.querySelector('#measurehistory').closest('details').open = true; });
+  await expect(page.locator('#measurehistory tr')).toHaveCount(4);
+  await page.click(`[data-measure-delete="${d[0]}"]`);
   await expect(page.locator('#weightdelta')).toHaveText('-1,6 kg');
+  expect(await page.evaluate(ds => waist.some(e => e.date === ds), d[0])).toBe(false); // beide Werte des Tages gelöscht
+  const dl = page.waitForEvent('download');
+  await page.click('#measurecsv');
+  const csv = require('fs').readFileSync(await (await dl).path(), 'utf8').replace(/^\ufeff/, '').split('\r\n');
+  expect(csv[0]).toBe('Datum;Gewicht (kg);Bauchumfang (cm);Notiz');
+  expect(csv.at(-1)).toBe(`${d[3]};121,0;116,0;`);
 
   const backup = JSON.parse(await page.evaluate(() => backupJson()));
   expect(backup.weights.map(e => e.date)).toEqual(d.slice(1));

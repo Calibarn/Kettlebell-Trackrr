@@ -57,7 +57,7 @@
 
   <div class="header">Mehr zu diesem Plan</div>
   <div class="group">
-    <details id="fold-settings"><summary class="row"><span class="icon" style="background:var(--orange)">⚙︎</span><span class="txt"><b>Übungen, Geräte &amp; Gewichte</b></span><span class="chev"></span></summary><div class="panel" id="settings"></div></details>
+    <details id="fold-settings"><summary class="row"><span class="icon" style="background:var(--orange)">⚙︎</span><span class="txt"><b>Übungen &amp; Varianten</b></span><span class="chev"></span></summary><div class="panel" id="settings"></div></details>
     <details><summary class="row"><span class="icon" style="background:var(--blue)">◷</span><span class="txt"><b>Aufwärmen &amp; Cooldown</b></span><span class="chev"></span></summary><div class="panel">
       <div class="header" style="margin-left:0">Aufwärmen</div><div class="group" id="warmup" style="background:var(--fill)"></div>
       <div class="header" style="margin-left:0">Cooldown</div><div class="group" id="cooldown" style="background:var(--fill)"></div>
@@ -77,6 +77,18 @@
       </form>
     </div></details>
   </div>
+
+  <div class="header">Wochenübersicht</div>
+  <div class="group"><div class="panel" style="border:0;padding-top:12px">
+    <div class="metrics">
+      <div class="metric"><span>Diese Woche</span><b id="weekcount">0</b><small id="weekrange"></small></div>
+      <div class="metric"><span>Ø Anstrengung</span><b id="weekrpe">–</b><small>diese Woche, 1–10</small></div>
+      <div class="metric"><span>Serie</span><b id="weekstreak">0</b><small>Wochen in Folge</small></div>
+    </div>
+    <div id="weekchart"></div>
+  </div></div>
+  <div class="group" id="weeklist" style="margin-top:12px"></div>
+  <p class="footer">Zählt alle gespeicherten Kraft-Einheiten, Woche von Montag bis Sonntag. Die Anstrengung trägst du nach dem Speichern ein oder später im Verlauf.</p>
 </section>
 
 <!-- ================= LAUFEN ================= -->
@@ -114,45 +126,32 @@
   <div class="group"><div class="panel" style="border:0;padding-top:12px" id="kitpanel"></div></div>
   <p class="footer">Was du besitzt. Im Bereich Kraft wählst du je Übung aus diesen Gewichten und Bändern; „Heute dabei“ bleibt dort.</p>
 
-  <div class="header">Körpergewicht</div>
+  <div class="header">Körpermaße</div>
   <div class="group"><div class="panel" style="border:0;padding-top:12px">
     <div class="metrics">
-      <div class="metric"><span>Letzter Wert</span><b id="weightlatest">–</b><small id="weightlastdate">Noch keine Messung</small></div>
-      <div class="metric"><span>Seit Beginn</span><b id="weightdelta">–</b><small>erste bis letzte</small></div>
-      <div class="metric"><span>Ø pro Woche</span><b id="weightrate">–</b><small>letzte 4 Wochen</small></div>
+      <div class="metric"><span>Gewicht</span><b id="weightlatest">–</b><small id="weightlastdate">Noch keine Messung</small></div>
+      <div class="metric"><span>Ø pro Woche</span><b id="weightrate">–</b><small>Gewicht, 4 Wochen</small></div>
+      <div class="metric"><span>Bauchumfang</span><b id="waistlatest">–</b><small id="waistlastdate">Noch keine Messung</small></div>
     </div>
-    <div id="weightchart" style="margin-top:10px"></div>
-    <form id="weightform" class="formgrid" style="margin-top:12px">
-      <div class="field"><label for="weightdate">Datum</label><input id="weightdate" type="date" required></div>
-      <div class="field"><label for="weightkg">Gewicht (kg)</label><input id="weightkg" type="text" inputmode="decimal" placeholder="z. B. 98,4" required></div>
-      <button type="submit" class="btn primary">Gewicht speichern</button>
-    </form>
-    <p class="tiny">Am besten morgens nach dem Aufstehen, gleiche Bedingungen. Für ein vorhandenes Datum wird der Wert ersetzt. Einzelne Tage schwanken – entscheidend ist der Trend über Wochen.</p>
-  </div></div>
-  <div class="group" style="margin-top:12px">
-    <details><summary class="row"><span class="txt"><b>Gewichtsprotokoll</b></span><span class="chev"></span></summary><div class="panel"><div style="overflow-x:auto"><table class="historytable"><thead><tr><th>Datum</th><th>Wert</th><th></th></tr></thead><tbody id="weighthistory"></tbody></table></div></div></details>
-  </div>
-
-  <div class="header">Bauchumfang</div>
-  <div class="group"><div class="panel" style="border:0;padding-top:12px">
-    <div class="metrics">
-      <div class="metric"><span>Letzter Wert</span><b id="waistlatest">–</b><small id="waistlastdate">Noch keine Messung</small></div>
-      <div class="metric"><span>Seit Beginn</span><b id="waistdelta">–</b><small>erste bis letzte</small></div>
-      <div class="metric"><span>Messungen</span><b id="waistcount">0</b><small>gesamt</small></div>
+    <div class="metrics two">
+      <div class="metric"><span>Gewicht gesamt</span><b id="weightdelta">–</b><small>erste bis letzte</small></div>
+      <div class="metric"><span>Bauch gesamt</span><b id="waistdelta">–</b><small>erste bis letzte</small></div>
     </div>
     <div class="alert" id="waistreminder" role="status"></div>
-    <div id="waistchart" style="margin-top:10px"></div>
-    <form id="waistform" class="formgrid" style="margin-top:12px">
-      <div class="field"><label for="waistdate">Datum</label><input id="waistdate" type="date" required></div>
-      <div class="field"><label for="waistcm">Bauchumfang (cm)</label><input id="waistcm" type="text" inputmode="decimal" placeholder="z. B. 112,5" required></div>
-      <div class="field" style="grid-column:1/-1"><label for="waistnote">Notiz (optional)</label><input id="waistnote" type="text" maxlength="120" placeholder="z. B. morgens, nüchtern"></div>
+    <div class="segmented" role="tablist" aria-label="Diagramm" id="measuretabs" style="margin-top:12px"><button role="tab" type="button" data-measure="weight">Gewicht</button><button role="tab" type="button" data-measure="waist">Bauchumfang</button></div>
+    <div id="measurechart"></div>
+    <form id="measureform" class="formgrid" style="margin-top:12px">
+      <div class="field" style="grid-column:1/-1"><label for="measuredate">Datum</label><input id="measuredate" type="date" required></div>
+      <div class="field"><label for="measurekg">Gewicht (kg)</label><input id="measurekg" type="text" inputmode="decimal" autocomplete="off" placeholder="z. B. 98,4"></div>
+      <div class="field"><label for="measurecm">Bauchumfang (cm)</label><input id="measurecm" type="text" inputmode="decimal" autocomplete="off" placeholder="z. B. 112,5"></div>
+      <div class="field" style="grid-column:1/-1"><label for="measurenote">Notiz (optional)</label><input id="measurenote" type="text" maxlength="120" autocomplete="off" placeholder="z. B. morgens, nüchtern"></div>
       <button type="submit" class="btn primary">Messung speichern</button>
     </form>
-    <p class="tiny">Morgens vor dem Frühstück, im Stehen, auf Nabelhöhe nach normalem Ausatmen messen. Für ein vorhandenes Datum wird der Wert ersetzt.</p>
+    <p class="tiny">Einmal pro Woche morgens vor dem Frühstück: wiegen und im Stehen auf Nabelhöhe nach normalem Ausatmen messen. Ein Wert reicht – leere Felder lassen einen vorhandenen Wert des Tages unverändert. Einzelne Tage schwanken, entscheidend ist der Trend.</p>
   </div></div>
   <div class="group" style="margin-top:12px">
-    <details><summary class="row"><span class="txt"><b>Messprotokoll</b></span><span class="chev"></span></summary><div class="panel"><div style="overflow-x:auto"><table class="historytable"><thead><tr><th>Datum</th><th>Wert</th><th>Notiz</th><th></th></tr></thead><tbody id="waisthistory"></tbody></table></div></div></details>
-    <button class="row" type="button" id="waistcsv"><span class="txt"><b>Messungen als CSV</b></span><span class="chev"></span></button>
+    <details><summary class="row"><span class="txt"><b>Messprotokoll</b></span><span class="chev"></span></summary><div class="panel"><div style="overflow-x:auto"><table class="historytable"><thead><tr><th>Datum</th><th>Gewicht</th><th>Bauch</th><th>Notiz</th><th></th></tr></thead><tbody id="measurehistory"></tbody></table></div></div></details>
+    <button class="row" type="button" id="measurecsv"><span class="txt"><b>Körpermaße als CSV</b></span><span class="chev"></span></button>
     <button class="row" type="button" id="waistcalendar"><span class="txt"><b>Wöchentliche Erinnerung</b><small>Kalenderdatei, montags 08:00 Uhr</small></span><span class="chev"></span></button>
   </div>
 
@@ -169,18 +168,6 @@
 <!-- ================= MEHR ================= -->
 <section class="area wrap hide" id="area-mehr" aria-labelledby="t-mehr">
   <h1 class="largetitle" id="t-mehr">Mehr</h1>
-
-  <div class="header">Wochenübersicht · Kraft</div>
-  <div class="group"><div class="panel" style="border:0;padding-top:12px">
-    <div class="metrics">
-      <div class="metric"><span>Diese Woche</span><b id="weekcount">0</b><small id="weekrange"></small></div>
-      <div class="metric"><span>Ø Anstrengung</span><b id="weekrpe">–</b><small>diese Woche, 1–10</small></div>
-      <div class="metric"><span>Serie</span><b id="weekstreak">0</b><small>Wochen in Folge</small></div>
-    </div>
-    <div id="weekchart"></div>
-  </div></div>
-  <div class="group" id="weeklist" style="margin-top:12px"></div>
-  <p class="footer">Zählt alle gespeicherten Kraft-Einheiten, Woche von Montag bis Sonntag. Die Anstrengung trägst du nach dem Speichern ein oder später im Verlauf.</p>
 
   <div class="header">Neuigkeiten</div>
   <div class="group">
@@ -207,39 +194,39 @@
     </div></details>
     <details><summary class="row"><span class="icon" style="background:var(--red)">⏱</span><span class="txt"><b>Tabata</b><small>komplett automatisch, mit oder ohne Geräte</small></span><span class="chev"></span></summary><div class="panel">
       <ol><li>Plan <b>Tabata</b> wählen, bei „Heute dabei“ die Geräte einstellen (die App wählt die besten Übungen) und <b>Starten</b> tippen – danach musst du nichts mehr antippen.</li><li>Je Übung 20 Sek. Arbeit (grüner Ring) und 10 Sek. Pause (oranger Ring). Ein Ton kündigt jeden Wechsel an, 3-2-1 vorher.</li><li>Zwischen den Übungen gibt es eine längere Pause, die Anzeige nennt die nächste Übung.</li><li>Nach dem Cooldown wird die Einheit automatisch gespeichert.</li></ol>
-      <p class="tiny">Runden (6 oder 8) und Pause zwischen den Übungen (60 oder 90 Sek.) stellst du unter „Übungen, Geräte &amp; Gewichte“ ein. Einstieg: 6 Runden, 90 Sek. Nach drei kompletten Einheiten in Folge (Anstrengung unter 9) schlägt die App die nächste Steigerung vor.</p>
+      <p class="tiny">Runden (6 oder 8) und Pause zwischen den Übungen (60 oder 90 Sek.) stellst du unter „Übungen &amp; Varianten“ ein. Einstieg: 6 Runden, 90 Sek. Nach drei kompletten Einheiten in Folge (Anstrengung unter 9) schlägt die App die nächste Steigerung vor.</p>
     </div></details>
     <details><summary class="row"><span class="icon" style="background:var(--orange)">🎯</span><span class="txt"><b>Core</b><small>EMOM im Knien, fest mit Kettlebell</small></span><span class="chev"></span></summary><div class="panel">
       <ol><li>Plan <b>Core</b> wählen und <b>Starten</b> tippen. Der Plan nutzt immer die Kettlebell – „Heute dabei“ gilt hier nicht.</li><li>Jede Minute beginnt die nächste Übung: Clean &amp; Press im halben Kniestand, Pullover im Kniestand, Wrestler-Halo. Wiederholungen machen, im Rest der Minute Pause.</li><li>Ton und Ansage bei jedem Minutenwechsel, 3-2-1 vorher. Nach dem Cooldown wird die Einheit automatisch gespeichert.</li></ol>
-      <p class="tiny">Einstieg: 5 Runden = 15 Minuten. Runden (4, 5 oder 6) und das Gewicht stellst du unter „Übungen, Geräte &amp; Gewichte“ ein. Nach drei kompletten Einheiten in Folge (Anstrengung unter 9) schlägt die App eine Runde mehr vor. Brauchst du für eine Übung mehr als etwa 45 Sekunden, nimm eine Wiederholung weniger.</p>
+      <p class="tiny">Einstieg: 5 Runden = 15 Minuten. Runden (4, 5 oder 6) und das Gewicht stellst du unter „Übungen &amp; Varianten“ ein. Nach drei kompletten Einheiten in Folge (Anstrengung unter 9) schlägt die App eine Runde mehr vor. Brauchst du für eine Übung mehr als etwa 45 Sekunden, nimm eine Wiederholung weniger.</p>
     </div></details>
     <details><summary class="row"><span class="icon" style="background:var(--accent)">#</span><span class="txt"><b>Sätze eintragen</b><small>Plan „Läufer“</small></span><span class="chev"></span></summary><div class="panel">
       <ol><li>Nach jedem Satz die geschafften Wiederholungen (bzw. Sekunden) in das Feld eintragen.</li><li>Unter jeder Übung steht, was du beim letzten Mal geschafft hast.</li><li>Mit der Auswahl unter der Übung stellst du die Stufe ein, z. B. Bulgarian Split Squat oder Tempo 3-1-1.</li><li>Für den Swing <b>▶ EMOM starten</b>: Zu jeder Minute ertönt ein Signal, danach die Wiederholungen bei Min. 1–3 eintragen.</li></ol>
       <p class="tiny">Progression: erst Wiederholungen bis zur Obergrenze steigern (z. B. 15), dann Tempo, dann die schwerere Stufe oder mehr Gewicht. Schaffst du in allen Sätzen die Obergrenze, zeigt die App unter der Übung <b>↑ Bereit für mehr</b> – bei Stufen mit <b>Übernehmen</b> zum direkten Umstellen.</p>
     </div></details>
-    <details><summary class="row"><span class="icon" style="background:var(--orange)">⚙︎</span><span class="txt"><b>Geräte, Varianten &amp; Gewichte</b></span><span class="chev"></span></summary><div class="panel">
-      <ol><li>Im Bereich Kraft unten <b>Übungen, Geräte &amp; Gewichte</b> öffnen.</li><li>Standard ist <b>Automatisch</b>: die wirksamste Variante aus „Heute dabei“, mit kurzer Begründung. Je Übung kannst du stattdessen eine bestimmte Variante festlegen.</li><li>Kettlebell-Gewicht bzw. Bandstärke wählen. Zur Auswahl stehen die Gewichte und Bänder aus <b>Profil → Geräte &amp; Gewichte</b>; dort legst du auch das Standardgewicht fest.</li><li>Neue, schwerere Kugel? Im Profil hinzufügen, dann setzt <b>Alle Kettlebell-Übungen</b> alle Gewichte des Plans auf einmal.</li></ol>
+    <details><summary class="row"><span class="icon" style="background:var(--orange)">⚙︎</span><span class="txt"><b>Übungen &amp; Varianten</b></span><span class="chev"></span></summary><div class="panel">
+      <ol><li>Im Bereich Kraft unten <b>Übungen &amp; Varianten</b> öffnen.</li><li>Standard ist <b>Automatisch</b>: die wirksamste Variante aus „Heute dabei“, mit kurzer Begründung. Je Übung kannst du stattdessen eine bestimmte Variante festlegen.</li><li>Kettlebell-Gewicht bzw. Bandstärke wählen. Zur Auswahl stehen die Gewichte und Bänder aus <b>Profil → Geräte &amp; Gewichte</b>; dort legst du auch das Standardgewicht fest.</li><li>Neue, schwerere Kugel? Im Profil hinzufügen, dann setzt <b>Alle Kettlebell-Übungen</b> alle Gewichte des Plans auf einmal.</li></ol>
       <p class="tiny">Einstellungen gelten je Plan und werden gemerkt. Während eines laufenden Zirkels sind sie gesperrt, damit das Ergebnis zu den Übungen passt.</p>
     </div></details>
     <details><summary class="row"><span class="icon" style="background:var(--accent)">▥</span><span class="txt"><b>Verlauf &amp; Bestwerte</b></span><span class="chev"></span></summary><div class="panel">
       <ol><li>Im Bereich Kraft unten <b>Verlauf</b> öffnen: Diagramm und Tagebuch des gewählten Plans. 🏆 markiert den Bestwert.</li><li>Bestwerte zählen nur Einheiten mit gleichem Aufbau (Übungen, Geräte, Gewichte, Stufen).</li><li>Abweichende Einheiten erscheinen blass mit „anderer Aufbau“.</li><li>Ohne App trainiert? <b>Training nachtragen</b> speichert eine Einheit mit beliebigem Datum.</li></ol>
     </div></details>
     <details><summary class="row"><span class="icon" style="background:var(--red)">◉</span><span class="txt"><b>Anstrengung, Notiz &amp; Woche</b></span><span class="chev"></span></summary><div class="panel">
-      <ol><li>Nach dem Speichern zeigt die App eine Zusammenfassung mit neuem Bestwert und Hinweisen zur Steigerung.</li><li>Dort die gefühlte <b>Anstrengung von 1 bis 10</b> antippen und optional eine Notiz schreiben (z. B. „schlecht geschlafen“). <b>Später</b> überspringt.</li><li>Nachträglich ändern: im <b>Verlauf</b> auf das Ergebnis tippen.</li><li>Die <b>Wochenübersicht</b> oben unter Mehr zeigt Einheiten pro Woche, die Ø-Anstrengung und wie viele Wochen in Folge du trainiert hast.</li></ol>
+      <ol><li>Nach dem Speichern zeigt die App eine Zusammenfassung mit neuem Bestwert und Hinweisen zur Steigerung.</li><li>Dort die gefühlte <b>Anstrengung von 1 bis 10</b> antippen und optional eine Notiz schreiben (z. B. „schlecht geschlafen“). <b>Später</b> überspringt.</li><li>Nachträglich ändern: im <b>Verlauf</b> auf das Ergebnis tippen.</li><li>Die <b>Wochenübersicht</b> unten im Bereich Kraft zeigt Einheiten pro Woche, die Ø-Anstrengung und wie viele Wochen in Folge du trainiert hast.</li></ol>
       <p class="tiny">Richtwert: Die meisten Einheiten bei 6–8. Mehrmals 9–10 hintereinander spricht für mehr Erholung.</p>
     </div></details>
     <details><summary class="row"><span class="icon" style="background:var(--blue)">ⓘ</span><span class="txt"><b>Anleitungen zu den Übungen</b></span><span class="chev"></span></summary><div class="panel">
       <ol><li>Jede Übung antippen – in Kraft, Laufen, Mobility sowie bei Aufwärmen und Cooldown.</li><li>Die Skizze zeigt Start und Bewegung, darunter stehen Ausführung, Wirkung und worauf du achten musst.</li><li>Mit <b>Fertig</b> oder Tippen daneben schließen.</li></ol>
     </div></details>
     <details><summary class="row"><span class="icon" style="background:#8e8e93">👤</span><span class="txt"><b>Profil</b><small>Woche, Herzfrequenz, Geräte, Körperwerte</small></span><span class="chev"></span></summary><div class="panel">
-      <ol><li><b>Trainingswoche:</b> Tage für Qualität, Longrun, Laufgruppe, Kraft und eine weitere Einheit – jede lässt sich mit „keine“ abschalten. Fällt etwas nur einmal aus (z. B. die Laufgruppe), in der Plan-Übersicht bei der Einheit <b>Entfällt</b> tippen; das gilt nur für diese Woche. Plan und Kalender-Export legen die Einheiten auf diese Tage. Liegen harte Tage direkt hintereinander, erscheint ein Hinweis.</li><li><b>Herzfrequenz:</b> Maximale und Ruhe-HF eintragen und <b>Zonen berechnen</b> (Karvonen) – oder die Grenzen deiner Uhr direkt eintragen. Der Plan zeigt dann z. B. „Zone 2 (136–148 bpm)“.</li><li><b>Geräte &amp; Gewichte:</b> deine Kettlebells (verstellbare: jede Stufe einzeln) und Bänder. Im Kraft-Bereich wählst du nur noch aus diesen.</li><li><b>Körpergewicht</b> und <b>Bauchumfang</b> mit Verlauf; beim Gewicht zeigt „Ø pro Woche“ den Trend der letzten 4 Wochen.</li><li><b>Ton &amp; Ansagen</b> und Ton testen.</li></ol>
+      <ol><li><b>Trainingswoche:</b> Tage für Qualität, Longrun, Laufgruppe, Kraft und eine weitere Einheit – jede lässt sich mit „keine“ abschalten. Fällt etwas nur einmal aus (z. B. die Laufgruppe), in der Plan-Übersicht bei der Einheit <b>Entfällt</b> tippen; das gilt nur für diese Woche. Plan und Kalender-Export legen die Einheiten auf diese Tage. Liegen harte Tage direkt hintereinander, erscheint ein Hinweis.</li><li><b>Herzfrequenz:</b> Maximale und Ruhe-HF eintragen und <b>Zonen berechnen</b> (Karvonen) – oder die Grenzen deiner Uhr direkt eintragen. Der Plan zeigt dann z. B. „Zone 2 (136–148 bpm)“.</li><li><b>Geräte &amp; Gewichte:</b> deine Kettlebells (verstellbare: jede Stufe einzeln) und Bänder. Im Kraft-Bereich wählst du nur noch aus diesen.</li><li><b>Körpermaße:</b> Gewicht und Bauchumfang in einem Formular, mit Verlauf und Trend.</li><li><b>Ton &amp; Ansagen</b> und Ton testen.</li></ol>
     </div></details>
     <details><summary class="row"><span class="icon" style="background:#5e5ce6">🏃</span><span class="txt"><b>Laufen &amp; Mobility</b><small>Anleitungen ohne Tracking</small></span><span class="chev"></span></summary><div class="panel">
-      <ol><li><b>Laufen → Plan:</b> Unter „Rennen“ A-Rennen (Hauptrennen) und B-Rennen mit Datum, Distanz und optional Zielzeit eintragen. Für jedes A-Rennen baut der Plan einen Block: Grundlage, Aufbau, spezifische Phase und Tapering, danach Erholung. „Plan“ zeigt diese Woche mit Longrun, Wochen-km und Qualitätseinheit sowie die ganze Saison. Longrun und Wochen-km kommen aus deinem Umfang (höchstens +10 % pro Woche, jede 4. Woche Entlastung) – trag deine Läufe also weiter unter Umfang ein. „Bestzeiten“: alle Ergebnisse je Distanz eintragen (oder aus einem vergangenen Rennen übernehmen) – die App erkennt neue Bestzeiten, zeigt die Verbesserung als Grafik und eine Prognose für die anderen Distanzen. „Wissen“ hat den Renntempo-Rechner, Pacing, Tapering, Verpflegung und die Checkliste für die Rennwoche.</li><li><b>Laufen → Wettkampf:</b> Distanz wählen (5 km bis Marathon) für Warm-up und Cooldown am Renntag.</li><li><b>Laufen → Training:</b> Intervall, Speed oder Longrun.</li><li><b>Laufen → ABC:</b> Koordinationsübungen nach dem Einlaufen.</li><li><b>Laufen → Umfang:</b> Läufe mit Datum eintragen – einzeln oder als CSV (<b>CSV-Vorlage herunterladen</b>, ausfüllen, <b>Läufe aus CSV importieren</b>; Spalten Datum und km, doppelte Läufe werden übersprungen) (oder für ältere Wochen die Wochensumme und den längsten Lauf). Ganz oben steht, wie lang dein nächster langer Lauf höchstens sein sollte: längster Lauf der letzten 30 Tage plus 10 %. Läufe darüber werden orange markiert. Darunter der Zielbereich der Woche (Erhalt 0,8–1,0 × Schnitt der letzten 4 Wochen, Aufbau bis 1,3 ×). Alles bleibt gespeichert und ist im Backup enthalten.</li><li><b>Mobility → Läufer:</b> Nach dem Lauf, Hüfte und Sprunggelenk – je ein Kurzprogramm. „Hüfte“ ist Kräftigung statt Dehnung; die Copenhagen Hip Dips mit der Knie-Variante beginnen.</li><li><b>Mobility → Alltag:</b> Morgens und Nach dem Sitzen.</li><li><b>Mobility → Übungen:</b> einzelne Übungen nach Körperbereich (Hüfte, Rücken, Schultern, Beine &amp; Fuß).</li><li><b>▶ Geführt</b> bzw. <b>▶ Starten</b> öffnet einen Ablauf Schritt für Schritt: Zeitangaben laufen mit Countdown, Seitenwechsel und Ansage automatisch weiter. Strecken und Wiederholungen (z. B. 2 × 20 m) hakst du mit <b>✓ Erledigt</b> ab. Bei Zeitbereichen (10–15 Min.) gilt die kürzere Zeit, <b>+1 Min.</b> verlängert.</li></ol>
+      <ol><li><b>Laufen → Plan:</b> Unter „Rennen“ A-Rennen (Hauptrennen) und B-Rennen mit Datum, Distanz und optional Zielzeit eintragen. Für jedes A-Rennen baut der Plan einen Block: Grundlage, Aufbau, spezifische Phase und Tapering, danach Erholung. „Plan“ zeigt diese Woche mit Longrun, Wochen-km und Qualitätseinheit sowie die ganze Saison. Longrun und Wochen-km kommen aus deinem Umfang (höchstens +10 % pro Woche, jede 4. Woche Entlastung) – trag deine Läufe also weiter unter Umfang ein. „Bestzeiten“: alle Ergebnisse je Distanz eintragen (oder aus einem vergangenen Rennen übernehmen) – die App erkennt neue Bestzeiten, zeigt die Verbesserung als Grafik und eine Prognose für die anderen Distanzen. „Wissen“ hat den Renntempo-Rechner, Pacing, Tapering, Verpflegung und die Checkliste für die Rennwoche.</li><li><b>Laufen → Warm-up:</b> Warm-up und Cooldown für den Renntag (5 km bis Marathon) oder fürs Training (Intervall, Speed, Longrun).</li><li><b>Laufen → Lauf-ABC:</b> Koordinationsübungen nach dem Einlaufen.</li><li><b>Laufen → Umfang:</b> Läufe mit Datum eintragen – einzeln oder als CSV (<b>CSV-Vorlage herunterladen</b>, ausfüllen, <b>Läufe aus CSV importieren</b>; Spalten Datum und km, doppelte Läufe werden übersprungen) (oder für ältere Wochen die Wochensumme und den längsten Lauf). Ganz oben steht, wie lang dein nächster langer Lauf höchstens sein sollte: längster Lauf der letzten 30 Tage plus 10 %. Läufe darüber werden orange markiert. Darunter der Zielbereich der Woche (Erhalt 0,8–1,0 × Schnitt der letzten 4 Wochen, Aufbau bis 1,3 ×). Alles bleibt gespeichert und ist im Backup enthalten.</li><li><b>Mobility → Läufer:</b> Nach dem Lauf, Hüfte und Sprunggelenk – je ein Kurzprogramm. „Hüfte“ ist Kräftigung statt Dehnung; die Copenhagen Hip Dips mit der Knie-Variante beginnen.</li><li><b>Mobility → Alltag:</b> Morgens und Nach dem Sitzen.</li><li><b>Mobility → Übungen:</b> einzelne Übungen nach Körperbereich (Hüfte, Rücken, Schultern, Beine &amp; Fuß).</li><li><b>▶ Geführt</b> bzw. <b>▶ Starten</b> öffnet einen Ablauf Schritt für Schritt: Zeitangaben laufen mit Countdown, Seitenwechsel und Ansage automatisch weiter. Strecken und Wiederholungen (z. B. 2 × 20 m) hakst du mit <b>✓ Erledigt</b> ab. Bei Zeitbereichen (10–15 Min.) gilt die kürzere Zeit, <b>+1 Min.</b> verlängert.</li></ol>
       <p class="tiny">Läuft gerade ein Kraft-Training, zeigt eine grüne Anzeige unten die Restzeit – antippen führt zurück. Beim Laufen mit Handy in der Tasche: Bei gesperrtem Bildschirm pausiert das iPhone die App, Ansagen kommen dann erst beim Entsperren.</p>
     </div></details>
-    <details><summary class="row"><span class="icon" style="background:var(--orange)">📏</span><span class="txt"><b>Bauchumfang</b></span><span class="chev"></span></summary><div class="panel">
-      <ol><li>Einmal pro Woche morgens vor dem Frühstück messen: stehend, auf Nabelhöhe, nach normalem Ausatmen.</li><li>Wert unter <b>Profil</b> eintragen und speichern.</li><li>Optional die <b>Wöchentliche Erinnerung</b> als Kalenderdatei laden und in den Kalender übernehmen.</li></ol>
+    <details><summary class="row"><span class="icon" style="background:var(--orange)">📏</span><span class="txt"><b>Körpermaße</b></span><span class="chev"></span></summary><div class="panel">
+      <ol><li>Einmal pro Woche morgens vor dem Frühstück wiegen und den Bauchumfang messen: stehend, auf Nabelhöhe, nach normalem Ausatmen.</li><li>Unter <b>Profil → Körpermaße</b> eintragen – ein Wert reicht, leere Felder lassen den vorhandenen Wert des Tages stehen.</li><li>Oben zwischen <b>Gewicht</b> und <b>Bauchumfang</b> wechseln; „Ø pro Woche“ zeigt den Gewichtstrend der letzten 4 Wochen.</li><li>Optional die <b>Wöchentliche Erinnerung</b> als Kalenderdatei laden.</li></ol>
     </div></details>
     <details><summary class="row"><span class="icon" style="background:var(--blue)">⇩</span><span class="txt"><b>Daten sichern &amp; wiederherstellen</b></span><span class="chev"></span></summary><div class="panel">
       <ol><li><b>In Datei sichern</b> tippen. Auf dem iPhone öffnet sich „Teilen“ → <b>In Dateien sichern</b> wählen.</li><li>Am besten alle zwei Wochen sichern – die App erinnert dich daran.</li><li>Neues Gerät oder Daten verloren: <b>Aus Datei wiederherstellen</b> und die Datei auswählen. Doppelte Einträge werden übersprungen.</li></ol>
@@ -251,6 +238,8 @@
     <details><summary class="row"><span class="icon" style="background:#8e8e93">🔊</span><span class="txt"><b>Ton &amp; Bildschirm</b></span><span class="chev"></span></summary><div class="panel">
       <ol><li>Vor dem ersten Training unter <b>Profil → Ton &amp; Ansagen</b> den Ton testen.</li><li><b>Sprachansagen</b> nennen die nächste Übung, Seitenwechsel, Rundenende und „Noch eine Minute“. Genutzt werden nur Stimmen, die auf dem Gerät laufen – nichts geht ins Internet.</li><li>iPhone: Normalerweise ist bei eingeschaltetem Stummschalter nichts zu hören. <b>Ton trotz Stummschalter</b> ändert das, kann aber laufende Musik pausieren.</li><li>Der Bildschirm bleibt während des Trainings an, sofern das Gerät das unterstützt.</li><li>App geschlossen oder Anruf dazwischen? Beim nächsten Öffnen läuft das Training weiter.</li></ol>
     </div></details>
+    <details><summary class="row"><span class="icon" style="background:#8e8e93">⚖︎</span><span class="txt"><b>Belastung &amp; Technik</b></span><span class="chev"></span></summary><div class="panel"><p class="tiny">Saubere Wiederholungen gehen vor Tempo. Einen Satz beenden, solange noch 2–3 saubere Wiederholungen möglich wären. Bei der Anstrengung ausatmen, nicht die Luft anhalten. Freie, rutschfeste Fläche; Kettlebell-Griff und Bänder vorher prüfen.</p></div></details>
+    <details><summary class="row"><span class="icon" style="background:#5e5ce6">⚕︎</span><span class="txt"><b>Laufen &amp; Beschwerden</b></span><span class="chev"></span></summary><div class="panel"><p class="tiny">Nach einem harten Longrun ist die Kraft-Einheit optional. Bei Schmerzen im Mittelfuß Wadenheben, Standwaage, Ausfallschritte und Sprungübungen im Lauf-ABC anpassen oder auslassen.</p></div></details>
   </div>
 
   <div class="header">Geräte-Sync</div>
@@ -275,7 +264,7 @@
   <div class="header">Daten &amp; Datenschutz</div>
   <div class="group">
     <button class="row" type="button" id="savefile"><span class="icon" style="background:var(--blue)">⇩</span><span class="txt"><b>In Datei sichern</b><small id="savefilehint">Backup als Datei auf diesem Gerät ablegen</small></span><span class="chev"></span></button>
-    <button class="row" type="button" id="importbtn"><span class="icon" style="background:var(--accent)">⇧</span><span class="txt"><b>Aus Datei wiederherstellen</b><small>Doppelte Einträge werden übersprungen</small></span><span class="chev"></span></button>
+    <button class="row" type="button" id="importbtn"><span class="icon" style="background:var(--accent)">⇧</span><span class="txt"><b>Aus Datei wiederherstellen</b><small>Backup oder Sync-Datei; Doppeltes wird übersprungen</small></span><span class="chev"></span></button>
     <button class="row hide" type="button" id="preupdate"><span class="icon" style="background:var(--orange)">↺</span><span class="txt"><b>Sicherung vor dem letzten Update</b><small id="preupdatehint">Automatisch angelegt</small></span><span class="chev"></span></button>
     <button class="row" type="button" id="exportcsv"><span class="icon" style="background:#8e8e93">▤</span><span class="txt"><b>Trainings als CSV</b></span><span class="chev"></span></button>
     <button class="row" type="button" id="settingsreset"><span class="icon" style="background:var(--orange)">↺</span><span class="txt"><b>Einstellungen zurücksetzen</b><small>Profil, Übungen, Ton und Ansichten – deine Daten bleiben</small></span><span class="chev"></span></button>
@@ -285,13 +274,6 @@
   <p class="footer">Alle Daten liegen ausschließlich im Speicher dieses Geräts. Die App ist technisch so abgesichert, dass sie keine Verbindung zu fremden Servern aufbauen kann (Content-Security-Policy). Daten verlassen das Gerät nur, wenn du selbst eine Datei sicherst. Updates ersetzen nur die App-Dateien, nie deine Daten.</p>
   <p class="footer" id="storageinfo"></p>
 
-  <div class="header">Hinweise</div>
-  <div class="group">
-    <details><summary class="row"><span class="txt"><b>Belastung &amp; Technik</b></span><span class="chev"></span></summary><div class="panel"><p class="tiny">Saubere Wiederholungen gehen vor Tempo. Einen Satz beenden, solange noch 2–3 saubere Wiederholungen möglich wären. Bei der Anstrengung ausatmen, nicht die Luft anhalten. Freie, rutschfeste Fläche; Kettlebell-Griff und Bänder vorher prüfen.</p></div></details>
-    <details><summary class="row"><span class="txt"><b>Vergleichbarkeit</b></span><span class="chev"></span></summary><div class="panel"><p class="tiny">Bestwerte zählen nur Einheiten mit gleichen Übungen, Geräten, Gewichten und Stufen. Abweichende Einheiten erscheinen im Verlauf blass mit „anderer Aufbau“.</p></div></details>
-    <details><summary class="row"><span class="txt"><b>Laufen &amp; Beschwerden</b></span><span class="chev"></span></summary><div class="panel"><p class="tiny">Nach einem harten Longrun ist die Kraft-Einheit optional. Bei Schmerzen im Mittelfuß Wadenheben, Standwaage, Ausfallschritte und Sprungübungen im Lauf-ABC anpassen oder auslassen.</p></div></details>
-    <details><summary class="row"><span class="txt"><b>Timer &amp; App</b></span><span class="chev"></span></summary><div class="panel"><p class="tiny">Der Bildschirm bleibt während des Trainings an, sofern das Gerät das unterstützt. Wird die App geschlossen, läuft das Training beim nächsten Öffnen weiter. Auf dem iPhone die App über „Teilen → Zum Home-Bildschirm“ installieren und nur noch über das Symbol öffnen.</p></div></details>
-  </div>
 </section>
 
 <!-- ================= Leisten ================= -->

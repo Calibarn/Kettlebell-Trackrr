@@ -17,7 +17,7 @@ test.describe('Neuigkeiten', () => {
     await expect(page.locator('#notes')).toBeHidden();
 
     await page.evaluate(() => showArea('mehr'));
-    await expect(page.locator('#noteshint')).toContainText('Grundstand');
+    await expect(page.locator('#noteshint')).toContainText(await page.evaluate(() => CHANGELOG[0].title));
     await page.click('#notesbtn');
     await expect(page.locator('#notes-title')).toHaveText('Neuigkeiten');
     await expect(page.locator('#notes-body h3')).toHaveCount(await page.evaluate(() => CHANGELOG.length));
@@ -43,14 +43,14 @@ test('jeder Neuigkeiten-Eintrag hat eine eindeutige id, ein gültiges Datum und 
 test('Neuigkeiten: wer nichts gesehen hat, bekommt alle; wer den Grundstand kennt, nur Neueres', async ({ page }) => {
   const shown = seen => page.evaluate(sv => {
     const real = CHANGELOG.slice();
-    CHANGELOG.splice(0, CHANGELOG.length, { id: 'neu2', date: '2026-12-01', title: 'Zweites Update', items: [['A', 'b']] }, { id: 'neu1', date: '2026-11-20', title: 'Erstes Update', items: [['A', 'b']] }, ...real);
+    CHANGELOG.splice(0, CHANGELOG.length, { id: 'neu2', date: '2026-12-01', title: 'Zweites Update', items: [['A', 'b']] }, { id: 'neu1', date: '2026-11-20', title: 'Erstes Update', items: [['A', 'b']] }, real.at(-1));
     notesOpt.seen = sv; openNotes(false);
     const t = [...document.querySelectorAll('#notes-body h3')].map(h => h.textContent);
     $('notes').close(); CHANGELOG.splice(0, CHANGELOG.length, ...real); return t;
   }, seen);
   expect(await shown(null)).toEqual(['Zweites Update', 'Erstes Update', 'Grundstand: alle Funktionen']);
   expect(await shown('gibtsnicht')).toEqual(['Zweites Update', 'Erstes Update', 'Grundstand: alle Funktionen']);
-  expect(await shown('2026-11-02')).toEqual(['Zweites Update', 'Erstes Update']);
+  expect(await shown(await page.evaluate(() => CHANGELOG.at(-1).id))).toEqual(['Zweites Update', 'Erstes Update']);
   expect(await shown('neu1')).toEqual(['Zweites Update']);
   expect(await shown('neu2')).toEqual(['Zweites Update']);
 });
@@ -58,7 +58,7 @@ test('Neuigkeiten: wer nichts gesehen hat, bekommt alle; wer den Grundstand kenn
 test('Neuigkeiten für Neulinge: höchstens die 3 neuesten Updates plus Grundstand', async ({ page }) => {
   const r = await page.evaluate(() => {
     const real = CHANGELOG.slice(), up = [5, 4, 3, 2, 1].map(n => ({ id: 'u' + n, date: `2027-0${n}-01`, title: 'Update ' + n, items: [['A', 'b']] }));
-    CHANGELOG.splice(0, CHANGELOG.length, ...up, ...real);
+    CHANGELOG.splice(0, CHANGELOG.length, ...up, real.at(-1));
     notesOpt.seen = null; openNotes(false);
     const t = [...document.querySelectorAll('#notes-body h3')].map(h => h.textContent), txt = $('notes-body').textContent;
     notesOpt.seen = 'u2'; openNotes(false);

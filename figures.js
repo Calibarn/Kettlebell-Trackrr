@@ -258,7 +258,8 @@ function renderFigure(name, gear) {
   if (!f) return '';
   const mk = 'kbt-ah' + (++figCounter);
   const defs = `<defs><marker id="${mk}" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path class="farrowhead" d="M0 0L10 5L0 10z"/></marker></defs>`;
-  const frame = (x, part, label) => `<g transform="translate(${x},14)"><path class="fground" d="M4 190H196" stroke-width="2"/>${figProps(part.props, true, mk)}${figPerson(part.P)}${figProps(part.props, false, mk)}<text class="ftext" x="100" y="220" text-anchor="middle" font-size="13">${figEsc(label)}</text></g>`;
+  // Ansicht farblich unterscheiden: von vorne (Frontansicht) bzw. seitlich, dazu eine kleine Beschriftung
+  const frame = (x, part, label) => `<g transform="translate(${x},14)" class="${part.P.front ? 'vfront' : 'vside'}"><path class="fground" d="M4 190H196" stroke-width="2"/><text class="fview" x="192" y="14" text-anchor="end" font-size="11" font-weight="600">${part.P.front ? 'vorne' : 'seitlich'}</text>${figProps(part.props, true, mk)}${figPerson(part.P)}${figProps(part.props, false, mk)}<text class="ftext" x="100" y="220" text-anchor="middle" font-size="13">${figEsc(label)}</text></g>`;
   const label = f.b ? `${f.la} → ${f.lb}` : f.la;
   if (!f.b) return `<svg class="guideart" viewBox="0 0 440 250" role="img" aria-label="Skizze ${figEsc(name)}: ${figEsc(label)}">${defs}${frame(120, f.a, f.la)}</svg>`;
   return `<svg class="guideart" viewBox="0 0 440 250" role="img" aria-label="Skizze ${figEsc(name)}: ${figEsc(label)}">${defs}${frame(10, f.a, f.la)}<path class="farrow" d="M209 118H229" stroke-width="3" marker-end="url(#${mk})"/>${frame(232, f.b, f.lb)}</svg>`;
