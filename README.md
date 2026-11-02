@@ -17,7 +17,7 @@ Mein persönlicher Trainings-Begleiter als Web-App für iPhone und Android – K
   - Warm-up und Cooldown für 5 km, 10 km, Halbmarathon, Marathon
   - Warm-up und Cooldown für Intervall, Speed und Longrun
   - Lauf-ABC
-  - Umfang: Läufe mit Datum oder Wochensummen; nächster langer Lauf höchstens 10 % über dem längsten der letzten 30 Tage (Sprünge werden markiert), Zielbereich für die laufende Woche (Erhalt 0,8–1,0 × Schnitt der letzten 4 Wochen, Aufbau bis 1,3 ×), Verlauf über 8 Wochen
+  - Umfang: Läufe mit Datum (einzeln oder per CSV-Import mit Vorlage) oder Wochensummen; nächster langer Lauf höchstens 10 % über dem längsten der letzten 30 Tage (Sprünge werden markiert), Zielbereich für die laufende Woche (Erhalt 0,8–1,0 × Schnitt der letzten 4 Wochen, Aufbau bis 1,3 ×), Verlauf über 8 Wochen
   - „Geführt“: Ablauf Schritt für Schritt mit Countdown und Ansage; Strecken und Wiederholungen werden abgehakt
 - **Profil**
   - Trainingswoche: Tage für Qualität, Longrun, Laufgruppe, Kraft und eine weitere Einheit – Plan und Kalender-Export nutzen sie, Hinweis bei harten Tagen hintereinander

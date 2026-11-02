@@ -958,6 +958,13 @@ function renderUmfang() {
   return `<div class="intro">${esc(LOAD_INTRO)}</div>
     <div class="header">Nächster langer Lauf</div><div class="group"><div class="panel" style="border:0;padding-top:12px" id="longresult"></div></div>
     <div class="header">Lauf eintragen</div><div class="group"><div class="runadd"><input type="date" id="rundate" value="${today}" max="${today}" aria-label="Datum des Laufs"><input type="text" inputmode="decimal" autocomplete="off" id="runkm" placeholder="km" aria-label="Kilometer des Laufs"><button type="button" class="btn small primary" id="runaddbtn">Hinzufügen</button></div><div id="runlist"></div></div>
+    <div class="group" style="margin-top:12px">
+      <button type="button" class="row" id="runcsvbtn"><span class="icon" style="background:var(--accent)">⇧</span><span class="txt"><b>Läufe aus CSV importieren</b><small>Spalten Datum und km, z. B. aus Strava oder deiner Uhr</small></span><span class="chev"></span></button>
+      <button type="button" class="row" id="runcsvtpl"><span class="icon" style="background:var(--blue)">⇩</span><span class="txt"><b>CSV-Vorlage herunterladen</b><small>Zum Ausfüllen in Numbers, Excel oder Google Tabellen</small></span><span class="chev"></span></button>
+      <input type="file" accept=".csv,text/csv,text/plain" id="runcsvfile" class="hide">
+    </div>
+    <div id="runcsvresult"></div>
+    <p class="footer">Eine Zeile pro Lauf. Datum als 26.10.2026 oder 2026-10-26, km mit Komma oder Punkt. Läufe mit gleichem Datum und gleichen km werden übersprungen.</p>
     <p class="footer">Mit Datum rechnet die App die 30 Tage exakt und markiert Läufe, die mehr als 10 % über dem längsten der 30 Tage davor lagen. Wochen mit eingetragenen Läufen werden automatisch zusammengezählt.</p>
     <div class="header">Diese Woche · KW ${isoWeek(cur)}</div><div class="group"><div class="panel" style="border:0;padding-top:12px" id="loadresult"></div></div>
     <div class="header">Wochensummen</div><div class="group" style="padding:0 16px" id="kmweeks"></div>
@@ -985,6 +992,62 @@ function renderLoad() {
       <div class="metric"><span>Diese Woche</span><b>${kmText(L.cur || 0)} km</b><small>${L.avg ? kmText((L.cur || 0) / L.avg) + ' × Schnitt' : '–'}</small></div>
     </div>` : '') + loadBar(L) + `<p class="loadstatus">${esc(loadStatus(L))}</p>`;
   $('loadchart').innerHTML = loadChart();
+}
+/* ---------- Läufe als CSV: Vorlage und Import ---------- */
+const RUN_CSV_TEMPLATE = '\ufeffDatum;km\r\n# Beispiele – diese Zeilen mit # werden beim Import ignoriert:\r\n# 26.10.2026;10,5\r\n# 2026-10-28;6\r\n';
+// Eine CSV-Zeile mit Anführungszeichen aufteilen
+function csvSplit(line, sep) {
+  const out = []; let cur = '', q = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (q) { if (c === '"' && line[i + 1] === '"') { cur += '"'; i++; } else if (c === '"') q = false; else cur += c; }
+    else if (c === '"') q = true; else if (c === sep) { out.push(cur); cur = ''; } else cur += c;
+  }
+  out.push(cur); return out.map(x => x.trim());
+}
+function csvDay(t) {
+  t = String(t || '').trim().split(/[ T]/)[0];
+  let y, m, d, x;
+  if ((x = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(t))) [, y, m, d] = x;
+  else if ((x = /^(\d{1,2})\.(\d{1,2})\.(\d{2}|\d{4})$/.exec(t))) { [, d, m, y] = x; if (y.length === 2) y = '20' + y; }
+  else return null;
+  const day = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`, dt = new Date(day + 'T12:00:00');
+  return !Number.isNaN(dt.getTime()) && localDay(dt) === day ? day : null;
+}
+// Ergebnis: { added, dup, bad: [Zeilennummern] }
+function parseRunCsv(text, today = localDay()) {
+  const lines = String(text).replace(/^\ufeff/, '').split(/\r\n|\n|\r/);
+  const first = lines.find(l => l.trim() && !l.trim().startsWith('#')) || '';
+  const sep = first.includes(';') ? ';' : first.includes('\t') ? '\t' : ',';
+  let di = 0, ki = 1, start = 0;
+  const head = csvSplit(first, sep).map(h => h.toLowerCase());
+  if (!csvDay(head[0])) {
+    const fd = head.findIndex(h => /datum|date/.test(h)), fk = head.findIndex(h => /^km$|kilometer|distanz|distance|strecke/.test(h));
+    if (fd >= 0) di = fd; if (fk >= 0) ki = fk;
+    start = lines.indexOf(first) + 1;
+  }
+  const have = new Set(runLog.map(r => r.date + '|' + r.km)), add = [], bad = []; let dup = 0;
+  for (let i = start; i < lines.length; i++) {
+    const l = lines[i].trim(); if (!l || l.startsWith('#')) continue;
+    const c = csvSplit(l, sep), day = csvDay(c[di]), km = kmNum(String(c[ki] ?? '').replace(/\s*km$/i, ''));
+    if (!day || day > today || km === null || Number.isNaN(km) || km <= 0 || km > 300) { bad.push(i + 1); continue; }
+    const key = day + '|' + km; if (have.has(key)) { dup++; continue; }
+    have.add(key); add.push({ id: uid(), date: day, km });
+  }
+  return { add, dup, bad };
+}
+function importRunCsv(file) {
+  const r = new FileReader();
+  r.onload = () => {
+    const res = parseRunCsv(r.result);
+    if (res.add.length) { runLog = runLog.concat(res.add).sort((a, b) => a.date.localeCompare(b.date)); persistRunLog(); }
+    renderWeekRows(); renderLoad();
+    const box = $('runcsvresult'), b = res.bad;
+    if (box) box.innerHTML = `<div class="alert${b.length || !res.add.length ? ' due' : ''}" id="runcsvmsg">${res.add.length} ${res.add.length === 1 ? 'Lauf' : 'Läufe'} importiert${res.dup ? `, ${res.dup} doppelt übersprungen` : ''}.${b.length ? ` ${b.length} ${b.length === 1 ? 'Zeile' : 'Zeilen'} nicht lesbar (Zeile ${b.slice(0, 8).join(', ')}${b.length > 8 ? ' …' : ''}) – Datum bis heute und km größer 0 prüfen.` : ''}</div>`;
+    toast(`✓ ${res.add.length} ${res.add.length === 1 ? 'Lauf' : 'Läufe'} importiert.`);
+  };
+  r.onerror = () => toast('Die Datei konnte nicht gelesen werden.');
+  r.readAsText(file);
 }
 function addRunFromForm() {
   const d = $('rundate').value, today = localDay(), km = kmNum($('runkm').value);
@@ -1762,6 +1825,8 @@ $('runcontent').addEventListener('input', e => {
 });
 $('runcontent').addEventListener('click', e => {
   if (e.target.closest('#runaddbtn')) { addRunFromForm(); return; }
+  if (e.target.closest('#runcsvbtn')) { $('runcsvfile').click(); return; }
+  if (e.target.closest('#runcsvtpl')) { download('laeufe-vorlage.csv', RUN_CSV_TEMPLATE, 'text/csv;charset=utf-8'); return; }
   const go = e.target.closest('[data-runsub-go]'); if (go) { runView.plan = go.dataset.runsubGo; store(KEYS.run, runView); renderRun(); return; }
   if (e.target.closest('#racesave')) { saveRaceFromForm(); return; }
   if (e.target.closest('#planics')) { exportPlanIcs(); return; }
@@ -1772,7 +1837,7 @@ $('runcontent').addEventListener('click', e => {
   if (d && confirm('Diesen Lauf löschen?')) { deleteRun(d.dataset.rundel); renderWeekRows(); renderLoad(); toast('Lauf gelöscht.'); }
 });
 $('runcontent').addEventListener('keydown', e => { if (e.target.id === 'runkm' && e.key === 'Enter') { e.preventDefault(); addRunFromForm(); } if ((e.target.id === 'racename' || e.target.closest('#racegoal')) && e.key === 'Enter') { e.preventDefault(); saveRaceFromForm(); } });
-$('runcontent').addEventListener('change', e => { const t = e.target; if (t.dataset && t.dataset.wk && t.getAttribute('aria-invalid') !== 'true') { const v = weekKm(t.dataset.wk, t.dataset.f); t.value = v === null ? '' : kmText(v); } });
+$('runcontent').addEventListener('change', e => { const t = e.target; if (t.id === 'runcsvfile') { if (t.files[0]) importRunCsv(t.files[0]); t.value = ''; return; } if (t.dataset && t.dataset.wk && t.getAttribute('aria-invalid') !== 'true') { const v = weekKm(t.dataset.wk, t.dataset.f); t.value = v === null ? '' : kmText(v); } });
 for (const id of ['runcontent', 'mobcontent']) $(id).addEventListener('click', e => {
   const r = e.target.closest('[data-routine]'), m = e.target.closest('[data-mob]');
   if (r) { const k = r.dataset.routine, cur = runCurrent(); if (k === 'abc') startRoutine('Lauf-ABC', RUN_GUIDE.abc.drills); else if (cur) startRoutine(`${cur.label} · ${k === 'warmup' ? 'Warm-up' : 'Cooldown'}`, cur[k]); return; }

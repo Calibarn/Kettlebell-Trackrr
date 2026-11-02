@@ -117,3 +117,30 @@ test('Umfang: Wochen und Läufe im Backup, Import ergänzt nur Fehlendes', async
   await expect.poll(() => page.evaluate(() => [runWeeks.length, runLog.length])).toEqual([2, 2]);
   expect(await page.evaluate(ws => [weekKm(ws[2]), weekKm(ws[3]), weekKm(ws[1]), weekKm(ws[4])], w)).toEqual([30, 25, 10, 8]);
 });
+
+test('Umfang: Läufe aus CSV importieren, Vorlage herunterladen, Duplikate und Fehler melden', async ({ page }) => {
+  await openUmfang(page);
+  const dl = page.waitForEvent('download');
+  await page.click('#runcsvtpl');
+  const d = await dl;
+  expect(d.suggestedFilename()).toBe('laeufe-vorlage.csv');
+  const tpl = require('fs').readFileSync(await d.path(), 'utf8');
+  expect(tpl.replace(/^﻿/, '').split('\r\n')[0]).toBe('Datum;km');
+  // Vorlage unverändert importieren: nichts passiert (Beispielzeilen sind Kommentare)
+  expect(await page.evaluate(t => parseRunCsv(t).add.length, tpl)).toBe(0);
+
+  const w = await weeksAgo(page), de = x => x.split('-').reverse().join('.');
+  const day = (i, n = 0) => de(n ? w2[i] : w[i]), w2 = await page.evaluate(ws => ws.map(x => addDays(x, 2)), w);
+  await addRun(page, w[1], '8');
+  const csv = ['﻿Datum;km', `${day(1)};8`, `${day(1, 2)};10,5`, `${w[2]};"12,3"`, `${day(3)};5 km`, '32.13.2026;7', `${day(2)};0`, 'irgendwas', '', `# ${day(4)};9`].join('\r\n');
+  await page.setInputFiles('#runcsvfile', { name: 'laeufe.csv', mimeType: 'text/csv', buffer: Buffer.from(csv) });
+  await expect(page.locator('#runcsvmsg')).toContainText('3 Läufe importiert, 1 doppelt übersprungen. 3 Zeilen nicht lesbar (Zeile 6, 7, 8)');
+  expect(await page.evaluate(() => runLog.map(r => r.km).sort((a, b) => a - b))).toEqual([5, 8, 10.5, 12.3]);
+  await expect(page.locator(`[data-wk="${w[1]}"][data-f="km"]`)).toHaveValue('18,5');
+
+  // englisches Format mit Komma als Trenner und eigener Spaltenreihenfolge
+  const en = ['date,activity,distance', `${w[4]},Run,6.2`, `${w[4]}T07:30:00,Run,3`].join('\n');
+  expect(await page.evaluate(t => parseRunCsv(t).add.map(r => [r.date, r.km]), en)).toEqual([[w[4], 6.2], [w[4], 3]]);
+  // Zukunft wird abgelehnt
+  expect(await page.evaluate(() => parseRunCsv(`Datum;km\n${addDays(localDay(), 3)};5`).bad)).toEqual([2]);
+});
