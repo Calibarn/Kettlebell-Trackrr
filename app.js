@@ -1012,6 +1012,21 @@ function parseGoal(txt, dist) {
   const s = p.length === 3 ? p[0] * 3600 + p[1] * 60 + p[2] : (dist === 'hm' || dist === 'marathon') ? p[0] * 3600 + p[1] * 60 : p[0] * 60 + p[1];
   return s >= 60 && s <= 86400 ? s : NaN;
 }
+// Zeit in drei Feldern (Std/Min/Sek): auf dem iPhone reicht der Ziffernblock, der hat keinen Doppelpunkt
+function timeFields(id, sec, label) {
+  const v = sec ? [Math.floor(sec / 3600), Math.floor(sec % 3600 / 60), sec % 60] : null;
+  return `<div class="timein" id="${id}" role="group" aria-label="${esc(label)}">${['Std.', 'Min.', 'Sek.'].map((l, i) => `<label><input type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" maxlength="2" data-tpart="${i}" placeholder="${i ? '00' : '0'}" value="${v ? (i ? String(v[i]).padStart(2, '0') : (v[0] || '')) : ''}" aria-label="${esc(label)} ${l}"><span>${l}</span></label>`).join('<b aria-hidden="true">:</b>')}</div>`;
+}
+// leer → null, ungültig → NaN, sonst Sekunden
+function readTime(id) {
+  const box = $(id), p = [...box.querySelectorAll('[data-tpart]')].map(i => i.value.trim());
+  if (p.every(x => x === '')) return null;
+  if (!p.every(x => x === '' || /^\d{1,2}$/.test(x))) return NaN;
+  const [h, m, x] = p.map(v => v === '' ? 0 : Number(v));
+  if (m > 59 || x > 59) return NaN;
+  const t = h * 3600 + m * 60 + x; return t >= 60 && t <= 86400 ? t : NaN;
+}
+const markTime = (id, bad) => { for (const i of $(id).querySelectorAll('[data-tpart]')) bad ? i.setAttribute('aria-invalid', 'true') : i.removeAttribute('aria-invalid'); };
 const hms = s => { s = Math.round(s); const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60; return (h ? h + ':' + String(m).padStart(2, '0') : String(m)) + ':' + String(x).padStart(2, '0'); };
 const paceText = (sec, km) => hms(sec / km) + ' /km';
 // Ziel-Longrun und Wochenspitze: aus der Zielzeit, sonst die Standardwerte der Distanz
@@ -1172,18 +1187,18 @@ function renderRaces() {
       <div class="field"><label for="racedate">Datum</label><input id="racedate" type="date" value="${e ? e.date : ''}"></div>
       <div class="field"><label for="racedist">Distanz</label><select id="racedist">${Object.entries(SEASON.dist).map(([k, d]) => opt(k, d.label, e ? e.dist : 'hm')).join('')}</select></div>
       <div class="field"><label for="raceprio">Priorität</label><select id="raceprio">${opt('A', 'A-Rennen', e ? e.prio : 'A')}${opt('B', 'B-Rennen', e ? e.prio : 'A')}</select></div>
-      <div class="field"><label for="racegoal">Zielzeit (optional)</label><input id="racegoal" type="text" inputmode="numeric" autocomplete="off" placeholder="z. B. 1:59:00" value="${e && e.goal ? hms(e.goal) : ''}"></div>
+      <div class="field wide"><label>Zielzeit (optional)</label>${timeFields('racegoal', e && e.goal, 'Zielzeit')}</div>
       <div class="raceactions">${e ? '<button type="button" class="btn small danger" id="racedel">Löschen</button><button type="button" class="btn small" id="racecancel">Abbrechen</button>' : ''}<button type="button" class="btn small primary" id="racesave">${e ? 'Speichern' : 'Hinzufügen'}</button></div>
     </div></div>
     <p class="footer">A-Rennen bekommen einen eigenen Vorbereitungsblock, B-Rennen laufen als harte Einheit mit. Antippen zum Bearbeiten.</p>
     <div class="header">Deine Rennen</div><div class="group" id="racelist">${list}</div>`;
 }
 function saveRaceFromForm() {
-  const name = $('racename').value.trim(), date = $('racedate').value, dist = $('racedist').value, prio = $('raceprio').value, goal = parseGoal($('racegoal').value, dist);
-  for (const id of ['racename', 'racedate', 'racegoal']) $(id).removeAttribute('aria-invalid');
+  const name = $('racename').value.trim(), date = $('racedate').value, dist = $('racedist').value, prio = $('raceprio').value, goal = readTime('racegoal');
+  for (const id of ['racename', 'racedate']) $(id).removeAttribute('aria-invalid'); markTime('racegoal', false);
   if (!name) { $('racename').setAttribute('aria-invalid', 'true'); toast('Bitte einen Namen eingeben.'); return; }
   if (!isDay(date)) { $('racedate').setAttribute('aria-invalid', 'true'); toast('Bitte ein Datum wählen.'); return; }
-  if (Number.isNaN(goal)) { $('racegoal').setAttribute('aria-invalid', 'true'); toast('Zielzeit als h:mm:ss oder mm:ss, z. B. 1:59:00.'); return; }
+  if (Number.isNaN(goal)) { markTime('racegoal', true); toast('Zielzeit prüfen: Minuten und Sekunden höchstens 59, z. B. 1 : 59 : 00.'); return; }
   const r = { id: raceEdit || uid(), name: name.slice(0, 60), date, dist, prio, goal };
   races = races.filter(x => x.id !== r.id).concat(r); persistRaces();
   toast(raceEdit ? '✓ Rennen gespeichert.' : `✓ ${name} eingetragen.`); raceEdit = null; renderRun();
@@ -1192,16 +1207,16 @@ function renderPlanGuide() {
   const dists = Object.entries(SEASON.dist);
   return `<div class="header">Renntempo-Rechner</div><div class="group"><div class="raceform">
       <div class="field"><label for="pcdist">Distanz</label><select id="pcdist">${dists.map(([k, d]) => `<option value="${k}"${k === 'hm' ? ' selected' : ''}>${esc(d.label)}</option>`).join('')}</select></div>
-      <div class="field"><label for="pctime">Zielzeit</label><input id="pctime" type="text" inputmode="numeric" autocomplete="off" placeholder="1:59:00"></div>
+      <div class="field wide"><label>Zielzeit</label>${timeFields('pctime', null, 'Zielzeit')}</div>
     </div><div class="panel" id="pcout"></div></div>
     <div class="header">Wissen</div><div class="group manual">${SEASON_GUIDE.map(g => `<details><summary class="row"><span class="txt"><b>${esc(g.title)}</b><small>${esc(g.sub)}</small></span><span class="chev"></span></summary><div class="panel"><ul>${g.items.map(t => `<li>${esc(t)}</li>`).join('')}</ul></div></details>`).join('')}</div>
     <p class="footer">${esc(SEASON.note)}</p>`;
 }
 function renderPace() {
   const out = $('pcout'); if (!out) return;
-  const dist = $('pcdist').value, d = SEASON.dist[dist], s = parseGoal($('pctime').value, dist);
-  $('pctime').setAttribute('aria-invalid', String(Number.isNaN(s)));
-  if (s === null || Number.isNaN(s)) { out.innerHTML = `<p class="tiny">${Number.isNaN(s) ? 'Zielzeit als h:mm:ss oder mm:ss eingeben.' : 'Zielzeit eingeben, z. B. 1:59:00 oder 24:30.'}</p>`; return; }
+  const dist = $('pcdist').value, d = SEASON.dist[dist], s = readTime('pctime');
+  markTime('pctime', Number.isNaN(s));
+  if (s === null || Number.isNaN(s)) { out.innerHTML = `<p class="tiny">${Number.isNaN(s) ? 'Minuten und Sekunden höchstens 59.' : 'Zielzeit eingeben, z. B. 1 : 59 : 00 oder 0 : 24 : 30.'}</p>`; return; }
   const marks = { '5k': [1, 2, 3, 4, 5], '10k': [2, 4, 5, 6, 8, 10], hm: [5, 10, 15, 20, d.km], marathon: [5, 10, 15, 20, 21.0975, 25, 30, 35, 40, d.km] }[dist];
   out.innerHTML = `<div class="longnext"><b>${paceText(s, d.km)}</b><span>${esc(d.label)} in ${hms(s)} · ${kmText(Math.round(d.km / (s / 3600) * 10) / 10)} km/h · erste 2–3 km etwa ${hms(s / d.km + 7)} /km</span></div>
     <div class="splits">${marks.map(k => `<span><small>${k === d.km ? 'Ziel' : k === 21.0975 ? 'Halbzeit' : kmText(k) + ' km'}</small>${hms(s / d.km * k)}</span>`).join('')}</div>`;
@@ -1704,7 +1719,10 @@ $('mobtabs').addEventListener('click', e => { const b = e.target.closest('[data-
 $('mobsub').addEventListener('click', e => { const b = e.target.closest('[data-mobsub]'); if (!b) return; mobView[mobView.tab] = b.dataset.mobsub; store(KEYS.mob, mobView); renderMobility(); });
 // Laufwochen: bei jeder Eingabe speichern und nur Ergebnis und Diagramm neu zeichnen (Fokus bleibt im Feld)
 $('runcontent').addEventListener('input', e => {
-  const t = e.target; if (t.id === 'pctime' || t.id === 'pcdist') { renderPace(); return; }
+  const t = e.target;
+  // nach zwei Ziffern ins nächste Zeitfeld springen
+  if (t.dataset && t.dataset.tpart && t.value.length === 2 && t.dataset.tpart !== '2') { const n = t.closest('.timein').querySelector(`[data-tpart="${Number(t.dataset.tpart) + 1}"]`); if (n) { n.focus(); n.select(); } }
+  if (t.closest && t.closest('#pctime') || t.id === 'pcdist') { renderPace(); return; }
   if (!t.dataset || !t.dataset.wk) return;
   const v = kmNum(t.value), bad = Number.isNaN(v);
   t.setAttribute('aria-invalid', String(bad)); if (bad) return;
@@ -1721,7 +1739,7 @@ $('runcontent').addEventListener('click', e => {
   const d = e.target.closest('[data-rundel]');
   if (d && confirm('Diesen Lauf löschen?')) { deleteRun(d.dataset.rundel); renderWeekRows(); renderLoad(); toast('Lauf gelöscht.'); }
 });
-$('runcontent').addEventListener('keydown', e => { if (e.target.id === 'runkm' && e.key === 'Enter') { e.preventDefault(); addRunFromForm(); } if (['racename', 'racegoal'].includes(e.target.id) && e.key === 'Enter') { e.preventDefault(); saveRaceFromForm(); } });
+$('runcontent').addEventListener('keydown', e => { if (e.target.id === 'runkm' && e.key === 'Enter') { e.preventDefault(); addRunFromForm(); } if ((e.target.id === 'racename' || e.target.closest('#racegoal')) && e.key === 'Enter') { e.preventDefault(); saveRaceFromForm(); } });
 $('runcontent').addEventListener('change', e => { const t = e.target; if (t.dataset && t.dataset.wk && t.getAttribute('aria-invalid') !== 'true') { const v = weekKm(t.dataset.wk, t.dataset.f); t.value = v === null ? '' : kmText(v); } });
 for (const id of ['runcontent', 'mobcontent']) $(id).addEventListener('click', e => {
   const r = e.target.closest('[data-routine]'), m = e.target.closest('[data-mob]');

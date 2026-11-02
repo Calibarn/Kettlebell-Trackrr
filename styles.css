@@ -354,3 +354,9 @@ html[data-os=android] .sheet{border-radius:28px 28px 0 0}
 .zonelist span{display:flex;justify-content:space-between;border-left:4px solid var(--zc);padding:4px 8px;background:var(--fill);border-radius:6px;font-variant-numeric:tabular-nums}
 .ph-z1{--zc:#8e8e93}.ph-z2{--zc:var(--blue)}.ph-z3{--zc:var(--accent)}.ph-z4{--zc:var(--orange)}.ph-z5{--zc:var(--red)}
 .planrows .sched-race .txt b{font-weight:600}
+.timein{display:flex;align-items:flex-start;gap:6px}
+.timein label{display:flex;flex-direction:column;align-items:center;gap:2px;flex:0 0 64px}
+.timein input{width:100%;height:40px;text-align:center;font-variant-numeric:tabular-nums}
+.timein input[aria-invalid=true]{box-shadow:0 0 0 2px var(--red) inset}
+.timein span{font-size:11px;color:var(--label2)}
+.timein b{line-height:40px;font-weight:600;color:var(--label2)}

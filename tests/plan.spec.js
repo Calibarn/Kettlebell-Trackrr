@@ -6,6 +6,8 @@ const RACES = [
   { id: 'b1', name: 'Testlauf 10', date: '2027-01-24', dist: '10k', prio: 'B', goal: null },
   { id: 'a2', name: 'Marathon Herbst', date: '2027-10-01', dist: 'marathon', prio: 'A', goal: 15300 }
 ];
+// Zeit in die drei Felder (Std./Min./Sek.) eintragen
+async function fillTime(page, id, h, m, sec) { for (const [i, v] of [h, m, sec].entries()) await page.fill(`#${id} [data-tpart="${i}"]`, String(v)); }
 const setRaces = (page, list) => page.evaluate(l => { races = l.map(r => Object.assign({}, r)); persistRaces(); }, list);
 // Plan mit festem „heute“ und Startwerten (Longrun L0, Wochen-km W0) – unabhängig vom echten Datum
 const plan = (page, today, opt = {}) => page.evaluate(([t, o]) => {
@@ -97,11 +99,11 @@ test('Rennen: eintragen, Fehler markieren, bearbeiten, löschen – bleibt gespe
   await page.fill('#racename', 'Stadtlauf');
   await page.fill('#racedate', '2027-04-04');
   await page.selectOption('#racedist', '10k');
-  await page.fill('#racegoal', '55');
+  await fillTime(page, 'racegoal', '', '75', '00');
   await page.click('#racesave');
-  await expect(page.locator('#racegoal')).toHaveAttribute('aria-invalid', 'true');
-  await page.fill('#racegoal', '54:30');
-  await page.press('#racegoal', 'Enter');
+  await expect(page.locator('#racegoal [data-tpart="1"]')).toHaveAttribute('aria-invalid', 'true');
+  await fillTime(page, 'racegoal', '', '54', '30');
+  await page.press('#racegoal [data-tpart="2"]', 'Enter');
   await expect(page.locator('#racelist')).toContainText('Stadtlauf');
   await expect(page.locator('#racelist')).toContainText('10 km · Ziel 54:30 = 5:27 /km');
 
@@ -109,9 +111,9 @@ test('Rennen: eintragen, Fehler markieren, bearbeiten, löschen – bleibt gespe
   await openPlan(page, 'rennen');
   await page.click('[data-raceedit]');
   await expect(page.locator('#racename')).toHaveValue('Stadtlauf');
-  await expect(page.locator('#racegoal')).toHaveValue('54:30');
+  expect(await page.locator('#racegoal input').evaluateAll(l => l.map(i => i.value))).toEqual(['', '54', '30']);
   await page.selectOption('#raceprio', 'B');
-  await page.fill('#racegoal', '');
+  await fillTime(page, 'racegoal', '', '', '');
   await page.click('#racesave');
   await expect(page.locator('#racelist .prio')).toHaveText('B');
   expect(await page.evaluate(() => races.map(r => [r.prio, r.goal]))).toEqual([['B', null]]);
@@ -139,14 +141,14 @@ test('Renntempo-Rechner: Pace und Zwischenzeiten', async ({ page }) => {
   await openPlan(page, 'wissen');
   await expect(page.locator('#pcout')).toContainText('Zielzeit eingeben');
   await page.selectOption('#pcdist', 'marathon');
-  await page.fill('#pctime', '4:15:00');
+  await fillTime(page, 'pctime', '4', '15', '00');
   await expect(page.locator('#pcout .longnext b')).toHaveText('6:03 /km');
   await expect(page.locator('#pcout .splits')).toContainText('Halbzeit2:07:30');
   await page.selectOption('#pcdist', '5k');
-  await page.fill('#pctime', '25:00');
+  await fillTime(page, 'pctime', '0', '25', '00');
   await expect(page.locator('#pcout .longnext b')).toHaveText('5:00 /km');
-  await page.fill('#pctime', '25:99');
-  await expect(page.locator('#pctime')).toHaveAttribute('aria-invalid', 'true');
+  await fillTime(page, 'pctime', '0', '25', '99');
+  await expect(page.locator('#pctime [data-tpart="2"]')).toHaveAttribute('aria-invalid', 'true');
   await expect(page.locator('#runcontent details')).toHaveCount(6);
 });
 
@@ -178,7 +180,7 @@ test('Zielzeit bestimmt Ziel-Longrun und Wochenspitze, Tempo steht bei den Tempo
   await expect(page.locator('#planpeaks')).toContainText('Longrun bis 20 km, Woche bis 45 km (Standard) – Zielzeit eintragen');
   await page.click('[data-runsub="rennen"]');
   await page.click('[data-raceedit]');
-  await page.fill('#racegoal', '1:50:00');
+  await fillTime(page, 'racegoal', '1', '50', '00');
   await page.click('#racesave');
   await expect(page.locator('#racelist')).toContainText('Longrun bis 21 km, Woche bis 52 km');
   await page.click('[data-runsub="woche"]');
