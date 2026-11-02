@@ -149,3 +149,66 @@ test('Renntempo-Rechner: Pace und Zwischenzeiten', async ({ page }) => {
   await expect(page.locator('#pctime')).toHaveAttribute('aria-invalid', 'true');
   await expect(page.locator('#runcontent details')).toHaveCount(6);
 });
+
+test('Zielzeit bestimmt Ziel-Longrun und Wochenspitze, Tempo steht bei den Tempo-Einheiten', async ({ page }) => {
+  const pk = (r) => page.evaluate(x => peaks(x), r);
+  expect(await pk({ dist: 'marathon', goal: 3 * 3600 + 50 * 60 })).toEqual({ long: 32, week: 62, fromGoal: true });
+  expect(await pk({ dist: 'marathon', goal: 4 * 3600 + 15 * 60 })).toEqual({ long: 30, week: 55, fromGoal: true });
+  expect(await pk({ dist: 'marathon', goal: 5 * 3600 })).toEqual({ long: 28, week: 45, fromGoal: true });
+  expect(await pk({ dist: 'hm', goal: 6000 })).toEqual({ long: 22, week: 60, fromGoal: true });
+  expect(await pk({ dist: '10k', goal: null })).toEqual({ long: 16, week: 35, fromGoal: false });
+
+  // schnelleres Ziel → höhere Spitzen im Plan
+  const peakOf = goal => page.evaluate(g => { races = [{ id: 'm', name: 'M', date: '2027-10-03', dist: 'marathon', prio: 'A', goal: g }]; const S = seasonPlan('2026-11-04', { L0: 15, W0: 30 }); return [Math.max(...S.weeks.map(x => x.long || 0)), Math.max(...S.weeks.map(x => x.km || 0))]; }, goal);
+  const [slow, fast] = [await peakOf(5 * 3600), await peakOf(3 * 3600 + 50 * 60)];
+  expect(slow[0]).toBeCloseTo(28, 5); expect(slow[1]).toBeCloseTo(45, 5);
+  expect(fast[0]).toBeCloseTo(32, 5); expect(fast[1]).toBeCloseTo(62, 5);
+
+  const notes = await page.evaluate(() => {
+    races = [{ id: 'h', name: 'HM', date: '2027-03-07', dist: 'hm', prio: 'A', goal: 7140 }];
+    const S = seasonPlan('2026-11-04', { L0: 14, W0: 25 }), x = S.weeks.find(w => w.phase === 'spec');
+    return [weekKey(x), weekLongNote(x)];
+  });
+  expect(notes[0]).toMatch(/im HM-Tempo.*\(5:38 \/km\)$/);
+  expect(notes[1]).toContain('HM-Tempo, Verpflegung wie im Rennen (5:38 /km)');
+
+  const date = await page.evaluate(() => addDays(localDay(), 7 * 20));
+  await setRaces(page, [{ id: 'h', name: 'Mein HM', date, dist: 'hm', prio: 'A', goal: null }]);
+  await openPlan(page);
+  await expect(page.locator('#planpeaks')).toContainText('Longrun bis 20 km, Woche bis 45 km (Standard) – Zielzeit eintragen');
+  await page.click('[data-runsub="rennen"]');
+  await page.click('[data-raceedit]');
+  await page.fill('#racegoal', '1:50:00');
+  await page.click('#racesave');
+  await expect(page.locator('#racelist')).toContainText('Longrun bis 21 km, Woche bis 52 km');
+  await page.click('[data-runsub="woche"]');
+  await expect(page.locator('#planpeaks')).toContainText('Longrun bis 21 km, Woche bis 52 km – aus der Zielzeit 1:50:00');
+});
+
+test('Kalender-Export: Wochen, Longruns und Rennen als gültige ics-Datei', async ({ page }) => {
+  const base = await page.evaluate(() => localDay());
+  const [a, b] = await page.evaluate(() => [addDays(localDay(), 7 * 10), addDays(localDay(), 7 * 5)]);
+  await setRaces(page, [
+    { id: 'a', name: 'Lauf, mit; Komma', date: a, dist: '10k', prio: 'A', goal: 3300 },
+    { id: 'b', name: 'Test-B', date: b, dist: '5k', prio: 'B', goal: null }
+  ]);
+  await page.evaluate(() => { const t = localDay(); for (let i = 1; i <= 4; i++) setWeekKm(addDays(weekStart(t), -7 * i), 'km', 20); addRun(addDays(t, -9), 10); });
+  await openPlan(page);
+  const dl = page.waitForEvent('download');
+  await page.click('#planics');
+  const d = await dl;
+  expect(d.suggestedFilename()).toBe(`laufplan-${base}.ics`);
+  const raw = require('fs').readFileSync(await d.path(), 'utf8'), ics = raw.replace(/\r\n /g, ''); // Zeilenumbrüche (Folding) entfernen
+  expect(ics.startsWith('BEGIN:VCALENDAR\r\n')).toBe(true);
+  expect(ics.trimEnd().endsWith('END:VCALENDAR')).toBe(true);
+  const weeks = await page.evaluate(() => seasonPlan().weeks.length);
+  expect((ics.match(/UID:kb-plan-/g) || []).length).toBe(weeks);
+  expect((ics.match(/BEGIN:VEVENT/g) || []).length).toBe((ics.match(/END:VEVENT/g) || []).length);
+  expect(ics).toContain('UID:kb-race-a@kb-tracker.local');
+  expect(ics).toContain('UID:kb-race-b@kb-tracker.local');
+  expect(ics).toContain('Lauf\\, mit\\; Komma');
+  expect(ics).toContain('DTSTART;VALUE=DATE:' + a.replace(/-/g, ''));
+  expect(ics).toMatch(/SUMMARY:Longrun ca\. \d+ km/);
+  // keine Zeile über 75 Bytes
+  for (const line of raw.split('\r\n')) expect(Buffer.byteLength(line)).toBeLessThanOrEqual(75);
+});

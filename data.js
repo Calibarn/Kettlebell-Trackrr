@@ -317,6 +317,13 @@ const SEASON = {
     marathon: { label: 'Marathon', km: 42.195, phases: { base: 6, build: 6, spec: 4, taper: 3 }, minWeeks: 12, longPeak: 30, weekPeak: 55,
       taper: [{ wk: 0.8, long: 0.7 }, { wk: 0.65, long: 0.5 }, { wk: 0.45 }], recover: [{ wk: 0.3, long: 0 }, { wk: 0.5, long: 0.4 }, { wk: 0.7, long: 0.6 }] }
   },
+  // Spitzenwerte nach Zielzeit (upTo in Sekunden, von schnell nach langsam). Ohne Zielzeit gelten longPeak/weekPeak oben.
+  levels: {
+    '5k': [{ upTo: 1260, long: 15, week: 45 }, { upTo: 1500, long: 14, week: 35 }, { upTo: 1800, long: 12, week: 28 }, { upTo: Infinity, long: 10, week: 20 }],
+    '10k': [{ upTo: 2520, long: 18, week: 50 }, { upTo: 3000, long: 16, week: 40 }, { upTo: 3600, long: 14, week: 32 }, { upTo: Infinity, long: 12, week: 25 }],
+    hm: [{ upTo: 6000, long: 22, week: 60 }, { upTo: 6900, long: 21, week: 52 }, { upTo: 8100, long: 20, week: 45 }, { upTo: Infinity, long: 18, week: 35 }],
+    marathon: [{ upTo: 12600, long: 32, week: 70 }, { upTo: 14400, long: 32, week: 62 }, { upTo: 17100, long: 30, week: 55 }, { upTo: Infinity, long: 28, week: 45 }]
+  },
   // Obergrenze je Phase als Anteil der Spitzenwerte; Basis = zwischen den Blöcken bzw. vor dem ersten
   cap: { basis: 0.6, base: 0.7, build: 0.85, spec: 1 },
   grow: 0.1, cutLong: 0.8, cutWeek: 0.75, cutEvery: 3,
@@ -370,7 +377,10 @@ const SEASON_GUIDE = [
     'Liegen zwei A-Rennen zu dicht beieinander, wird der zweite Block vorne gekürzt – zuerst die Grundlage. Unter der Mindestdauer warnt der Plan.',
     'Nach jedem A-Rennen folgt Erholung (5/10 km 1 Woche, HM 2, Marathon 3), danach Basis bis zum nächsten Block.',
     'Longrun und Wochen-km wachsen höchstens 10 % pro Woche, ausgehend von deinem Umfang. Nach drei Aufbauwochen folgt eine Entlastungswoche.',
-    'Die Ziel-Longruns (5 km: 14, 10 km: 16, HM: 20, Marathon: 30 km) sind Richtwerte. Reicht die Zeit mit +10 % nicht, zeigt der Plan früh eine Warnung.'
+    'Ziel-Longrun und Wochenspitze richten sich nach der Zielzeit: Marathon unter 3:30 → 32 km und 70 km/Woche, unter 4:00 → 32 und 62, unter 4:45 → 30 und 55, sonst 28 und 45. Halbmarathon unter 1:40 → 22 und 60, unter 1:55 → 21 und 52, unter 2:15 → 20 und 45, sonst 18 und 35. 10 km unter 42 Min. → 18 und 50, unter 50 → 16 und 40, unter 60 → 14 und 32, sonst 12 und 25. 5 km unter 21 Min. → 15 und 45, unter 25 → 14 und 35, unter 30 → 12 und 28, sonst 10 und 20.',
+    'Ohne Zielzeit gilt die mittlere Stufe (5 km: 14 km Longrun, 10 km: 16, HM: 20, Marathon: 30). Reicht die Zeit mit +10 % pro Woche nicht bis zum Ziel-Longrun, zeigt der Plan früh eine Warnung.',
+    'Zeigt der Plan Tempo-Abschnitte (z. B. „im HM-Tempo“), steht bei eingetragener Zielzeit das passende Tempo pro Kilometer dahinter.',
+    'Kalender-Export: Wochen als ganztägige Termine (Phase und km), Longruns am Sonntag, Rennen am Renntag. Am besten in einen eigenen Kalender „Laufplan“ importieren – bei einem neuen Export diesen Kalender leeren und neu importieren, da der Plan jede Woche mit deinem echten Umfang neu rechnet.'
   ] },
   { title: 'Tempo & Pacing', sub: 'gleichmäßig statt schnell los', items: [
     'Gleichmäßig laufen oder die zweite Hälfte leicht schneller. Jede Sekunde, die du auf den ersten Kilometern zu schnell bist, zahlst du hinten doppelt.',

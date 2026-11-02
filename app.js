@@ -838,6 +838,13 @@ function parseGoal(txt, dist) {
 }
 const hms = s => { s = Math.round(s); const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60; return (h ? h + ':' + String(m).padStart(2, '0') : String(m)) + ':' + String(x).padStart(2, '0'); };
 const paceText = (sec, km) => hms(sec / km) + ' /km';
+// Ziel-Longrun und Wochenspitze: aus der Zielzeit, sonst die Standardwerte der Distanz
+function peaks(r) {
+  const d = SEASON.dist[r.dist];
+  if (!r.goal) return { long: d.longPeak, week: d.weekPeak, fromGoal: false };
+  const l = SEASON.levels[r.dist].find(x => r.goal <= x.upTo);
+  return { long: l.long, week: l.week, fromGoal: true };
+}
 const weeksBetween = (a, b) => Math.round((new Date(b + 'T12:00:00') - new Date(a + 'T12:00:00')) / 6048e5);
 
 // Saisonplan ab der laufenden Woche bis zum letzten A-Rennen.
@@ -895,7 +902,7 @@ function seasonPlan(today = localDay(), opt = {}) {
       const f = d.taper[x.k];
       x.long = L === null || !f.long ? null : peakL * f.long; x.km = W === null ? null : peakW * f.wk; streak = 0; return;
     }
-    const share = SEASON.cap[p], capL = Math.max(8, d.longPeak * share), capW = Math.max(15, d.weekPeak * share);
+    const pk = peaks(x.target), share = SEASON.cap[p], capL = Math.max(8, pk.long * share), capW = Math.max(15, pk.week * share);
     if (streak >= SEASON.cutEvery && nextPh !== 'taper') {
       x.cut = true; streak = 0;
       x.long = L === null ? null : L * SEASON.cutLong; x.km = W === null ? null : W * SEASON.cutWeek; return;
@@ -904,23 +911,26 @@ function seasonPlan(today = localDay(), opt = {}) {
   });
   // Machbarkeit: erreicht der Longrun vor dem Tapering das Ziel?
   for (const r of next) {
-    const d = D(r.dist), i0 = weeks.findIndex(x => x.target === r && x.phase === 'taper');
+    const pk = peaks(r), i0 = weeks.findIndex(x => x.target === r && x.phase === 'taper');
     const pre = weeks.slice(0, i0 < 0 ? 0 : i0).filter(x => x.target === r && x.long !== null && x.long !== undefined).at(-1);
-    if (pre && pre.long < d.longPeak * 0.9) warn.push(`${r.name}: Mit +10 % pro Woche schaffst du bis zum Tapering einen Longrun von etwa ${Math.round(pre.long)} km – das Ziel sind ${d.longPeak} km. Mehr Vorlauf einplanen oder das Ziel locker angehen.`);
+    if (pre && pre.long < pk.long * 0.9) warn.push(`${r.name}: Mit +10 % pro Woche schaffst du bis zum Tapering einen Longrun von etwa ${Math.round(pre.long)} km – das Ziel sind ${pk.long} km. Mehr Vorlauf einplanen oder das Ziel locker angehen.`);
   }
   return { weeks, warn, races: next, hasData: L !== null || W !== null, start };
 }
 const phaseKey = x => x.cut ? 'cut' : x.phase;
+// Bei Tempo-Abschnitten das Renntempo aus der Zielzeit dahinterschreiben
+const withPace = (txt, r) => r.goal && /tempo/i.test(txt) ? `${txt} (${paceText(r.goal, SEASON.dist[r.dist].km)})` : txt;
 function weekKey(x) {
   const t = SEASON.key[x.phase] || SEASON.key.basis, list = t[x.target.dist] || t.all, odd = isoWeek(x.week) % 2;
   if (x.a) return `Rennen: ${x.a.name} (${SEASON.dist[x.a.dist].label})`;
-  return (x.cut ? 'kürzer: ' : '') + list[odd ? 0 : 1];
+  return (x.cut ? 'kürzer: ' : '') + withPace(list[odd ? 0 : 1], x.target);
 }
 function weekLongNote(x) {
   if (x.a) return 'kein Longrun – Rennwoche';
   if (x.noLong) return 'kein Longrun';
-  const t = SEASON.long[x.phase]; return typeof t === 'string' ? t : t[x.target.dist];
+  const t = SEASON.long[x.phase]; return withPace(typeof t === 'string' ? t : t[x.target.dist], x.target);
 }
+const peakText = r => { const p = peaks(r); return `Longrun bis ${p.long} km, Woche bis ${p.week} km${p.fromGoal ? '' : ' (Standard)'}`; };
 const kmRound = v => v === null || v === undefined ? null : Math.round(v);
 function goalLine(r) {
   if (!r.goal) return '';
@@ -936,6 +946,7 @@ function renderPlanWeek(S) {
     <div class="phasebadge ph-${phaseKey(x)}">${esc(pl)}</div>
     <p class="loadstatus">${wk === 0 ? `Rennwoche: <b>${esc(nxt.name)}</b> am ${dayLabel(nxt.date)}` : `Noch ${wk} ${wk === 1 ? 'Woche' : 'Wochen'} bis <b>${esc(nxt.name)}</b> (${esc(SEASON.dist[nxt.dist].label)}, ${dateGerman(nxt.date)})`}${esc(goalLine(nxt))}</p>
     <p class="tiny" style="margin-top:2px">${esc(pt)}</p>
+    <p class="tiny" style="margin-top:2px" id="planpeaks">Ziel für ${esc(nxt.name)}: ${esc(peakText(nxt))}${nxt.goal ? ` – aus der Zielzeit ${hms(nxt.goal)}` : ' – Zielzeit eintragen für passende Werte'}.</p>
     <div class="metrics two">
       <div class="metric"><span>Longrun</span><b>${x.a || x.noLong ? '–' : longVal === null ? '?' : 'ca. ' + longVal + ' km'}</b><small>${esc(weekLongNote(x))}</small></div>
       <div class="metric"><span>Woche</span><b>${kmVal === null ? '?' : 'ca. ' + kmVal + ' km'}</b><small>${x.cut ? 'Entlastungswoche' : x.phase === 'taper' ? 'reduziert' : 'höchstens +10 %'}</small></div>
@@ -959,13 +970,15 @@ function renderPlanSeason(S) {
   };
   const rest = S.weeks.length - SHOW;
   return `<div class="header">Saison · ${S.weeks.length} Wochen</div><div class="group" id="planseason">${S.weeks.slice(0, SHOW).map(row).join('')}${rest > 0 ? `<details id="planmore"><summary class="row"><span class="txt"><b>Weitere ${rest} Wochen</b><small>bis ${esc(S.races.at(-1).name)} am ${dateGerman(S.races.at(-1).date)}</small></span><span class="chev"></span></summary>${S.weeks.slice(SHOW).map((x, i) => row(x, i + SHOW)).join('')}</details>` : ''}</div>
-  <p class="footer">Spätere Wochen sind eine Vorschau: Jede Woche rechnet der Plan mit deinem echten Umfang neu.</p>`;
+  <p class="footer">Spätere Wochen sind eine Vorschau: Jede Woche rechnet der Plan mit deinem echten Umfang neu.</p>
+  <div class="group" style="margin-top:12px"><button type="button" class="row" id="planics"><span class="icon" style="background:var(--red)">▦</span><span class="txt"><b>In Kalender exportieren</b><small>Wochen, Longruns und Rennen als Kalenderdatei</small></span><span class="chev"></span></button></div>
+  <p class="footer">Am besten in einen eigenen Kalender „Laufplan“ importieren. Bei einem späteren Export diesen Kalender leeren und neu importieren – der Plan rechnet jede Woche mit deinem echten Umfang neu.</p>`;
 }
 let raceEdit = null;
 function renderRaces() {
   const today = localDay(), e = races.find(r => r.id === raceEdit) || null;
   const opt = (v, l, cur) => `<option value="${v}"${v === cur ? ' selected' : ''}>${esc(l)}</option>`;
-  const list = races.length ? races.map(r => `<button type="button" class="row${r.date < today ? ' past' : ''}" data-raceedit="${esc(r.id)}"><span class="dur">${dateGerman(r.date)}</span><span class="txt"><b>${esc(r.name)} <span class="prio prio-${r.prio}">${r.prio}</span></b><small>${esc(SEASON.dist[r.dist].label)}${esc(goalLine(r))}${r.date < today ? ' · vorbei' : ''}</small></span><span class="chev"></span></button>`).join('')
+  const list = races.length ? races.map(r => `<button type="button" class="row${r.date < today ? ' past' : ''}" data-raceedit="${esc(r.id)}"><span class="dur">${dateGerman(r.date)}</span><span class="txt"><b>${esc(r.name)} <span class="prio prio-${r.prio}">${r.prio}</span></b><small>${esc(SEASON.dist[r.dist].label)}${esc(goalLine(r))}${r.date < today ? ' · vorbei' : r.prio === 'A' ? '<br>' + esc(peakText(r)) : ''}</small></span><span class="chev"></span></button>`).join('')
     : '<div class="row"><span class="txt"><small>Noch keine Rennen eingetragen.</small></span></div>';
   return `<div class="intro">${esc(SEASON.intro)}</div>
     <div class="header">${e ? 'Rennen bearbeiten' : 'Rennen eintragen'}</div><div class="group"><div class="raceform">
@@ -1124,8 +1137,31 @@ function exportWaistReminder() {
     'BEGIN:VEVENT', 'UID:jan-bauchumfang-montag-0800@kb-tracker.local', 'DTSTAMP:' + utc, 'DTSTART;TZID=Europe/Berlin:' + stamp(next), 'DTEND;TZID=Europe/Berlin:' + stamp(until),
     'RRULE:FREQ=WEEKLY;BYDAY=MO', 'SUMMARY:Bauchumfang messen', 'DESCRIPTION:Morgens vor dem Fruehstueck auf Nabelhoehe messen und im KB Tracker eintragen.',
     'BEGIN:VALARM', 'ACTION:DISPLAY', 'TRIGGER:PT0M', 'DESCRIPTION:Bauchumfang messen', 'END:VALARM', 'END:VEVENT', 'END:VCALENDAR'];
-  const fold = line => { const enc = new TextEncoder(); let out = '', cur = '', limit = 75; for (const ch of line) { if (enc.encode(cur + ch).length > limit) { out += cur + '\r\n '; cur = ''; limit = 74; } cur += ch; } return out + cur; };
-  download('bauchumfang-erinnerung.ics', lines.map(fold).join('\r\n') + '\r\n', 'text/calendar;charset=utf-8');
+  download('bauchumfang-erinnerung.ics', lines.map(icsFold).join('\r\n') + '\r\n', 'text/calendar;charset=utf-8');
+}
+// iCalendar: Zeilen nach 75 Bytes umbrechen, Text escapen
+function icsFold(line) { const enc = new TextEncoder(); let out = '', cur = '', limit = 75; for (const ch of line) { if (enc.encode(cur + ch).length > limit) { out += cur + '\r\n '; cur = ''; limit = 74; } cur += ch; } return out + cur; }
+const icsText = t => String(t).replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
+const icsDay = d => d.replace(/-/g, '');
+// Saisonplan als Kalender: Woche ganztägig Mo–So, Longrun am Sonntag, Rennen am Renntag (A und B)
+function planIcs(S = seasonPlan()) {
+  const utc = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z'), ev = [];
+  const add = (uid, from, to, summary, desc) => ev.push('BEGIN:VEVENT', `UID:${uid}@kb-tracker.local`, 'DTSTAMP:' + utc, 'DTSTART;VALUE=DATE:' + icsDay(from), 'DTEND;VALUE=DATE:' + icsDay(to),
+    'SUMMARY:' + icsText(summary), 'DESCRIPTION:' + icsText(desc), 'TRANSP:TRANSPARENT', 'END:VEVENT');
+  for (const x of S.weeks) {
+    const [pl, pt] = SEASON.phase[phaseKey(x)], kv = kmRound(x.km), lv = kmRound(x.long);
+    add(`kb-plan-${x.week}`, x.week, addDays(x.week, 7), `Laufplan: ${pl}${kv ? ` · ca. ${kv} km` : ''}`,
+      [`${pl} – ${pt}`, `Qualität: ${weekKey(x)}`, 'Mi: Laufgruppe locker (Zone 2)', `So: ${x.a || x.noLong || !lv ? weekLongNote(x) : `Longrun ca. ${lv} km, ${weekLongNote(x)}`}`, `Ziel: ${x.target.name} am ${dateGerman(x.target.date)}`].join('\n'));
+    if (!x.a && !x.noLong && lv) add(`kb-long-${x.week}`, addDays(x.week, 6), addDays(x.week, 7), `Longrun ca. ${lv} km`, weekLongNote(x));
+  }
+  const today = localDay();
+  for (const r of races.filter(r => r.date >= today)) add(`kb-race-${r.id}`, r.date, addDays(r.date, 1), `🏁 ${r.name} (${SEASON.dist[r.dist].label})`,
+    [`${r.prio}-Rennen`, r.goal ? `Zielzeit ${hms(r.goal)} = ${paceText(r.goal, SEASON.dist[r.dist].km)}` : '', 'Warm-up: KB Tracker → Laufen → Wettkampf'].filter(Boolean).join('\n'));
+  return ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//KB Tracker//Laufplan//DE', 'CALSCALE:GREGORIAN', 'X-WR-CALNAME:Laufplan', ...ev, 'END:VCALENDAR'].map(icsFold).join('\r\n') + '\r\n';
+}
+function exportPlanIcs() {
+  const S = seasonPlan(); if (!S.weeks.length) { toast('Zuerst ein A-Rennen eintragen.'); return; }
+  download(`laufplan-${localDay()}.ics`, planIcs(S), 'text/calendar;charset=utf-8'); toast('Kalenderdatei erstellt – in den Kalender „Laufplan“ importieren.');
 }
 
 /* ---------- Hinweise: Backup & Home-Bildschirm ---------- */
@@ -1480,6 +1516,7 @@ $('runcontent').addEventListener('click', e => {
   if (e.target.closest('#runaddbtn')) { addRunFromForm(); return; }
   const go = e.target.closest('[data-runsub-go]'); if (go) { runView.plan = go.dataset.runsubGo; store(KEYS.run, runView); renderRun(); return; }
   if (e.target.closest('#racesave')) { saveRaceFromForm(); return; }
+  if (e.target.closest('#planics')) { exportPlanIcs(); return; }
   if (e.target.closest('#racecancel')) { raceEdit = null; renderRun(); return; }
   if (e.target.closest('#racedel')) { if (raceEdit && confirm('Dieses Rennen löschen?')) { races = races.filter(r => r.id !== raceEdit); persistRaces(); raceEdit = null; renderRun(); toast('Rennen gelöscht.'); } return; }
   const re = e.target.closest('[data-raceedit]'); if (re) { raceEdit = re.dataset.raceedit; renderRun(); $('racename').focus(); window.scrollTo({ top: 0 }); return; }
