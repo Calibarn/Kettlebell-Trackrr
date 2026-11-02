@@ -122,3 +122,37 @@ test('Körpergewicht: speichern, ersetzen, Trend, löschen, Backup und Import', 
   expect(await page.evaluate(ds => weights.find(e => e.date === ds).kg, d[1])).toBe(122.6);
   expect(await page.evaluate(() => [profile.hr.max, profile.week.quality, profile.week.long])).toEqual([180, 5, 0]);
 });
+
+test('Trainingswoche: Einheiten dauerhaft abschalten oder nur diese Woche „Entfällt“', async ({ page }) => {
+  const date = await page.evaluate(() => addDays(localDay(), 7 * 12));
+  await page.evaluate(d => { races = [{ id: 'h', name: 'HM', date: d, dist: 'hm', prio: 'A', goal: null }]; persistRaces(); }, date);
+  // dauerhaft: Qualität „keine“ → Hinweis, fehlt im Plan
+  await openProfil(page);
+  await page.selectOption('#wkquality', '');
+  await expect(page.locator('#weekpanel .alert')).toContainText('Ohne Qualitätseinheit');
+  expect(await page.evaluate(() => profile.week.quality)).toBeNull();
+  await page.reload();
+  expect(await page.evaluate(() => profile.week.quality)).toBeNull();
+  await page.evaluate(() => showArea('laufen'));
+  await page.click('[data-runtab="plan"]');
+  await expect(page.locator('#planschedule')).not.toContainText('Qualität');
+
+  // nur diese Woche: Laufgruppe entfällt
+  const grp = page.locator('#planschedule [data-skip="group"]');
+  await grp.click();
+  await expect(page.locator('#planschedule .row.skipped')).toContainText('entfällt diese Woche');
+  await expect(page.locator('#planschedule [data-skip="group"]')).toHaveText('Wieder rein');
+  const ics = (await page.evaluate(() => planIcs())).replace(/\r\n /g, '');
+  const thisWeek = await page.evaluate(() => weekStart(localDay()));
+  const grpDay = await page.evaluate(w => addDays(w, 2), thisWeek);
+  if (grpDay >= await page.evaluate(() => localDay())) expect(ics).not.toContain(`UID:kb-group-${grpDay}@`);
+  expect(ics).toContain('Laufgruppe (entfällt)');
+  // nächste Woche ist sie wieder da
+  expect(await page.evaluate(() => { const S = seasonPlan(); return [weekSchedule(S.weeks[0]).find(i => i.kind === 'group').skip, weekSchedule(S.weeks[1]).find(i => i.kind === 'group').skip]; })).toEqual([true, false]);
+  expect(JSON.parse(await page.evaluate(() => backupJson())).weekSkip[thisWeek]).toEqual(['group']);
+  await page.reload();
+  await page.evaluate(() => showArea('laufen'));
+  await page.click('[data-runsub="woche"]');
+  await page.click('#planschedule [data-skip="group"]');
+  await expect(page.locator('#planschedule .row.skipped')).toHaveCount(0);
+});

@@ -360,3 +360,6 @@ html[data-os=android] .sheet{border-radius:28px 28px 0 0}
 .timein input[aria-invalid=true]{box-shadow:0 0 0 2px var(--red) inset}
 .timein span{font-size:11px;color:var(--label2)}
 .timein b{line-height:40px;font-weight:600;color:var(--label2)}
+.planrows .row.skipped .txt b{text-decoration:line-through;opacity:.5}
+.planrows .row.skipped .txt small{color:var(--orange)}
+.planrows .row .btn.small{flex:0 0 auto;padding:5px 10px;font-size:13px}

@@ -5,7 +5,7 @@ const $ = id => document.getElementById(id);
 const KEYS = {
   entries: 'jan-kettlebell-tracker-v1', waist: 'jan-kb-waist-v1', sound: 'jan-kb-sound-v1', gear: 'jan-kb-gear-v1',
   choice: 'jan-kb-choice-v1', stage: 'jan-kb-stage-v1', plan: 'jan-kb-plan-v1', session: 'jan-kb-session-v1',
-  backup: 'jan-kb-lastbackup-v1', hint: 'jan-kb-installhint-v1', area: 'jan-kb-area-v1', run: 'jan-kb-runview-v1', audio: 'jan-kb-audio-v1', mob: 'jan-kb-mobview-v1', runweeks: 'jan-kb-runweeks-v1', runlog: 'jan-kb-runlog-v1', races: 'jan-kb-races-v1', profile: 'jan-kb-profile-v1', weight: 'jan-kb-weight-v1'
+  backup: 'jan-kb-lastbackup-v1', hint: 'jan-kb-installhint-v1', area: 'jan-kb-area-v1', run: 'jan-kb-runview-v1', audio: 'jan-kb-audio-v1', mob: 'jan-kb-mobview-v1', runweeks: 'jan-kb-runweeks-v1', runlog: 'jan-kb-runlog-v1', races: 'jan-kb-races-v1', profile: 'jan-kb-profile-v1', weight: 'jan-kb-weight-v1', skip: 'jan-kb-weekskip-v1'
 };
 /* Datensicherheit bei Updates:
    - Einträge, die diese Version nicht versteht, werden nie verworfen, sondern unverändert mitgespeichert.
@@ -57,7 +57,7 @@ function normProfile(p) {
   return {
     hr: { max: okNum(hr.max, 100, 230) ? Math.round(hr.max) : null, rest: okNum(hr.rest, 30, 120) ? Math.round(hr.rest) : null, z: okZones(hr.z) ? hr.z.map(Math.round) : null },
     kit: { kb, kbDefault: kb.includes(kit.kbDefault) ? kit.kbDefault : kb.includes(KB_DEFAULT) ? KB_DEFAULT : (kb.length ? kb[0] : KB_DEFAULT), bands },
-    week: { group: wk.group === null ? null : isWd(wk.group) ? wk.group : d.week.group, quality: isWd(wk.quality) ? wk.quality : d.week.quality, long: isWd(wk.long) ? wk.long : d.week.long,
+    week: { group: wk.group === null ? null : isWd(wk.group) ? wk.group : d.week.group, quality: wk.quality === null ? null : isWd(wk.quality) ? wk.quality : d.week.quality, long: wk.long === null ? null : isWd(wk.long) ? wk.long : d.week.long,
       strength: Array.isArray(wk.strength) ? [...new Set(wk.strength.filter(isWd))] : d.week.strength.slice(),
       extraName: typeof wk.extraName === 'string' ? wk.extraName.slice(0, 30) : '', extraDay: isWd(wk.extraDay) ? wk.extraDay : null }
   };
@@ -779,19 +779,21 @@ function saveWeightFromForm() {
 const wdSelect = (id, cur, none) => `<select id="${id}">${none ? `<option value=""${cur === null ? ' selected' : ''}>${esc(none)}</option>` : ''}${WEEK_ORDER.map(d => `<option value="${d}"${d === cur ? ' selected' : ''}>${WD_LONG[d]}</option>`).join('')}</select>`;
 // Hinweise zur Woche: gleiche Tage, harte Tage direkt hintereinander
 function weekWarnings(w = profile.week) {
-  const out = [], next = d => (d + 1) % 7;
-  if (w.quality === w.long) out.push('Qualität und Longrun liegen am selben Tag.');
-  if (w.group !== null && w.group === w.quality) out.push('Laufgruppe und Qualitätseinheit liegen am selben Tag – die Laufgruppe ist als lockerer Lauf gedacht.');
-  if (next(w.quality) === w.long) out.push(`Qualität am ${WD_LONG[w.quality]} direkt vor dem Longrun: zwei harte Tage hintereinander. Besser mindestens einen Tag Abstand.`);
-  if (next(w.long) === w.quality) out.push(`Qualität am ${WD_LONG[w.quality]} direkt nach dem Longrun – die Beine sind dann selten frisch.`);
-  if (w.strength.includes(w.long)) out.push('Kraft am Longrun-Tag: nur Oberkörper oder nach dem Lauf leicht.');
+  const out = [], next = d => d === null ? null : (d + 1) % 7;
+  if (w.long === null) out.push('Ohne Longrun fehlt die wichtigste Einheit für Halbmarathon und Marathon. Fällt er nur einmal aus, besser in der Plan-Übersicht „Entfällt“ tippen.');
+  if (w.quality === null) out.push('Ohne Qualitätseinheit läuft der Plan nur locker – für 5 und 10 km fehlt dann das Tempo.');
+  if (w.quality !== null && w.quality === w.long) out.push('Qualität und Longrun liegen am selben Tag.');
+  if (w.group !== null && w.quality !== null && w.group === w.quality) out.push('Laufgruppe und Qualitätseinheit liegen am selben Tag – die Laufgruppe ist als lockerer Lauf gedacht.');
+  if (w.quality !== null && w.long !== null && next(w.quality) === w.long) out.push(`Qualität am ${WD_LONG[w.quality]} direkt vor dem Longrun: zwei harte Tage hintereinander. Besser mindestens einen Tag Abstand.`);
+  if (w.quality !== null && w.long !== null && next(w.long) === w.quality) out.push(`Qualität am ${WD_LONG[w.quality]} direkt nach dem Longrun – die Beine sind dann selten frisch.`);
+  if (w.long !== null && w.strength.includes(w.long)) out.push('Kraft am Longrun-Tag: nur Oberkörper oder nach dem Lauf leicht.');
   return out;
 }
 function renderProfile() {
   const w = profile.week, h = profile.hr, k = profile.kit;
   $('weekpanel').innerHTML = `<div class="raceform" style="padding:0">
-      <div class="field"><label for="wkquality">Qualität (Intervall/Tempo)</label>${wdSelect('wkquality', w.quality)}</div>
-      <div class="field"><label for="wklong">Longrun</label>${wdSelect('wklong', w.long)}</div>
+      <div class="field"><label for="wkquality">Qualität (Intervall/Tempo)</label>${wdSelect('wkquality', w.quality, 'keine')}</div>
+      <div class="field"><label for="wklong">Longrun</label>${wdSelect('wklong', w.long, 'keine')}</div>
       <div class="field"><label for="wkgroup">Laufgruppe (locker)</label>${wdSelect('wkgroup', w.group, 'keine')}</div>
       <div class="field"><label for="wkextraday">Weitere Einheit</label>${wdSelect('wkextraday', w.extraDay, 'keine')}</div>
       <div class="field wide"><label for="wkextraname">Name der weiteren Einheit</label><input id="wkextraname" type="text" maxlength="30" autocomplete="off" placeholder="z. B. Kurs, Radfahren" value="${esc(w.extraName)}"></div>
@@ -1211,12 +1213,24 @@ function weekSchedule(x) {
   const before = (d, gap = 1) => dayIdx(d) <= rd - gap;
   if (x.a) add(new Date(x.a.date + 'T12:00:00').getDay(), 'race', `Rennen: ${x.a.name}`, raceLabel(x.a) + goalLine(x.a));
   if (x.bRace) add(new Date(x.bRace.date + 'T12:00:00').getDay(), 'brace', `B-Rennen: ${x.bRace.name}`, raceLabel(x.bRace) + goalLine(x.bRace) + (x.bSpike ? ' · locker, nicht auf Zeit' : ''));
-  if ((!x.a || before(w.quality, 2)) && !x.bRace) add(w.quality, 'quality', x.phase === 'recover' ? 'Locker laufen' : 'Qualität', weekKey(x));
+  if (w.quality !== null && (!x.a || before(w.quality, 2)) && !x.bRace) add(w.quality, 'quality', x.phase === 'recover' ? 'Locker laufen' : 'Qualität', weekKey(x));
   if (w.group !== null && (!x.a || before(w.group))) add(w.group, 'group', 'Laufgruppe', hrize(x.a ? 'ganz locker, Zone 2' : 'locker, Zone 2'));
-  if (!x.a && !x.bLong) { const lv = kmRound(x.long); add(w.long, 'long', x.noLong ? 'Locker oder frei' : lv ? `Longrun ca. ${lv} km` : 'Longrun', weekLongNote(x)); }
+  if (!x.a && !x.bLong && w.long !== null) { const lv = kmRound(x.long); add(w.long, 'long', x.noLong ? 'Locker oder frei' : lv ? `Longrun ca. ${lv} km` : 'Longrun', weekLongNote(x)); }
   for (const d of w.strength) if (!x.a || before(d, 2)) add(d, 'strength', 'Kraft', x.a ? 'leicht, keine schweren Beinübungen' : x.phase === 'taper' ? 'ohne schwere Beinübungen' : x.phase === 'recover' ? 'leicht' : '');
   if (w.extraDay !== null && (!x.a || before(w.extraDay))) add(w.extraDay, 'extra', w.extraName || 'Weitere Einheit', '');
+  const skip = weekSkip[x.week] || [];
+  for (const it of out) { it.key = it.kind === 'strength' ? 'strength-' + it.d : it.kind; it.skip = skip.includes(it.key); }
   return out.sort((a, b) => dayIdx(a.d) - dayIdx(b.d));
+}
+// „Entfällt“ je Woche, z. B. wenn die Laufgruppe ausfällt; alte Wochen werden aufgeräumt
+let weekSkip = load(KEYS.skip, {});
+weekSkip = isObj(weekSkip) ? Object.fromEntries(Object.entries(weekSkip).filter(([k, v]) => isDay(k) && Array.isArray(v)).map(([k, v]) => [k, v.filter(x => typeof x === 'string')])) : {};
+function toggleSkip(week, key) {
+  const cur = weekSkip[week] || [];
+  weekSkip[week] = cur.includes(key) ? cur.filter(k => k !== key) : cur.concat(key);
+  const limit = addDays(weekStart(localDay()), -7 * 8);
+  for (const k of Object.keys(weekSkip)) if (!weekSkip[k].length || k < limit) delete weekSkip[k];
+  store(KEYS.skip, weekSkip);
 }
 const peakText = r => { const p = peaks(r); return `Longrun bis ${p.long} km, Woche bis ${p.week} km${p.fromGoal ? '' : ' (Standard)'}`; };
 const kmRound = v => v === null || v === undefined ? null : Math.round(v);
@@ -1239,8 +1253,8 @@ function renderPlanWeek(S) {
       <div class="metric"><span>Longrun</span><b>${x.a || x.noLong || x.bLong ? '–' : longVal === null ? '?' : 'ca. ' + longVal + ' km'}</b><small>${esc(weekLongNote(x))}</small></div>
       <div class="metric"><span>Woche</span><b>${kmVal === null ? '?' : 'ca. ' + kmVal + ' km'}</b><small>${x.cut ? 'Entlastungswoche' : x.phase === 'taper' ? 'reduziert' : 'höchstens +10 %'}</small></div>
     </div>
-    <div class="planrows" id="planschedule">${weekSchedule(x).map(it => `<div class="row sched-${it.kind}"><span class="dur">${WD[it.d]}</span><span class="txt"><b>${esc(it.title)}</b>${it.detail ? `<small>${esc(it.detail)}</small>` : ''}</span></div>`).join('')}</div>
-    <p class="tiny">Tage stellst du unter <b>Profil → Trainingswoche</b> ein.</p>
+    <div class="planrows" id="planschedule">${weekSchedule(x).map(it => `<div class="row sched-${it.kind}${it.skip ? ' skipped' : ''}"><span class="dur">${WD[it.d]}</span><span class="txt"><b>${esc(it.title)}</b>${it.skip ? '<small>entfällt diese Woche</small>' : it.detail ? `<small>${esc(it.detail)}</small>` : ''}</span>${it.kind === 'race' || it.kind === 'brace' ? '' : `<button type="button" class="btn small" data-skip="${it.key}" data-week="${x.week}">${it.skip ? 'Wieder rein' : 'Entfällt'}</button>`}</div>`).join('')}</div>
+    <p class="tiny">Tage stellst du unter <b>Profil → Trainingswoche</b> ein. „Entfällt“ gilt nur für diese Woche.</p>
     ${bs}
     ${S.hasData ? '' : '<p class="tiny">Für Longrun und Wochen-km: unter <b>Umfang</b> deine Läufe oder Wochensummen der letzten Wochen eintragen.</p>'}
     ${!x.a && !x.bLong && x.long && x.km && x.long > 0.6 * x.km ? `<div class="alert due" id="planratio">Der Longrun ist ${Math.round(x.long / x.km * 100)} % deiner Wochen-km – für Qualität und lockere Läufe bleibt kaum etwas. Fehlen unter <b>Umfang</b> Läufe? Dann dort nachtragen, der Plan rechnet sofort neu.</div>` : ''}
@@ -1331,7 +1345,7 @@ function renderPlan() {
 
 /* ---------- Dateien: Backup, CSV, Kalender ---------- */
 function download(name, content, type) { const blob = new Blob([content], { type }), url = URL.createObjectURL(blob), a = document.createElement('a'); a.href = url; a.download = name; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 3000); }
-function backupJson() { return JSON.stringify({ version: 3, entries: saved.concat(savedKeep), waist: waist.concat(waistKeep), runWeeks: runWeeks.concat(runWeeksKeep), runLog: runLog.concat(runLogKeep), races: races.concat(racesKeep), weights: weights.concat(weightKeep), settings: { gear, choices, stages, audio: audioOpt, profile: Object.assign({}, profileExtra, profile) }, exportedAt: new Date().toISOString() }, null, 2); }
+function backupJson() { return JSON.stringify({ version: 3, entries: saved.concat(savedKeep), waist: waist.concat(waistKeep), runWeeks: runWeeks.concat(runWeeksKeep), runLog: runLog.concat(runLogKeep), races: races.concat(racesKeep), weights: weights.concat(weightKeep), weekSkip, settings: { gear, choices, stages, audio: audioOpt, profile: Object.assign({}, profileExtra, profile) }, exportedAt: new Date().toISOString() }, null, 2); }
 function schemaCheck() {
   const prev = load(SCHEMA_KEY, null);
   if (prev === SCHEMA || (typeof prev === 'number' && prev > SCHEMA)) return; // neuere Daten mit älterer App: nichts verändern
@@ -1372,6 +1386,7 @@ function importBackup(file) {
       const rl = isObj(x) && Array.isArray(x.runLog) ? x.runLog.filter(validRun) : [];
       const rc = isObj(x) && Array.isArray(x.races) ? x.races.filter(validRace) : [];
       const wg = isObj(x) && Array.isArray(x.weights) ? x.weights.filter(validWeight) : [];
+      if (isObj(x) && isObj(x.weekSkip)) { for (const [k, v] of Object.entries(x.weekSkip)) if (isDay(k) && Array.isArray(v)) weekSkip[k] = [...new Set((weekSkip[k] || []).concat(v.filter(y => typeof y === 'string')))]; store(KEYS.skip, weekSkip); }
       const settings = isObj(x) && isObj(x.settings) ? x.settings : null;
       if (!entries.length && !wl.length && !rw.length && !rl.length && !rc.length && !wg.length && !settings) throw Error('Keine gültigen Daten gefunden');
       const ids = new Set(saved.map(e => String(e.id))); let added = 0, addedW = 0;
@@ -1451,10 +1466,10 @@ function planIcs(S = seasonPlan()) {
     const [pl, pt] = SEASON.phase[phaseKey(x)], kv = kmRound(x.km), lv = kmRound(x.long);
     const sched = weekSchedule(x);
     add(`kb-plan-${x.week}`, x.week, addDays(x.week, 7), `Laufplan: ${pl}${kv ? ` · ca. ${kv} km` : ''}`,
-      [`${pl} – ${pt}`, ...sched.map(it => `${WD[it.d]}: ${it.title}${it.detail ? ' – ' + it.detail : ''}`), `Ziel: ${x.target.name} am ${dateGerman(x.target.date)}`].join('\n'));
+      [`${pl} – ${pt}`, ...sched.map(it => `${WD[it.d]}: ${it.title}${it.skip ? ' (entfällt)' : it.detail ? ' – ' + it.detail : ''}`), `Ziel: ${x.target.name} am ${dateGerman(x.target.date)}`].join('\n'));
     for (const it of sched) {
       const day = addDays(x.week, dayIdx(it.d));
-      if (it.kind === 'race' || it.kind === 'brace' || day < today) continue;
+      if (it.kind === 'race' || it.kind === 'brace' || it.skip || day < today) continue;
       add(`kb-${it.kind}-${day}`, day, addDays(day, 1), it.kind === 'quality' && x.phase !== 'recover' ? `Qualität: ${it.detail}` : it.title, it.detail);
     }
   }
@@ -1830,6 +1845,7 @@ $('runcontent').addEventListener('click', e => {
   const go = e.target.closest('[data-runsub-go]'); if (go) { runView.plan = go.dataset.runsubGo; store(KEYS.run, runView); renderRun(); return; }
   if (e.target.closest('#racesave')) { saveRaceFromForm(); return; }
   if (e.target.closest('#planics')) { exportPlanIcs(); return; }
+  const sk = e.target.closest('[data-skip]'); if (sk) { toggleSkip(sk.dataset.week, sk.dataset.skip); renderRun(); return; }
   if (e.target.closest('#racecancel')) { raceEdit = null; renderRun(); return; }
   if (e.target.closest('#racedel')) { if (raceEdit && confirm('Dieses Rennen löschen?')) { races = races.filter(r => r.id !== raceEdit); persistRaces(); raceEdit = null; renderRun(); toast('Rennen gelöscht.'); } return; }
   const re = e.target.closest('[data-raceedit]'); if (re) { raceEdit = re.dataset.raceedit; renderRun(); $('racename').focus(); window.scrollTo({ top: 0 }); return; }
