@@ -214,3 +214,75 @@ test('Kalender-Export: Wochen, Longruns und Rennen als gültige ics-Datei', asyn
   // keine Zeile über 75 Bytes
   for (const line of raw.split('\r\n')) expect(Buffer.byteLength(line)).toBeLessThanOrEqual(75);
 });
+
+test('Eigene Distanz: 20 km werden wie ein Halbmarathon geplant, aber mit 20 km angezeigt und gerechnet', async ({ page }) => {
+  await openPlan(page, 'rennen');
+  await expect(page.locator('#racekmfield')).toBeHidden();
+  await page.fill('#racename', 'Lauf in den Tropen');
+  await page.fill('#racedate', '2026-11-22');
+  await page.selectOption('#racedist', 'custom');
+  await expect(page.locator('#racekmfield')).toBeVisible();
+  await page.selectOption('#raceprio', 'B');
+  await page.click('#racesave');
+  await expect(page.locator('#racekm')).toHaveAttribute('aria-invalid', 'true');
+  await page.fill('#racekm', '20');
+  await fillTime(page, 'racegoal', '1', '55', '00');
+  await page.click('#racesave');
+  expect(await page.evaluate(() => races.map(r => [r.dist, r.km, r.goal]))).toEqual([['hm', 20, 6900]]);
+  await expect(page.locator('#racelist')).toContainText('20 km (geplant wie Halbmarathon) · Ziel 1:55:00 = 5:45 /km');
+
+  // Bearbeiten zeigt die eigene Distanz wieder an
+  await page.click('[data-raceedit]');
+  await expect(page.locator('#racedist')).toHaveValue('custom');
+  await expect(page.locator('#racekm')).toHaveValue('20');
+  await page.click('#racecancel');
+
+  expect(await page.evaluate(() => [distForKm(5), distForKm(8), distForKm(16), distForKm(30), distForKm(50)])).toEqual(['5k', '10k', 'hm', 'hm', 'marathon']);
+  // Zielzeit wird per Riegel auf 21,1 km umgerechnet: 1:55 auf 20 km ≈ 2:02 auf HM → Stufe „unter 2:15“
+  expect(await page.evaluate(() => peaks({ dist: 'hm', km: 20, goal: 6900 }))).toEqual({ long: 20, week: 45, fromGoal: true });
+  expect(await page.evaluate(() => peaks({ dist: 'hm', km: 20, goal: 5900 }))).toEqual({ long: 21, week: 52, fromGoal: true });
+
+  // B-Rennen in der Saison mit 20 km
+  const d = await page.evaluate(() => addDays(localDay(), 7 * 15));
+  await page.evaluate(dd => { races.push({ id: 'a', name: 'HM', date: dd, dist: 'hm', prio: 'A', goal: null, km: null }); persistRaces(); }, d);
+  const bDate = await page.evaluate(() => addDays(localDay(), 7 * 3));
+  await page.evaluate(bd => { races.find(r => r.km === 20).date = bd; persistRaces(); }, bDate);
+  await page.click('[data-runsub="woche"]');
+  const ics = (await page.evaluate(() => planIcs())).replace(/\r\n /g, '');
+  expect(ics).toContain('Lauf in den Tropen (20 km)');
+
+  // Renntempo-Rechner mit eigener Distanz
+  await page.click('[data-runsub="wissen"]');
+  await page.selectOption('#pcdist', 'custom');
+  await fillTime(page, 'pctime', '1', '55', '00');
+  await expect(page.locator('#pcout')).toContainText('Distanz in km eingeben');
+  await page.fill('#pckm', '20');
+  await expect(page.locator('#pcout .longnext b')).toHaveText('5:45 /km');
+  await expect(page.locator('#pcout .splits span small')).toHaveText(['5 km', '10 km', '15 km', 'Ziel']);
+});
+
+test('B-Rennen zählt in die Woche: ersetzt Qualität bzw. Longrun, Warnung bei deutlich längerem Rennen', async ({ page }) => {
+  await setRaces(page, [
+    { id: 'a', name: 'HM Frühjahr', date: '2027-03-01', dist: 'hm', prio: 'A', goal: null },
+    { id: 't', name: 'Lauf in den Tropen', date: '2026-11-22', dist: 'hm', prio: 'B', goal: null, km: 20 },
+    { id: 'z', name: 'Zehner', date: '2027-01-17', dist: '10k', prio: 'B', goal: null }
+  ]);
+  const S = await page.evaluate(() => { const S = seasonPlan('2026-11-04', { L0: 11, W0: 14 }); return { warn: S.warn, w: S.weeks.map(x => ({ week: x.week, long: x.long, km: x.km, bLong: !!x.bLong, b: x.bRace && x.bRace.id, sched: weekSchedule(x).map(i => i.kind) })) }; });
+  const t = S.w.find(x => x.b === 't'), z = S.w.find(x => x.b === 'z');
+  expect(t.week).toBe('2026-11-16');
+  expect(t.bLong).toBe(true);
+  expect(t.km).toBeGreaterThanOrEqual(20);
+  expect(t.sched).toContain('brace');
+  expect(t.sched).not.toContain('long');
+  expect(t.sched).not.toContain('quality');
+  expect(S.warn.join(' ')).toContain('Lauf in den Tropen (20 km): deutlich länger als dein Longrun');
+  // 10 km ersetzen bei einem Longrun von ~14 km nur die Qualität
+  expect(z.bLong).toBe(false);
+  expect(z.sched).toContain('long');
+  expect(z.km).toBeGreaterThanOrEqual(10 + z.long - 1e-9);
+
+  // Hinweis, wenn der Longrun fast die ganze Woche ausmacht
+  await page.evaluate(() => { const t = localDay(); for (let i = 1; i <= 4; i++) setWeekKm(addDays(weekStart(t), -7 * i), 'km', 14); addRun(addDays(t, -9), 12); });
+  await openPlan(page);
+  await expect(page.locator('#planratio')).toContainText('% deiner Wochen-km');
+});
