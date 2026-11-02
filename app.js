@@ -48,7 +48,8 @@ let stages = load(KEYS.stage, {}); if (!isObj(stages)) stages = {};
 /* ---------- Profil: Herzfrequenz, Geräte & Gewichte, Trainingswoche ---------- */
 // Wochentage wie Date.getDay(): 0 = Sonntag. Angezeigt wird Montag bis Sonntag.
 const WD = EN ? ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] : ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'], WD_LONG = EN ? ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] : ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'], WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0];
-const PROFILE_DEFAULT = { hr: { max: null, rest: null, z: null }, kit: { kb: [KB_DEFAULT], kbDefault: KB_DEFAULT, bands: [10, 20, 30] },
+// Neu eingerichtet: keine Kettlebell und keine Bänder – was du besitzt, trägst du im Profil ein
+const PROFILE_DEFAULT = { hr: { max: null, rest: null, z: null }, kit: { kb: [], kbDefault: KB_DEFAULT, bands: [] },
   week: { group: 3, quality: 2, long: 0, strength: [4, 6], extraName: '', extraDay: null } };
 const HR_PCT = [0.5, 0.6, 0.7, 0.8, 0.9]; // Karvonen: Anteil der Herzfrequenzreserve, ab dem Zone 1–5 beginnt
 const isWd = v => Number.isInteger(v) && v >= 0 && v <= 6;
@@ -70,8 +71,12 @@ function normProfile(p) {
 // Unbekannte Felder (z. B. aus einer neueren Version) bleiben beim Speichern erhalten
 const profileRaw = load(KEYS.profile, null);
 const profileExtra = isObj(profileRaw) ? Object.fromEntries(Object.entries(profileRaw).filter(([k]) => !['hr', 'kit', 'week'].includes(k))) : {};
-let profile = normProfile(profileRaw);
+// Bis v35 galten ohne gespeicherte Geräte 12 kg und Bänder 10/20/30. Wer schon Daten hat, behält diesen Stand.
+const LEGACY_KIT = { kb: [KB_DEFAULT], kbDefault: KB_DEFAULT, bands: [10, 20, 30] };
+const kitMissing = !(isObj(profileRaw) && isObj(profileRaw.kit)), hadData = (() => { try { return [KEYS.entries, KEYS.gear, KEYS.choice, KEYS.plan, KEYS.session].some(k => localStorage.getItem(k) !== null); } catch (e) { return false; } })();
+let profile = normProfile(kitMissing && hadData ? Object.assign({}, profileRaw, { kit: LEGACY_KIT }) : profileRaw);
 function persistProfile() { profile = normProfile(profile); if (!store(KEYS.profile, Object.assign({}, profileExtra, profile))) toast(T('Speichern im Browser nicht möglich – bitte Backup exportieren.', 'Saving in the browser failed – please export a backup.')); }
+if (kitMissing && hadData) persistProfile();
 // Bänder: einzeln und je zwei kombiniert (z. B. „10+30“)
 function bandOptions() {
   const b = profile.kit.bands.map(String), out = b.slice();
@@ -89,7 +94,14 @@ const hrize = t => String(t).replace(/[Zz]one ([1-5])(?! \()/g, (m, n) => { cons
 const slotKey = (pk, sl) => pk + '.' + sl.id;
 function validKg(v) { const n = Number(v); return v !== undefined && v !== null && v !== '' && Number.isFinite(n) && n >= 0 && n <= 60 ? n : KB_DEFAULT; }
 // Gewählte Geräte in der Rangfolge der Wirksamkeit; gibt es keine passende Variante, bleibt Körpergewicht (geht immer)
-function availableGears(sl, pk) { if (pk && PLANS[pk].kbOnly) return ['kb']; return (sl.order || ['kb', 'band', 'bw']).filter(g => sl.v[g] && gear[g]); }
+// Nur Geräte, die im Profil eingetragen sind (Körpergewicht geht immer)
+const owns = g => g === 'bw' || (g === 'kb' ? profile.kit.kb.length > 0 : g === 'band' ? profile.kit.bands.length > 0 : false);
+const planOwned = pk => !PLANS[pk].kbOnly || owns('kb');
+function availableGears(sl, pk) {
+  if (pk && PLANS[pk].kbOnly) return ['kb'];
+  const act = ['kb', 'band', 'bw'].filter(g => gear[g] && owns(g)); if (!act.length) act.push('bw');
+  return (sl.order || ['kb', 'band', 'bw']).filter(g => sl.v[g] && act.includes(g));
+}
 function resolve(pk, sl) {
   const avail = availableGears(sl, pk), c = isObj(choices[slotKey(pk, sl)]) ? choices[slotKey(pk, sl)] : {};
   // Ersatz nur, wenn es die Übung mit Geräten gäbe, aber nicht mit den gewählten; reine Körpergewicht-Übungen gehen immer
@@ -490,7 +502,7 @@ function toast(t) { const el = $('toast'); el.textContent = t; el.classList.add(
 
 function renderTabs() {
   const t = $('tabs');
-  t.innerHTML = PLAN_ORDER.map(k => `<button role="tab" type="button" data-plan="${k}" aria-selected="${k === plan}">${esc(PLANS[k].tab)}</button>`).join('');
+  t.innerHTML = PLAN_ORDER.filter(planOwned).map(k => `<button role="tab" type="button" data-plan="${k}" aria-selected="${k === plan}">${esc(PLANS[k].tab)}</button>`).join('');
   // Auf schmalen Displays lässt sich die Leiste wischen – der gewählte Plan bleibt sichtbar
   const sel = t.querySelector('[aria-selected="true"]');
   if (sel && t.scrollWidth > t.clientWidth) t.scrollLeft += sel.getBoundingClientRect().left - t.getBoundingClientRect().left - (t.clientWidth - sel.offsetWidth) / 2;
@@ -498,9 +510,10 @@ function renderTabs() {
 function renderGear() {
   if (PLANS[plan].kbOnly) { $('gearbar').innerHTML = `<span class="lbl">${T('Fest mit Kettlebell – „Heute dabei“ gilt für diesen Plan nicht.', 'Kettlebell only – “With me today” does not apply to this plan.')}</span>`; return; }
   $('gearbar').innerHTML = `<span class="lbl">${T('Heute dabei:', 'With me today:')}</span>` +
-    `<button class="chip" type="button" data-gear="kb" aria-pressed="${gear.kb}">Kettlebell</button>` +
-    `<button class="chip" type="button" data-gear="band" aria-pressed="${gear.band}">${T('Bänder', 'Bands')}</button>` +
-    `<button class="chip" type="button" data-gear="bw" aria-pressed="${gear.bw}">${T('Körpergewicht', 'Body weight')}</button>`;
+    (owns('kb') ? `<button class="chip" type="button" data-gear="kb" aria-pressed="${gear.kb}">Kettlebell</button>` : '') +
+    (owns('band') ? `<button class="chip" type="button" data-gear="band" aria-pressed="${gear.band}">${T('Bänder', 'Bands')}</button>` : '') +
+    `<button class="chip" type="button" data-gear="bw" aria-pressed="${gear.bw || (!(gear.kb && owns('kb')) && !(gear.band && owns('band')))}">${T('Körpergewicht', 'Body weight')}</button>` +
+    (owns('kb') && owns('band') ? '' : `<span class="lbl">${T('Weitere Geräte: Profil → Geräte & Gewichte', 'More equipment: Profile → Equipment & weights')}</span>`);
 }
 function renderHeader() {
   const p = PLANS[plan], ex = exList();
@@ -687,8 +700,8 @@ function renderSettings() {
   const emRows = isEmomPlan() ? (() => { const c = emomCfg(), n = PLANS[pk].slots.length; return `<div class="srow"><div class="sname"><b>${T('Runden', 'Rounds')}</b><small>${T(`Empfehlung zum Einstieg: 5 (${5 * n} Min.)`, `Recommended to start: 5 (${5 * n} min)`)}</small></div><select data-icfg="rounds" aria-label="${T('Runden', 'Rounds')}">${EMOM_ROUNDS.map(v => `<option value="${v}" ${v === c.rounds ? 'selected' : ''}>${T(`${v} Runden · ${v * n} Min.`, `${v} rounds · ${v * n} min`)}</option>`).join('')}</select><span class="param">${T('1 Übung je Min.', '1 exercise per min')}</span></div>`; })() : '';
   const info = PLANS[pk].kbOnly ? T('Dieser Plan ist fest auf Kettlebell – „Heute dabei“ gilt hier nicht. Das Gewicht stellst du je Übung ein.', 'This plan is kettlebell only – “With me today” does not apply here. You set the weight per exercise.') : T('Die App wählt je Übung automatisch die wirksamste Variante aus den Geräten bei „Heute dabei“; du kannst sie hier je Übung überschreiben.', 'For each exercise the app automatically picks the most effective variant for the equipment under “With me today”; you can override it here per exercise.');
   $('settings').innerHTML = tbRows + emRows + `<p class="tiny">${T(`Gilt für „${esc(PLANS[pk].tab)}“.`, `Applies to “${esc(tr(PLANS[pk].tab))}”.`)} ${info} ${T('Einheiten mit anderen Varianten oder Gewichten zählen nicht in den Bestwert.', 'Sessions with other variants or weights do not count towards the best.')}</p>${rows}
-  <div class="srow"><div class="sname"><b>${T('Alle Kettlebell-Übungen', 'All kettlebell exercises')}</b><small>${T('dieses Plans auf ein Gewicht setzen', 'of this plan set to one weight')}</small></div>${kgParam('id="allkg"', profile.kit.kbDefault, T('Gewicht für alle Kettlebell-Übungen', 'Weight for all kettlebell exercises'))}<button class="btn small" type="button" id="allkgbtn">${T('Übernehmen', 'Apply')}</button></div>
-  ${gear.band && !PLANS[pk].kbOnly ? `<p class="tiny">${esc(tr(BAND_TEXT))}</p>` : ''}`;
+  ${owns('kb') ? `<div class="srow"><div class="sname"><b>${T('Alle Kettlebell-Übungen', 'All kettlebell exercises')}</b><small>${T('dieses Plans auf ein Gewicht setzen', 'of this plan set to one weight')}</small></div>${kgParam('id="allkg"', profile.kit.kbDefault, T('Gewicht für alle Kettlebell-Übungen', 'Weight for all kettlebell exercises'))}<button class="btn small" type="button" id="allkgbtn">${T('Übernehmen', 'Apply')}</button></div>` : ''}
+  ${gear.band && owns('band') && !PLANS[pk].kbOnly ? `<p class="tiny">${esc(tr(BAND_TEXT))}</p>` : ''}`;
 }
 function settingsLocked() { return isInterval() ? sessionActive() : !isSets() && !sessionSaved && (running || completions > 0); }
 function updateChoice(slotId, patch) {
@@ -847,7 +860,8 @@ function renderProfile() {
     <p class="tiny">${T('Verstellbare Kettlebell: jede Stufe einzeln eintragen.', 'Adjustable kettlebell: enter each setting separately.')}</p>
     <p class="tiny">${T('Widerstandsbänder (Zugkraft)', 'Resistance bands (pull force)')}</p><div class="chips">${bandChips}</div>
     <div class="runadd" style="padding:8px 0;border:0"><input type="text" inputmode="numeric" autocomplete="off" id="bandnew" placeholder="${T('Stärke in kg, z. B. 40', 'Strength in kg, e.g. 40')}" aria-label="${T('Band hinzufügen', 'Add band')}"><span></span><button type="button" class="btn small" id="bandadd">${T('Hinzufügen', 'Add')}</button></div>
-    <p class="tiny">${T('In den Übungen stehen die Bänder einzeln und je zwei kombiniert zur Auswahl.', 'In the exercises the bands are available singly and combined in pairs.')}</p>`;
+    <p class="tiny">${T('In den Übungen stehen die Bänder einzeln und je zwei kombiniert zur Auswahl.', 'In the exercises the bands are available singly and combined in pairs.')}</p>
+    <p class="tiny">${T('Kraft bietet nur an, was hier eingetragen ist: ohne Kettlebell keine Kettlebell-Übungen und keine reinen Kettlebell-Pläne (AMRAP, Core), ohne Bänder keine Band-Übungen.', 'Strength only offers what is entered here: without a kettlebell no kettlebell exercises and no kettlebell-only plans (AMRAP, Core), without bands no band exercises.')}</p>`;
 }
 const intNum = v => { const t = String(v ?? '').trim(); if (t === '') return null; return /^\d{2,3}$/.test(t) ? Number(t) : NaN; };
 function profileChanged(what) {
@@ -1644,7 +1658,7 @@ function settingsReset() {
   if (sessionActive()) { alert(T('Bitte das laufende Training zuerst beenden oder zurücksetzen.', 'Please finish or reset the current workout first.')); return; }
   if (!confirm(T('Einstellungen zurücksetzen?\n\nZurück auf den Ausgangszustand: Profil (Trainingswoche, Herzfrequenz, Geräte & Gewichte), Übungs-Varianten und Gewichte, Stufen, „Entfällt“, Ton und Ansichten.\n\nTrainings, Läufe, Wochensummen, Rennen, Gewicht und Bauchumfang bleiben erhalten. Gilt nur für dieses Gerät.', 'Reset settings?\n\nBack to the defaults: profile (training week, heart rate, equipment & weights), exercise variants and weights, stages, “Skip”, sound and views.\n\nWorkouts, runs, weekly totals, races, weight and waist are kept. Applies to this device only.'))) return;
   wiping = true; clearTimeout(syncTimer);
-  try { for (const k of SETTING_KEYS) localStorage.removeItem(k); } catch (e) { }
+  try { for (const k of SETTING_KEYS) localStorage.removeItem(k); localStorage.setItem(KEYS.profile, JSON.stringify(normProfile(null))); } catch (e) { }
   // Sync: Prüfwerte der Einstellungen vergessen – „Sync laden“ holt sie bei Bedarf aus der Datei zurück
   for (const k of Object.keys(syncMeta.h)) if (k.startsWith('set:')) { delete syncMeta.h[k]; delete syncMeta.mod[k]; }
   try { localStorage.setItem(SYNC_META, JSON.stringify(syncMeta)); sessionStorage.setItem(SYNC_MSG, T('Einstellungen zurückgesetzt – deine Daten sind unverändert.', 'Settings reset – your data is unchanged.')); } catch (e) { }
@@ -1904,8 +1918,10 @@ function openExerciseGuide(i, origin) {
   openGuide(name, x.g, { origin, slot: x.slot, stage: st, gearText: x.gearText, reps: isTabata() ? tabataCfg().rounds + T(' × 20 Sek.', ' × 20 sec') : x.reps, tabata: isTabata(), emomPlan: isEmomPlan() });
 }
 
+// Plan ohne passende Geräte (z. B. Kettlebell entfernt): zurück zum Ganzkörper-Plan, sofern gerade nichts läuft
+function ensurePlanOwned() { if (!planOwned(plan) && !sessionActive()) { plan = 'wed'; store(KEYS.plan, plan); resetState(); } }
 function renderAll() {
-  renderTabs(); renderGear(); renderHeader(); renderPhase(); renderList(); renderSettings(); renderHistory(); renderManual(); renderBackupBanner(); renderWeek();
+  ensurePlanOwned(); renderTabs(); renderGear(); renderHeader(); renderPhase(); renderList(); renderSettings(); renderHistory(); renderManual(); renderBackupBanner(); renderWeek();
 }
 
 /* ---------- Bereiche: Kraft, Laufen, Mobility, Mehr ---------- */

@@ -23,7 +23,7 @@ test('Einstellungen zurücksetzen: Profil und Übungen auf Ausgangszustand, Date
   answer(page, [true]);
   await Promise.all([page.waitForEvent('load'), page.click('#settingsreset')]);
   expect(await page.evaluate(() => [saved.length, runLog.length, races.length, weights.length])).toEqual([1, 1, 1, 1]);
-  expect(await page.evaluate(() => [profile.week.quality, profile.kit.kb, Object.keys(choices).length, Object.keys(weekSkip).length])).toEqual([2, [12], 0, 0]);
+  expect(await page.evaluate(() => [profile.week.quality, profile.kit.kb, Object.keys(choices).length, Object.keys(weekSkip).length])).toEqual([2, [], 0, 0]); // Ausgangszustand: keine Kettlebell eingetragen
   await expect(page.locator('#toast')).toContainText('Einstellungen zurückgesetzt');
 });
 
