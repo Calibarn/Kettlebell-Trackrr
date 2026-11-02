@@ -30,7 +30,17 @@ Mein persönlicher Trainings-Begleiter als Web-App für iPhone und Android – K
   - Alltag: Morgens, Nach dem Sitzen
   - Übungen nach Körperbereich: Hüfte, Rücken, Schultern, Beine & Fuß
   - Kurzprogramme mit geführtem Timer inkl. Seitenwechsel und Ansage
-- **Mehr**: Wochenübersicht, Anleitung, Datensicherung, Hinweise
+- **Mehr**: Wochenübersicht, Anleitung, Geräte-Sync, Datensicherung, Hinweise
+
+## Mehrere Geräte (Sync-Datei)
+
+Unter **Mehr → Geräte-Sync** schreibt **Sync speichern** den kompletten Stand in `kb-tracker-sync.json`, **Sync laden** gleicht ihn ab. Die Datei liegt in einem Cloud-Ordner, den alle Geräte sehen (iCloud Drive, Google Drive, OneDrive, Dropbox) – die App selbst verbindet sich mit keinem Server.
+
+- Abgleich je Eintrag mit Änderungszeitpunkt und Löschmarken: neu, geändert und gelöscht kommen an, der neuere Stand gewinnt. Vorhandene Daten zählen beim ersten Sync als „alt“ (Zeitstempel 0), damit sie fremde Änderungen nicht überstimmen.
+- Abgeglichen: Trainings, Läufe, Wochensummen, Rennen, Gewicht, Bauchumfang, Übungs-Einstellungen, Stufen, Profil, „Entfällt“. Je Gerät bleiben Ton, Stimme und „Heute dabei“.
+- Chrome/Edge am Mac/PC: **Sync-Datei festlegen** merkt sich die Datei (File System Access API, Handle in IndexedDB); Speichern gleicht vorher mit der Datei ab.
+- iPhone/iPad: Speichern über „Teilen“ → In Dateien sichern → Ersetzen, Laden über die Dateiauswahl. Web-Apps können dort keinen Pfad selbst öffnen; der Speicherort lässt sich als Erinnerung je Gerät eintragen.
+
 
 Jede Übung hat eine Anleitung mit Skizze (Start → Bewegung).
 

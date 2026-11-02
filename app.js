@@ -20,10 +20,12 @@ function loadList(key, valid) {
   catch (e) { try { localStorage.setItem(key + '-unlesbar-' + Date.now(), raw); } catch (_) { } loadIssues.push(key); return { ok: [], keep: [] }; }
 }
 function load(k, def) { try { const raw = localStorage.getItem(k); if (raw === null) return def; const v = JSON.parse(raw); return v === null || v === undefined ? def : v; } catch (e) { return def; } }
-function store(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } }
+let syncHook = null; // wird vom Geräte-Sync gesetzt und erfährt so jede Änderung
+function store(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); if (syncHook) syncHook(k); return true; } catch (e) { return false; } }
 const isObj = v => !!v && typeof v === 'object' && !Array.isArray(v);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const uid = () => (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2));
+const isDay = d => typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d);
 function localDay(d = new Date()) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
 function dateGerman(day) { const [y, m, d] = String(day).split('-'); return `${d}.${m}.${y}`; }
 function clock(s) { s = Math.max(0, Math.ceil(s)); return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'); }
@@ -745,6 +747,18 @@ function measureChart(data, val, fmt, name, unit) {
 const validWeight = e => isObj(e) && isDay(e.date) && typeof e.kg === 'number' && Number.isFinite(e.kg) && e.kg >= 30 && e.kg <= 350;
 const weightLoaded = loadList(KEYS.weight, validWeight);
 let weights = weightLoaded.ok; const weightKeep = weightLoaded.keep;
+// Version kbt-v23 bis v27 hielt gespeicherte Gewichte beim Laden fälschlich für unlesbar und legte sie unter
+// „…-unlesbar-…“ ab. Diese Kopien zurückholen (vorhandene Tage bleiben) und danach entfernen.
+(() => {
+  let keys = []; try { keys = Object.keys(localStorage).filter(k => k.startsWith(KEYS.weight + '-unlesbar-')); } catch (e) { return; }
+  if (!keys.length) return;
+  const have = new Set(weights.map(e => e.date)); let n = 0;
+  for (const k of keys) { let v = null; try { v = JSON.parse(localStorage.getItem(k)); } catch (e) { continue; }
+    if (Array.isArray(v)) for (const e of v) if (validWeight(e) && !have.has(e.date)) { weights.push({ date: e.date, kg: e.kg }); have.add(e.date); n++; } }
+  weights.sort((a, b) => a.date.localeCompare(b.date));
+  if (store(KEYS.weight, weights.concat(weightKeep))) for (const k of keys) try { localStorage.removeItem(k); } catch (e) { }
+  const i = loadIssues.indexOf(KEYS.weight); if (i >= 0 && n) loadIssues.splice(i, 1);
+})();
 function persistWeight() { weights.sort((a, b) => a.date.localeCompare(b.date)); if (!store(KEYS.weight, weights.concat(weightKeep))) toast('Speichern im Browser nicht möglich – bitte Backup exportieren.'); renderBackupBanner(); }
 weights.sort((a, b) => a.date.localeCompare(b.date));
 const kgOne = v => Number(v).toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
@@ -874,7 +888,6 @@ const kmNum = v => { const t = String(v ?? '').trim().replace(',', '.'); if (t =
 const kmText = n => Number(n).toLocaleString('de-DE', { maximumFractionDigits: 1 });
 const rd1 = x => Math.round(x * 10) / 10;
 const okKm = v => v === null || v === undefined || (typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= 1000);
-const isDay = d => typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d);
 const validRunWeek = e => isObj(e) && isDay(e.week) && okKm(e.km) && okKm(e.long);
 const validRun = e => isObj(e) && typeof e.id === 'string' && isDay(e.date) && typeof e.km === 'number' && Number.isFinite(e.km) && e.km > 0 && e.km <= 300;
 const runWeeksLoaded = loadList(KEYS.runweeks, validRunWeek), runLogLoaded = loadList(KEYS.runlog, validRun);
@@ -1341,6 +1354,179 @@ function renderPlan() {
     return;
   }
   $('runcontent').innerHTML = (S.warn.length ? S.warn.map(w => `<div class="alert due">${esc(w)}</div>`).join('') : '') + renderPlanWeek(S) + renderPlanSeason(S) + `<p class="footer">${esc(SEASON.note)}</p>`;
+}
+
+/* ---------- Sync zwischen Geräten über eine Datei (iCloud Drive, Google Drive, OneDrive, Dropbox …) ----------
+   Jeder Eintrag hat einen Änderungszeitpunkt, gelöschte Einträge eine Löschmarke. Beim Laden gewinnt je Eintrag der neuere
+   Stand; nichts wird blind überschrieben. Änderungen erkennt die App beim Speichern im Browser (store) über einen Prüfwert. */
+const SYNC_META = 'jan-kb-sync-v1', SYNC_FILE = 'kb-tracker-sync.json', SYNC_MSG = 'jan-kb-sync-msg';
+const SYNC_COLLS = {
+  entries: { key: KEYS.entries, id: e => isObj(e) && e.plan && e.date ? String(e.id || `legacy-${e.plan}-${e.date}-${e.total}-${e.at || ''}`) : null },
+  waist: { key: KEYS.waist, id: e => isObj(e) && isDay(e.date) ? e.date : null },
+  runweeks: { key: KEYS.runweeks, id: e => isObj(e) && isDay(e.week) ? e.week : null },
+  runlog: { key: KEYS.runlog, id: e => isObj(e) && typeof e.id === 'string' ? e.id : null },
+  races: { key: KEYS.races, id: e => isObj(e) && typeof e.id === 'string' ? e.id : null },
+  weight: { key: KEYS.weight, id: e => isObj(e) && isDay(e.date) ? e.date : null }
+};
+// Einstellungen, die zwischen Geräten gleich sein sollen (Ton, Stimme und „Heute dabei“ bleiben je Gerät)
+const SYNC_SETTINGS = { choices: KEYS.choice, stages: KEYS.stage, profile: KEYS.profile, weekSkip: KEYS.skip };
+const SYNC_TRACKED = new Set(Object.values(SYNC_COLLS).map(c => c.key).concat(Object.values(SYNC_SETTINGS)));
+const syncHash = s => { let h = 5381; for (let i = 0; i < s.length; i++) h = (h * 33 ^ s.charCodeAt(i)) >>> 0; return h.toString(36) + s.length.toString(36); };
+const rawGet = k => { try { const r = localStorage.getItem(k); return r === null ? null : JSON.parse(r); } catch (e) { return null; } };
+const rawSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } };
+function syncMetaLoad() {
+  const m = rawGet(SYNC_META);
+  return isObj(m) && isObj(m.mod) && isObj(m.del) && isObj(m.h) ? m : { device: uid(), init: false, mod: {}, del: {}, h: {}, lastSave: null, lastLoad: null, dirty: false };
+}
+let syncMeta = syncMetaLoad();
+const syncSaveMeta = () => rawSet(SYNC_META, syncMeta);
+// Vergleicht den Stand im Browser mit den Prüfwerten: neu/geändert → Zeitstempel, verschwunden → Löschmarke.
+// Beim allerersten Lauf bekommen vorhandene Daten den Zeitstempel 0, damit sie fremde, neuere Änderungen nicht überstimmen.
+function syncTrack() {
+  const m = syncMeta, now = Date.now(), first = !m.init; let changed = false;
+  const mark = (k, h) => { if (m.h[k] === h) return; m.h[k] = h; m.mod[k] = first ? 0 : now; delete m.del[k]; if (!first) changed = true; };
+  for (const [c, d] of Object.entries(SYNC_COLLS)) {
+    const arr = rawGet(d.key), seen = new Set();
+    for (const e of Array.isArray(arr) ? arr : []) { const id = d.id(e); if (id === null) continue; const k = c + ':' + id; seen.add(k); mark(k, syncHash(JSON.stringify(e))); }
+    for (const k of Object.keys(m.h)) if (k.startsWith(c + ':') && !seen.has(k)) { delete m.h[k]; delete m.mod[k]; m.del[k] = now; changed = true; }
+  }
+  for (const [n, key] of Object.entries(SYNC_SETTINGS)) { const v = rawGet(key); if (v !== null) mark('set:' + n, syncHash(JSON.stringify(v))); }
+  m.init = true; if (changed) m.dirty = true;
+  syncSaveMeta();
+  return changed;
+}
+let syncTimer = null;
+syncHook = k => { if (SYNC_TRACKED.has(k)) { clearTimeout(syncTimer); syncTimer = setTimeout(() => { syncTrack(); renderSyncStatus(); }, 250); } };
+function syncPayload() {
+  syncTrack();
+  const m = syncMeta, colls = {}, settings = {};
+  for (const [c, d] of Object.entries(SYNC_COLLS)) {
+    const arr = rawGet(d.key);
+    colls[c] = (Array.isArray(arr) ? arr : []).map(e => { const id = d.id(e); return id === null ? null : { k: id, ts: m.mod[c + ':' + id] || 0, v: e }; }).filter(Boolean);
+  }
+  for (const [n, key] of Object.entries(SYNC_SETTINGS)) { const v = rawGet(key); if (v !== null) settings[n] = { ts: m.mod['set:' + n] || 0, v }; }
+  return { kind: 'kb-tracker-sync', version: 1, savedAt: new Date().toISOString(), device: m.device, colls, del: m.del, settings };
+}
+// Abgleich: Rückgabe { changed, added, updated, removed }
+function syncMerge(remote) {
+  if (!isObj(remote) || remote.kind !== 'kb-tracker-sync' || !isObj(remote.colls)) throw Error('Das ist keine Sync-Datei des KB Trackers.');
+  syncTrack();
+  const m = syncMeta, rdel = isObj(remote.del) ? remote.del : {}, res = { added: 0, updated: 0, removed: 0 };
+  const okTs = t => typeof t === 'number' && Number.isFinite(t) && t >= 0;
+  for (const [c, d] of Object.entries(SYNC_COLLS)) {
+    let arr = rawGet(d.key); arr = Array.isArray(arr) ? arr : [];
+    let touched = false;
+    const idx = new Map(arr.map((e, i) => [d.id(e), i]));
+    for (const r of Array.isArray(remote.colls[c]) ? remote.colls[c] : []) {
+      if (!isObj(r) || !okTs(r.ts) || !isObj(r.v) || d.id(r.v) !== String(r.k)) continue;
+      const k = c + ':' + r.k, h = syncHash(JSON.stringify(r.v));
+      if (idx.has(String(r.k))) {
+        const lts = m.mod[k] || 0;
+        if (m.h[k] === h) { if (r.ts > lts) m.mod[k] = r.ts; continue; }
+        if (r.ts > lts || (r.ts === lts && h > (m.h[k] || ''))) { arr[idx.get(String(r.k))] = r.v; m.h[k] = h; m.mod[k] = r.ts; res.updated++; touched = true; }
+      } else if (!(m.del[k] >= r.ts)) { idx.set(String(r.k), arr.length); arr.push(r.v); m.h[k] = h; m.mod[k] = r.ts; delete m.del[k]; res.added++; touched = true; }
+    }
+    for (const [k, ts] of Object.entries(rdel)) {
+      if (!k.startsWith(c + ':') || !okTs(ts)) continue;
+      const id = k.slice(c.length + 1);
+      if (idx.has(id) && ts > (m.mod[k] || 0)) { arr = arr.filter(e => d.id(e) !== id); idx.clear(); arr.forEach((e, i) => idx.set(d.id(e), i)); delete m.h[k]; delete m.mod[k]; res.removed++; touched = true; }
+      if (!idx.has(id)) m.del[k] = Math.max(m.del[k] || 0, ts);
+    }
+    if (touched) { if (d.key === KEYS.runlog || d.key === KEYS.weight || d.key === KEYS.races) arr.sort((a, b) => String(a.date).localeCompare(String(b.date))); rawSet(d.key, arr); }
+  }
+  for (const [n, key] of Object.entries(SYNC_SETTINGS)) {
+    const r = isObj(remote.settings) ? remote.settings[n] : null, k = 'set:' + n;
+    if (!isObj(r) || !okTs(r.ts) || !isObj(r.v)) continue;
+    const h = syncHash(JSON.stringify(r.v));
+    if (m.h[k] !== h && (r.ts > (m.mod[k] || 0) || (r.ts === (m.mod[k] || 0) && h > (m.h[k] || '')))) { rawSet(key, r.v); m.h[k] = h; m.mod[k] = r.ts; res.updated++; }
+  }
+  // Hat dieses Gerät Neueres als die Datei? Dann bleibt „Änderungen seit dem letzten Speichern“ stehen
+  const rts = {}; for (const [c, list] of Object.entries(remote.colls)) if (Array.isArray(list)) for (const r of list) if (isObj(r)) rts[c + ':' + r.k] = r.ts;
+  if (isObj(remote.settings)) for (const [n, r] of Object.entries(remote.settings)) if (isObj(r)) rts['set:' + n] = r.ts;
+  m.dirty = Object.keys(m.h).some(k => !(k in rts) || (m.mod[k] || 0) > rts[k]) || Object.keys(m.del).some(k => !(k in rdel));
+  m.lastLoad = new Date().toISOString(); syncSaveMeta();
+  res.changed = res.added + res.updated + res.removed > 0;
+  return res;
+}
+// Datei-Zugriff: Chrome/Edge am Mac/PC merken sich die Datei (z. B. im Google-Drive-Ordner), sonst Teilen bzw. Dateiauswahl
+const canHandle = () => !!(window.showSaveFilePicker && window.showOpenFilePicker && window.indexedDB);
+function idb(mode, fn) {
+  return new Promise((ok, fail) => {
+    const rq = indexedDB.open('kb-tracker', 1);
+    rq.onupgradeneeded = () => rq.result.createObjectStore('kv');
+    rq.onerror = () => fail(rq.error);
+    rq.onsuccess = () => { const tx = rq.result.transaction('kv', mode), st = tx.objectStore('kv'), r = fn(st); tx.oncomplete = () => ok(r && r.result); tx.onerror = () => fail(tx.error); };
+  });
+}
+const handleGet = () => canHandle() ? idb('readonly', st => st.get('syncHandle')).catch(() => null) : Promise.resolve(null);
+const handleSet = h => idb('readwrite', st => h ? st.put(h, 'syncHandle') : st.delete('syncHandle')).catch(() => null);
+async function handleReady(h, write) {
+  const o = { mode: write ? 'readwrite' : 'read' };
+  if (await h.queryPermission(o) === 'granted') return true;
+  return await h.requestPermission(o) === 'granted';
+}
+// Sync-Datei einmal festlegen (Chrome/Edge am Mac/PC): vorhandene Datei wählen oder neu anlegen
+async function syncPick() {
+  const types = [{ description: 'KB Tracker Sync', accept: { 'application/json': ['.json'] } }], prev = await handleGet();
+  try {
+    let h;
+    if (confirm('Gibt es die Sync-Datei schon (z. B. von einem anderen Gerät)?\n\nOK = vorhandene Datei auswählen\nAbbrechen = neue Datei anlegen')) [h] = await window.showOpenFilePicker(Object.assign({ types }, prev ? { startIn: prev } : {}));
+    else h = await window.showSaveFilePicker(Object.assign({ suggestedName: SYNC_FILE, types }, prev ? { startIn: prev } : {}));
+    if (!(await handleReady(h, true))) { toast('Ohne Schreibrecht kann die App die Datei nicht aktualisieren.'); return null; }
+    await handleSet(h); renderSyncStatus(); toast(`Sync-Datei festgelegt: „${h.name}“.`); return h;
+  } catch (e) { if (e && e.name !== 'AbortError') toast('Die Datei konnte nicht festgelegt werden.'); return null; }
+}
+function syncDone(how) { syncMeta.lastSave = new Date().toISOString(); syncMeta.dirty = false; syncSaveMeta(); renderSyncStatus(); toast(how); }
+async function syncSave() {
+  const json = JSON.stringify(syncPayload());
+  try {
+    if (canHandle()) {
+      let h = await handleGet();
+      if (h && !(await handleReady(h, true))) h = null;
+      if (!h) { h = await syncPick(); if (!h) return; }
+      // Erst den Stand in der Datei übernehmen (falls ein anderes Gerät gespeichert hat), dann den gemeinsamen Stand zurückschreiben
+      const old = (await (await h.getFile()).text()).trim();
+      let res = null;
+      if (old) { let x; try { x = JSON.parse(old); } catch (e) { throw Error('Die gewählte Datei ist keine Sync-Datei.'); } res = syncMerge(x); }
+      const w = await h.createWritable(); await w.write(JSON.stringify(syncPayload())); await w.close();
+      syncDone(`Sync gespeichert in „${h.name}“.`);
+      if (res && res.changed) { sessionStorage.setItem(SYNC_MSG, syncText(res) + ' Sync-Datei aktualisiert.'); location.reload(); }
+      return;
+    }
+    const file = new File([json], SYNC_FILE, { type: 'application/json' });
+    if (navigator.canShare && navigator.canShare({ files: [file] }) && document.documentElement.dataset.os !== 'other') {
+      await navigator.share({ files: [file], title: 'KB Tracker Sync' }); syncDone(`Sync übergeben – ${syncPlaceText()} sichern und die alte Datei ersetzen.`); return;
+    }
+  } catch (e) { if (e && e.name === 'AbortError') return; if (e && e.message) { toast(e.message); return; } }
+  download(SYNC_FILE, json, 'application/json'); syncDone(`Sync-Datei heruntergeladen – ${syncPlaceText()} legen und die alte ersetzen.`);
+}
+const syncText = r => r.changed ? `Abgeglichen: ${r.added} neu, ${r.updated} geändert, ${r.removed} gelöscht.` : 'Schon auf dem gleichen Stand.';
+function syncApply(text) {
+  let remote; try { remote = JSON.parse(text); } catch (e) { toast('Die Datei ist keine Sync-Datei.'); return; }
+  let res; try { res = syncMerge(remote); } catch (e) { toast(e.message); return; }
+  if (res.changed) { sessionStorage.setItem(SYNC_MSG, syncText(res)); location.reload(); return; }
+  renderSyncStatus(); toast(syncText(res));
+}
+async function syncLoad() {
+  if (canHandle()) {
+    try {
+      let h = await handleGet();
+      if (h && !(await handleReady(h, false))) h = null;
+      if (!h) { h = await syncPick(); if (!h) return; }
+      syncApply(await (await h.getFile()).text()); return;
+    } catch (e) { if (e && e.name === 'AbortError') return; }
+  }
+  if (syncMeta.place) toast(`Datei aus „${syncMeta.place}“ wählen.`);
+  $('syncfile').click();
+}
+const syncPlaceText = () => syncMeta.place ? `in „${syncMeta.place}“` : 'in deinen Cloud-Ordner';
+async function renderSyncStatus() {
+  const el = $('syncstatus'); if (!el) return;
+  const m = syncMeta, t = iso => iso ? `${dateGerman(localDay(new Date(iso)))} ${new Date(iso).toTimeString().slice(0, 5)}` : 'noch nie';
+  const h = await handleGet();
+  $('syncpick').classList.toggle('hide', !canHandle());
+  const pl = $('syncplace'); if (pl && document.activeElement !== pl) pl.value = m.place || '';
+  el.innerHTML = `Datei: <b>${esc(h ? h.name : SYNC_FILE)}</b>${m.place ? ` in <b>${esc(m.place)}</b>` : ''}<br>Zuletzt geladen: <b>${t(m.lastLoad)}</b> · gespeichert: <b>${t(m.lastSave)}</b>${m.dirty ? '<br><span class="spike">Änderungen seit dem letzten Speichern</span>' : ''}${h ? `<br>Fest verbunden – Laden und Speichern ohne Auswahl. <button type="button" class="linkbtn" id="syncforget">Verbindung lösen</button>` : ''}`;
 }
 
 /* ---------- Dateien: Backup, CSV, Kalender ---------- */
@@ -1890,7 +2076,16 @@ $('loudrow').addEventListener('click', () => { audioOpt.loud = !audioOpt.loud; s
 schemaCheck();
 const restored = restoreSession();
 if (!restored) runReps = emptyReps(plan);
-renderAll(); renderWaist(); renderWeight(); renderProfile(); renderStorageInfo(); renderRun(); renderMobility(); showArea(area, false);
+syncTrack();
+{ const msg = sessionStorage.getItem(SYNC_MSG); if (msg) { sessionStorage.removeItem(SYNC_MSG); setTimeout(() => toast(msg), 300); } }
+$('syncsave').addEventListener('click', syncSave);
+$('syncpick').addEventListener('click', syncPick);
+$('syncplace').addEventListener('change', e => { syncMeta.place = e.target.value.trim().slice(0, 120); syncSaveMeta(); renderSyncStatus(); toast('Speicherort gemerkt.'); });
+$('syncload').addEventListener('click', syncLoad);
+$('syncfile').addEventListener('change', e => { const f = e.target.files[0]; e.target.value = ''; if (!f) return; const r = new FileReader(); r.onload = () => syncApply(r.result); r.readAsText(f); });
+$('syncstatus').addEventListener('click', e => { if (e.target.id === 'syncforget') handleSet(null).then(renderSyncStatus); });
+window.addEventListener('pagehide', () => { clearTimeout(syncTimer); syncTrack(); });
+renderAll(); renderWaist(); renderWeight(); renderProfile(); renderStorageInfo(); renderRun(); renderSyncStatus(); renderMobility(); showArea(area, false);
 if (/iPad|iPhone|iPod/.test(navigator.userAgent) || document.documentElement.dataset.os === 'ios') $('savefilehint').textContent = 'Öffnet „Teilen“ → „In Dateien sichern“';
 if (restored) { toast(running ? 'Laufendes Training wiederhergestellt.' : 'Unterbrochenes Training wiederhergestellt.'); if (running) keepAwake(true); }
 setInterval(() => { tick(); routineTick(); }, 200);

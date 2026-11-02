@@ -247,6 +247,25 @@
     </div></details>
   </div>
 
+  <div class="header">Geräte-Sync</div>
+  <div class="group">
+    <button class="row" type="button" id="syncload"><span class="icon" style="background:var(--accent)">⇣</span><span class="txt"><b>Sync laden</b><small>Stand aus der Sync-Datei übernehmen</small></span><span class="chev"></span></button>
+    <button class="row" type="button" id="syncsave"><span class="icon" style="background:var(--blue)">⇡</span><span class="txt"><b>Sync speichern</b><small>Stand dieses Geräts in die Sync-Datei schreiben</small></span><span class="chev"></span></button>
+    <button class="row hide" type="button" id="syncpick"><span class="icon" style="background:#8e8e93">⌖</span><span class="txt"><b>Sync-Datei festlegen</b><small>Einmal wählen, danach ohne Nachfrage (Chrome/Edge am Mac/PC)</small></span><span class="chev"></span></button>
+    <input type="file" accept=".json,application/json" id="syncfile" class="hide">
+    <div class="panel" style="border-top:.5px solid var(--sep);padding-top:10px"><div class="field"><label for="syncplace">Speicherort auf diesem Gerät (zur Erinnerung)</label><input id="syncplace" type="text" maxlength="120" autocomplete="off" placeholder="z. B. iCloud Drive › KB Tracker"></div>
+      <p class="tiny">Web-Apps dürfen keinen Pfad selbst öffnen – nur Dateien, die du auswählst. Der Speicherort wird beim Laden und Speichern als Hinweis angezeigt.</p></div>
+    <div class="panel" style="border-top:.5px solid var(--sep);padding-top:10px"><p class="tiny" style="margin:0" id="syncstatus"></p></div>
+    <details><summary class="row"><span class="txt"><b>So funktioniert der Sync</b></span><span class="chev"></span></summary><div class="panel"><ol>
+      <li>Eine Datei <b>kb-tracker-sync.json</b> in einem Cloud-Ordner, den alle Geräte sehen: iCloud Drive, Google Drive, OneDrive oder Dropbox.</li>
+      <li>Vor dem Training bzw. beim Öffnen: <b>Sync laden</b> und die Datei wählen. Danach: <b>Sync speichern</b> und die alte Datei ersetzen.</li>
+      <li>Der Abgleich übernimmt neue, geänderte und gelöschte Einträge – je Eintrag gewinnt der neuere Stand. Vergisst du einmal zu laden, geht nichts verloren: Jedes Gerät behält seinen Stand, beim nächsten Laden wird zusammengeführt.</li>
+      <li>Abgeglichen werden Trainings, Läufe, Wochensummen, Rennen, Gewicht, Bauchumfang, Übungs-Einstellungen, Profil und „Entfällt“. Ton, Stimme und „Heute dabei“ bleiben je Gerät.</li>
+      <li>Chrome oder Edge am Mac/PC: <b>Sync-Datei festlegen</b> (z. B. im Google-Drive-Ordner). Danach laden und speichern die Knöpfe ohne erneutes Auswählen; beim Speichern wird vorher automatisch abgeglichen.</li>
+      <li>iPhone/iPad: Speichern öffnet „Teilen“ → <b>In Dateien sichern</b> → Cloud-Ordner wählen → <b>Ersetzen</b>.</li>
+    </ol><p class="tiny">Die App verbindet sich dafür mit keinem Server – die Datei bewegt dein Cloud-Dienst. Das Backup unter „Daten“ bleibt zusätzlich sinnvoll.</p></div></details>
+  </div>
+
   <div class="header">Daten &amp; Datenschutz</div>
   <div class="group">
     <button class="row" type="button" id="savefile"><span class="icon" style="background:var(--blue)">⇩</span><span class="txt"><b>In Datei sichern</b><small id="savefilehint">Backup als Datei auf diesem Gerät ablegen</small></span><span class="chev"></span></button>

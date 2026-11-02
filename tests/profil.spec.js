@@ -156,3 +156,15 @@ test('Trainingswoche: Einheiten dauerhaft abschalten oder nur diese Woche „Ent
   await page.click('#planschedule [data-skip="group"]');
   await expect(page.locator('#planschedule .row.skipped')).toHaveCount(0);
 });
+
+test('Körpergewicht bleibt nach dem Neuladen erhalten, beiseitegelegte Werte (Fehler bis v27) kommen zurück', async ({ page }) => {
+  await page.evaluate(() => {
+    localStorage.setItem(KEYS.weight, JSON.stringify([{ date: '2026-10-30', kg: 121.9 }]));
+    localStorage.setItem(KEYS.weight + '-unlesbar-123', JSON.stringify([{ date: '2026-10-20', kg: 123.4 }, { date: '2026-10-30', kg: 999 }]));
+  });
+  await page.reload();
+  expect(await page.evaluate(() => weights.map(w => [w.date, w.kg]))).toEqual([['2026-10-20', 123.4], ['2026-10-30', 121.9]]);
+  expect(await page.evaluate(() => Object.keys(localStorage).filter(k => k.includes('unlesbar')))).toEqual([]);
+  await page.reload();
+  expect(await page.evaluate(() => weights.length)).toBe(2);
+});
