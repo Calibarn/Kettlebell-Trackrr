@@ -286,3 +286,44 @@ test('B-Rennen zählt in die Woche: ersetzt Qualität bzw. Longrun, Warnung bei 
   await openPlan(page);
   await expect(page.locator('#planratio')).toContainText('% deiner Wochen-km');
 });
+
+test('Bestzeiten: Ergebnisse je Distanz, neue Bestzeit erkennen, Verlauf, Prognose, aus Rennen übernehmen', async ({ page }) => {
+  await setRaces(page, [{ id: 'past', name: 'Lauf in den Tropen', date: '2026-10-11', dist: 'hm', prio: 'B', goal: null, km: 20 }]);
+  await openPlan(page, 'bestzeiten');
+  await expect(page.locator('#runcontent')).toContainText('Noch keine Ergebnisse');
+  const add = async (date, dist, h, m, s, name) => {
+    await page.fill('#bestdate', date); await page.selectOption('#bestdist', dist);
+    if (name) await page.fill('#bestname', name);
+    await fillTime(page, 'besttime', h, m, s); await page.click('#bestsave');
+  };
+  await add('2025-05-04', '10k', '', '58', '40');
+  await add('2025-09-14', '10k', '', '59', '10');
+  await add('2026-06-01', '10k', '', '55', '05', 'Stadtlauf');
+  await expect(page.locator('#toast')).toContainText('Neue Bestzeit über 10 km: 55:05 (−3:35)');
+  await expect(page.locator('#bestcard .longnext b')).toHaveText('55:05');
+  await expect(page.locator('#bestcard')).toContainText('5:31 /km');
+  await expect(page.locator('#bestcard .metric b')).toHaveText(['−3:35', '2', '3']);
+  await expect(page.locator('#bestchart circle')).toHaveCount(3);
+  await expect(page.locator('#bestchart circle.other')).toHaveCount(1);
+  await expect(page.locator('#bestlist .row').first()).toContainText('55:05 🏆');
+  await expect(page.locator('#bestpred')).toContainText('Halbmarathon');
+  expect(await page.evaluate(() => Math.round(riegel(3305, 10, 21.0975)))).toBe(7292);
+  await expect(page.locator('#bestpred')).toContainText('Halbmarathon2:01:32');
+
+  // aus Rennen übernehmen: eigene Distanz 20 km
+  await page.selectOption('#bestfrom', 'past');
+  await expect(page.locator('#bestdist')).toHaveValue('custom');
+  await expect(page.locator('#bestkm')).toHaveValue('20');
+  await fillTime(page, 'besttime', '1', '58', '30');
+  await page.click('#bestsave');
+  await expect(page.locator('#bestgroups button')).toHaveText(['10 km', '20 km']);
+  await expect(page.locator('#bestgroups [aria-selected="true"]')).toHaveText('20 km');
+  await expect(page.locator('#bestcard')).toContainText('Lauf in den Tropen');
+  await expect(page.locator('#bestfrom')).toHaveCount(0); // Rennen hat jetzt ein Ergebnis
+
+  // löschen und Wechsel der Distanz
+  await page.click('[data-bestgroup="10k"]');
+  await page.click('#bestlist [data-bestdel]');
+  await expect(page.locator('#bestcard .longnext b')).toHaveText('58:40');
+  expect(JSON.parse(await page.evaluate(() => backupJson())).results.length).toBe(3);
+});

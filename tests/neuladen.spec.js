@@ -12,11 +12,12 @@ test('alle gespeicherten Daten überstehen das Neuladen', async ({ page }) => {
     weights.push({ date: t, kg: 120 }); persistWeight();
     profile.hr = { max: 184, rest: 60, z: [122, 134, 147, 159, 172] }; profile.kit.kb = [12, 16]; profile.week.quality = 5; persistProfile();
     toggleSkip(weekStart(t), 'group');
+    results.push({ id: 'x', date: t, km: 10, time: 3300, dist: '10k' }); persistResults();
   });
-  const before = await page.evaluate(() => JSON.stringify([saved.length, waist.length, runWeeks.length, runLog.length, races, weights, profile, weekSkip]));
+  const before = await page.evaluate(() => JSON.stringify([saved.length, waist.length, runWeeks.length, runLog.length, races, weights, profile, weekSkip, results]));
   await page.reload();
   await page.waitForTimeout(300);
   expect(await page.evaluate(() => loadIssues)).toEqual([]);
-  expect(await page.evaluate(() => JSON.stringify([saved.length, waist.length, runWeeks.length, runLog.length, races, weights, profile, weekSkip]))).toBe(before);
+  expect(await page.evaluate(() => JSON.stringify([saved.length, waist.length, runWeeks.length, runLog.length, races, weights, profile, weekSkip, results]))).toBe(before);
   expect(await page.evaluate(() => Object.keys(localStorage).filter(k => k.includes('unlesbar')))).toEqual([]);
 });

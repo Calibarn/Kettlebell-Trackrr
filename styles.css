@@ -363,3 +363,4 @@ html[data-os=android] .sheet{border-radius:28px 28px 0 0}
 .planrows .row.skipped .txt b{text-decoration:line-through;opacity:.5}
 .planrows .row.skipped .txt small{color:var(--orange)}
 .planrows .row .btn.small{flex:0 0 auto;padding:5px 10px;font-size:13px}
+.chart .dot.other{opacity:.45}

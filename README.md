@@ -13,6 +13,7 @@ Mein persönlicher Trainings-Begleiter als Web-App für iPhone und Android – K
   - Progressionshinweise: Läufer-Plan bei allen Sätzen an der Obergrenze (nächste Stufe, Gewicht, Band), Tabata nach drei kompletten Einheiten (8 Runden, dann 60 Sek. Pause), Core nach drei kompletten Einheiten eine Runde mehr
   - Gefühlte Anstrengung (1–10) und Notiz je Einheit, nachträglich im Verlauf änderbar
 - **Laufen** (Anleitungen, Saisonplan und Umfang)
+  - Bestzeiten: Ergebnisse je Distanz (auch eigene km, aus Rennen übernehmbar), neue Bestzeiten automatisch erkannt, Verlauf als Grafik, Prognose für andere Distanzen (Riegel)
   - Plan: A- und B-Rennen mit Datum, Distanz (5 km bis Marathon) und optional Zielzeit. Die A-Rennen werden nach Datum abgearbeitet: je ein Block aus Grundlage, Aufbau, spezifischer Phase und Tapering, danach Erholung und Basis bis zum nächsten Block. B-Rennen laufen ohne eigenen Block mit. Longrun und Wochen-km kommen aus dem Umfang (höchstens +10 % pro Woche, nach drei Aufbauwochen Entlastung); Warnung, wenn A-Rennen zu dicht liegen oder das Longrun-Ziel nicht erreichbar ist. Dazu Renntempo-Rechner, Pacing, Tapering, Verpflegung und Checkliste für die Rennwoche
   - Warm-up und Cooldown für 5 km, 10 km, Halbmarathon, Marathon
   - Warm-up und Cooldown für Intervall, Speed und Longrun

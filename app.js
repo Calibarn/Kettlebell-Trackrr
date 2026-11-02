@@ -5,7 +5,7 @@ const $ = id => document.getElementById(id);
 const KEYS = {
   entries: 'jan-kettlebell-tracker-v1', waist: 'jan-kb-waist-v1', sound: 'jan-kb-sound-v1', gear: 'jan-kb-gear-v1',
   choice: 'jan-kb-choice-v1', stage: 'jan-kb-stage-v1', plan: 'jan-kb-plan-v1', session: 'jan-kb-session-v1',
-  backup: 'jan-kb-lastbackup-v1', hint: 'jan-kb-installhint-v1', area: 'jan-kb-area-v1', run: 'jan-kb-runview-v1', audio: 'jan-kb-audio-v1', mob: 'jan-kb-mobview-v1', runweeks: 'jan-kb-runweeks-v1', runlog: 'jan-kb-runlog-v1', races: 'jan-kb-races-v1', profile: 'jan-kb-profile-v1', weight: 'jan-kb-weight-v1', skip: 'jan-kb-weekskip-v1'
+  backup: 'jan-kb-lastbackup-v1', hint: 'jan-kb-installhint-v1', area: 'jan-kb-area-v1', run: 'jan-kb-runview-v1', audio: 'jan-kb-audio-v1', mob: 'jan-kb-mobview-v1', runweeks: 'jan-kb-runweeks-v1', runlog: 'jan-kb-runlog-v1', races: 'jan-kb-races-v1', profile: 'jan-kb-profile-v1', weight: 'jan-kb-weight-v1', skip: 'jan-kb-weekskip-v1', results: 'jan-kb-results-v1', bestview: 'jan-kb-bestview-v1'
 };
 /* Datensicherheit bei Updates:
    - Einträge, die diese Version nicht versteht, werden nie verworfen, sondern unverändert mitgespeichert.
@@ -1343,11 +1343,105 @@ function renderPace() {
   out.innerHTML = `<div class="longnext"><b>${paceText(s, d.km)}</b><span>${esc(d.label)} in ${hms(s)} · ${kmText(Math.round(d.km / (s / 3600) * 10) / 10)} km/h · erste 2–3 km etwa ${hms(s / d.km + 7)} /km</span></div>
     <div class="splits">${marks.map(k => `<span><small>${k === d.km ? 'Ziel' : k === 21.0975 ? 'Halbzeit' : kmText(k) + ' km'}</small>${hms(s / d.km * k)}</span>`).join('')}</div>`;
 }
+
+/* ---------- Laufen → Plan → Bestzeiten: Ergebnisse je Distanz, Verlauf und Prognose ---------- */
+const validResult = e => isObj(e) && typeof e.id === 'string' && isDay(e.date) && okNum(e.km, 0.4, 100)
+  && Number.isInteger(e.time) && e.time >= 60 && e.time <= 86400 && (e.dist === null || e.dist === undefined || Object.prototype.hasOwnProperty.call(SEASON.dist, e.dist))
+  && (e.name === undefined || (typeof e.name === 'string' && e.name.length <= 60));
+const resultsLoaded = loadList(KEYS.results, validResult);
+let results = resultsLoaded.ok; const resultsKeep = resultsLoaded.keep;
+function persistResults() { results.sort((a, b) => a.date.localeCompare(b.date) || a.time - b.time); if (!store(KEYS.results, results.concat(resultsKeep))) toast('Speichern im Browser nicht möglich – bitte Backup exportieren.'); renderBackupBanner(); }
+results.sort((a, b) => a.date.localeCompare(b.date) || a.time - b.time);
+// Gruppe: Standarddistanz oder eigene km (auf 0,1 km)
+const resultGroup = r => r.dist || 'km' + Math.round(r.km * 10) / 10;
+const groupLabel = g => SEASON.dist[g] ? SEASON.dist[g].label : kmText(Number(g.slice(2))) + ' km';
+const groupKm = g => SEASON.dist[g] ? SEASON.dist[g].km : Number(g.slice(2));
+const riegel = (t, from, to) => t * Math.pow(to / from, 1.06);
+let bestView = load(KEYS.bestview, null); if (!isObj(bestView)) bestView = {};
+function bestGroups() {
+  const order = Object.keys(SEASON.dist), gs = [...new Set(results.map(resultGroup))];
+  return gs.sort((a, b) => groupKm(a) - groupKm(b) || order.indexOf(a) - order.indexOf(b));
+}
+// Bestzeiten im Zeitverlauf: jedes Ergebnis, das schneller war als alle davor
+function pbSteps(list) { let best = Infinity; return list.filter(r => r.time < best ? (best = r.time, true) : false); }
+function bestChart(list) {
+  if (!list.length) return '';
+  const W = 380, H = 200, l = 54, r = 14, top = 14, bottom = 166, pw = W - l - r;
+  const t0 = new Date(list[0].date + 'T12:00:00').getTime(), t1 = new Date(list.at(-1).date + 'T12:00:00').getTime(), span = Math.max(1, t1 - t0);
+  const x = e => list.length === 1 || t1 === t0 ? l + pw / 2 : l + (new Date(e.date + 'T12:00:00').getTime() - t0) / span * pw;
+  let lo = Math.min(...list.map(e => e.time)), hi = Math.max(...list.map(e => e.time)); const pad = Math.max(30, (hi - lo) * 0.15); lo -= pad; hi += pad;
+  const y = t => top + (t - lo) / (hi - lo) * (bottom - top); // schneller = oben
+  const ticks = [0, 1 / 3, 2 / 3, 1].map(f => lo + (hi - lo) * f);
+  const grid = ticks.map(t => `<line class="axis" x1="${l}" y1="${y(t)}" x2="${W - r}" y2="${y(t)}" stroke-dasharray="4 5"/><text class="lbl" x="${l - 6}" y="${y(t) + 4}" text-anchor="end" font-size="10.5">${hms(t)}</text>`).join('');
+  const pb = pbSteps(list);
+  let path = ''; pb.forEach((e, i) => { path += i ? ` H ${x(e).toFixed(1)} V ${y(e.time).toFixed(1)}` : `M ${x(e).toFixed(1)} ${y(e.time).toFixed(1)}`; });
+  if (pb.length) path += ` H ${(list.length > 1 ? W - r : x(pb.at(-1)) ).toFixed(1)}`;
+  const isPb = new Set(pb.map(e => e.id));
+  const dots = list.map(e => `<circle class="dot${isPb.has(e.id) ? '' : ' other'}" cx="${x(e).toFixed(1)}" cy="${y(e.time).toFixed(1)}" r="${isPb.has(e.id) ? 5 : 4}" stroke-width="2"><title>${dateGerman(e.date)}: ${hms(e.time)}${e.name ? ' · ' + esc(e.name) : ''}</title></circle>`).join('');
+  const first = list[0], last = list.at(-1);
+  const labels = `<text class="lbl" x="${x(first)}" y="${H - 8}" text-anchor="${list.length > 1 ? 'start' : 'middle'}" font-size="10.5">${dateGerman(first.date)}</text>${list.length > 1 ? `<text class="lbl" x="${x(last)}" y="${H - 8}" text-anchor="end" font-size="10.5">${dateGerman(last.date)}</text>` : ''}`;
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Zeiten über ${esc(groupLabel(resultGroup(first)))} von ${dateGerman(first.date)} bis ${dateGerman(last.date)}, Bestzeit ${hms(Math.min(...list.map(e => e.time)))}">${grid}<path class="line" d="${path}" fill="none" stroke-width="2.5" stroke-linejoin="round"/>${dots}${labels}<text class="lbl" x="${W - r}" y="${top - 2}" text-anchor="end" font-size="10.5">schneller ↑</text></svg>`;
+}
+function renderBests() {
+  const today = localDay(), gs = bestGroups(), g = gs.includes(bestView.group) ? bestView.group : gs[0];
+  const past = races.filter(r => r.date <= today && !results.some(x => x.race === r.id)).slice(-12).reverse();
+  const opt = (v, t, sel) => `<option value="${v}"${v === sel ? ' selected' : ''}>${esc(t)}</option>`;
+  let html = `<div class="header">Ergebnis eintragen</div><div class="group"><div class="raceform">
+      ${past.length ? `<div class="field wide"><label for="bestfrom">Aus deinen Rennen übernehmen</label><select id="bestfrom"><option value="">– auswählen –</option>${past.map(r => `<option value="${esc(r.id)}">${esc(dateGerman(r.date) + ' · ' + r.name + ' (' + raceLabel(r) + ')')}</option>`).join('')}</select></div>` : ''}
+      <div class="field wide"><label for="bestname">Name (optional)</label><input id="bestname" type="text" maxlength="60" autocomplete="off" placeholder="z. B. Berliner Halbmarathon oder Testlauf"></div>
+      <div class="field"><label for="bestdate">Datum</label><input id="bestdate" type="date" value="${today}" max="${today}"></div>
+      <div class="field"><label for="bestdist">Distanz</label><select id="bestdist">${Object.entries(SEASON.dist).map(([k, d]) => opt(k, d.label, SEASON.dist[g] ? g : '10k')).join('')}${opt('custom', 'Andere Distanz', g && !SEASON.dist[g] ? 'custom' : '')}</select></div>
+      <div class="field${g && !SEASON.dist[g] ? '' : ' hide'}" id="bestkmfield"><label for="bestkm">Distanz in km</label><input id="bestkm" type="text" inputmode="decimal" autocomplete="off" placeholder="z. B. 20" value="${g && !SEASON.dist[g] ? esc(kmText(groupKm(g))) : ''}"></div>
+      <div class="field wide"><label>Zeit</label>${timeFields('besttime', null, 'Zeit')}</div>
+      <div class="raceactions"><button type="button" class="btn small primary" id="bestsave">Hinzufügen</button></div>
+    </div></div>
+    <p class="footer">Alle Ergebnisse eintragen, nicht nur Bestzeiten – die App erkennt neue Bestzeiten selbst und zeigt den Verlauf.</p>`;
+  if (!gs.length) return html + '<div class="group" style="margin-top:12px"><div class="row"><span class="txt"><b>Noch keine Ergebnisse</b><small>Trag oben dein erstes Ergebnis ein.</small></span></div></div>';
+  const list = results.filter(r => resultGroup(r) === g), pb = list.reduce((a, b) => b.time < a.time ? b : a), first = list[0], km = groupKm(g);
+  const steps = pbSteps(list), gain = first.time - pb.time, isPb = new Set(steps.map(e => e.id));
+  html += `<div class="header">Deine Bestzeiten</div><div class="segmented" role="tablist" id="bestgroups" style="flex-wrap:wrap">${gs.map(x => `<button role="tab" type="button" data-bestgroup="${esc(x)}" aria-selected="${x === g}">${esc(groupLabel(x))}</button>`).join('')}</div>
+    <div class="group"><div class="panel" style="border:0;padding-top:12px" id="bestcard">
+      <div class="longnext"><b>${hms(pb.time)}</b><span>Bestzeit ${esc(groupLabel(g))} · ${paceText(pb.time, km)} · ${dateGerman(pb.date)}${pb.name ? ' · ' + esc(pb.name) : ''}</span></div>
+      <div class="metrics">
+        <div class="metric"><span>Verbesserung</span><b>${gain > 0 ? '−' + hms(gain) : '–'}</b><small>${gain > 0 ? `seit ${dateGerman(first.date)}` : 'erste Bestzeit'}</small></div>
+        <div class="metric"><span>Bestzeiten</span><b>${steps.length}</b><small>neue Bestwerte</small></div>
+        <div class="metric"><span>Ergebnisse</span><b>${list.length}</b><small>gesamt</small></div>
+      </div>
+      <div style="margin-top:10px" id="bestchart">${bestChart(list)}</div>
+      <p class="tiny">Punkte: alle Ergebnisse, kräftig = neue Bestzeit. Linie: Verlauf deiner Bestzeit.</p>
+    </div></div>
+    <div class="header">Prognose aus dieser Bestzeit</div><div class="group"><div class="splits" style="padding:12px 16px" id="bestpred">${Object.entries(SEASON.dist).filter(([k]) => k !== g).map(([k, d]) => `<span><small>${esc(d.label)}</small>${hms(riegel(pb.time, km, d.km))}</span>`).join('')}</div></div>
+    <p class="footer">Riegel-Formel. Für längere Distanzen meist zu optimistisch, wenn der Umfang dafür noch fehlt – eher als Obergrenze sehen.</p>
+    <div class="header">Ergebnisse · ${esc(groupLabel(g))}</div><div class="group" id="bestlist">${list.slice().reverse().map(r => `<div class="row"><span class="dur">${dateGerman(r.date)}</span><span class="txt"><b>${hms(r.time)}${isPb.has(r.id) ? ' 🏆' : ''}</b><small>${paceText(r.time, r.km)}${r.name ? ' · ' + esc(r.name) : ''}</small></span><button type="button" class="btn small danger" data-bestdel="${esc(r.id)}" aria-label="Ergebnis vom ${dateGerman(r.date)} löschen">Löschen</button></div>`).join('')}</div>`;
+  return html;
+}
+function saveBestFromForm() {
+  const date = $('bestdate').value, sel = $('bestdist').value, time = readTime('besttime'), name = $('bestname').value.trim().slice(0, 60);
+  $('bestkm').removeAttribute('aria-invalid'); markTime('besttime', false);
+  if (!isDay(date) || date > localDay()) { toast('Bitte ein Datum bis heute wählen.'); return; }
+  const km = sel === 'custom' ? kmNum($('bestkm').value) : SEASON.dist[sel].km;
+  if (sel === 'custom' && (km === null || Number.isNaN(km) || km < 0.4 || km > 100)) { $('bestkm').setAttribute('aria-invalid', 'true'); toast('Bitte die Distanz in km eingeben.'); return; }
+  if (time === null || Number.isNaN(time)) { markTime('besttime', true); toast('Bitte die Zeit eintragen (Minuten und Sekunden höchstens 59).'); return; }
+  const r = { id: uid(), date, km, time, dist: sel === 'custom' ? null : sel };
+  if (name) r.name = name;
+  const from = $('bestfrom') && $('bestfrom').value; if (from) r.race = from;
+  const g = resultGroup(r), before = results.filter(x => resultGroup(x) === g), wasPb = before.length && before.every(x => time < x.time);
+  results.push(r); persistResults(); bestView.group = g; store(KEYS.bestview, bestView); renderRun();
+  toast(wasPb ? `🏆 Neue Bestzeit über ${groupLabel(g)}: ${hms(time)} (−${hms(Math.min(...before.map(x => x.time)) - time)})` : `✓ ${hms(time)} über ${groupLabel(g)} gespeichert.`);
+}
+function bestPrefill(id) {
+  const r = races.find(x => x.id === id); if (!r) return;
+  $('bestname').value = r.name; $('bestdate').value = r.date;
+  $('bestdist').value = r.km ? 'custom' : r.dist; $('bestkmfield').classList.toggle('hide', !r.km); $('bestkm').value = r.km ? kmText(r.km) : '';
+  const f = $('besttime').querySelector('[data-tpart="0"]'); if (f) f.focus();
+}
+
 function renderPlan() {
   const sub = $('runsub');
   sub.classList.remove('hide');
-  sub.innerHTML = [['woche', 'Übersicht'], ['rennen', 'Rennen'], ['wissen', 'Wissen']].map(([k, l]) => `<button role="tab" type="button" data-runsub="${k}" aria-selected="${runView.plan === k}">${l}</button>`).join('');
+  sub.innerHTML = [['woche', 'Übersicht'], ['rennen', 'Rennen'], ['bestzeiten', 'Bestzeiten'], ['wissen', 'Wissen']].map(([k, l]) => `<button role="tab" type="button" data-runsub="${k}" aria-selected="${runView.plan === k}">${l}</button>`).join('');
   if (runView.plan === 'rennen') { $('runcontent').innerHTML = renderRaces(); return; }
+  if (runView.plan === 'bestzeiten') { $('runcontent').innerHTML = renderBests(); return; }
   if (runView.plan === 'wissen') { $('runcontent').innerHTML = renderPlanGuide(); renderPace(); return; }
   const S = seasonPlan();
   if (!S.weeks.length) {
@@ -1367,7 +1461,8 @@ const SYNC_COLLS = {
   runweeks: { key: KEYS.runweeks, id: e => isObj(e) && isDay(e.week) ? e.week : null },
   runlog: { key: KEYS.runlog, id: e => isObj(e) && typeof e.id === 'string' ? e.id : null },
   races: { key: KEYS.races, id: e => isObj(e) && typeof e.id === 'string' ? e.id : null },
-  weight: { key: KEYS.weight, id: e => isObj(e) && isDay(e.date) ? e.date : null }
+  weight: { key: KEYS.weight, id: e => isObj(e) && isDay(e.date) ? e.date : null },
+  results: { key: KEYS.results, id: e => isObj(e) && typeof e.id === 'string' ? e.id : null }
 };
 // Einstellungen, die zwischen Geräten gleich sein sollen (Ton, Stimme und „Heute dabei“ bleiben je Gerät)
 const SYNC_SETTINGS = { choices: KEYS.choice, stages: KEYS.stage, profile: KEYS.profile, weekSkip: KEYS.skip };
@@ -1434,7 +1529,7 @@ function syncMerge(remote) {
       if (idx.has(id) && ts > (m.mod[k] || 0)) { arr = arr.filter(e => d.id(e) !== id); idx.clear(); arr.forEach((e, i) => idx.set(d.id(e), i)); delete m.h[k]; delete m.mod[k]; res.removed++; touched = true; }
       if (!idx.has(id)) m.del[k] = Math.max(m.del[k] || 0, ts);
     }
-    if (touched) { if (d.key === KEYS.runlog || d.key === KEYS.weight || d.key === KEYS.races) arr.sort((a, b) => String(a.date).localeCompare(String(b.date))); rawSet(d.key, arr); }
+    if (touched) { if (d.key === KEYS.runlog || d.key === KEYS.weight || d.key === KEYS.races || d.key === KEYS.results) arr.sort((a, b) => String(a.date).localeCompare(String(b.date))); rawSet(d.key, arr); }
   }
   for (const [n, key] of Object.entries(SYNC_SETTINGS)) {
     const r = isObj(remote.settings) ? remote.settings[n] : null, k = 'set:' + n;
@@ -1532,7 +1627,7 @@ async function renderSyncStatus() {
 }
 
 /* ---------- Einstellungen zurücksetzen: Daten bleiben ---------- */
-const SETTING_KEYS = ['sound', 'gear', 'choice', 'stage', 'plan', 'area', 'run', 'audio', 'mob', 'profile', 'skip', 'hint'].map(k => KEYS[k]);
+const SETTING_KEYS = ['sound', 'gear', 'choice', 'stage', 'plan', 'area', 'run', 'audio', 'mob', 'profile', 'skip', 'hint', 'bestview'].map(k => KEYS[k]);
 function settingsReset() {
   if (sessionActive()) { alert('Bitte das laufende Training zuerst beenden oder zurücksetzen.'); return; }
   if (!confirm('Einstellungen zurücksetzen?\n\nZurück auf den Ausgangszustand: Profil (Trainingswoche, Herzfrequenz, Geräte & Gewichte), Übungs-Varianten und Gewichte, Stufen, „Entfällt“, Ton und Ansichten.\n\nTrainings, Läufe, Wochensummen, Rennen, Gewicht und Bauchumfang bleiben erhalten. Gilt nur für dieses Gerät.')) return;
@@ -1549,7 +1644,7 @@ const APP_KEY = k => k.startsWith('jan-kb') || k.startsWith('jan-kettlebell');
 async function factoryReset() {
   if (sessionActive() && !confirm('Es läuft gerade ein Training. Trotzdem fortfahren?')) return;
   if (!confirm('Werkseinstellung: Alle Daten auf diesem Gerät werden gelöscht – Trainings, Läufe, Wochensummen, Rennen, Gewicht, Bauchumfang, Profil und Einstellungen.\n\nDie Sync-Datei in deiner Cloud und andere Geräte bleiben unberührt.\n\nFortfahren?')) return;
-  const has = saved.length + waist.length + runWeeks.length + runLog.length + races.length + weights.length > 0;
+  const has = saved.length + waist.length + runWeeks.length + runLog.length + races.length + weights.length + results.length > 0;
   if (has && confirm('Vorher ein Backup speichern?\n\nOK = Backup speichern\nAbbrechen = ohne Backup weiter')) await exportBackup();
   const word = prompt('Zum Bestätigen LÖSCHEN eingeben:');
   if (word === null) return;
@@ -1564,11 +1659,11 @@ async function factoryReset() {
 
 /* ---------- Dateien: Backup, CSV, Kalender ---------- */
 function download(name, content, type) { const blob = new Blob([content], { type }), url = URL.createObjectURL(blob), a = document.createElement('a'); a.href = url; a.download = name; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 3000); }
-function backupJson() { return JSON.stringify({ version: 3, entries: saved.concat(savedKeep), waist: waist.concat(waistKeep), runWeeks: runWeeks.concat(runWeeksKeep), runLog: runLog.concat(runLogKeep), races: races.concat(racesKeep), weights: weights.concat(weightKeep), weekSkip, settings: { gear, choices, stages, audio: audioOpt, profile: Object.assign({}, profileExtra, profile) }, exportedAt: new Date().toISOString() }, null, 2); }
+function backupJson() { return JSON.stringify({ version: 3, entries: saved.concat(savedKeep), waist: waist.concat(waistKeep), runWeeks: runWeeks.concat(runWeeksKeep), runLog: runLog.concat(runLogKeep), races: races.concat(racesKeep), weights: weights.concat(weightKeep), results: results.concat(resultsKeep), weekSkip, settings: { gear, choices, stages, audio: audioOpt, profile: Object.assign({}, profileExtra, profile) }, exportedAt: new Date().toISOString() }, null, 2); }
 function schemaCheck() {
   const prev = load(SCHEMA_KEY, null);
   if (prev === SCHEMA || (typeof prev === 'number' && prev > SCHEMA)) return; // neuere Daten mit älterer App: nichts verändern
-  if (saved.length + savedKeep.length + waist.length + waistKeep.length + runWeeks.length + runWeeksKeep.length + runLog.length + runLogKeep.length + races.length + racesKeep.length + weights.length + weightKeep.length > 0) store(PRE_UPDATE_KEY, { savedAt: new Date().toISOString(), fromSchema: prev, json: backupJson() });
+  if (saved.length + savedKeep.length + waist.length + waistKeep.length + runWeeks.length + runWeeksKeep.length + runLog.length + runLogKeep.length + races.length + racesKeep.length + weights.length + weightKeep.length + results.length + resultsKeep.length > 0) store(PRE_UPDATE_KEY, { savedAt: new Date().toISOString(), fromSchema: prev, json: backupJson() });
   store(SCHEMA_KEY, SCHEMA);
 }
 function renderPreUpdate() {
@@ -1605,9 +1700,10 @@ function importBackup(file) {
       const rl = isObj(x) && Array.isArray(x.runLog) ? x.runLog.filter(validRun) : [];
       const rc = isObj(x) && Array.isArray(x.races) ? x.races.filter(validRace) : [];
       const wg = isObj(x) && Array.isArray(x.weights) ? x.weights.filter(validWeight) : [];
+      const rs = isObj(x) && Array.isArray(x.results) ? x.results.filter(validResult) : [];
       if (isObj(x) && isObj(x.weekSkip)) { for (const [k, v] of Object.entries(x.weekSkip)) if (isDay(k) && Array.isArray(v)) weekSkip[k] = [...new Set((weekSkip[k] || []).concat(v.filter(y => typeof y === 'string')))]; store(KEYS.skip, weekSkip); }
       const settings = isObj(x) && isObj(x.settings) ? x.settings : null;
-      if (!entries.length && !wl.length && !rw.length && !rl.length && !rc.length && !wg.length && !settings) throw Error('Keine gültigen Daten gefunden');
+      if (!entries.length && !wl.length && !rw.length && !rl.length && !rc.length && !wg.length && !rs.length && !settings) throw Error('Keine gültigen Daten gefunden');
       const ids = new Set(saved.map(e => String(e.id))); let added = 0, addedW = 0;
       for (const e of entries) if (!ids.has(e.id)) { saved.push(e); ids.add(e.id); added++; }
       const days = new Set(waist.map(e => e.date));
@@ -1624,6 +1720,9 @@ function importBackup(file) {
       const wdays = new Set(weights.map(e => e.date)); let addedG = 0;
       for (const e of wg) if (!wdays.has(e.date)) { weights.push({ date: e.date, kg: e.kg }); wdays.add(e.date); addedG++; }
       persistEntries(); persistWaist(); if (addedR) persistRunWeeks(); if (addedL) persistRunLog(); if (addedC) persistRaces(); if (addedG) persistWeight();
+      const resIds = new Set(results.map(e => e.id)); let addedS = 0;
+      for (const e of rs) if (!resIds.has(e.id)) { const o = { id: e.id, date: e.date, km: e.km, time: e.time, dist: e.dist ?? null }; if (e.name) o.name = e.name; if (typeof e.race === 'string') o.race = e.race; results.push(o); resIds.add(e.id); addedS++; }
+      if (addedS) persistResults();
       if (settings && confirm('Das Backup enthält auch Einstellungen (Geräte, Varianten, Gewichte). Übernehmen?')) {
         if (isObj(settings.gear)) { gear = { kb: settings.gear.kb !== false, band: settings.gear.band !== false, bw: settings.gear.bw !== false }; ensureGear(); store(KEYS.gear, gear); }
         if (isObj(settings.choices)) { choices = settings.choices; store(KEYS.choice, choices); }
@@ -1633,7 +1732,7 @@ function importBackup(file) {
         if (!sessionActive()) runReps = emptyReps(plan);
       }
       renderAll(); renderWaist(); renderWeight(); renderProfile(); renderRun();
-      alert(`${added} Trainings-, ${addedW} Bauchumfang-, ${addedR} Laufwochen- und ${addedL} Lauf-Einträge${addedC ? ` sowie ${addedC} Rennen` : ''}${addedG ? `, ${addedG} Gewichtswerte` : ''} importiert.${entries.length - added + wl.length - addedW + rw.length - addedR + rl.length - addedL + rc.length - addedC + wg.length - addedG > 0 ? ' Bereits vorhandene Einträge wurden übersprungen.' : ''}`);
+      alert(`${added} Trainings-, ${addedW} Bauchumfang-, ${addedR} Laufwochen- und ${addedL} Lauf-Einträge${addedC ? ` sowie ${addedC} Rennen` : ''}${addedG ? `, ${addedG} Gewichtswerte` : ''}${addedS ? `, ${addedS} Laufergebnisse` : ''} importiert.${entries.length - added + wl.length - addedW + rw.length - addedR + rl.length - addedL + rc.length - addedC + wg.length - addedG + rs.length - addedS > 0 ? ' Bereits vorhandene Einträge wurden übersprungen.' : ''}`);
     } catch (e) { alert('Import fehlgeschlagen: ' + e.message); }
   };
   r.onerror = () => alert('Die Datei konnte nicht gelesen werden.');
@@ -1748,7 +1847,7 @@ function renderAll() {
 
 /* ---------- Bereiche: Kraft, Laufen, Mobility, Mehr ---------- */
 let area = ['kraft', 'laufen', 'mobility', 'profil', 'mehr'].includes(load(KEYS.area, 'kraft')) ? load(KEYS.area, 'kraft') : 'kraft';
-let runView = load(KEYS.run, null); if (!isObj(runView)) runView = {}; runView = { tab: ['race', 'training', 'abc', 'umfang', 'plan'].includes(runView.tab) ? runView.tab : 'race', race: runView.race || '5k', training: runView.training || 'interval', plan: ['woche', 'rennen', 'wissen'].includes(runView.plan) ? runView.plan : 'woche' };
+let runView = load(KEYS.run, null); if (!isObj(runView)) runView = {}; runView = { tab: ['race', 'training', 'abc', 'umfang', 'plan'].includes(runView.tab) ? runView.tab : 'race', race: runView.race || '5k', training: runView.training || 'interval', plan: ['woche', 'rennen', 'bestzeiten', 'wissen'].includes(runView.plan) ? runView.plan : 'woche' };
 function showArea(a, scroll = true) {
   area = a; store(KEYS.area, a);
   for (const x of ['kraft', 'laufen', 'mobility', 'profil', 'mehr']) $('area-' + x).classList.toggle('hide', x !== a);
@@ -2050,6 +2149,8 @@ $('runcontent').addEventListener('input', e => {
   const t = e.target;
   // nach zwei Ziffern ins nächste Zeitfeld springen
   if (t.dataset && t.dataset.tpart && t.value.length === 2 && t.dataset.tpart !== '2') { const n = t.closest('.timein').querySelector(`[data-tpart="${Number(t.dataset.tpart) + 1}"]`); if (n) { n.focus(); n.select(); } }
+  if (t.id === 'bestdist') { $('bestkmfield').classList.toggle('hide', t.value !== 'custom'); return; }
+  if (t.id === 'bestfrom') { bestPrefill(t.value); return; }
   if (t.id === 'racedist') { $('racekmfield').classList.toggle('hide', t.value !== 'custom'); if (t.value === 'custom') $('racekm').focus(); return; }
   if (t.closest && t.closest('#pctime') || t.id === 'pcdist' || t.id === 'pckm') { renderPace(); return; }
   if (!t.dataset || !t.dataset.wk) return;
@@ -2064,6 +2165,9 @@ $('runcontent').addEventListener('click', e => {
   const go = e.target.closest('[data-runsub-go]'); if (go) { runView.plan = go.dataset.runsubGo; store(KEYS.run, runView); renderRun(); return; }
   if (e.target.closest('#racesave')) { saveRaceFromForm(); return; }
   if (e.target.closest('#planics')) { exportPlanIcs(); return; }
+  if (e.target.closest('#bestsave')) { saveBestFromForm(); return; }
+  const bg = e.target.closest('[data-bestgroup]'); if (bg) { bestView.group = bg.dataset.bestgroup; store(KEYS.bestview, bestView); renderRun(); return; }
+  const bd = e.target.closest('[data-bestdel]'); if (bd) { if (confirm('Dieses Ergebnis löschen?')) { results = results.filter(r => r.id !== bd.dataset.bestdel); persistResults(); renderRun(); toast('Ergebnis gelöscht.'); } return; }
   const sk = e.target.closest('[data-skip]'); if (sk) { toggleSkip(sk.dataset.week, sk.dataset.skip); renderRun(); return; }
   if (e.target.closest('#racecancel')) { raceEdit = null; renderRun(); return; }
   if (e.target.closest('#racedel')) { if (raceEdit && confirm('Dieses Rennen löschen?')) { races = races.filter(r => r.id !== raceEdit); persistRaces(); raceEdit = null; renderRun(); toast('Rennen gelöscht.'); } return; }
