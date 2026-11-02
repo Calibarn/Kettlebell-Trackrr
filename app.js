@@ -1278,6 +1278,8 @@ function renderPlanWeek(S) {
   const nxt = S.races[0], wk = weeksBetween(x.week, weekStart(nxt.date));
   const R = longestIn(localDay()), longVal = kmRound(x.long === null || x.long === undefined ? null : (R ? Math.min(x.long, R.max) : x.long));
   const kmVal = kmRound(x.km);
+  // Rennwoche und Erholungswochen: wie lange die Erholung nach dieser Distanz etwa dauert
+  const rec = x.a || (x.phase === 'recover' ? x.target : null), recNote = rec && SEASON.recoverNote[rec.dist] ? `<div class="alert">${esc(SEASON.recoverNote[rec.dist])}</div>` : '';
   const bs = x.b.map(b => `<div class="alert"><b>${esc(b.name)}</b> (${esc(raceLabel(b))}, ${dayLabel(b.date)}): ${esc(x.phase === 'taper' ? SEASON.bInTaper : SEASON.bRace)}</div>`).join('');
   return `<div class="header">${T('Diese Woche · KW ', 'This week · wk ')}${isoWeek(x.week)}</div><div class="group"><div class="panel" style="border:0;padding-top:12px" id="planweek">
     <div class="phasebadge ph-${phaseKey(x)}">${esc(pl)}</div>
@@ -1290,7 +1292,7 @@ function renderPlanWeek(S) {
     </div>
     <div class="planrows" id="planschedule">${weekSchedule(x).map(it => `<div class="row sched-${it.kind}${it.skip ? ' skipped' : ''}"><span class="dur">${WD[it.d]}</span><span class="txt"><b>${esc(it.title)}</b>${it.skip ? `<small>${T('entfällt diese Woche', 'skipped this week')}</small>` : it.detail ? `<small>${esc(it.detail)}</small>` : ''}</span>${it.kind === 'race' || it.kind === 'brace' ? '' : `<button type="button" class="btn small" data-skip="${it.key}" data-week="${x.week}">${it.skip ? T('Wieder rein', 'Restore') : T('Entfällt', 'Skip')}</button>`}</div>`).join('')}</div>
     <p class="tiny">${T('Tage stellst du unter <b>Profil → Trainingswoche</b> ein. „Entfällt“ gilt nur für diese Woche.', 'Set the days under <b>Profile → Training week</b>. “Skip” applies to this week only.')}</p>
-    ${bs}
+    ${recNote}${bs}
     ${S.hasData ? '' : `<p class="tiny">${T('Für Longrun und Wochen-km: unter <b>Umfang</b> deine Läufe oder Wochensummen der letzten Wochen eintragen.', 'For long run and weekly km: enter your runs or weekly totals of the last weeks under <b>Volume</b>.')}</p>`}
     ${!x.a && !x.bLong && x.long && x.km && x.long > 0.6 * x.km ? `<div class="alert due" id="planratio">${T(`Der Longrun ist ${Math.round(x.long / x.km * 100)} % deiner Wochen-km – für Qualität und lockere Läufe bleibt kaum etwas. Fehlen unter <b>Umfang</b> Läufe? Dann dort nachtragen, der Plan rechnet sofort neu.`, `The long run is ${Math.round(x.long / x.km * 100)} % of your weekly km – hardly anything is left for quality and easy runs. Are runs missing under <b>Volume</b>? Add them there, the plan recalculates immediately.`)}</div>` : ''}
     ${R && !x.a && !x.noLong && !x.bLong && x.long > R.max ? `<p class="tiny">${T(`Longrun auf ${kmText(R.max)} km begrenzt: längster Lauf der letzten 30 Tage plus 10 %.`, `Long run capped at ${kmText(R.max)} km: longest run of the last 30 days plus 10 %.`)}</p>` : ''}

@@ -1,7 +1,7 @@
 'use strict';
 /* Offline-Fähigkeit: zuerst Netz (damit Updates sofort ankommen), sonst Cache.
    Bei Änderungen an den Dateien VERSION erhöhen. */
-const VERSION = 'kbt-v36';
+const VERSION = 'kbt-v37';
 const ASSETS = ['./', './index.html', './platform.js', './lang-en.js', './i18n.js', './styles.css', './data.js', './figures.js', './app.js', './manifest.webmanifest', './icon.svg', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(VERSION).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== VERSION).map(k => caches.delete(k)))).then(() => self.clients.claim())); });

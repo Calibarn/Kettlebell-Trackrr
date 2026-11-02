@@ -147,7 +147,7 @@ test('Renntempo-Rechner: Pace und Zwischenzeiten', async ({ page }) => {
   await expect(page.locator('#pcout .longnext b')).toHaveText('5:00 /km');
   await fillTime(page, 'pctime', '0', '25', '99');
   await expect(page.locator('#pctime [data-tpart="2"]')).toHaveAttribute('aria-invalid', 'true');
-  await expect(page.locator('#runcontent details')).toHaveCount(7);
+  await expect(page.locator('#runcontent details')).toHaveCount(8);
 });
 
 test('Zielzeit bestimmt Ziel-Longrun und Wochenspitze, Tempo steht bei den Tempo-Einheiten', async ({ page }) => {
@@ -324,4 +324,20 @@ test('Bestzeiten: Ergebnisse je Distanz, neue Bestzeit erkennen, Verlauf, Progno
   await page.click('#bestlist [data-bestdel]');
   await expect(page.locator('#bestcard .longnext b')).toHaveText('58:40');
   expect(JSON.parse(await page.evaluate(() => backupJson())).results.length).toBe(3);
+});
+
+test('Erholung: in der Rennwoche und in den Erholungswochen steht, wie lange die Erholung etwa dauert', async ({ page }) => {
+  await openPlan(page);
+  const raceDay = await page.evaluate(() => addDays(weekStart(localDay()), 6));
+  await setRaces(page, [{ id: 'h', name: 'Mein HM', date: raceDay, dist: 'hm', prio: 'A', goal: null }]);
+  await page.click('[data-runsub="woche"]');
+  await expect(page.locator('#planweek')).toContainText('Nach dem Halbmarathon: etwa 10–14 Tage');
+  // Halbmarathon letzte Woche, Marathon später: diese Woche ist Erholung
+  const [past, later] = await page.evaluate(() => [addDays(weekStart(localDay()), -2), addDays(localDay(), 7 * 30)]);
+  await setRaces(page, [{ id: 'h', name: 'Mein HM', date: past, dist: 'hm', prio: 'A', goal: null }, { id: 'm', name: 'Herbst', date: later, dist: 'marathon', prio: 'A', goal: null }]);
+  await page.evaluate(() => renderRun());
+  await expect(page.locator('#planweek .phasebadge')).toHaveText('Erholung');
+  await expect(page.locator('#planweek')).toContainText('Nach dem Halbmarathon: etwa 10–14 Tage');
+  await page.click('[data-runsub="wissen"]');
+  await expect(page.locator('#runcontent')).toContainText('Erholung nach dem Rennen');
 });

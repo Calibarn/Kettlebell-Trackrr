@@ -1379,7 +1379,19 @@ const EN_TEXT = {
 "Neu eingerichtet": "Fresh start",
 "Neuer Plan „AMRAP“: 20 Minuten so viele Runden wie möglich mit einer Kettlebell – Rotational Thruster, Deadlift to Halo, Lunge to Press-out, Pullover mit Rotation und Cross-Body Lunge, jeweils mit Anleitung und Skizze.": "New “AMRAP” plan: 20 minutes, as many rounds as possible with one kettlebell – rotational thruster, deadlift to halo, lunge to press-out, pullover with rotation and cross-body lunge, each with instructions and a sketch.",
 "Kraft bietet nur noch an, was du unter Profil → Geräte & Gewichte eingetragen hast: ohne Kettlebell keine Kettlebell-Übungen und -Pläne, ohne Bänder keine Band-Übungen.": "Strength now only offers what you have entered under Profile → Equipment & weights: without a kettlebell no kettlebell exercises or plans, without bands no band exercises.",
-"Wer neu startet, beginnt ohne Kettlebell und Bänder und trägt seine Geräte im Profil ein. Bestehende Einstellungen bleiben unverändert.": "New users start without kettlebell and bands and enter their equipment in the profile. Existing settings stay unchanged."
+"Wer neu startet, beginnt ohne Kettlebell und Bänder und trägt seine Geräte im Profil ein. Bestehende Einstellungen bleiben unverändert.": "New users start without kettlebell and bands and enter their equipment in the profile. Existing settings stay unchanged.",
+"Nach 5 km: etwa 2–3 Tage aktive Erholung – gehen, locker radeln oder kurz und ruhig laufen.": "After 5 km: about 2–3 days of active recovery – walk, easy cycling or a short, calm run.",
+"Nach 10 km: etwa 4–6 Tage locker bewegen, danach den Umfang langsam wieder steigern.": "After 10 km: about 4–6 days of easy movement, then build the volume up again slowly.",
+"Nach dem Halbmarathon: etwa 10–14 Tage ausreichend Ruhe und nur leichtes Training, kein Tempo.": "After the half marathon: about 10–14 days of enough rest and only light training, no speed work.",
+"Nach dem Marathon: etwa 3–4 Wochen – Erholung zuerst, dann schrittweise zurück zu Umfang und Tempo.": "After the marathon: about 3–4 weeks – recovery first, then gradually back to volume and speed.",
+"Erholung nach dem Rennen": "Recovery after the race",
+"wie lange, was hilft": "how long, what helps",
+"Faustregeln: 5 km etwa 2–3 Tage, 10 km 4–6 Tage, Halbmarathon 10–14 Tage, Marathon 3–4 Wochen. Je härter das Rennen und je schneller du gelaufen bist, desto länger.": "Rules of thumb: 5 km about 2–3 days, 10 km 4–6 days, half marathon 10–14 days, marathon 3–4 weeks. The harder the race and the faster you ran, the longer.",
+"Der Plan rechnet nach jedem A-Rennen Erholungswochen ein (5/10 km 1 Woche, HM 2, Marathon 3): weniger Umfang, kein Tempo, nach dem Marathon zuerst kein Longrun.": "After every A race the plan adds recovery weeks (5/10 km 1 week, HM 2, marathon 3): less volume, no speed work, no long run at first after a marathon.",
+"Aktive Erholung statt Stillstand: gehen, locker radeln, kurze ruhige Läufe. Kraft nur leicht, keine schweren Beinübungen.": "Active recovery instead of standing still: walking, easy cycling, short calm runs. Strength only light, no heavy leg exercises.",
+"Zurück zu Tempo erst, wenn der Muskelkater weg ist und sich lockere Läufe wieder leicht anfühlen.": "Only return to speed work when the soreness is gone and easy runs feel easy again.",
+"Schmerzen, die nicht besser werden, oder ein mehrere Tage erhöhter Ruhepuls: weiter locker bleiben und bei Bedarf abklären lassen.": "Pain that doesn’t improve, or a resting heart rate raised for several days: keep it easy and get it checked if needed.",
+"Nach dem A-Rennen zeigt der Plan in der Rennwoche und in den Erholungswochen, wie lange die Erholung nach der Distanz etwa dauert. Dazu neu unter Plan → Wissen: „Erholung nach dem Rennen“.": "Around the A race the plan shows in race week and in the recovery weeks roughly how long recovery takes for the distance. Also new under Plan → Knowledge: “Recovery after the race”."
 };
 const EN_HTML = {
 "Kraft": "Strength",

@@ -385,6 +385,8 @@ const SEASON = {
   },
   bRace: 'B-Rennen: 2–3 lockere Tage davor, das Rennen ersetzt die Qualitätseinheit (ab Halbmarathon auch den Longrun). Danach 2–4 Tage locker.',
   bInTaper: 'Fällt ins Tapering vor dem A-Rennen: nur locker mitlaufen, nicht auf Zeit.',
+  // Erholung nach dem A-Rennen (Faustregeln, je härter das Rennen, desto länger)
+  recoverNote: { '5k': 'Nach 5 km: etwa 2–3 Tage aktive Erholung – gehen, locker radeln oder kurz und ruhig laufen.', '10k': 'Nach 10 km: etwa 4–6 Tage locker bewegen, danach den Umfang langsam wieder steigern.', hm: 'Nach dem Halbmarathon: etwa 10–14 Tage ausreichend Ruhe und nur leichtes Training, kein Tempo.', marathon: 'Nach dem Marathon: etwa 3–4 Wochen – Erholung zuerst, dann schrittweise zurück zu Umfang und Tempo.' },
   intro: 'Trag deine A-Rennen mit Datum und Distanz ein – dafür baut der Plan je einen Block aus Grundlage, Aufbau, spezifischer Phase und Tapering. B-Rennen laufen ohne eigenen Block mit. Longrun und Wochen-km rechnet der Plan aus deinem Umfang: höchstens 10 % mehr pro Woche, jede 4. Woche Entlastung.',
   note: 'Richtwerte für Hobbyläufer, kein Ersatz für Trainerin oder Arzt. Schmerzen, die am nächsten Tag noch da sind: Umfang halten statt steigern, bei anhaltenden Beschwerden abklären lassen.'
 };
@@ -438,6 +440,13 @@ const SEASON_GUIDE = [
     'Anreise und Startblock planen, Zeitpuffer für Toilette und Warm-up einrechnen.',
     'Warm-up für die Distanz unter Laufen → Warm-up ansehen und vorher einmal im Training testen.',
     'Die Nacht vor der Nacht vor dem Rennen ist für den Schlaf wichtiger als die letzte.'
+  ] },
+  { title: 'Erholung nach dem Rennen', sub: 'wie lange, was hilft', items: [
+    'Faustregeln: 5 km etwa 2–3 Tage, 10 km 4–6 Tage, Halbmarathon 10–14 Tage, Marathon 3–4 Wochen. Je härter das Rennen und je schneller du gelaufen bist, desto länger.',
+    'Der Plan rechnet nach jedem A-Rennen Erholungswochen ein (5/10 km 1 Woche, HM 2, Marathon 3): weniger Umfang, kein Tempo, nach dem Marathon zuerst kein Longrun.',
+    'Aktive Erholung statt Stillstand: gehen, locker radeln, kurze ruhige Läufe. Kraft nur leicht, keine schweren Beinübungen.',
+    'Zurück zu Tempo erst, wenn der Muskelkater weg ist und sich lockere Läufe wieder leicht anfühlen.',
+    'Schmerzen, die nicht besser werden, oder ein mehrere Tage erhöhter Ruhepuls: weiter locker bleiben und bei Bedarf abklären lassen.'
   ] },
   { title: 'Wann nicht steigern', sub: 'Warnzeichen', items: [
     'Schmerzen, die am nächsten Tag noch da sind oder beim Laufen stärker werden.',
@@ -581,6 +590,9 @@ for (const [pk, m] of Object.entries(BEST)) for (const sl of PLANS[pk].slots) if
 /* Neuigkeiten („Patch Notes“): neueste zuerst. Neuer Eintrag = neue id; die App zeigt ihn beim nächsten Start einmal an.
    Der älteste (letzte) Eintrag ist der Grundstand mit allen Funktionen; Neulinge sehen ihn plus die 3 neuesten Updates. */
 const CHANGELOG = [
+  { id: '2026-11-02e', date: '2026-11-02', title: 'Erholung nach dem Rennen', items: [
+    ['Laufen', 'Nach dem A-Rennen zeigt der Plan in der Rennwoche und in den Erholungswochen, wie lange die Erholung nach der Distanz etwa dauert. Dazu neu unter Plan → Wissen: „Erholung nach dem Rennen“.']
+  ] },
   { id: '2026-11-02d', date: '2026-11-02', title: 'AMRAP & Ausstattung', items: [
     ['Kraft', 'Neuer Plan „AMRAP“: 20 Minuten so viele Runden wie möglich mit einer Kettlebell – Rotational Thruster, Deadlift to Halo, Lunge to Press-out, Pullover mit Rotation und Cross-Body Lunge, jeweils mit Anleitung und Skizze.'],
     ['Ausstattung', 'Kraft bietet nur noch an, was du unter Profil → Geräte & Gewichte eingetragen hast: ohne Kettlebell keine Kettlebell-Übungen und -Pläne, ohne Bänder keine Band-Übungen.'],
