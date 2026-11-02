@@ -376,3 +376,4 @@ html[data-os=android] .sheet{border-radius:28px 28px 0 0}
 .segmented.warmupsub{flex-wrap:wrap;row-gap:2px}
 .warmupsub .sublabel{flex:0 0 100%;font-size:11px;font-weight:600;color:var(--label2);text-transform:uppercase;letter-spacing:.03em;padding:5px 8px 1px}
 .warmupsub button{flex:1 1 20%}
+.row .rowselect{flex:0 0 auto;max-width:48%}

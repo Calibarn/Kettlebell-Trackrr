@@ -562,6 +562,11 @@ for (const [pk, m] of Object.entries(BEST)) for (const sl of PLANS[pk].slots) if
 /* Neuigkeiten („Patch Notes“): neueste zuerst. Neuer Eintrag = neue id; die App zeigt ihn beim nächsten Start einmal an.
    Der älteste (letzte) Eintrag ist der Grundstand mit allen Funktionen; Neulinge sehen ihn plus die 3 neuesten Updates. */
 const CHANGELOG = [
+  { id: '2026-11-02c', date: '2026-11-02', title: 'Englisch', items: [
+    ['Sprache', 'Die App gibt es jetzt auch auf Englisch. Automatisch nach Gerätesprache: Deutsch bei deutscher Gerätesprache, sonst Englisch.'],
+    ['Mehr', 'Unter Mehr → Sprache lässt sich Deutsch oder Englisch fest einstellen.'],
+    ['Ansagen', 'Sprachansagen kommen in der gewählten Sprache – mit einer Stimme, die auf dem Gerät läuft.']
+  ] },
   { id: '2026-11-02b', date: '2026-11-02', title: 'Aufgeräumt & übersichtlicher', items: [
     ['Laufen', '„Wettkampf“ und „Training“ sind jetzt ein Reiter „Warm-up“: oben der Renntag (5 km bis Marathon), darunter Intervall, Speed und Longrun.'],
     ['Körpermaße', 'Gewicht und Bauchumfang in einem Formular und einem Protokoll, Diagramm zum Umschalten, eine Erinnerung und ein CSV-Export für beides.'],

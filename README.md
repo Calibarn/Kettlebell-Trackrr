@@ -36,6 +36,17 @@ Mein persönlicher Trainings-Begleiter als Web-App für iPhone und Android – K
 
 `CHANGELOG` in `data.js`, neueste zuerst; der älteste (letzte) Eintrag ist der Grundstand mit allen Funktionen. Neulinge sehen beim ersten Start die 3 neuesten Updates plus den Grundstand. Ein neuer Eintrag mit neuer `id` erscheint beim nächsten Start einmal als Fenster (abschaltbar unter **Mehr → Nach Updates anzeigen**) und steht danach unter **Mehr → Was ist neu?**. Bei jedem Update mit sichtbaren Änderungen: Eintrag oben ergänzen und in `sw.js` `VERSION` erhöhen.
 
+## Sprache (Deutsch / Englisch)
+
+Automatisch nach Gerätesprache: Deutsch bei deutscher Gerätesprache (`de`, `de-AT`, `de-CH` …), sonst Englisch. Unter **Mehr → Sprache** lässt sich Deutsch oder Englisch fest einstellen (je Gerät, wird nicht synchronisiert; „Einstellungen zurücksetzen“ stellt wieder auf Automatisch).
+
+So ist es gebaut (`i18n.js`):
+
+- Die Daten bleiben intern deutsch. Übungsnamen sind Schlüssel (Anleitungen, Skizzen, gespeicherte Einträge), Angaben wie „45 Sek. je Seite“ werden für Timer und Seitenwechsel ausgewertet. Übersetzt wird nur, was angezeigt oder angesagt wird.
+- `T('deutsch', 'english')` für Texte im Code, `tr(text)` für Inhalte aus `data.js` (Wörterbuch `EN_TEXT` in `lang-en.js`), Kurzangaben wie „10 je Seite“ regelbasiert.
+- `localizeContent()` übersetzt reine Anzeige-Texte in `data.js` beim Start, `localizeHtml()` die festen Texte in `index.html` (Wörterbuch `EN_HTML`).
+- Pflege: Neue oder geänderte deutsche Texte brauchen einen Eintrag in `lang-en.js` (Schlüssel = deutscher Text, exakt). Fehlt einer, bleibt der Text deutsch und landet in `i18nMissing`; der Test `tests/englisch.spec.js` schlägt dann fehl.
+
 ## Zurücksetzen
 
 Unter **Mehr → Daten & Datenschutz**:
@@ -115,6 +126,7 @@ Die App selbst braucht kein Node – `package.json` dient nur den Tests.
 | --- | --- |
 | `index.html` | Seitenstruktur, Content-Security-Policy |
 | `platform.js` | Erkennt iOS/Android für die passende Darstellung |
+| `i18n.js`, `lang-en.js` | Sprache: Auswahl, Übersetzungshelfer, englisches Wörterbuch |
 | `styles.css` | Gestaltung (hell/dunkel, iOS/Android) |
 | `data.js` | Pläne, Übungsvarianten, Lauf-, Saisonplan- und Mobility-Inhalte, Anleitungstexte |
 | `figures.js` | Bewegungsskizzen |

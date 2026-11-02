@@ -175,6 +175,11 @@
     <button class="row" type="button" id="notesauto"><span class="txt"><b>Nach Updates anzeigen</b><small>Neuigkeiten beim ersten Start nach einem Update</small></span><span class="val" id="notesautoval"></span></button>
   </div>
 
+  <div class="header">Sprache · Language</div>
+  <div class="group">
+    <label class="row" for="langsel"><span class="icon" style="background:var(--blue)">🌐</span><span class="txt"><b>Sprache</b><small id="langhint"></small></span><select id="langsel" class="rowselect" aria-label="Sprache · Language"></select></label>
+  </div>
+
   <div class="header">Anleitung</div>
   <div class="group manual" id="manualguide">
     <details><summary class="row"><span class="icon" style="background:var(--blue)">📲</span><span class="txt"><b>App installieren</b><small>Einmalig, damit die Daten sicher bleiben</small></span><span class="chev"></span></summary><div class="panel">
@@ -255,7 +260,7 @@
       <li>Eine Datei <b>kb-tracker-sync.json</b> in einem Cloud-Ordner, den alle Geräte sehen: iCloud Drive, Google Drive, OneDrive oder Dropbox.</li>
       <li>Vor dem Training bzw. beim Öffnen: <b>Sync laden</b> und die Datei wählen. Danach: <b>Sync speichern</b> und die alte Datei ersetzen.</li>
       <li>Der Abgleich übernimmt neue, geänderte und gelöschte Einträge – je Eintrag gewinnt der neuere Stand. Vergisst du einmal zu laden, geht nichts verloren: Jedes Gerät behält seinen Stand, beim nächsten Laden wird zusammengeführt.</li>
-      <li>Abgeglichen werden Trainings, Läufe, Wochensummen, Rennen, Gewicht, Bauchumfang, Übungs-Einstellungen, Profil und „Entfällt“. Ton, Stimme und „Heute dabei“ bleiben je Gerät.</li>
+      <li>Abgeglichen werden Trainings, Läufe, Wochensummen, Rennen, Gewicht, Bauchumfang, Übungs-Einstellungen, Profil und „Entfällt“. Ton, Stimme, Sprache und „Heute dabei“ bleiben je Gerät.</li>
       <li>Chrome oder Edge am Mac/PC: <b>Sync-Datei festlegen</b> (z. B. im Google-Drive-Ordner). Danach laden und speichern die Knöpfe ohne erneutes Auswählen; beim Speichern wird vorher automatisch abgeglichen.</li>
       <li>iPhone/iPad: Speichern öffnet „Teilen“ → <b>In Dateien sichern</b> → Cloud-Ordner wählen → <b>Ersetzen</b>.</li>
     </ol><p class="tiny">Die App verbindet sich dafür mit keinem Server – die Datei bewegt dein Cloud-Dienst. Das Backup unter „Daten“ bleibt zusätzlich sinnvoll.</p></div></details>
@@ -267,7 +272,7 @@
     <button class="row" type="button" id="importbtn"><span class="icon" style="background:var(--accent)">⇧</span><span class="txt"><b>Aus Datei wiederherstellen</b><small>Backup oder Sync-Datei; Doppeltes wird übersprungen</small></span><span class="chev"></span></button>
     <button class="row hide" type="button" id="preupdate"><span class="icon" style="background:var(--orange)">↺</span><span class="txt"><b>Sicherung vor dem letzten Update</b><small id="preupdatehint">Automatisch angelegt</small></span><span class="chev"></span></button>
     <button class="row" type="button" id="exportcsv"><span class="icon" style="background:#8e8e93">▤</span><span class="txt"><b>Trainings als CSV</b></span><span class="chev"></span></button>
-    <button class="row" type="button" id="settingsreset"><span class="icon" style="background:var(--orange)">↺</span><span class="txt"><b>Einstellungen zurücksetzen</b><small>Profil, Übungen, Ton und Ansichten – deine Daten bleiben</small></span><span class="chev"></span></button>
+    <button class="row" type="button" id="settingsreset"><span class="icon" style="background:var(--orange)">↺</span><span class="txt"><b>Einstellungen zurücksetzen</b><small>Profil, Übungen, Ton, Sprache und Ansichten – deine Daten bleiben</small></span><span class="chev"></span></button>
     <button class="row" type="button" id="factoryreset"><span class="icon" style="background:var(--red)">⟲</span><span class="txt"><b style="color:var(--red)">Werkseinstellung</b><small>Alle Daten auf diesem Gerät löschen – mit Rückfrage und Backup-Angebot</small></span><span class="chev"></span></button>
     <input type="file" accept=".json,application/json" id="importfile" class="hide">
   </div>
@@ -338,8 +343,10 @@
   </form>
 </dialog>
 
+<script src="lang-en.js"></script>
 <script src="data.js"></script>
 <script src="figures.js"></script>
+<script src="i18n.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
