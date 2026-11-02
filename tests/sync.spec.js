@@ -5,6 +5,7 @@ const { test, expect } = require('./fixtures');
 async function device(browser) {
   const ctx = await browser.newContext({ baseURL: 'http://127.0.0.1:4173', viewport: { width: 390, height: 844 }, locale: 'de-DE', timezoneId: 'Europe/Berlin', acceptDownloads: true });
   await ctx.addInitScript('window.showSaveFilePicker = undefined; window.showOpenFilePicker = undefined;');
+  await ctx.addInitScript(`try { if (!localStorage.getItem('jan-kb-notes-v1')) localStorage.setItem('jan-kb-notes-v1', '{"seen":null,"auto":false}'); } catch (e) {}`);
   const page = await ctx.newPage();
   page.on('dialog', d => d.accept());
   await page.goto('/index.html');

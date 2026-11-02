@@ -33,6 +33,10 @@ Mein persönlicher Trainings-Begleiter als Web-App für iPhone und Android – K
   - Kurzprogramme mit geführtem Timer inkl. Seitenwechsel und Ansage
 - **Mehr**: Wochenübersicht, Anleitung, Geräte-Sync, Datensicherung, Hinweise
 
+## Neuigkeiten (Patch Notes)
+
+`CHANGELOG` in `data.js`, neueste zuerst; der erste Eintrag ist der Grundstand mit allen Funktionen. Ein neuer Eintrag mit neuer `id` erscheint beim nächsten Start einmal als Fenster (abschaltbar unter **Mehr → Nach Updates anzeigen**) und steht danach unter **Mehr → Was ist neu?**. Bei jedem Update mit sichtbaren Änderungen: Eintrag oben ergänzen und in `sw.js` `VERSION` erhöhen.
+
 ## Zurücksetzen
 
 Unter **Mehr → Daten & Datenschutz**:

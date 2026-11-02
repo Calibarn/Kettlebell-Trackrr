@@ -5,7 +5,7 @@ const $ = id => document.getElementById(id);
 const KEYS = {
   entries: 'jan-kettlebell-tracker-v1', waist: 'jan-kb-waist-v1', sound: 'jan-kb-sound-v1', gear: 'jan-kb-gear-v1',
   choice: 'jan-kb-choice-v1', stage: 'jan-kb-stage-v1', plan: 'jan-kb-plan-v1', session: 'jan-kb-session-v1',
-  backup: 'jan-kb-lastbackup-v1', hint: 'jan-kb-installhint-v1', area: 'jan-kb-area-v1', run: 'jan-kb-runview-v1', audio: 'jan-kb-audio-v1', mob: 'jan-kb-mobview-v1', runweeks: 'jan-kb-runweeks-v1', runlog: 'jan-kb-runlog-v1', races: 'jan-kb-races-v1', profile: 'jan-kb-profile-v1', weight: 'jan-kb-weight-v1', skip: 'jan-kb-weekskip-v1', results: 'jan-kb-results-v1', bestview: 'jan-kb-bestview-v1'
+  backup: 'jan-kb-lastbackup-v1', hint: 'jan-kb-installhint-v1', area: 'jan-kb-area-v1', run: 'jan-kb-runview-v1', audio: 'jan-kb-audio-v1', mob: 'jan-kb-mobview-v1', runweeks: 'jan-kb-runweeks-v1', runlog: 'jan-kb-runlog-v1', races: 'jan-kb-races-v1', profile: 'jan-kb-profile-v1', weight: 'jan-kb-weight-v1', skip: 'jan-kb-weekskip-v1', results: 'jan-kb-results-v1', bestview: 'jan-kb-bestview-v1', notes: 'jan-kb-notes-v1'
 };
 /* Datensicherheit bei Updates:
    - Einträge, die diese Version nicht versteht, werden nie verworfen, sondern unverändert mitgespeichert.
@@ -1627,7 +1627,7 @@ async function renderSyncStatus() {
 }
 
 /* ---------- Einstellungen zurücksetzen: Daten bleiben ---------- */
-const SETTING_KEYS = ['sound', 'gear', 'choice', 'stage', 'plan', 'area', 'run', 'audio', 'mob', 'profile', 'skip', 'hint', 'bestview'].map(k => KEYS[k]);
+const SETTING_KEYS = ['sound', 'gear', 'choice', 'stage', 'plan', 'area', 'run', 'audio', 'mob', 'profile', 'skip', 'hint', 'bestview', 'notes'].map(k => KEYS[k]);
 function settingsReset() {
   if (sessionActive()) { alert('Bitte das laufende Training zuerst beenden oder zurücksetzen.'); return; }
   if (!confirm('Einstellungen zurücksetzen?\n\nZurück auf den Ausgangszustand: Profil (Trainingswoche, Herzfrequenz, Geräte & Gewichte), Übungs-Varianten und Gewichte, Stufen, „Entfällt“, Ton und Ansichten.\n\nTrainings, Läufe, Wochensummen, Rennen, Gewicht und Bauchumfang bleiben erhalten. Gilt nur für dieses Gerät.')) return;
@@ -1656,6 +1656,25 @@ async function factoryReset() {
   try { sessionStorage.setItem(SYNC_MSG, 'Auf Werkseinstellung zurückgesetzt – alle Daten auf diesem Gerät wurden gelöscht.'); } catch (e) { }
   location.reload();
 }
+
+/* ---------- Neuigkeiten: beim ersten Start nach einem Update, danach unter Mehr ---------- */
+const notesDlg = $('notes');
+let notesOpt = load(KEYS.notes, null); if (!isObj(notesOpt)) notesOpt = { seen: null, auto: true };
+function renderNotesRows() {
+  $('noteshint').textContent = CHANGELOG.length ? `Stand ${dateGerman(CHANGELOG[0].date)}: ${CHANGELOG[0].title}` : '';
+  $('notesautoval').textContent = notesOpt.auto !== false ? 'An' : 'Aus';
+}
+const notesEntry = c => `<h3>${esc(c.title)}</h3><p class="tiny" style="margin-top:0">${dateGerman(c.date)}</p><ul class="notes">${c.items.map(([t, d]) => `<li><b>${esc(t)}:</b> ${esc(d)}</li>`).join('')}</ul>`;
+function openNotes(all) {
+  const i = CHANGELOG.findIndex(c => c.id === notesOpt.seen), fresh = all ? CHANGELOG : CHANGELOG.slice(0, i > 0 ? i : 1);
+  $('notes-title').textContent = all ? 'Neuigkeiten' : 'Neu in der App';
+  $('notes-body').innerHTML = fresh.map(notesEntry).join('') + (all ? '' : '<p class="tiny">Alle Neuigkeiten findest du jederzeit unter <b>Mehr → Was ist neu?</b></p>');
+  if (!notesDlg.open) notesDlg.showModal();
+}
+notesDlg.addEventListener('close', () => { if (CHANGELOG.length) { notesOpt.seen = CHANGELOG[0].id; store(KEYS.notes, notesOpt); } });
+$('notes-close').addEventListener('click', () => notesDlg.close());
+$('notesbtn').addEventListener('click', () => openNotes(true));
+$('notesauto').addEventListener('click', () => { notesOpt.auto = notesOpt.auto === false; store(KEYS.notes, notesOpt); renderNotesRows(); toast(notesOpt.auto ? 'Neuigkeiten werden nach Updates angezeigt.' : 'Neuigkeiten nur noch unter Mehr.'); });
 
 /* ---------- Dateien: Backup, CSV, Kalender ---------- */
 function download(name, content, type) { const blob = new Blob([content], { type }), url = URL.createObjectURL(blob), a = document.createElement('a'); a.href = url; a.download = name; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 3000); }
@@ -2224,7 +2243,8 @@ $('syncload').addEventListener('click', syncLoad);
 $('syncfile').addEventListener('change', e => { const f = e.target.files[0]; e.target.value = ''; if (!f) return; const r = new FileReader(); r.onload = () => syncApply(r.result); r.readAsText(f); });
 $('syncstatus').addEventListener('click', e => { if (e.target.id === 'syncforget') handleSet(null).then(renderSyncStatus); });
 window.addEventListener('pagehide', () => { clearTimeout(syncTimer); syncTrack(); });
-renderAll(); renderWaist(); renderWeight(); renderProfile(); renderStorageInfo(); renderRun(); renderSyncStatus(); renderMobility(); showArea(area, false);
+renderAll(); renderWaist(); renderWeight(); renderProfile(); renderStorageInfo(); renderRun(); renderSyncStatus(); renderNotesRows();
+if (CHANGELOG.length && notesOpt.auto !== false && notesOpt.seen !== CHANGELOG[0].id) setTimeout(() => { if (!document.querySelector('dialog[open]')) openNotes(false); }, 300); renderMobility(); showArea(area, false);
 if (/iPad|iPhone|iPod/.test(navigator.userAgent) || document.documentElement.dataset.os === 'ios') $('savefilehint').textContent = 'Öffnet „Teilen“ → „In Dateien sichern“';
 if (restored) { toast(running ? 'Laufendes Training wiederhergestellt.' : 'Unterbrochenes Training wiederhergestellt.'); if (running) keepAwake(true); }
 setInterval(() => { tick(); routineTick(); }, 200);

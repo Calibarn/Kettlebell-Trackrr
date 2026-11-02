@@ -25,6 +25,8 @@ const test = base.test.extend({
     page.on('pageerror', e => errors.push(String(e)));
     page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
     page.on('dialog', d => d.accept());
+    // Neuigkeiten-Fenster in Tests nicht automatisch öffnen (eigener Test schaltet es wieder ein)
+    await page.addInitScript(`try { if (!localStorage.getItem('jan-kb-notes-v1')) localStorage.setItem('jan-kb-notes-v1', '{"seen":null,"auto":false}'); } catch (e) {}`);
     for (const s of initScripts) await page.addInitScript(s);
     await page.addInitScript(SPEECH_STUB);
     await page.goto('/index.html');

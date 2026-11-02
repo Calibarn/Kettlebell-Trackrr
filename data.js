@@ -549,3 +549,25 @@ const BEST = {
   }
 };
 for (const [pk, m] of Object.entries(BEST)) for (const sl of PLANS[pk].slots) if (m[sl.id]) { sl.order = m[sl.id][0]; sl.why = m[sl.id][1]; }
+
+/* Neuigkeiten („Patch Notes“): neueste zuerst. Neuer Eintrag = neue id; die App zeigt ihn beim nächsten Start einmal an.
+   Der erste Eintrag ist der Grundstand mit allen Funktionen. */
+const CHANGELOG = [
+  { id: '2026-11-02', date: '2026-11-02', title: 'Grundstand: alle Funktionen', items: [
+    ['Kraft', 'Sechs Pläne für zu Hause: Ganzkörper-Zirkel, Tabata, Läufer (Sätze), Oberkörper-Zirkel, Core (EMOM mit Kettlebell) und Büro – jeweils mit Aufwärmen, Cooldown, Timer, Sprachansagen und Abhaken.'],
+    ['Geräte & Varianten', '„Heute dabei“ (Kettlebell, Bänder, Körpergewicht) wählt je Übung die wirksamste Variante; Gewicht bzw. Band je Übung einstellbar.'],
+    ['Fortschritt', 'Verlauf mit Diagramm, Bestwerte bei gleichem Aufbau, Anstrengung (1–10) und Notiz, Vorschläge zur Steigerung, Training nachtragen und Wochenübersicht mit Serie.'],
+    ['Anleitungen', 'Jede Übung antippen: Skizze von Start und Bewegung, Ausführung, Wirkung und worauf du achten musst.'],
+    ['Laufen → Wettkampf & Training', 'Warm-up und Cooldown für 5 km, 10 km, Halbmarathon und Marathon sowie für Intervall, Speed und Longrun, dazu Lauf-ABC – geführt mit Countdown und Ansage.'],
+    ['Laufen → Plan', 'A- und B-Rennen mit Datum und Distanz (auch eigene km). Je A-Rennen ein Block aus Grundlage, Aufbau, spezifischer Phase und Tapering, danach Erholung; jede Woche Longrun, Wochen-km und Qualitätseinheit auf deinen Trainingstagen. B-Rennen zählen in die Woche.'],
+    ['Zielzeit', 'Bestimmt Ziel-Longrun und Wochenumfang; Tempo-Einheiten zeigen dein Renntempo pro Kilometer. Renntempo-Rechner mit Zwischenzeiten, dazu Wissen zu Pacing, Tapering, Verpflegung und Rennwoche.'],
+    ['Bestzeiten', 'Ergebnisse je Distanz eintragen oder aus Rennen übernehmen; neue Bestzeiten werden erkannt, die Verbesserung als Grafik gezeigt, dazu eine Prognose für die anderen Distanzen.'],
+    ['Laufen → Umfang', 'Läufe mit Datum oder Wochensummen, CSV-Import mit Vorlage. Nächster Longrun höchstens +10 % gegenüber dem längsten der letzten 30 Tage, Zielbereich der Woche, Verlauf über 8 Wochen.'],
+    ['Kalender-Export', 'Saisonplan mit Wochen, Longruns, Qualität, Kraft und Rennen als Kalenderdatei.'],
+    ['Mobility', 'Kurzprogramme für Läufer (Nach dem Laufen, Hüfte, Sprunggelenk) und den Alltag (Morgens, Nach dem Sitzen) sowie Einzelübungen nach Körperbereich – geführt Schritt für Schritt.'],
+    ['Profil', 'Trainingswoche mit festen Tagen (abschaltbar, „Entfällt“ für einzelne Wochen), Herzfrequenz-Zonen (der Plan zeigt deine bpm), eigene Kettlebells und Bänder, Körpergewicht mit Trend, Bauchumfang, Ton und Ansagen.'],
+    ['Geräte-Sync (optional)', 'Eine Sync-Datei in iCloud Drive, Google Drive & Co. hält iPhone, iPad, Mac und PC auf dem gleichen Stand. Ohne Sync bleibt alles nur auf dem Gerät.'],
+    ['Daten & Datenschutz', 'Alles bleibt lokal auf dem Gerät, keine Verbindung zu fremden Servern. Backup und Wiederherstellen, CSV-Export, automatische Sicherung vor Updates, Einstellungen zurücksetzen und Werkseinstellung.'],
+    ['App', 'Als WebApp auf den Home-Bildschirm, funktioniert offline, hell und dunkel, Darstellung für iPhone und Android. Neuigkeiten wie diese erscheinen nach Updates einmal und stehen unter Mehr.']
+  ] }
+];
