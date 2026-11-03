@@ -63,3 +63,24 @@ test('nur die laufende Woche: in der nächsten Woche ist alles wieder frei', asy
   await expect(page.locator('#planschedule [data-unmove]')).toHaveCount(0);
   await expect(page.locator('[data-done="strength-1"]')).toHaveAttribute('aria-pressed', 'false');
 });
+
+test('Plan je Krafttag: im Profil wählbar, im Plan und auf der Startseite; „Starten“ stellt ihn ein', async ({ page }) => {
+  await setup(page);
+  await page.evaluate(() => { renderProfile(); showArea('profil'); document.getElementById('sect-week').open = true; });
+  await expect(page.locator('#weekpanel [data-wkplan]')).toHaveCount(3);
+  await page.selectOption('#weekpanel [data-wkplan="3"]', 'run');
+  expect(await page.evaluate(() => [profile.week.strengthPlan, JSON.parse(localStorage.getItem(KEYS.profile)).week.strengthPlan])).toEqual([{ 3: 'run' }, { 3: 'run' }]);
+  await page.evaluate(() => { showArea('laufen'); renderRun(); });
+  await expect(row(page, 'strength', 'Mi')).toContainText('Kraft · Läufer');
+  await expect(row(page, 'strength', 'Mo')).toContainText('Kraft');
+  await expect(row(page, 'strength', 'Mo')).not.toContainText('Läufer');
+  expect(await page.evaluate(() => planIcs(seasonPlan()))).toContain('SUMMARY:Kraft · Läufer');
+  // Startseite (Mittwoch): Kraft · Läufer, Starten wählt den Plan und startet
+  await page.evaluate(() => { plan = 'wed'; store(KEYS.plan, 'wed'); showArea('start'); });
+  await expect(page.locator('#startcontent .srowt', { hasText: 'Kraft' })).toContainText('Kraft · Läufer');
+  await page.click('[data-startact="kraft"]');
+  expect(await page.evaluate(() => [plan, area, sessionActive()])).toEqual(['run', 'kraft', true]);
+  // Tag abgewählt: Plan-Zuordnung verschwindet
+  await page.evaluate(() => { profile.week.strength = [1, 5]; persistProfile(); });
+  expect(await page.evaluate(() => profile.week.strengthPlan)).toEqual({});
+});

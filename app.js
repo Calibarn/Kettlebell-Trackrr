@@ -71,7 +71,9 @@ function normProfile(p) {
     week: { group: wk.group === null ? null : isWd(wk.group) ? wk.group : d.week.group, quality: wk.quality === null ? null : isWd(wk.quality) ? wk.quality : d.week.quality, long: wk.long === null ? null : isWd(wk.long) ? wk.long : d.week.long,
       strength,
       extraName: typeof wk.extraName === 'string' ? wk.extraName.slice(0, 30) : '', extraDay: isWd(wk.extraDay) ? wk.extraDay : null, track: wk.track === true, runner: wk.runner === 'beginner' || wk.runner === 'runner' ? wk.runner : null,
-      strengthFixed: Array.isArray(wk.strengthFixed) ? [...new Set(wk.strengthFixed.filter(d => isWd(d) && strength.includes(d)))] : [] }
+      strengthFixed: Array.isArray(wk.strengthFixed) ? [...new Set(wk.strengthFixed.filter(d => isWd(d) && strength.includes(d)))] : [],
+      // fester Kraft-Plan je Krafttag (Wochentag → Plan); fehlt er, gilt der zuletzt genutzte Plan
+      strengthPlan: isObj(wk.strengthPlan) ? Object.fromEntries(Object.entries(wk.strengthPlan).filter(([d, pk]) => strength.includes(Number(d)) && typeof pk === 'string' && PLANS[pk])) : {} }
   };
 }
 // Unbekannte Felder (z. B. aus einer neueren Version) bleiben beim Speichern erhalten
@@ -870,6 +872,7 @@ function renderProfile() {
       <div class="field wide"><label for="wkextraname">${T('Name der weiteren Einheit', 'Name of the other session')}</label><input id="wkextraname" type="text" maxlength="30" autocomplete="off" placeholder="${T('z. B. Kurs, Radfahren', 'e.g. class, cycling')}" value="${esc(w.extraName)}"></div>
     </div>
     <p class="tiny">${T('Kraft-Tage', 'Strength days')}</p><div class="chips days" role="group" aria-label="${T('Kraft-Tage', 'Strength days')}">${WEEK_ORDER.map(d => `<button type="button" class="chip" data-strength="${d}" aria-pressed="${w.strength.includes(d)}">${WD[d]}</button>`).join('')}</div>
+    ${w.strength.length ? `<p class="tiny">${T('Plan je Krafttag – „frei“ nimmt den zuletzt genutzten', 'Plan per strength day – “free” uses the last one you used')}</p><div class="dayplans">${WEEK_ORDER.filter(d => w.strength.includes(d)).map(d => `<label class="dayplan"><span>${WD[d]}</span><select data-wkplan="${d}" aria-label="${T(`Kraft-Plan am ${WD_LONG[d]}`, `Strength plan on ${WD_LONG[d]}`)}"><option value="">${T('frei', 'free')}</option>${PLAN_ORDER.filter(planOwned).map(pk => `<option value="${pk}"${w.strengthPlan[d] === pk ? ' selected' : ''}>${esc(tr(PLANS[pk].tab))}</option>`).join('')}</select></label>`).join('')}</div>` : ''}
     ${w.strength.length ? `<p class="tiny">${T('Feste Krafttage – beim Nachholen kommt dort kein Lauf dazu', 'Fixed strength days – no run is added there when catching up')}</p><div class="chips days" role="group" aria-label="${T('Feste Krafttage', 'Fixed strength days')}">${WEEK_ORDER.filter(d => w.strength.includes(d)).map(d => `<button type="button" class="chip" data-strengthfix="${d}" aria-pressed="${w.strengthFixed.includes(d)}">${WD[d]}</button>`).join('')}</div>` : ''}
     ${weekWarnings().map(t => `<div class="alert due">${esc(t)}</div>`).join('')}
     <p class="tiny">${T('Optional: im Plan abhaken, was erledigt ist, und Verpasstes in derselben Woche auf einen freien Tag verschieben.', 'Optional: tick off in the plan what is done and move missed sessions to a free day in the same week.')}</p><div class="chips"><button type="button" class="chip" data-wktrack aria-pressed="${w.track}">${T('Abhaken & nachholen', 'Tick off & catch up')}</button></div>`;
@@ -932,6 +935,7 @@ function onProfileChange(e) {
   if (t.id === 'wkquality') wk.quality = val; else if (t.id === 'wklong') wk.long = val; else if (t.id === 'wkgroup') wk.group = val; else if (t.id === 'wkextraday') wk.extraDay = val;
   else if (t.id === 'wkextraname') wk.extraName = t.value.trim().slice(0, 30);
   else if (t.id === 'wklevel') wk.runner = t.value === 'beginner' || t.value === 'runner' ? t.value : null;
+  else if (t.dataset.wkplan !== undefined) { const d = t.dataset.wkplan; if (PLANS[t.value]) wk.strengthPlan[d] = t.value; else delete wk.strengthPlan[d]; }
   else if (t.id === 'kbdefault') { profile.kit.kbDefault = Number(t.value); profileChanged('kit'); return; }
   else if (t.id === 'hrmax' || t.id === 'hrrest') {
     const v = intNum(t.value), ok = v === null || (t.id === 'hrmax' ? okNum(v, 100, 230) : okNum(v, 30, 120));
@@ -1340,18 +1344,21 @@ function weekLongNote(x) {
   if (x.noLong) return T('kein Longrun', 'no long run');
   const t = SEASON.long[x.phase]; return hrize(withPace(typeof t === 'string' ? t : t[x.target.dist], x.target)) + easyPace();
 }
+// Fester Kraft-Plan eines Wochentags (nur, wenn die Geräte dafür eingetragen sind), sonst null
+const dayPlan = d => { const pk = profile.week.strengthPlan[d]; return pk && PLANS[pk] && planOwned(pk) ? pk : null; };
+const strengthTitle = d => { const pk = dayPlan(d); return pk ? `${T('Kraft', 'Strength')} · ${tr(PLANS[pk].tab)}` : T('Kraft', 'Strength'); };
 // Einheiten der Woche auf die Tage aus dem Profil verteilt, Montag bis Sonntag
 const dayIdx = d => WEEK_ORDER.indexOf(d);
 function weekSchedule(x) {
   const w = profile.week, out = [], rd = x.a ? dayIdx(new Date(x.a.date + 'T12:00:00').getDay()) : 9;
-  const add = (d, kind, title, detail) => out.push({ d, kind, title, detail });
+  const add = (d, kind, title, detail) => out.push({ d, kind, title, detail, plan: kind === 'strength' ? dayPlan(d) : null });
   const before = (d, gap = 1) => dayIdx(d) <= rd - gap;
   if (x.a) add(new Date(x.a.date + 'T12:00:00').getDay(), 'race', T(`Rennen: ${x.a.name}`, `Race: ${x.a.name}`), raceLabel(x.a) + goalLine(x.a));
   if (x.bRace) add(new Date(x.bRace.date + 'T12:00:00').getDay(), 'brace', T(`B-Rennen: ${x.bRace.name}`, `B race: ${x.bRace.name}`), raceLabel(x.bRace) + goalLine(x.bRace) + (x.bSpike ? T(' · locker, nicht auf Zeit', ' · easy, not for time') : ''));
   if (w.quality !== null && (!x.a || before(w.quality, 2)) && !x.bRace) add(w.quality, 'quality', x.phase === 'recover' ? T('Locker laufen', 'Easy run') : x.test ? T('Testlauf 5 km', 'Time trial 5 km') : T('Qualität', 'Quality'), x.test ? T('nach 15 Min. Einlaufen 5 km so schnell, wie du gleichmäßig durchhalten kannst – danach unter Bestzeiten eintragen, dann passen die Tempos', 'after a 15 min warm-up run 5 km as fast as you can hold evenly – then enter it under Best times so the paces update') : weekKey(x));
   if (w.group !== null && (!x.a || before(w.group))) add(w.group, 'group', T('Laufgruppe', 'Running group'), hrize(x.a ? T('ganz locker, Zone 2', 'very easy, Zone 2') : T('locker, Zone 2', 'easy, Zone 2')) + easyPace());
   if (!x.a && !x.bLong && w.long !== null) { const lv = kmRound(x.long); add(w.long, 'long', x.noLong ? T('Locker oder frei', 'Easy or rest') : lv ? T(`Longrun ca. ${lv} km`, `Long run approx. ${lv} km`) : T('Longrun', 'Long run'), weekLongNote(x)); }
-  for (const d of w.strength) if (!x.a || before(d, 2)) add(d, 'strength', T('Kraft', 'Strength'), x.a ? T('leicht, keine schweren Beinübungen', 'light, no heavy leg exercises') : x.phase === 'taper' ? T('ohne schwere Beinübungen', 'without heavy leg exercises') : x.phase === 'recover' ? T('leicht', 'light') : '');
+  for (const d of w.strength) if (!x.a || before(d, 2)) add(d, 'strength', strengthTitle(d), x.a ? T('leicht, keine schweren Beinübungen', 'light, no heavy leg exercises') : x.phase === 'taper' ? T('ohne schwere Beinübungen', 'without heavy leg exercises') : x.phase === 'recover' ? T('leicht', 'light') : '');
   if (w.extraDay !== null && (!x.a || before(w.extraDay))) add(w.extraDay, 'extra', w.extraName || T('Weitere Einheit', 'Other session'), '');
   const skip = weekSkip[x.week] || [], wp = curWeekPlan(x.week);
   for (const it of out) {
@@ -1643,11 +1650,11 @@ const startIcon = (k, cls = '') => `<span class="sicon si-${k}${cls}" aria-hidde
 // Was heute dran ist: aus dem Saisonplan (mit Abhaken/Verschieben), sonst aus den Tagen im Profil; dazu der Lauf-Einstieg
 function todayItems() {
   const today = localDay(), wd = new Date(today + 'T12:00:00').getDay(), w = profile.week, out = [];
-  const kraft = () => { const ex = exList(); return { kind: 'strength', title: `${T('Kraft', 'Strength')} · ${tr(PLANS[plan].tab)}`, detail: `${ex.length} ${T("Übungen", "exercises")} · ${Math.round(phaseSecs(plan, 1) / 60)} ${T("Min.", "min")}`, act: 'kraft' }; };
+  const kraft = (pk = plan) => { const ex = exList(pk); return { kind: 'strength', title: `${T('Kraft', 'Strength')} · ${tr(PLANS[pk].tab)}`, detail: `${ex.length} ${T("Übungen", "exercises")} · ${Math.round(phaseSecs(pk, 1) / 60)} ${T("Min.", "min")}`, act: 'kraft', plan: pk }; };
   if (runnerLevel() === 'beginner') {
     const s = getStarter(), doneToday = s.log.some(x => x.d === today);
     if (doneToday || s.done < STARTER_N) out.push({ kind: 'starter', title: T(`Lauf-Einstieg · Woche ${s.week + 1}`, `Running starter · week ${s.week + 1}`), detail: starterSummary(s.week), act: 'starter', done: doneToday });
-    if (w.strength.includes(wd)) out.push(kraft());
+    if (w.strength.includes(wd)) out.push(kraft(dayPlan(wd) || plan));
     return out;
   }
   const S = seasonPlan(), x = S.weeks[0];
@@ -1655,15 +1662,15 @@ function todayItems() {
     w.quality === wd && { kind: 'quality', title: T('Qualität', 'Quality'), detail: T('Intervall oder Tempo', 'Intervals or tempo') },
     w.long === wd && { kind: 'long', title: T('Longrun', 'Long run'), detail: hrize(T('locker, Zone 2', 'easy, Zone 2')) },
     w.group === wd && { kind: 'group', title: T('Laufgruppe', 'Running group'), detail: hrize(T('locker, Zone 2', 'easy, Zone 2')) },
-    w.strength.includes(wd) && { kind: 'strength' },
+    w.strength.includes(wd) && { kind: 'strength', plan: dayPlan(wd), detail: [w.quality, w.long].includes(wd) ? T('am selben Tag wie ein harter Lauf: danach, ohne schwere Beinübungen', 'same day as a hard run: afterwards, no heavy leg exercises') : w.group === wd ? T('am selben Tag wie ein Lauf: danach oder mit ein paar Stunden Abstand', 'same day as a run: afterwards or a few hours apart') : '' },
     w.extraDay === wd && { kind: 'extra', title: w.extraName || T('Weitere Einheit', 'Other session'), detail: '' }].filter(Boolean);
-  for (const it of items) out.push(it.kind === 'strength' ? Object.assign(kraft(), { done: it.done, note: it.detail }) : Object.assign({}, it, { act: RUN(it) ? 'plan' : null }));
+  for (const it of items) out.push(it.kind === 'strength' ? Object.assign(kraft(it.plan || plan), { done: it.done, note: it.detail }) : Object.assign({}, it, { act: RUN(it) ? 'plan' : null }));
   return out;
 }
 function renderStart() {
   const today = localDay(), wk = weekStart(today), items = todayItems();
   $('startdate').textContent = new Intl.DateTimeFormat(LOCALE, { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date(today + 'T12:00:00'));
-  const btn = it => it.done ? `<span class="sdone">✓ ${T('erledigt', 'done')}</span>` : it.act === 'kraft' || it.act === 'starter' ? `<button type="button" class="btn small primary sgo" data-startact="${it.act}">▶ ${T('Starten', 'Start')}</button>` : it.act ? `<button type="button" class="btn small sgo" data-startact="${it.act}">${T('Details', 'Details')}</button>` : '';
+  const btn = it => it.done ? `<span class="sdone">✓ ${T('erledigt', 'done')}</span>` : it.act === 'kraft' || it.act === 'starter' ? `<button type="button" class="btn small primary sgo" data-startact="${it.act}"${it.plan ? ` data-startplan="${it.plan}"` : ''}>▶ ${T('Starten', 'Start')}</button>` : it.act ? `<button type="button" class="btn small sgo" data-startact="${it.act}">${T('Details', 'Details')}</button>` : '';
   const ico = it => startIcon(it.kind === 'strength' ? 'kraft' : it.kind === 'extra' ? 'mehr' : 'laufen');
   const rows = items.length ? items.map(it => `<div class="srowt${it.done ? ' isdone' : ''}">${ico(it)}<span class="txt"><b>${esc(it.title)}</b>${it.detail || it.note ? `<small>${esc([it.detail, it.note].filter(Boolean).join(' · '))}</small>` : ''}</span>${btn(it)}</div>`).join('')
     : `<div class="srowt">${startIcon('mobility')}<span class="txt"><b>${T('Heute ist nichts geplant', 'Nothing planned today')}</b><small>${T('Ruhetag – oder eine kurze Mobility-Routine', 'Rest day – or a short mobility routine')}</small></span><button type="button" class="btn small sgo" data-go="mobility">Mobility</button></div>`;
@@ -1695,7 +1702,7 @@ $('startcontent').addEventListener('click', e => {
   const g = e.target.closest('[data-go]'); if (g) { showArea(g.dataset.go); return; }
   const a = e.target.closest('[data-startact]'); if (!a) return;
   const k = a.dataset.startact;
-  if (k === 'kraft') { showArea('kraft'); if (!sessionActive()) $('btnMain').click(); return; }
+  if (k === 'kraft') { if (!sessionActive() && a.dataset.startplan && a.dataset.startplan !== plan) setPlan(a.dataset.startplan); showArea('kraft'); if (!sessionActive()) $('btnMain').click(); return; }
   if (k === 'starter') { onStarter('go'); return; }
   if (k === 'plan') { runView.tab = 'plan'; runView.plan = 'woche'; store(KEYS.run, runView); showArea('laufen'); renderRun(); }
 });

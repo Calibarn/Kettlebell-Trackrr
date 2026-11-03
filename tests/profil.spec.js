@@ -45,7 +45,7 @@ test('Trainingswoche: Tage aus dem Profil im Plan und im Kalender, Hinweise bei 
   await page.selectOption('#wkextraday', '1');
   await page.fill('#wkextraname', 'Blaze');
   await page.dispatchEvent('#wkextraname', 'change');
-  expect(await page.evaluate(() => profile.week)).toEqual({ group: null, quality: 4, long: 0, strength: [6, 1], extraName: 'Blaze', extraDay: 1, track: false, runner: null, strengthFixed: [] });
+  expect(await page.evaluate(() => profile.week)).toEqual({ group: null, quality: 4, long: 0, strength: [6, 1], extraName: 'Blaze', extraDay: 1, track: false, runner: null, strengthFixed: [], strengthPlan: {} });
   await expect(page.locator('#weekpanel .alert')).toHaveCount(0);
 
   await page.reload();

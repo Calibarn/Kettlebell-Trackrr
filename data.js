@@ -654,6 +654,7 @@ const APP_VERSION = '1.1';
 const CHANGELOG = [
   { id: '2026-11-04', date: '2026-11-04', version: '1.1', title: 'Startseite „Heute“', items: [
     ['Startseite', 'Beim Öffnen zeigt die App „Heute“: was heute dran ist (Kraft mit Start-Knopf, Läufe aus dem Plan, Lauf-Einstieg), die Woche auf einen Blick und je Bereich eine Kachel mit dem aktuellen Stand. Läuft gerade ein Training, geht es direkt zum Timer.', 'neu'],
+    ['Plan je Krafttag', 'Je Krafttag lässt sich im Profil unter Trainingswoche ein fester Plan wählen, z. B. Mo Ganzkörper, Do Läufer. Wochenplanung, Startseite und Kalender zeigen ihn, „Starten“ auf der Startseite stellt ihn direkt ein. Standard bleibt „frei“: der zuletzt genutzte Plan.', 'neu'],
     ['Mobility', 'Bis zum Ende geführte Mobility-Routinen zählen jetzt für die Woche.', 'neu'],
     ['Navigation', 'Die untere Leiste hat jetzt „Start“ statt „Mehr“ – Mehr erreichst du über die Kachel auf der Startseite. Auf der Startseite selbst gibt es keine Leiste.', 'ux']
   ] },

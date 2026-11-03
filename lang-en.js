@@ -1527,7 +1527,9 @@ const EN_TEXT = {
 "Die untere Leiste hat jetzt „Start“ statt „Mehr“ – Mehr erreichst du über die Kachel auf der Startseite. Auf der Startseite selbst gibt es keine Leiste.": "The bottom bar now has “Home” instead of “More” – you reach More via the tile on the home screen. The home screen itself has no bar.",
 "Startseite": "Home screen",
 "Navigation": "Navigation",
-"Startseite „Heute“": "Home screen “Today”"
+"Startseite „Heute“": "Home screen “Today”",
+"Je Krafttag lässt sich im Profil unter Trainingswoche ein fester Plan wählen, z. B. Mo Ganzkörper, Do Läufer. Wochenplanung, Startseite und Kalender zeigen ihn, „Starten“ auf der Startseite stellt ihn direkt ein. Standard bleibt „frei“: der zuletzt genutzte Plan.": "For each strength day you can pick a fixed plan in Profile under Training week, e.g. Mon full body, Thu runner. The weekly plan, home screen and calendar show it, and “Start” on the home screen sets it directly. The default stays “free”: the plan you used last.",
+"Plan je Krafttag": "Plan per strength day"
 };
 const EN_HTML = {
 "Heute": "Today",
