@@ -22,6 +22,13 @@
 <body>
 <div class="wrap" id="installbar"></div>
 
+<!-- ================= START ================= -->
+<section class="area wrap hide" id="area-start" aria-labelledby="t-start">
+  <p class="startdate" id="startdate"></p>
+  <h1 class="largetitle" id="t-start">Heute</h1>
+  <div id="startcontent"></div>
+</section>
+
 <!-- ================= KRAFT ================= -->
 <section class="area wrap" id="area-kraft" aria-labelledby="t-kraft">
   <h1 class="largetitle" id="t-kraft">Kraft</h1>
@@ -300,11 +307,11 @@
 </div></nav>
 <button class="livepill hide" id="livepill" type="button"></button>
 <nav class="tabbar" id="tabbar" role="tablist" aria-label="Bereiche">
+  <button type="button" role="tab" data-area="start"><span class="ind"><svg viewBox="0 0 24 24"><path d="M4 10.5L12 4l8 6.5V20h-5.5v-5.5h-5V20H4z"/></svg></span>Start</button>
   <button type="button" role="tab" data-area="kraft"><span class="ind"><svg viewBox="0 0 24 24"><path d="M6.5 7v10M17.5 7v10M3.5 9.5v5M20.5 9.5v5M6.5 12h11"/></svg></span>Kraft</button>
   <button type="button" role="tab" data-area="laufen"><span class="ind"><svg viewBox="0 0 24 24"><circle cx="14.5" cy="4.5" r="1.8"/><path d="M8 21l3-6 3 2v5M11 15l1.5-5L9 11 7 14M12.5 10l3 2.5 3-1"/></svg></span>Laufen</button>
   <button type="button" role="tab" data-area="mobility"><span class="ind"><svg viewBox="0 0 24 24"><circle cx="12" cy="4.5" r="1.8"/><path d="M5 9l7 1.5L19 9M12 10.5V15l-4 6M12 15l4 6"/></svg></span>Mobility</button>
   <button type="button" role="tab" data-area="profil"><span class="ind"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20.5c1.2-4 4.1-6 7.5-6s6.3 2 7.5 6"/></svg></span>Profil</button>
-  <button type="button" role="tab" data-area="mehr"><span class="ind"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12h.01M12 12h.01M16 12h.01" stroke-width="3"/></svg></span>Mehr</button>
 </nav>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 

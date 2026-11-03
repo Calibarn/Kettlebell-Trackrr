@@ -1521,9 +1521,16 @@ const EN_TEXT = {
 "Beim ersten Öffnen startet Laufen auf dem Reiter „Plan“ – dort beginnt auch der Lauf-Einstieg.": "On first open, Running starts on the “Plan” tab – that is also where the running starter begins.",
 "Im Profil ist „Körpermaße“ beim ersten Öffnen zugeklappt wie die anderen Bereiche.": "In Profile, “Body measurements” is collapsed on first open like the other sections.",
 "Kraft & Laufen": "Strength & running",
-"Kraft und Laufen dürfen am selben Tag liegen: Ein nachgeholter Lauf rückt auch auf einen Krafttag, die Kraft bleibt – mit dem Hinweis, sie nach dem Lauf zu machen (nach Qualität oder Longrun ohne schwere Beinübungen). Verpasste Kraft lässt sich auch zu einem lockeren Lauf legen. An festen Krafttagen (im Profil wählbar) kommt kein Lauf dazu.": "Strength and running may be on the same day: a run you catch up can also move onto a strength day, and the strength session stays – with the tip to do it after the run (after quality or the long run without heavy leg exercises). Missed strength can also be put next to an easy run. On fixed strength days (selectable in Profile) no run is added."
+"Kraft und Laufen dürfen am selben Tag liegen: Ein nachgeholter Lauf rückt auch auf einen Krafttag, die Kraft bleibt – mit dem Hinweis, sie nach dem Lauf zu machen (nach Qualität oder Longrun ohne schwere Beinübungen). Verpasste Kraft lässt sich auch zu einem lockeren Lauf legen. An festen Krafttagen (im Profil wählbar) kommt kein Lauf dazu.": "Strength and running may be on the same day: a run you catch up can also move onto a strength day, and the strength session stays – with the tip to do it after the run (after quality or the long run without heavy leg exercises). Missed strength can also be put next to an easy run. On fixed strength days (selectable in Profile) no run is added.",
+"Beim Öffnen zeigt die App „Heute“: was heute dran ist (Kraft mit Start-Knopf, Läufe aus dem Plan, Lauf-Einstieg), die Woche auf einen Blick und je Bereich eine Kachel mit dem aktuellen Stand. Läuft gerade ein Training, geht es direkt zum Timer.": "When opened, the app shows “Today”: what is on today (strength with a start button, runs from the plan, running starter), the week at a glance and a tile per area with its current state. If a workout is running, it goes straight to the timer.",
+"Bis zum Ende geführte Mobility-Routinen zählen jetzt für die Woche.": "Mobility routines guided to the end now count for the week.",
+"Die untere Leiste hat jetzt „Start“ statt „Mehr“ – Mehr erreichst du über die Kachel auf der Startseite. Auf der Startseite selbst gibt es keine Leiste.": "The bottom bar now has “Home” instead of “More” – you reach More via the tile on the home screen. The home screen itself has no bar.",
+"Startseite": "Home screen",
+"Navigation": "Navigation",
+"Startseite „Heute“": "Home screen “Today”"
 };
 const EN_HTML = {
+"Heute": "Today",
 "Kraft": "Strength",
 "Trainingsplan": "Training plan",
 "Verfügbare Geräte": "Available equipment",
@@ -1747,6 +1754,7 @@ const EN_HTML = {
 "▶ Starten": "▶ Start",
 "Weiter →": "Next →",
 "Bereiche": "Sections",
+"Start": "Home",
 "Fertig": "Done",
 "Beenden": "Finish",
 "Vorheriger Schritt": "Previous step",

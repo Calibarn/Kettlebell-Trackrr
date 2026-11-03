@@ -12,6 +12,7 @@ Mein persönlicher Trainings-Begleiter als Web-App für iPhone und Android – K
   - Bestwerte vergleichen nur Einheiten mit gleichem Aufbau; nach dem Speichern Zusammenfassung mit neuem Bestwert
   - Progressionshinweise: Läufer-Plan bei allen Sätzen an der Obergrenze (nächste Stufe, Gewicht, Band), Tabata nach drei kompletten Einheiten (8 Runden, dann 60 Sek. Pause), Core nach drei kompletten Einheiten eine Runde mehr
   - Gefühlte Anstrengung (1–10) und Notiz je Einheit, nachträglich im Verlauf änderbar
+- **Start („Heute“)**: erscheint bei jedem Öffnen (außer ein Training läuft), ohne untere Leiste: was heute dran ist (Kraft mit Start, Läufe aus dem Plan, Lauf-Einstieg), die Woche (Kraft gegen Krafttage, km gegen Plan, geführte Mobility-Routinen) und je Bereich eine Kachel mit Stand; in den Bereichen hat die Leiste „Start“ statt „Mehr“
 - **Laufen** (Anleitungen, Saisonplan und Umfang)
   - Bestzeiten: Ergebnisse je Distanz (auch eigene km, aus Rennen übernehmbar), neue Bestzeiten automatisch erkannt, Verlauf als Grafik, Prognose für andere Distanzen (Riegel)
   - Plan: A- und B-Rennen mit Datum, Distanz (5 km bis Marathon) und optional Zielzeit. Die A-Rennen werden nach Datum abgearbeitet: je ein Block aus Grundlage, Aufbau, spezifischer Phase und Tapering, danach Erholung und Basis bis zum nächsten Block. B-Rennen laufen ohne eigenen Block mit. Longrun und Wochen-km kommen aus dem Umfang (höchstens +10 % pro Woche, nach drei Aufbauwochen Entlastung); Warnung, wenn A-Rennen zu dicht liegen oder das Longrun-Ziel nicht erreichbar ist. Dazu Renntempo-Rechner, Pacing, Tapering, Verpflegung und Checkliste für die Rennwoche
@@ -32,7 +33,7 @@ Mein persönlicher Trainings-Begleiter als Web-App für iPhone und Android – K
   - Alltag: Morgens, Nach dem Sitzen
   - Übungen nach Körperbereich: Hüfte, Rücken, Schultern, Beine & Fuß
   - Kurzprogramme mit geführtem Timer inkl. Seitenwechsel und Ansage
-- **Mehr**: Neuigkeiten, Anleitung (inkl. Hinweise), Geräte-Sync, Datensicherung, Zurücksetzen
+- **Mehr** (Kachel auf der Startseite): Neuigkeiten, Anleitung (inkl. Hinweise), Geräte-Sync, Datensicherung, Zurücksetzen
 - **Im Handy-Browser** (iPhone/Android, nicht als App geöffnet) steht in jedem Bereich ganz oben der Hinweis „Als App installieren“ mit Link zur Anleitung – nicht wegklickbar, während eines Trainings ausgeblendet
 
 ## Neuigkeiten (Patch Notes)

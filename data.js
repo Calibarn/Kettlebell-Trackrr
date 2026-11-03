@@ -649,9 +649,14 @@ for (const [pk, m] of Object.entries(BEST)) for (const sl of PLANS[pk].slots) if
 /* Versionsnummer der App, angezeigt unter Mehr. Jede Veröffentlichung (mittwochs 00:00 aus dev nach main) ist eine neue
    Nebenversion: 1.0, 1.1, 1.2 … Erhöht wird mit der ersten Änderung nach einer Veröffentlichung, damit die Testversion schon
    die kommende Nummer zeigt. Der erste Neuigkeiten-Eintrag einer Version bekommt dieselbe Nummer (version). */
-const APP_VERSION = '1.0';
+const APP_VERSION = '1.1';
 // Ein Eintrag pro Tag: Änderungen desselben Tages kommen in den Eintrag des Tages (aka = frühere ids für „schon gesehen“)
 const CHANGELOG = [
+  { id: '2026-11-04', date: '2026-11-04', version: '1.1', title: 'Startseite „Heute“', items: [
+    ['Startseite', 'Beim Öffnen zeigt die App „Heute“: was heute dran ist (Kraft mit Start-Knopf, Läufe aus dem Plan, Lauf-Einstieg), die Woche auf einen Blick und je Bereich eine Kachel mit dem aktuellen Stand. Läuft gerade ein Training, geht es direkt zum Timer.', 'neu'],
+    ['Mobility', 'Bis zum Ende geführte Mobility-Routinen zählen jetzt für die Woche.', 'neu'],
+    ['Navigation', 'Die untere Leiste hat jetzt „Start“ statt „Mehr“ – Mehr erreichst du über die Kachel auf der Startseite. Auf der Startseite selbst gibt es keine Leiste.', 'ux']
+  ] },
   { id: '2026-11-03', aka: ['2026-11-03b', '2026-11-03c'], date: '2026-11-03', version: '1.0', title: 'Lauf-Einstieg, Trainingstempos, Testläufe, Abhaken, Stufen & Fehlerbehebungen', items: [
     ['Version 1.0', 'Die App hat jetzt eine Versionsnummer – das hier ist Version 1.0. Sie steht unten unter Mehr und bei den Neuigkeiten; jede wöchentliche Veröffentlichung bekommt die nächste Nummer.'],
     ['Lauf-Einstieg', 'Neu beim Laufen? Im Profil unter Trainingswoche das Laufniveau „Einsteiger“ wählen (oder die Frage in Plan → Übersicht beantworten): 9 Wochen mit je 3 Einheiten aus Laufen und Gehen bis zu 30 Minuten am Stück – geführt mit Ansagen, ohne Testlauf und ohne Tempovorgaben. Nach drei Einheiten weiter oder die Woche wiederholen.'],

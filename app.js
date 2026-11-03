@@ -5,7 +5,7 @@ const $ = id => document.getElementById(id);
 const KEYS = {
   entries: 'jan-kettlebell-tracker-v1', waist: 'jan-kb-waist-v1', sound: 'jan-kb-sound-v1', gear: 'jan-kb-gear-v1',
   choice: 'jan-kb-choice-v1', stage: 'jan-kb-stage-v1', plan: 'jan-kb-plan-v1', session: 'jan-kb-session-v1',
-  backup: 'jan-kb-lastbackup-v1', hint: 'jan-kb-installhint-v1', area: 'jan-kb-area-v1', run: 'jan-kb-runview-v1', audio: 'jan-kb-audio-v1', mob: 'jan-kb-mobview-v1', runweeks: 'jan-kb-runweeks-v1', runlog: 'jan-kb-runlog-v1', races: 'jan-kb-races-v1', profile: 'jan-kb-profile-v1', weight: 'jan-kb-weight-v1', skip: 'jan-kb-weekskip-v1', results: 'jan-kb-results-v1', bestview: 'jan-kb-bestview-v1', notes: 'jan-kb-notes-v1', weekplan: 'jan-kb-weekplan-v1', icsremind: 'jan-kb-icsremind-v1', sections: 'jan-kb-sections-v1', starter: 'jan-kb-starter-v1'
+  backup: 'jan-kb-lastbackup-v1', hint: 'jan-kb-installhint-v1', area: 'jan-kb-area-v1', run: 'jan-kb-runview-v1', audio: 'jan-kb-audio-v1', mob: 'jan-kb-mobview-v1', runweeks: 'jan-kb-runweeks-v1', runlog: 'jan-kb-runlog-v1', races: 'jan-kb-races-v1', profile: 'jan-kb-profile-v1', weight: 'jan-kb-weight-v1', skip: 'jan-kb-weekskip-v1', results: 'jan-kb-results-v1', bestview: 'jan-kb-bestview-v1', notes: 'jan-kb-notes-v1', weekplan: 'jan-kb-weekplan-v1', icsremind: 'jan-kb-icsremind-v1', sections: 'jan-kb-sections-v1', starter: 'jan-kb-starter-v1', moblog: 'jan-kb-moblog-v1'
 };
 /* Datensicherheit bei Updates:
    - Einträge, die diese Version nicht versteht, werden nie verworfen, sondern unverändert mitgespeichert.
@@ -1623,6 +1623,83 @@ function bestPrefill(id) {
   const f = $('besttime').querySelector('[data-tpart="0"]'); if (f) f.focus();
 }
 
+/* ---------- Startseite „Heute“: beim Öffnen der App, ohne untere Leiste ----------
+   Oben, was heute dran ist (mit Start), darunter die Woche und je Bereich eine Kachel mit dem aktuellen Stand. */
+// Mobility: bis zum Ende geführte Routinen zählen für die Woche (nur Datum und Titel)
+const normMobLog = v => Array.isArray(v) ? v.filter(e => isObj(e) && isDay(e.d) && typeof e.t === 'string').map(e => ({ d: e.d, t: e.t.slice(0, 60) })).slice(-120) : [];
+const getMobLog = () => normMobLog(load(KEYS.moblog, []));
+const putMobLog = v => store(KEYS.moblog, normMobLog(v));
+function logMobility(title) { putMobLog(getMobLog().concat({ d: localDay(), t: String(title) })); if (area === 'start') renderStart(); }
+const daysAgo = d => { const n = Math.round((new Date(localDay() + 'T12:00:00') - new Date(d + 'T12:00:00')) / 864e5); return n <= 0 ? T('heute', 'today') : n === 1 ? T('gestern', 'yesterday') : T(`vor ${n} Tagen`, `${n} days ago`); };
+const daysTo = d => Math.round((new Date(d + 'T12:00:00') - new Date(localDay() + 'T12:00:00')) / 864e5);
+const START_ICON = {
+  kraft: '<path d="M6.5 7v10M17.5 7v10M3.5 9.5v5M20.5 9.5v5M6.5 12h11"/>',
+  laufen: '<circle cx="14.5" cy="4.5" r="1.8"/><path d="M8 21l3-6 3 2v5M11 15l1.5-5L9 11 7 14M12.5 10l3 2.5 3-1"/>',
+  mobility: '<circle cx="12" cy="4.5" r="1.8"/><path d="M5 9l7 1.5L19 9M12 10.5V15l-4 6M12 15l4 6"/>',
+  profil: '<circle cx="12" cy="8" r="3.6"/><path d="M4.5 20.5c1.2-4 4.1-6 7.5-6s6.3 2 7.5 6"/>',
+  mehr: '<path d="M6 12h.01M12 12h.01M18 12h.01" stroke-width="3.2"/>'
+};
+const startIcon = (k, cls = '') => `<span class="sicon si-${k}${cls}" aria-hidden="true"><svg viewBox="0 0 24 24">${START_ICON[k]}</svg></span>`;
+// Was heute dran ist: aus dem Saisonplan (mit Abhaken/Verschieben), sonst aus den Tagen im Profil; dazu der Lauf-Einstieg
+function todayItems() {
+  const today = localDay(), wd = new Date(today + 'T12:00:00').getDay(), w = profile.week, out = [];
+  const kraft = () => { const ex = exList(); return { kind: 'strength', title: `${T('Kraft', 'Strength')} · ${tr(PLANS[plan].tab)}`, detail: `${ex.length} ${T("Übungen", "exercises")} · ${Math.round(phaseSecs(plan, 1) / 60)} ${T("Min.", "min")}`, act: 'kraft' }; };
+  if (runnerLevel() === 'beginner') {
+    const s = getStarter(), doneToday = s.log.some(x => x.d === today);
+    if (doneToday || s.done < STARTER_N) out.push({ kind: 'starter', title: T(`Lauf-Einstieg · Woche ${s.week + 1}`, `Running starter · week ${s.week + 1}`), detail: starterSummary(s.week), act: 'starter', done: doneToday });
+    if (w.strength.includes(wd)) out.push(kraft());
+    return out;
+  }
+  const S = seasonPlan(), x = S.weeks[0];
+  const items = x ? weekSchedule(x).filter(o => o.d === wd && !o.skip) : [
+    w.quality === wd && { kind: 'quality', title: T('Qualität', 'Quality'), detail: T('Intervall oder Tempo', 'Intervals or tempo') },
+    w.long === wd && { kind: 'long', title: T('Longrun', 'Long run'), detail: hrize(T('locker, Zone 2', 'easy, Zone 2')) },
+    w.group === wd && { kind: 'group', title: T('Laufgruppe', 'Running group'), detail: hrize(T('locker, Zone 2', 'easy, Zone 2')) },
+    w.strength.includes(wd) && { kind: 'strength' },
+    w.extraDay === wd && { kind: 'extra', title: w.extraName || T('Weitere Einheit', 'Other session'), detail: '' }].filter(Boolean);
+  for (const it of items) out.push(it.kind === 'strength' ? Object.assign(kraft(), { done: it.done, note: it.detail }) : Object.assign({}, it, { act: RUN(it) ? 'plan' : null }));
+  return out;
+}
+function renderStart() {
+  const today = localDay(), wk = weekStart(today), items = todayItems();
+  $('startdate').textContent = new Intl.DateTimeFormat(LOCALE, { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date(today + 'T12:00:00'));
+  const btn = it => it.done ? `<span class="sdone">✓ ${T('erledigt', 'done')}</span>` : it.act === 'kraft' || it.act === 'starter' ? `<button type="button" class="btn small primary sgo" data-startact="${it.act}">▶ ${T('Starten', 'Start')}</button>` : it.act ? `<button type="button" class="btn small sgo" data-startact="${it.act}">${T('Details', 'Details')}</button>` : '';
+  const ico = it => startIcon(it.kind === 'strength' ? 'kraft' : it.kind === 'extra' ? 'mehr' : 'laufen');
+  const rows = items.length ? items.map(it => `<div class="srowt${it.done ? ' isdone' : ''}">${ico(it)}<span class="txt"><b>${esc(it.title)}</b>${it.detail || it.note ? `<small>${esc([it.detail, it.note].filter(Boolean).join(' · '))}</small>` : ''}</span>${btn(it)}</div>`).join('')
+    : `<div class="srowt">${startIcon('mobility')}<span class="txt"><b>${T('Heute ist nichts geplant', 'Nothing planned today')}</b><small>${T('Ruhetag – oder eine kurze Mobility-Routine', 'Rest day – or a short mobility routine')}</small></span><button type="button" class="btn small sgo" data-go="mobility">Mobility</button></div>`;
+  // Diese Woche: Kraft gegen die Krafttage im Profil, Laufen gegen den Plan bzw. den Schnitt der letzten 4 Wochen, Mobility als Anzahl
+  const nK = saved.filter(e => e.date >= wk && e.date <= today).length, pK = profile.week.strength.length;
+  const bar = (v, max, cls) => max > 0 ? `<span class="sbar"><span class="${cls}" style="width:${Math.min(100, Math.round(v / max * 100))}%"></span></span>` : '';
+  let run;
+  if (runnerLevel() === 'beginner') { const s = getStarter(); run = [`${s.done} ${T('von', 'of')} ${STARTER_N}`, bar(s.done, STARTER_N, 'b-run'), T('Einstieg', 'Starter')]; }
+  else { const S = seasonPlan(), x = S.weeks[0], cur = weekKm(wk) || 0, tgt = x && typeof x.km === 'number' ? x.km : loadFor(wk).avg; run = [tgt ? `${kmText(cur)} / ${Math.round(tgt)} km` : `${kmText(cur)} km`, tgt ? bar(cur, tgt, 'b-run') : '', T('Laufen', 'Running')]; }
+  const nM = getMobLog().filter(e => e.d >= wk && e.d <= today).length;
+  const week = [[T('Kraft', 'Strength'), pK ? `${nK} ${T('von', 'of')} ${pK}` : `${nK} ×`, bar(nK, pK, 'b-kraft')], [run[2], run[0], run[1]], ['Mobility', `${nM} ×`, '']];
+  // Kacheln mit Stand
+  const lastK = saved.slice().sort((a, b) => (a.date + (a.at || '')).localeCompare(b.date + (b.at || ''))).at(-1);
+  const nextRace = races.filter(r => r.date >= today).sort((a, b) => a.date.localeCompare(b.date))[0], lastRun = runLog.at(-1);
+  const s = getStarter(), lastM = getMobLog().at(-1), lastW = weights.at(-1), lastB = load(KEYS.backup, null);
+  const kTxt = lastK ? T(`Zuletzt ${WD[new Date(lastK.date + 'T12:00:00').getDay()]} · ${PLANS[lastK.plan] ? PLANS[lastK.plan].tab : ''}`, `Last ${WD[new Date(lastK.date + 'T12:00:00').getDay()]} · ${PLANS[lastK.plan] ? tr(PLANS[lastK.plan].tab) : ''}`) : T('Noch keine Einheit', 'No session yet');
+  const rTxt = runnerLevel() === 'beginner' ? T(`Einstieg · Woche ${s.week + 1} von ${STARTER.weeks.length}`, `Starter · week ${s.week + 1} of ${STARTER.weeks.length}`)
+    : nextRace ? (daysTo(nextRace.date) === 0 ? T(`${nextRace.name} ist heute`, `${nextRace.name} is today`) : T(`${nextRace.name} in ${daysTo(nextRace.date)} ${daysTo(nextRace.date) === 1 ? 'Tag' : 'Tagen'}`, `${nextRace.name} in ${daysTo(nextRace.date)} ${daysTo(nextRace.date) === 1 ? 'day' : 'days'}`))
+      : lastRun ? T(`Zuletzt ${kmText(lastRun.km)} km · ${daysAgo(lastRun.date)}`, `Last ${kmText(lastRun.km)} km · ${daysAgo(lastRun.date)}`) : T('Plan, Warm-up, Umfang', 'Plan, warm-up, volume');
+  const mTxt = lastM ? T(`Zuletzt ${lastM.t} · ${daysAgo(lastM.d)}`, `Last ${tr(lastM.t)} · ${daysAgo(lastM.d)}`) : T('Dehnen & Routinen', 'Stretching & routines');
+  const pTxt = lastW ? T(`Gewicht ${kgOne(lastW.kg)} kg`, `Weight ${kgOne(lastW.kg)} kg`) : T('Woche, Geräte, Maße', 'Week, equipment, measurements');
+  const bTxt = `Version ${APP_VERSION} · ` + (lastB ? T(`Sicherung ${daysAgo(lastB)}`, `backup ${daysAgo(lastB)}`) : T('noch keine Sicherung', 'no backup yet'));
+  const tile = (k, name, sub, wide) => `<button type="button" class="stile${wide ? ' wide' : ''}" data-go="${k}"><span class="sthead">${startIcon(k)}<b>${name}</b></span><small>${esc(sub)}</small></button>`;
+  $('startcontent').innerHTML = `<div class="scard"><p class="skicker">${T('Heute dran', 'On today')}</p>${rows}</div>
+    <div class="scard"><p class="skicker">${T('Diese Woche', 'This week')}</p><div class="sweek">${week.map(([l, v, b]) => `<div><small>${esc(l)}</small><b>${esc(v)}</b>${b}</div>`).join('')}</div></div>
+    <div class="stiles">${tile('kraft', T('Kraft', 'Strength'), kTxt)}${tile('laufen', T('Laufen', 'Running'), rTxt)}${tile('mobility', 'Mobility', mTxt)}${tile('profil', T('Profil', 'Profile'), pTxt)}${tile('mehr', T('Mehr', 'More'), bTxt, true)}</div>`;
+}
+$('startcontent').addEventListener('click', e => {
+  const g = e.target.closest('[data-go]'); if (g) { showArea(g.dataset.go); return; }
+  const a = e.target.closest('[data-startact]'); if (!a) return;
+  const k = a.dataset.startact;
+  if (k === 'kraft') { showArea('kraft'); if (!sessionActive()) $('btnMain').click(); return; }
+  if (k === 'starter') { onStarter('go'); return; }
+  if (k === 'plan') { runView.tab = 'plan'; runView.plan = 'woche'; store(KEYS.run, runView); showArea('laufen'); renderRun(); }
+});
+
 /* ---------- Lauf-Einstieg: für alle, die mit dem Laufen beginnen ----------
    Laufniveau im Profil: „beginner“ zeigt statt des Saisonplans den Einstieg (9 Wochen × 3 Einheiten), „runner“ den Saisonplan.
    Nicht festgelegt: wer schon Läufe, Ergebnisse oder Rennen eingetragen hat, gilt als Läufer, sonst fragt die Übersicht einmal. */
@@ -1659,7 +1736,7 @@ function starterSummary(w) {
 const starterMinutes = w => Math.round(starterItems(w).reduce((a, it) => a + (routineStep(it).secs || 0), 0) / 60);
 function starterLog() {
   const s = getStarter(); if (s.done >= STARTER_N) return;
-  s.done++; s.log.push({ d: localDay(), w: s.week }); putStarter(s);
+  s.done++; s.log.push({ d: localDay(), w: s.week }); putStarter(s); if (area === 'start') renderStart();
   toast(s.done >= STARTER_N ? T(`Woche ${s.week + 1} geschafft!`, `Week ${s.week + 1} done!`) : T(`Einheit ${s.done} von ${STARTER_N} geschafft.`, `Session ${s.done} of ${STARTER_N} done.`));
   renderRun();
 }
@@ -1733,7 +1810,7 @@ const SYNC_COLLS = {
   results: { key: KEYS.results, id: e => isObj(e) && typeof e.id === 'string' ? e.id : null }
 };
 // Einstellungen, die zwischen Geräten gleich sein sollen (Ton, Stimme und „Heute dabei“ bleiben je Gerät)
-const SYNC_SETTINGS = { choices: KEYS.choice, stages: KEYS.stage, profile: KEYS.profile, weekSkip: KEYS.skip, weekPlan: KEYS.weekplan, starter: KEYS.starter };
+const SYNC_SETTINGS = { choices: KEYS.choice, stages: KEYS.stage, profile: KEYS.profile, weekSkip: KEYS.skip, weekPlan: KEYS.weekplan, starter: KEYS.starter, mobLog: KEYS.moblog };
 const SYNC_TRACKED = new Set(Object.values(SYNC_COLLS).map(c => c.key).concat(Object.values(SYNC_SETTINGS)));
 const syncHash = s => { let h = 5381; for (let i = 0; i < s.length; i++) h = (h * 33 ^ s.charCodeAt(i)) >>> 0; return h.toString(36) + s.length.toString(36); };
 const rawGet = k => { try { const r = localStorage.getItem(k); return r === null ? null : JSON.parse(r); } catch (e) { return null; } };
@@ -1989,7 +2066,7 @@ $('notesauto').addEventListener('click', () => { notesOpt.auto = notesOpt.auto =
 
 /* ---------- Dateien: Backup, CSV, Kalender ---------- */
 function download(name, content, type) { const blob = new Blob([content], { type }), url = URL.createObjectURL(blob), a = document.createElement('a'); a.href = url; a.download = name; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 3000); }
-function backupJson() { return JSON.stringify({ version: 3, entries: saved.concat(savedKeep), waist: waist.concat(waistKeep), runWeeks: runWeeks.concat(runWeeksKeep), runLog: runLog.concat(runLogKeep), races: races.concat(racesKeep), weights: weights.concat(weightKeep), results: results.concat(resultsKeep), weekSkip, starter: getStarter(), settings: { gear, choices, stages, audio: audioOpt, profile: Object.assign({}, profileExtra, profile) }, exportedAt: new Date().toISOString() }, null, 2); }
+function backupJson() { return JSON.stringify({ version: 3, entries: saved.concat(savedKeep), waist: waist.concat(waistKeep), runWeeks: runWeeks.concat(runWeeksKeep), runLog: runLog.concat(runLogKeep), races: races.concat(racesKeep), weights: weights.concat(weightKeep), results: results.concat(resultsKeep), weekSkip, starter: getStarter(), mobLog: getMobLog(), settings: { gear, choices, stages, audio: audioOpt, profile: Object.assign({}, profileExtra, profile) }, exportedAt: new Date().toISOString() }, null, 2); }
 function schemaCheck() {
   const prev = load(SCHEMA_KEY, null);
   if (prev === SCHEMA || (typeof prev === 'number' && prev > SCHEMA)) return; // neuere Daten mit älterer App: nichts verändern
@@ -2036,6 +2113,7 @@ function importBackup(file) {
       if (isObj(x) && isObj(x.weekSkip)) { for (const [k, v] of Object.entries(x.weekSkip)) if (isDay(k) && Array.isArray(v)) weekSkip[k] = [...new Set((weekSkip[k] || []).concat(v.filter(y => typeof y === 'string')))]; store(KEYS.skip, weekSkip); }
       // Lauf-Einstieg: der Stand mit mehr erledigten Einheiten gewinnt
       if (isObj(x) && isObj(x.starter)) { const a = normStarter(x.starter); if (a.log.length > getStarter().log.length) putStarter(a); }
+      if (isObj(x) && Array.isArray(x.mobLog)) { const a = normMobLog(x.mobLog), have = new Set(getMobLog().map(e => e.d + '|' + e.t)); putMobLog(getMobLog().concat(a.filter(e => !have.has(e.d + '|' + e.t)))); }
       const settings = isObj(x) && isObj(x.settings) ? x.settings : null;
       if (!entries.length && !wl.length && !rw.length && !rl.length && !rc.length && !wg.length && !rs.length && !settings) throw Error(T('Keine gültigen Daten gefunden', 'No valid data found'));
       const ids = new Set(saved.map(e => String(e.id))); let added = 0, addedW = 0;
@@ -2200,11 +2278,12 @@ function openExerciseGuide(i, origin) {
 // Plan ohne passende Geräte (z. B. Kettlebell entfernt): zurück zum Ganzkörper-Plan, sofern gerade nichts läuft
 function ensurePlanOwned() { if (!planOwned(plan) && !sessionActive()) { plan = 'wed'; store(KEYS.plan, plan); resetState(); } }
 function renderAll() {
-  ensurePlanOwned(); renderTabs(); renderGear(); renderHeader(); renderPhase(); renderList(); renderSettings(); renderHistory(); renderManual(); renderBackupBanner(); renderInstallBar(); renderWeek();
+  ensurePlanOwned(); renderTabs(); renderGear(); renderHeader(); renderPhase(); renderList(); renderSettings(); renderHistory(); renderManual(); renderBackupBanner(); renderInstallBar(); renderWeek(); if (area === 'start') renderStart();
 }
 
 /* ---------- Bereiche: Kraft, Laufen, Mobility, Mehr ---------- */
-let area = ['kraft', 'laufen', 'mobility', 'profil', 'mehr'].includes(load(KEYS.area, 'kraft')) ? load(KEYS.area, 'kraft') : 'kraft';
+const AREAS = ['start', 'kraft', 'laufen', 'mobility', 'profil', 'mehr'];
+let area = AREAS.includes(load(KEYS.area, 'kraft')) ? load(KEYS.area, 'kraft') : 'kraft';
 // Warm-up: Renntag (5 km bis Marathon) und Training (Intervall, Speed, Longrun) in einem Reiter; frühere Auswahl „Wettkampf“/„Training“ wird übernommen
 const WARMUPS = RUN_GUIDE.race.concat(RUN_GUIDE.training);
 let runView = load(KEYS.run, null); if (!isObj(runView)) runView = {};
@@ -2212,8 +2291,11 @@ let runView = load(KEYS.run, null); if (!isObj(runView)) runView = {};
   runView = { tab: ['warmup', 'abc', 'umfang', 'plan'].includes(tab) ? tab : 'plan', warmup: WARMUPS.some(w => w.id === (old || runView.warmup)) ? (old || runView.warmup) : '5k', plan: ['woche', 'rennen', 'bestzeiten', 'wissen'].includes(runView.plan) ? runView.plan : 'woche' }; }
 function showArea(a, scroll = true) {
   area = a; store(KEYS.area, a);
-  for (const x of ['kraft', 'laufen', 'mobility', 'profil', 'mehr']) $('area-' + x).classList.toggle('hide', x !== a);
-  for (const b of $('tabbar').children) b.setAttribute('aria-selected', String(b.dataset.area === a));
+  for (const x of AREAS) $('area-' + x).classList.toggle('hide', x !== a);
+  // Mehr hat keinen eigenen Reiter mehr (Kachel auf der Startseite) – dort ist „Start“ markiert
+  for (const b of $('tabbar').children) b.setAttribute('aria-selected', String(b.dataset.area === (a === 'mehr' ? 'start' : a)));
+  document.body.classList.toggle('onstart', a === 'start');
+  if (a === 'start') renderStart();
   const bar = a === 'kraft';
   $('actionbar').classList.toggle('hide', !bar);
   document.body.style.setProperty('--actbar', bar ? '66px' : '0px');
@@ -2570,7 +2652,7 @@ $('runcontent').addEventListener('change', e => { const t = e.target; if (t.id =
 for (const id of ['runcontent', 'mobcontent']) $(id).addEventListener('click', e => {
   const r = e.target.closest('[data-routine]'), m = e.target.closest('[data-mob]');
   if (r) { const k = r.dataset.routine, cur = runCurrent(); if (k === 'abc') startRoutine(T('Lauf-ABC', 'Running drills'), RUN_GUIDE.abc.drills); else if (cur) startRoutine(`${cur.label} · ${k === 'warmup' ? 'Warm-up' : 'Cooldown'}`, cur[k]); return; }
-  if (m) { const x = MOBILITY.routines[Number(m.dataset.mob)]; if (x) startRoutine('Mobility · ' + x.title, x.steps); return; }
+  if (m) { const x = MOBILITY.routines[Number(m.dataset.mob)]; if (x) startRoutine('Mobility · ' + x.title, x.steps, () => logMobility(x.title)); return; }
   const b = e.target.closest('[data-guide-name]'); if (b) openGuide(b.dataset.guideName, 'bw', { origin: b });
 });
 $('rt-main').addEventListener('click', () => {
@@ -2632,7 +2714,10 @@ $('syncfile').addEventListener('change', e => { const f = e.target.files[0]; e.t
 $('syncstatus').addEventListener('click', e => { if (e.target.id === 'syncforget') handleSet(null).then(renderSyncStatus); });
 window.addEventListener('pagehide', () => { clearTimeout(syncTimer); syncTrack(); });
 renderAll(); renderWaist(); renderWeight(); renderProfile(); renderStorageInfo(); renderRun(); renderSyncStatus(); renderNotesRows();
-if (CHANGELOG.length && notesOpt.auto !== false && notesOpt.seen !== noteStamp(CHANGELOG[0])) setTimeout(() => { if (!document.querySelector('dialog[open]')) openNotes(false); }, 300); renderMobility(); showArea(area, false);
+if (CHANGELOG.length && notesOpt.auto !== false && notesOpt.seen !== noteStamp(CHANGELOG[0])) setTimeout(() => { if (!document.querySelector('dialog[open]')) openNotes(false); }, 300); renderMobility();
+// Beim Öffnen immer die Startseite – außer ein Training läuft (dann direkt zum Timer). Tests können das abschalten.
+if (sessionActive()) area = 'kraft'; else if (!window.__kbtNoStart) area = 'start';
+showArea(area, false);
 if (/iPad|iPhone|iPod/.test(navigator.userAgent) || document.documentElement.dataset.os === 'ios') $('savefilehint').textContent = T('Öffnet „Teilen“ → „In Dateien sichern“', 'Opens “Share” → “Save to Files”');
 if (restored) { toast(running ? T('Laufendes Training wiederhergestellt.', 'Running workout restored.') : T('Unterbrochenes Training wiederhergestellt.', 'Interrupted workout restored.')); if (running) keepAwake(true); }
 setInterval(() => { tick(); routineTick(); }, 200);

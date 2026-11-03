@@ -98,7 +98,7 @@ test('Neuigkeiten: je Tag erst Neuerungen, dann Optimierungen, zuletzt Fehlerbeh
 test('Neuigkeiten gruppiert nach Neu, Usability und Bugs; Thema steht nicht doppelt', async ({ page }) => {
   await page.evaluate(() => openNotes(true));
   const first = page.locator('#notes-body');
-  const kinds = await page.evaluate(() => { const c = CHANGELOG[0]; return NOTE_KINDS.filter(k => c.items.some(it => it[2] === k[0])).map(k => k[1]); });
+  const kinds = await page.evaluate(() => { const c = CHANGELOG.find(x => x.id === '2026-11-03'); return NOTE_KINDS.filter(k => c.items.some(it => it[2] === k[0])).map(k => k[1]); });
   expect(kinds).toEqual(['Neu', 'Usability', 'Bugs']);
   await expect(first.locator('.noteskind').first()).toHaveText('Neu');
   expect(await page.evaluate(() => CHANGELOG.every(c => c.items.every(it => ['neu', 'ux', 'bug'].includes(it[2]))))).toBe(true);

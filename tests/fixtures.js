@@ -22,7 +22,8 @@ const test = base.test.extend({
   initScripts: [[], { option: true }],
   // Die meisten Tests nutzen Kettlebell 12 kg und Bänder 10/20/30 (neu eingerichtet ist die Ausstattung leer). Nur einmal je Tab, damit Neuladen nichts überschreibt.
   kit: [true, { option: true }],
-  page: async ({ page, allowedErrors, initScripts, kit }, use) => {
+  start: [false, { option: true }],
+  page: async ({ page, allowedErrors, initScripts, kit, start }, use) => {
     const errors = [];
     page.on('pageerror', e => errors.push(String(e)));
     page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
@@ -30,6 +31,8 @@ const test = base.test.extend({
     // Neuigkeiten-Fenster in Tests nicht automatisch öffnen (eigener Test schaltet es wieder ein)
     await page.addInitScript(`try { if (!localStorage.getItem('jan-kb-notes-v1')) localStorage.setItem('jan-kb-notes-v1', '{"seen":null,"auto":false}'); } catch (e) {}`);
     if (kit) await page.addInitScript(`try { if (!sessionStorage.getItem('kbt-test-kit')) { sessionStorage.setItem('kbt-test-kit', '1'); if (!localStorage.getItem('jan-kb-profile-v1')) localStorage.setItem('jan-kb-profile-v1', JSON.stringify({ kit: { kb: [12], kbDefault: 12, bands: [10, 20, 30] } })); } } catch (e) {}`);
+    // Die meisten Tests starten wie bisher im zuletzt genutzten Bereich; die Startseite prüft start.spec.js
+    if (!start) await page.addInitScript('window.__kbtNoStart = true;');
     for (const s of initScripts) await page.addInitScript(s);
     await page.addInitScript(SPEECH_STUB);
     await page.goto('/index.html');
