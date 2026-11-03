@@ -237,6 +237,7 @@ Object.assign(GUIDES, {
   // Laufen
   'Einlaufen': { steps: ['Sehr locker beginnen – du solltest dich problemlos unterhalten können.', 'Nach einigen Minuten das Tempo leicht anheben.', 'Die letzten Minuten etwas zügiger, aber deutlich unter dem Wettkampftempo.'], effect: 'Erhöht Körpertemperatur, Durchblutung und Puls schrittweise und bereitet Muskeln und Sehnen vor.', cue: 'Nicht zu schnell – das Einlaufen soll vorbereiten, nicht ermüden.' },
   'Auslaufen': { steps: ['Direkt nach dem Training oder Rennen sehr locker traben oder zügig gehen.', 'Puls und Atmung langsam herunterkommen lassen.', 'Danach trockene Kleidung anziehen und trinken.'], effect: 'Hilft beim Übergang in die Erholung und lockert die Beine.', cue: 'Nach sehr harten Rennen reicht Gehen völlig.' },
+  'Locker laufen': { steps: ['Langsam loslaufen – du solltest dich dabei noch unterhalten können.', 'Kurze Schritte, aufrecht, Arme locker mitschwingen.', 'Wird es zu anstrengend, langsamer laufen statt stehen zu bleiben.'], effect: 'Ausdauer, Herz und Kreislauf; Sehnen und Knochen gewöhnen sich Schritt für Schritt an die Belastung.', cue: 'Langsamer ist richtig. Wer am Ende noch reden kann, hat alles richtig gemacht.' },
   'Locker gehen': { steps: ['Zügig, aber entspannt gehen.', 'Arme locker mitschwingen, Schultern unten.'], effect: 'Sanfter Einstieg bzw. Ausklang ohne Belastung.', cue: 'Bewusst ruhig atmen.' },
   'Beinpendel vor/zurück': { steps: ['Seitlich an eine Wand stellen und mit einer Hand abstützen.', 'Das äußere Bein locker nach vorne und hinten schwingen, Bewegung langsam größer werden lassen.', 'Seite wechseln.'], effect: 'Mobilisiert Hüftbeuger und hintere Oberschenkel dynamisch.', cue: 'Oberkörper aufrecht, nicht aus dem Rücken schwingen.' },
   'Beinpendel seitlich': { steps: ['Mit dem Gesicht zur Wand stellen und beide Hände abstützen.', 'Ein Bein vor dem Standbein seitlich hin und her schwingen.', 'Seite wechseln.'], effect: 'Mobilisiert Adduktoren und seitliche Hüftmuskeln.', cue: 'Becken möglichst ruhig halten.' },
@@ -393,6 +394,11 @@ const SEASON = {
 
 /* Laufen → Plan → Wissen. Texte als Listen, alles wird escaped dargestellt. */
 const SEASON_GUIDE = [
+  { title: 'Lauf-Einstieg', sub: 'für alle, die mit dem Laufen beginnen', items: [
+    'Profil → Trainingswoche → Laufniveau „Einsteiger“: 9 Wochen mit je 3 Einheiten. Woche 1: 8 × (1 Min. laufen, 1:30 Min. gehen). Danach werden die Laufabschnitte länger und die Gehpausen kürzer – Woche 5: 3 × 6 Min., Woche 7: 2 × 13 Min., Woche 9: 30 Min. am Stück.',
+    'Jede Einheit beginnt und endet mit 5 Min. gehen. Geführt sagt die App jeden Wechsel an, der Bildschirm bleibt dabei an. Nach drei Einheiten entscheidest du: weiter oder die Woche wiederholen.',
+    'Kein Testlauf, keine Tempovorgaben: so langsam, dass du dabei sprechen kannst, und ein Ruhetag zwischen zwei Einheiten. Nach Woche 9 plant die App wie für Läufer – wenn du magst, mit einem lockeren 5-km-Lauf als erstem Ergebnis.'
+  ] },
   { title: 'Wie der Plan rechnet', sub: 'Phasen, Entlastung, Grenzen', items: [
     'Rückwärts ab jedem A-Rennen: Tapering (5/10 km 1 Woche, HM 2, Marathon 3), davor die spezifische Phase, Aufbau und Grundlage.',
     'Liegen zwei A-Rennen zu dicht beieinander, wird der zweite Block vorne gekürzt – zuerst die Grundlage. Unter der Mindestdauer warnt der Plan.',
@@ -412,6 +418,7 @@ const SEASON_GUIDE = [
     'Renntempo in den Einheiten („im HM-Tempo“) kommt aus deiner aktuellen Form, nicht aus der Zielzeit – nur solange noch kein Ergebnis eingetragen ist, aus der Zielzeit.',
     'Trainingstempos (Plan → Übersicht): Grundlage ist dein neuestes Ergebnis, solange es höchstens 3 % langsamer ist als dein bestes der letzten 12 Monate (sonst das beste), per Riegel auf 10 km umgerechnet. Locker = 10-km-Pace + 60–90 s/km, Schwelle = Renntempo für 15 km bis Halbmarathon (etwa eine Stunde haltbar), Intervall ≈ 5-km-Renntempo, Marathontempo per Riegel. Beispiel 10 km in 50:00: locker 6:00–6:30, Schwelle 5:05–5:15, Intervall 4:48, Marathon 5:27 /km.',
     'Fortschritt kommt über Testläufe: Ist dein letztes Ergebnis oder Rennen 8 Wochen her, macht der Plan in der nächsten passenden Woche (Basis, Grundlage oder Aufbau) die Qualitätseinheit zum 5-km-Testlauf. Ergebnis unter Bestzeiten eintragen – B-Rennen zählen genauso.',
+    'Einen Testlauf gibt es erst, wenn 5 km machbar sind: in der laufenden Woche, wenn dein längster Lauf der letzten 30 Tage mindestens 5 km war, später, wenn der geplante Longrun der Woche so lang ist. Im Lauf-Einstieg nie.',
     'Die Tempos sind Richtwerte. Bei Hitze, Wind, Hügeln oder müden Beinen gilt das Gefühl bzw. die Herzfrequenz-Zone, nicht die Uhr.',
     'Herzfrequenz-Zonen (Karvonen): Ruhe-HF + Anteil × (max. HF − Ruhe-HF), Zone 1 ab 50 %, Zone 2 ab 60 %, Zone 3 ab 70 %, Zone 4 ab 80 %, Zone 5 ab 90 %. Beispiel: max. 184, Ruhe 60 → Zone 2 ab 60 + 0,6 × 124 = 134 bpm.'
   ] },
@@ -488,6 +495,26 @@ const SIDED = new Set(['Hüftbeuger-Dehnung', 'Brustdehnung am Türrahmen', 'Nac
   'Tauben-Dehnung', 'Knie-zur-Wand', 'Brustwirbel-Rotation im Vierfüßlerstand', 'Figure-4 Gesäß', 'Adduktoren', 'Open Book',
   'Hüft-CARs', 'Beinheben im Sitzen', 'Beinüberheben im Sitzen', 'Knieheben im Stand', 'Fußgelenkkreisen', 'Sprunggelenk mit Kettlebell', 'Soleus-Dehnung', 'Einbeinstand']);
 
+/* Lauf-Einstieg für Einsteiger: 9 Wochen, je 3 Einheiten, von Lauf-Geh-Wechseln bis 30 Minuten am Stück.
+   Jede Einheit: 5 Min. zügig gehen, die Wechsel der Woche, 5 Min. locker gehen. Eigene Stufen, kein fremdes Programm. */
+const STARTER = {
+  weeks: [
+    { run: 60, walk: 90, reps: 8 },
+    { run: 90, walk: 120, reps: 6 },
+    { run: 150, walk: 120, reps: 5 },
+    { run: 240, walk: 120, reps: 4 },
+    { run: 360, walk: 120, reps: 3 },
+    { run: 600, walk: 120, reps: 2, tail: 300 },
+    { run: 780, walk: 90, reps: 2 },
+    { run: 1200, walk: 60, reps: 1, tail: 420 },
+    { run: 1800, walk: 0, reps: 1 }
+  ],
+  intro: 'Neun Wochen bis 30 Minuten am Stück: je Woche drei Einheiten mit Wechseln aus Laufen und Gehen. Zwischen zwei Einheiten mindestens ein Ruhetag. Eine Woche zu wiederholen ist völlig in Ordnung – Hauptsache regelmäßig.',
+  pace: 'Tempo: so langsam, dass du dabei noch sprechen kannst. Gehpausen sind Teil des Plans, kein Scheitern.',
+  health: 'Bei Vorerkrankungen, starkem Übergewicht oder nach langer Pause vorher ärztlich abklären lassen. Schmerzen (nicht nur Muskelkater): Pause und die Woche wiederholen.',
+  screen: 'Während der geführten Einheit bleibt der Bildschirm an. Schaltest du ihn aus, pausiert das Handy die App meist – die Ansagen kommen dann erst nach dem Entsperren.',
+  done: 'Geschafft: 30 Minuten am Stück! Ab jetzt plant die App wie für Läufer – mit Umfang aus deinen Läufen und, wenn du magst, einem lockeren 5-km-Lauf als Standortbestimmung.'
+};
 /* Körpergewicht in drei Stufen: leicht / mittel (= Ausführung wie beschrieben) / schwer. Bei Kettlebell und Band regelt das Gewicht.
    Übungen mit eigenen Stufen (Split Squat → Bulgarian) bekommen keine. */
 const BW_LEVELS = {
@@ -621,10 +648,11 @@ for (const [pk, m] of Object.entries(BEST)) for (const sl of PLANS[pk].slots) if
    Der älteste (letzte) Eintrag ist der Grundstand mit allen Funktionen; Neulinge sehen ihn plus die 3 neuesten Updates. */
 // Ein Eintrag pro Tag: Änderungen desselben Tages kommen in den Eintrag des Tages (aka = frühere ids für „schon gesehen“)
 const CHANGELOG = [
-  { id: '2026-11-03', aka: ['2026-11-03b', '2026-11-03c'], date: '2026-11-03', title: 'Trainingstempos, Testläufe, Abhaken, Stufen & Fehlerbehebungen', items: [
+  { id: '2026-11-03', aka: ['2026-11-03b', '2026-11-03c'], date: '2026-11-03', title: 'Lauf-Einstieg, Trainingstempos, Testläufe, Abhaken, Stufen & Fehlerbehebungen', items: [
+    ['Lauf-Einstieg', 'Neu beim Laufen? Im Profil unter Trainingswoche das Laufniveau „Einsteiger“ wählen (oder die Frage in Plan → Übersicht beantworten): 9 Wochen mit je 3 Einheiten aus Laufen und Gehen bis zu 30 Minuten am Stück – geführt mit Ansagen, ohne Testlauf und ohne Tempovorgaben. Nach drei Einheiten weiter oder die Woche wiederholen.'],
     ['Laufen', 'Plan → Übersicht zeigt deine Tempos für locker, Schwelle, Intervall und Marathon – aus deiner aktuellen Form: dem neuesten Ergebnis, solange es höchstens 3 % langsamer ist als das beste der letzten 12 Monate. Die Wochenplanung schreibt sie zu den passenden Einheiten.'],
     ['Renntempo', 'Auch das Renntempo in den Einheiten kommt aus deiner Form statt aus der Zielzeit.'],
-    ['Testlauf', 'Alle 8 Wochen ohne Ergebnis oder Rennen plant der Plan einen 5-km-Testlauf statt der Qualitätseinheit ein. Ergebnis unter Bestzeiten eintragen – B-Rennen zählen genauso.'],
+    ['Testlauf', 'Alle 8 Wochen ohne Ergebnis oder Rennen plant der Plan einen 5-km-Testlauf statt der Qualitätseinheit ein – aber erst, wenn 5 km machbar sind (längster Lauf der letzten 30 Tage bzw. geplanter Longrun mindestens 5 km). Ergebnis unter Bestzeiten eintragen – B-Rennen zählen genauso.'],
     ['Abhaken', 'Optional unter Profil → Trainingswoche: Einheiten im Plan abhaken und Verpasstes mit einem Tipp auf den nächsten passenden Tag derselben Woche legen. Gilt nur für die laufende Woche.'],
     ['Kraft', 'Im Zweifel fällt Kraft aus: Ein nachgeholter Lauf darf auf einen Krafttag rücken. Feste Krafttage (im Profil wählbar) werden dabei nie getauscht.'],
     ['Kalender', 'Der Plan-Export kann jetzt eine Erinnerung am Trainingstag mitbringen (Uhrzeit wählbar, Standard aus) – der Kalender meldet sich, auch wenn die App zu ist.'],

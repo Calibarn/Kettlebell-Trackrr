@@ -426,3 +426,12 @@ details.sect+details.sect>summary.row::before{content:"";position:absolute;top:0
 html.testbuild .largetitle::after{content:" Test";font-size:.5em;font-weight:700;color:#fff;background:var(--orange);border-radius:6px;padding:2px 7px;margin-left:8px;vertical-align:middle}
 /* Wochenplanung mit Haken: Tag schmaler, damit der Text mehr Platz hat */
 #planschedule .schedcheck+.dur{min-width:2.6em}
+/* Lauf-Einstieg */
+.sdots{display:flex;align-items:center;gap:8px;margin:12px 0}
+.sdot{width:14px;height:14px;border-radius:50%;border:2px solid var(--accent);box-sizing:border-box;flex:none}
+.sdot.on{background:var(--accent)}
+.sdots .tiny{margin:0 0 0 4px}
+.sdots .linkbtn{padding:0;margin-left:auto;font-size:14px}
+.starteract{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin-top:10px}
+#starter .btn.wide{display:block;width:100%}
+#levelask .row .btn+.btn{margin-left:8px}

@@ -147,7 +147,7 @@ test('Renntempo-Rechner: Pace und Zwischenzeiten', async ({ page }) => {
   await expect(page.locator('#pcout .longnext b')).toHaveText('5:00 /km');
   await fillTime(page, 'pctime', '0', '25', '99');
   await expect(page.locator('#pctime [data-tpart="2"]')).toHaveAttribute('aria-invalid', 'true');
-  await expect(page.locator('#runcontent details')).toHaveCount(8);
+  await expect(page.locator('#runcontent details')).toHaveCount(9);
 });
 
 test('Zielzeit bestimmt Ziel-Longrun und Wochenspitze, Tempo steht bei den Tempo-Einheiten', async ({ page }) => {
@@ -373,7 +373,8 @@ test('Aktuelle Form statt Zielzeit, Testläufe alle 8 Wochen ohne Ergebnis', asy
   await openPlan(page);
   const later = await page.evaluate(() => addDays(localDay(), 7 * 20));
   await setRaces(page, [{ id: 'h', name: 'Mein HM', date: later, dist: 'hm', prio: 'A', goal: 6000 }]);
-  // ohne Ergebnis: diese Woche ist Testlauf, Renntempo notfalls aus der Zielzeit
+  await page.evaluate(() => { runLog = [{ id: 'r1', date: addDays(localDay(), -3), km: 8 }]; persistRunLog(); });
+  // ohne Ergebnis (und 5 km sind machbar): diese Woche ist Testlauf, Renntempo notfalls aus der Zielzeit
   await page.click('[data-runsub="woche"]');
   await expect(page.locator('#planschedule .sched-quality')).toContainText('Testlauf 5 km');
   expect(await page.evaluate(() => hms(racePace(races[0])))).toBe('4:44');

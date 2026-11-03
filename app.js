@@ -5,7 +5,7 @@ const $ = id => document.getElementById(id);
 const KEYS = {
   entries: 'jan-kettlebell-tracker-v1', waist: 'jan-kb-waist-v1', sound: 'jan-kb-sound-v1', gear: 'jan-kb-gear-v1',
   choice: 'jan-kb-choice-v1', stage: 'jan-kb-stage-v1', plan: 'jan-kb-plan-v1', session: 'jan-kb-session-v1',
-  backup: 'jan-kb-lastbackup-v1', hint: 'jan-kb-installhint-v1', area: 'jan-kb-area-v1', run: 'jan-kb-runview-v1', audio: 'jan-kb-audio-v1', mob: 'jan-kb-mobview-v1', runweeks: 'jan-kb-runweeks-v1', runlog: 'jan-kb-runlog-v1', races: 'jan-kb-races-v1', profile: 'jan-kb-profile-v1', weight: 'jan-kb-weight-v1', skip: 'jan-kb-weekskip-v1', results: 'jan-kb-results-v1', bestview: 'jan-kb-bestview-v1', notes: 'jan-kb-notes-v1', weekplan: 'jan-kb-weekplan-v1', icsremind: 'jan-kb-icsremind-v1', sections: 'jan-kb-sections-v1'
+  backup: 'jan-kb-lastbackup-v1', hint: 'jan-kb-installhint-v1', area: 'jan-kb-area-v1', run: 'jan-kb-runview-v1', audio: 'jan-kb-audio-v1', mob: 'jan-kb-mobview-v1', runweeks: 'jan-kb-runweeks-v1', runlog: 'jan-kb-runlog-v1', races: 'jan-kb-races-v1', profile: 'jan-kb-profile-v1', weight: 'jan-kb-weight-v1', skip: 'jan-kb-weekskip-v1', results: 'jan-kb-results-v1', bestview: 'jan-kb-bestview-v1', notes: 'jan-kb-notes-v1', weekplan: 'jan-kb-weekplan-v1', icsremind: 'jan-kb-icsremind-v1', sections: 'jan-kb-sections-v1', starter: 'jan-kb-starter-v1'
 };
 /* Datensicherheit bei Updates:
    - Einträge, die diese Version nicht versteht, werden nie verworfen, sondern unverändert mitgespeichert.
@@ -70,7 +70,7 @@ function normProfile(p) {
     kit: { kb, kbDefault: kb.includes(kit.kbDefault) ? kit.kbDefault : kb.includes(KB_DEFAULT) ? KB_DEFAULT : (kb.length ? kb[0] : KB_DEFAULT), bands },
     week: { group: wk.group === null ? null : isWd(wk.group) ? wk.group : d.week.group, quality: wk.quality === null ? null : isWd(wk.quality) ? wk.quality : d.week.quality, long: wk.long === null ? null : isWd(wk.long) ? wk.long : d.week.long,
       strength,
-      extraName: typeof wk.extraName === 'string' ? wk.extraName.slice(0, 30) : '', extraDay: isWd(wk.extraDay) ? wk.extraDay : null, track: wk.track === true,
+      extraName: typeof wk.extraName === 'string' ? wk.extraName.slice(0, 30) : '', extraDay: isWd(wk.extraDay) ? wk.extraDay : null, track: wk.track === true, runner: wk.runner === 'beginner' || wk.runner === 'runner' ? wk.runner : null,
       strengthFixed: Array.isArray(wk.strengthFixed) ? [...new Set(wk.strengthFixed.filter(d => isWd(d) && strength.includes(d)))] : [] }
   };
 }
@@ -857,10 +857,11 @@ function renderProfile() {
   const w = profile.week, h = profile.hr, k = profile.kit;
   // Kurzfassungen in den zugeklappten Zeilen
   const days = a => a.length ? WEEK_ORDER.filter(d => a.includes(d)).map(d => WD[d]).join(', ') : T('keine', 'none');
-  $('sum-week').textContent = [w.quality !== null ? `${T('Qualität', 'Quality')} ${WD[w.quality]}` : '', w.long !== null ? `${T('Longrun', 'Long run')} ${WD[w.long]}` : '', `${T('Kraft', 'Strength')} ${days(w.strength)}`].filter(Boolean).join(' · ');
+  $('sum-week').textContent = [w.runner === 'beginner' ? T('Lauf-Einstieg', 'Running starter') : '', w.quality !== null ? `${T('Qualität', 'Quality')} ${WD[w.quality]}` : '', w.long !== null ? `${T('Longrun', 'Long run')} ${WD[w.long]}` : '', `${T('Kraft', 'Strength')} ${days(w.strength)}`].filter(Boolean).join(' · ');
   $('sum-hr').textContent = h.z ? `Zone 2: ${zoneRange(2)}` : T('Noch keine Zonen', 'No zones yet');
   $('sum-kit').textContent = k.kb.length || k.bands.length ? [k.kb.length ? `Kettlebell ${k.kb.map(kgText).join(' · ')} kg` : '', k.bands.length ? T(`${k.bands.length} ${k.bands.length === 1 ? 'Band' : 'Bänder'}`, `${k.bands.length} ${k.bands.length === 1 ? 'band' : 'bands'}`) : ''].filter(Boolean).join(' · ') : T('Noch keine Geräte – nur Körpergewicht', 'No equipment yet – body weight only');
   $('weekpanel').innerHTML = `<div class="raceform" style="padding:0">
+      <div class="field wide"><label for="wklevel">${T('Laufniveau', 'Running level')}</label><select id="wklevel">${w.runner === null ? `<option value="" selected>${T('Noch nicht festgelegt', 'Not set yet')}</option>` : ''}<option value="beginner"${w.runner === 'beginner' ? ' selected' : ''}>${T('Einsteiger – Lauf-Einstieg (9 Wochen)', 'Beginner – running starter (9 weeks)')}</option><option value="runner"${w.runner === 'runner' ? ' selected' : ''}>${T('Läufer – Saisonplan', 'Runner – season plan')}</option></select></div>
       <div class="field"><label for="wkquality">${T('Qualität (Intervall/Tempo)', 'Quality (intervals/tempo)')}</label>${wdSelect('wkquality', w.quality, T('keine', 'none'))}</div>
       <div class="field"><label for="wklong">${T('Longrun', 'Long run')}</label>${wdSelect('wklong', w.long, T('keine', 'none'))}</div>
       <div class="field"><label for="wkgroup">${T('Laufgruppe (locker)', 'Running group (easy)')}</label>${wdSelect('wkgroup', w.group, T('keine', 'none'))}</div>
@@ -929,6 +930,7 @@ function onProfileChange(e) {
   const t = e.target, wk = profile.week, val = t.value === '' ? null : Number(t.value);
   if (t.id === 'wkquality') wk.quality = val; else if (t.id === 'wklong') wk.long = val; else if (t.id === 'wkgroup') wk.group = val; else if (t.id === 'wkextraday') wk.extraDay = val;
   else if (t.id === 'wkextraname') wk.extraName = t.value.trim().slice(0, 30);
+  else if (t.id === 'wklevel') wk.runner = t.value === 'beginner' || t.value === 'runner' ? t.value : null;
   else if (t.id === 'kbdefault') { profile.kit.kbDefault = Number(t.value); profileChanged('kit'); return; }
   else if (t.id === 'hrmax' || t.id === 'hrrest') {
     const v = intNum(t.value), ok = v === null || (t.id === 'hrmax' ? okNum(v, 100, 230) : okNum(v, 30, 120));
@@ -1253,7 +1255,7 @@ function seasonPlan(today = localDay(), opt = {}) {
     const pre = weeks.slice(0, i0 < 0 ? 0 : i0).filter(x => x.target === r && x.long !== null && x.long !== undefined).at(-1);
     if (pre && pre.long < pk.long * 0.9) warn.push(T(`${r.name}: Mit +10 % pro Woche schaffst du bis zum Tapering einen Longrun von etwa ${Math.round(pre.long)} km – das Ziel sind ${pk.long} km. Mehr Vorlauf einplanen oder das Ziel locker angehen.`, `${r.name}: with +10 % per week you reach a long run of about ${Math.round(pre.long)} km by the taper – the target is ${pk.long} km. Plan more lead time or approach the goal easily.`));
   }
-  markTests(weeks);
+  markTests(weeks, today);
   return { weeks, warn, races: next, hasData: L !== null || W !== null, start };
 }
 const phaseKey = x => x.cut ? 'cut' : x.phase;
@@ -1281,14 +1283,19 @@ function fitnessRef(today = localDay()) {
 }
 /* Testläufe: Ist das letzte Ergebnis oder Rennen 8 Wochen her (oder gibt es noch keins), wird in der nächsten passenden Woche
    (Basis, Grundlage, Aufbau; keine Entlastungs- oder Rennwoche) die Qualitätseinheit zum 5-km-Testlauf. Danach wieder 8 Wochen. */
-function markTests(weeks) {
+// Einen Testlauf gibt es nur, wenn 5 km schon machbar sind: in der laufenden Woche, wenn der längste Lauf der letzten 30 Tage
+// mindestens 5 km war, danach, wenn der geplante Longrun der Woche mindestens 5 km lang ist. Im Lauf-Einstieg nie.
+const TEST_MIN_KM = 5;
+function markTests(weeks, today = localDay()) {
+  if (runnerLevel() === 'beginner') return;
   // Nur eingetragene Ergebnisse zählen; ein vergangenes Rennen ohne Ergebnis ändert die Tempos nicht. Geplante Rennen zählen als künftiger Wert.
-  let last = results.map(r => r.date).filter(d => d <= localDay()).sort().at(-1) || null;
-  for (const x of weeks) {
-    if (x.a || x.b.length) { last = x.week; continue; }
+  let last = results.map(r => r.date).filter(d => d <= today).sort().at(-1) || null;
+  const R = longestIn(today), ready = (x, i) => i === 0 ? !!R && R.km >= TEST_MIN_KM : typeof x.long === 'number' && x.long >= TEST_MIN_KM - 1e-9;
+  weeks.forEach((x, i) => {
+    if (x.a || x.b.length) { last = x.week; return; }
     const due = !last || x.week >= weekStart(addDays(last, TEST_EVERY_DAYS));
-    if (due && ['basis', 'base', 'build'].includes(x.phase) && !x.cut) { x.test = true; last = x.week; }
-  }
+    if (due && ['basis', 'base', 'build'].includes(x.phase) && !x.cut && ready(x, i)) { x.test = true; last = x.week; }
+  });
 }
 function trainingPaces(today) {
   const ref = fitnessRef(today); if (!ref) return null;
@@ -1610,6 +1617,79 @@ function bestPrefill(id) {
   const f = $('besttime').querySelector('[data-tpart="0"]'); if (f) f.focus();
 }
 
+/* ---------- Lauf-Einstieg: für alle, die mit dem Laufen beginnen ----------
+   Laufniveau im Profil: „beginner“ zeigt statt des Saisonplans den Einstieg (9 Wochen × 3 Einheiten), „runner“ den Saisonplan.
+   Nicht festgelegt: wer schon Läufe, Ergebnisse oder Rennen eingetragen hat, gilt als Läufer, sonst fragt die Übersicht einmal. */
+const STARTER_N = 3;
+const runnerLevel = () => profile.week.runner || (runLog.length || runWeeks.length || results.length || races.length ? 'runner' : null);
+const normStarter = v => {
+  v = isObj(v) ? v : {}; const n = STARTER.weeks.length;
+  return { week: Number.isInteger(v.week) && v.week >= 0 && v.week < n ? v.week : 0, done: Number.isInteger(v.done) && v.done >= 0 && v.done <= STARTER_N ? v.done : 0,
+    log: Array.isArray(v.log) ? v.log.filter(x => isObj(x) && isDay(x.d) && Number.isInteger(x.w)).slice(-60) : [] };
+};
+// Immer frisch aus dem Speicher – so kommt auch ein per Sync übernommener Stand sofort an
+const getStarter = () => normStarter(load(KEYS.starter, null));
+const putStarter = v => store(KEYS.starter, normStarter(v));
+const mmss = n => `${Math.floor(n / 60)}:${String(n % 60).padStart(2, '0')}`;
+const minTxt = n => (n % 60 ? mmss(n) : String(n / 60)) + T(' Min.', ' min');
+// Ablauf einer Einheit für den geführten Timer: 5 Min. gehen, die Wechsel der Woche, 5 Min. gehen
+function starterItems(w) {
+  const x = STARTER.weeks[w], out = [['5:00 Min.', 'Locker gehen', T('zügig gehen zum Aufwärmen', 'brisk walk to warm up')]];
+  for (let i = 0; i < x.reps; i++) {
+    out.push([mmss(x.run) + ' Min.', 'Locker laufen', (x.reps > 1 ? T(`Lauf ${i + 1} von ${x.reps} · `, `run ${i + 1} of ${x.reps} · `) : '') + T('Gesprächstempo', 'conversational pace')]);
+    if (x.walk && (i < x.reps - 1 || x.tail)) out.push([mmss(x.walk) + ' Min.', 'Locker gehen', T('Gehpause', 'walking break')]);
+  }
+  if (x.tail) out.push([mmss(x.tail) + ' Min.', 'Locker laufen', T('letzter Abschnitt', 'last stretch')]);
+  out.push(['5:00 Min.', 'Locker gehen', T('ausklingen lassen, nicht abrupt stehen bleiben', 'cool down, don’t stop abruptly')]);
+  return out;
+}
+function starterSummary(w) {
+  const x = STARTER.weeks[w];
+  if (x.reps === 1 && !x.tail) return T(`${minTxt(x.run)} am Stück laufen`, `run ${minTxt(x.run)} non-stop`);
+  const core = x.reps === 1 ? T(`${minTxt(x.run)} laufen · ${minTxt(x.walk)} gehen`, `run ${minTxt(x.run)} · walk ${minTxt(x.walk)}`)
+    : T(`${x.reps} × (${minTxt(x.run)} laufen · ${minTxt(x.walk)} gehen)`, `${x.reps} × (run ${minTxt(x.run)} · walk ${minTxt(x.walk)})`);
+  return core + (x.tail ? T(` · ${minTxt(x.tail)} laufen`, ` · run ${minTxt(x.tail)}`) : '');
+}
+const starterMinutes = w => Math.round(starterItems(w).reduce((a, it) => a + (routineStep(it).secs || 0), 0) / 60);
+function starterLog() {
+  const s = getStarter(); if (s.done >= STARTER_N) return;
+  s.done++; s.log.push({ d: localDay(), w: s.week }); putStarter(s);
+  toast(s.done >= STARTER_N ? T(`Woche ${s.week + 1} geschafft!`, `Week ${s.week + 1} done!`) : T(`Einheit ${s.done} von ${STARTER_N} geschafft.`, `Session ${s.done} of ${STARTER_N} done.`));
+  renderRun();
+}
+function setRunnerLevel(v) { profile.week.runner = v; persistProfile(); renderProfile(); renderRun(); }
+// Einmalige Frage in der Übersicht, solange das Laufniveau offen ist und noch nichts eingetragen wurde
+const renderLevelAsk = () => `<div class="group" id="levelask"><div class="row"><span class="txt"><b>${T('Neu beim Laufen?', 'New to running?')}</b><small>${T('Der Lauf-Einstieg bringt dich in 9 Wochen mit Wechseln aus Laufen und Gehen zu 30 Minuten am Stück – ohne Testlauf und ohne Tempovorgaben.', 'The running starter takes you to 30 minutes non-stop in 9 weeks by alternating running and walking – no time trial and no pace targets.')}</small></span></div>
+  <div class="row"><span class="txt"></span><button type="button" class="btn small" data-level="runner">${T('Ich laufe schon', 'I already run')}</button><button type="button" class="btn small primary" data-level="beginner">${T('Einstieg starten', 'Start the starter')}</button></div></div>`;
+// Rennen schon geplant: erst der Einstieg, dann der Rennblock – reicht die Zeit danach noch?
+function starterRaceNote(s) {
+  const today = localDay(), r = races.filter(x => x.prio === 'A' && x.date >= today && SEASON.dist[x.dist]).sort((a, b) => a.date.localeCompare(b.date))[0];
+  if (!r) return '';
+  const left = STARTER.weeks.length - s.week - (s.done >= STARTER_N ? 1 : 0), after = weeksBetween(weekStart(today), weekStart(r.date)) + 1 - left, need = SEASON.dist[r.dist].minWeeks;
+  const base = T(`Dein Rennen <b>${esc(r.name)}</b> (${esc(raceLabel(r))}) am ${dayLabel(r.date)}: Erst der Einstieg (noch ${left} ${left === 1 ? 'Woche' : 'Wochen'}), danach plant die App den Rennblock`, `Your race <b>${esc(r.name)}</b> (${esc(raceLabel(r))}) on ${dayLabel(r.date)}: first the starter (${left} ${left === 1 ? 'week' : 'weeks'} left), then the app plans the race block`);
+  if (after >= need) return `<div class="alert">${base}${T(` – dafür bleiben ${after} Wochen.`, ` – ${after} weeks remain for it.`)}</div>`;
+  return `<div class="alert due">${base}${after > 0 ? T(` – dafür bleiben nur ${after} ${after === 1 ? 'Woche' : 'Wochen'}, sinnvoll sind mindestens ${need}.`, ` – only ${after} ${after === 1 ? 'week' : 'weeks'} remain, at least ${need} make sense.`) : T(' – das Rennen liegt aber noch vor dem Ende des Einstiegs.', ' – but the race comes before the starter ends.')} ${T('Besser eine kürzere Distanz wählen oder das Rennen mit Gehpausen locker angehen.', 'Better pick a shorter distance or run the race easily with walking breaks.')}</div>`;
+}
+function renderStarter() {
+  const s = getStarter(), n = STARTER.weeks.length, w = s.week, full = s.done >= STARTER_N, last = full && w === n - 1;
+  const dots = Array.from({ length: STARTER_N }, (_, i) => `<span class="sdot${i < s.done ? ' on' : ''}"></span>`).join('');
+  const act = last
+    ? `<div class="alert" id="starterdone">${esc(STARTER.done)}</div><div class="starteract"><button type="button" class="btn small" data-starter="repeat">${T('Woche wiederholen', 'Repeat week')}</button><button type="button" class="btn small primary" data-starter="graduate">${T('Als Läufer weiterplanen', 'Continue as a runner')}</button></div>`
+    : full
+      ? `<div class="alert" id="starterweekdone">${T(`Woche ${w + 1} geschafft! Fühlte sich die letzte Einheit machbar an, geht es weiter – sonst die Woche einfach wiederholen.`, `Week ${w + 1} done! If the last session felt manageable, move on – otherwise simply repeat the week.`)}</div><div class="starteract"><button type="button" class="btn small" data-starter="repeat">${T('Woche wiederholen', 'Repeat week')}</button><button type="button" class="btn small primary" data-starter="next">${T(`Weiter mit Woche ${w + 2}`, `Go to week ${w + 2}`)}</button></div>`
+      : `<button type="button" class="btn primary wide" data-starter="go">${T('▶ Einheit geführt starten', '▶ Start guided session')}</button><p class="tiny">${esc(STARTER.screen)}</p><div class="starteract"><button type="button" class="btn small" data-starter="done">${T('✓ Ohne Führung erledigt', '✓ Done without guidance')}</button></div>`;
+  return `<div class="intro">${esc(STARTER.intro)}</div>${starterRaceNote(s)}
+    <div class="header">${T('Lauf-Einstieg', 'Running starter')}</div><div class="group"><div class="panel" id="starter" style="border:0;padding-top:12px">
+      <div class="phasebadge ph-base">${T(`Woche ${w + 1} von ${n}`, `Week ${w + 1} of ${n}`)}</div>
+      <p class="loadstatus" id="startersum"><b>${esc(starterSummary(w))}</b></p>
+      <p class="tiny" style="margin-top:2px">${T(`Vorher und nachher je 5 Min. gehen · insgesamt etwa ${starterMinutes(w)} Min.`, `Walk 5 min before and after · about ${starterMinutes(w)} min in total`)}</p>
+      <div class="sdots" role="img" aria-label="${T(`${s.done} von ${STARTER_N} Einheiten dieser Woche erledigt`, `${s.done} of ${STARTER_N} sessions this week done`)}">${dots}<span class="tiny">${full ? T('Woche erledigt', 'Week done') : T(`Einheit ${s.done + 1} von ${STARTER_N}`, `Session ${s.done + 1} of ${STARTER_N}`)}</span>${s.done ? `<button type="button" class="linkbtn" data-starter="undo">${T('zurücknehmen', 'undo')}</button>` : ''}</div>
+      ${act}
+    </div></div>
+    <div class="group"><div class="row"><span class="txt"><b>${T('Tempo & Sicherheit', 'Pace & safety')}</b><small>${esc(hrize(STARTER.pace + (profile.hr.z ? ' ' + T('Richtwert: Zone 2.', 'Guide: zone 2.') : '')))} ${esc(STARTER.health)}</small></span></div>
+      <div class="row"><label class="txt" for="starterweek"><b>${T('Woche wählen', 'Choose week')}</b><small>${T('Schon fitter oder lieber zurück? Die Einheiten der Woche beginnen dann von vorn.', 'Already fitter or rather step back? The week’s sessions then start over.')}</small></label><select id="starterweek">${STARTER.weeks.map((x, i) => `<option value="${i}"${i === w ? ' selected' : ''}>${T(`Woche ${i + 1}`, `Week ${i + 1}`)}</option>`).join('')}</select></div>
+      <div class="row"><span class="txt"><b>${T('Ich laufe schon regelmäßig', 'I already run regularly')}</b><small>${T('Zum Saisonplan mit Umfang, Rennen und Tempos. Umstellbar im Profil unter Trainingswoche.', 'Switch to the season plan with volume, races and paces. Changeable in Profile under Training week.')}</small></span><button type="button" class="btn small" data-starter="runner">${T('Wechseln', 'Switch')}</button></div></div>`;
+}
 function renderPlan() {
   const sub = $('runsub');
   sub.classList.remove('hide');
@@ -1617,6 +1697,8 @@ function renderPlan() {
   if (runView.plan === 'rennen') { $('runcontent').innerHTML = renderRaces(); return; }
   if (runView.plan === 'bestzeiten') { $('runcontent').innerHTML = renderBests(); return; }
   if (runView.plan === 'wissen') { $('runcontent').innerHTML = renderPlanGuide(); renderPace(); return; }
+  if (runnerLevel() === 'beginner') { $('runcontent').innerHTML = renderStarter(); return; }
+  const ask = runnerLevel() === null ? renderLevelAsk() : '';
   const S = seasonPlan();
   if (!S.weeks.length) {
     // Kein A-Rennen mehr geplant, aber eines liegt kurz zurück: Erholung trotzdem anzeigen (Rennwoche + Erholungswochen der Distanz)
@@ -1624,11 +1706,11 @@ function renderPlan() {
     const sinceW = lastA ? weeksBetween(weekStart(lastA.date), weekStart(today)) : 99;
     const recBox = lastA && sinceW <= SEASON.dist[lastA.dist].recover.length && SEASON.recoverNote[lastA.dist]
       ? `<div class="header">${T('Erholung', 'Recovery')}</div><div class="group"><div class="panel" style="border:0;padding-top:12px" id="planrecover"><div class="phasebadge ph-recover">${esc(SEASON.phase.recover[0])}</div><p class="loadstatus">${T(`<b>${esc(lastA.name)}</b> am ${dayLabel(lastA.date)}`, `<b>${esc(lastA.name)}</b> on ${dayLabel(lastA.date)}`)}</p><p class="tiny" style="margin-top:2px">${esc(SEASON.phase.recover[1])}</p><div class="alert">${esc(SEASON.recoverNote[lastA.dist])}</div></div></div>` : '';
-    $('runcontent').innerHTML = `<div class="intro">${esc(SEASON.intro)}</div>${recBox}<div class="group"><div class="row"><span class="txt"><b>${T('Noch kein A-Rennen geplant', 'No A race planned yet')}</b><small>${T('Unter „Rennen“ ein Hauptrennen mit Datum und Distanz eintragen.', 'Enter a main race with date and distance under “Races”.')}</small></span><button type="button" class="btn small primary" data-runsub-go="rennen">${T('Rennen eintragen', 'Add race')}</button></div></div>`;
+    $('runcontent').innerHTML = `${ask}<div class="intro">${esc(SEASON.intro)}</div>${recBox}<div class="group"><div class="row"><span class="txt"><b>${T('Noch kein A-Rennen geplant', 'No A race planned yet')}</b><small>${T('Unter „Rennen“ ein Hauptrennen mit Datum und Distanz eintragen.', 'Enter a main race with date and distance under “Races”.')}</small></span><button type="button" class="btn small primary" data-runsub-go="rennen">${T('Rennen eintragen', 'Add race')}</button></div></div>`;
     $('runcontent').insertAdjacentHTML('beforeend', renderPaces());
     return;
   }
-  $('runcontent').innerHTML = (S.warn.length ? S.warn.map(w => `<div class="alert due">${esc(w)}</div>`).join('') : '') + renderPlanWeek(S) + renderPaces() + renderPlanSeason(S) + `<p class="footer">${esc(SEASON.note)}</p>`;
+  $('runcontent').innerHTML = ask + (S.warn.length ? S.warn.map(w => `<div class="alert due">${esc(w)}</div>`).join('') : '') + renderPlanWeek(S) + renderPaces() + renderPlanSeason(S) + `<p class="footer">${esc(SEASON.note)}</p>`;
 }
 
 /* ---------- Sync zwischen Geräten über eine Datei (iCloud Drive, Google Drive, OneDrive, Dropbox …) ----------
@@ -1645,7 +1727,7 @@ const SYNC_COLLS = {
   results: { key: KEYS.results, id: e => isObj(e) && typeof e.id === 'string' ? e.id : null }
 };
 // Einstellungen, die zwischen Geräten gleich sein sollen (Ton, Stimme und „Heute dabei“ bleiben je Gerät)
-const SYNC_SETTINGS = { choices: KEYS.choice, stages: KEYS.stage, profile: KEYS.profile, weekSkip: KEYS.skip, weekPlan: KEYS.weekplan };
+const SYNC_SETTINGS = { choices: KEYS.choice, stages: KEYS.stage, profile: KEYS.profile, weekSkip: KEYS.skip, weekPlan: KEYS.weekplan, starter: KEYS.starter };
 const SYNC_TRACKED = new Set(Object.values(SYNC_COLLS).map(c => c.key).concat(Object.values(SYNC_SETTINGS)));
 const syncHash = s => { let h = 5381; for (let i = 0; i < s.length; i++) h = (h * 33 ^ s.charCodeAt(i)) >>> 0; return h.toString(36) + s.length.toString(36); };
 const rawGet = k => { try { const r = localStorage.getItem(k); return r === null ? null : JSON.parse(r); } catch (e) { return null; } };
@@ -1895,7 +1977,7 @@ $('notesauto').addEventListener('click', () => { notesOpt.auto = notesOpt.auto =
 
 /* ---------- Dateien: Backup, CSV, Kalender ---------- */
 function download(name, content, type) { const blob = new Blob([content], { type }), url = URL.createObjectURL(blob), a = document.createElement('a'); a.href = url; a.download = name; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 3000); }
-function backupJson() { return JSON.stringify({ version: 3, entries: saved.concat(savedKeep), waist: waist.concat(waistKeep), runWeeks: runWeeks.concat(runWeeksKeep), runLog: runLog.concat(runLogKeep), races: races.concat(racesKeep), weights: weights.concat(weightKeep), results: results.concat(resultsKeep), weekSkip, settings: { gear, choices, stages, audio: audioOpt, profile: Object.assign({}, profileExtra, profile) }, exportedAt: new Date().toISOString() }, null, 2); }
+function backupJson() { return JSON.stringify({ version: 3, entries: saved.concat(savedKeep), waist: waist.concat(waistKeep), runWeeks: runWeeks.concat(runWeeksKeep), runLog: runLog.concat(runLogKeep), races: races.concat(racesKeep), weights: weights.concat(weightKeep), results: results.concat(resultsKeep), weekSkip, starter: getStarter(), settings: { gear, choices, stages, audio: audioOpt, profile: Object.assign({}, profileExtra, profile) }, exportedAt: new Date().toISOString() }, null, 2); }
 function schemaCheck() {
   const prev = load(SCHEMA_KEY, null);
   if (prev === SCHEMA || (typeof prev === 'number' && prev > SCHEMA)) return; // neuere Daten mit älterer App: nichts verändern
@@ -1940,6 +2022,8 @@ function importBackup(file) {
       const wg = isObj(x) && Array.isArray(x.weights) ? x.weights.filter(validWeight) : [];
       const rs = isObj(x) && Array.isArray(x.results) ? x.results.filter(validResult) : [];
       if (isObj(x) && isObj(x.weekSkip)) { for (const [k, v] of Object.entries(x.weekSkip)) if (isDay(k) && Array.isArray(v)) weekSkip[k] = [...new Set((weekSkip[k] || []).concat(v.filter(y => typeof y === 'string')))]; store(KEYS.skip, weekSkip); }
+      // Lauf-Einstieg: der Stand mit mehr erledigten Einheiten gewinnt
+      if (isObj(x) && isObj(x.starter)) { const a = normStarter(x.starter); if (a.log.length > getStarter().log.length) putStarter(a); }
       const settings = isObj(x) && isObj(x.settings) ? x.settings : null;
       if (!entries.length && !wl.length && !rw.length && !rl.length && !rc.length && !wg.length && !rs.length && !settings) throw Error(T('Keine gültigen Daten gefunden', 'No valid data found'));
       const ids = new Set(saved.map(e => String(e.id))); let added = 0, addedW = 0;
@@ -2180,17 +2264,17 @@ const rtPart = () => { const s = rtStep(); return Math.min(s.sides - 1, Math.flo
 const rtRemaining = () => { const s = rtStep(), p = rtPart(); return (p === s.sides - 1 ? s.secs * s.sides + rt.extra : (p + 1) * s.secs) - rtElapsed(); };
 const durWords = n => { const m = Math.floor(n / 60), s = n % 60; return (m ? (EN ? `${m} ${m === 1 ? 'minute' : 'minutes'}` : `${m} ${m === 1 ? 'Minute' : 'Minuten'}`) : '') + (m && s ? ' ' : '') + (s ? T(`${s} Sekunden`, `${s} seconds`) : ''); };
 const rtSpeech = s => tr(s.name) + (s.secs ? ', ' + durWords(s.secs) + (s.sides === 2 ? T(' je Seite, links beginnen', ' per side, start left') : '') : s.label ? ', ' + tr(s.label) : '');
-function startRoutine(title, items) {
+function startRoutine(title, items, onDone = null) {
   if (rt || !items.length) return;
   if (running) { if (!confirm(T('Das Kraft-Training läuft gerade. Pausieren und die Routine starten?', 'The strength workout is running. Pause it and start the routine?'))) return; play(); }
   audioReady();
-  rt = { title, steps: items.map(routineStep), i: 0, acc: 0, since: Date.now(), running: true, extra: 0, lastSec: null, lastPart: 0, done: false };
+  rt = { title, steps: items.map(routineStep), i: 0, acc: 0, since: Date.now(), running: true, extra: 0, lastSec: null, lastPart: 0, done: false, onDone };
   keepAwake(true); cue('phase'); say(title + '. ' + rtSpeech(rt.steps[0]), 650);
   routineDlg.showModal(); renderRoutine(); $('rt-title').focus();
 }
 function rtGo(i) {
   if (!rt) return;
-  if (i >= rt.steps.length) { rt.done = true; rt.running = false; cue('finish'); say(T('Geschafft. Gut gemacht!', 'Done. Well done!'), 900); keepAwake(false); renderRoutine(); return; }
+  if (i >= rt.steps.length) { rt.done = true; rt.running = false; cue('finish'); say(T('Geschafft. Gut gemacht!', 'Done. Well done!'), 900); keepAwake(false); renderRoutine(); const f = rt.onDone; rt.onDone = null; if (f) f(); return; }
   Object.assign(rt, { i: Math.max(0, i), acc: 0, since: Date.now(), running: true, extra: 0, lastSec: null, lastPart: 0, done: false });
   keepAwake(true); say(rtSpeech(rtStep())); renderRoutine();
 }
@@ -2411,6 +2495,8 @@ $('runcontent').addEventListener('click', e => {
   if (e.target.closest('#runaddbtn')) { addRunFromForm(); return; }
   if (e.target.closest('#runcsvbtn')) { $('runcsvfile').click(); return; }
   if (e.target.closest('#runcsvtpl')) { download(T('laeufe-vorlage.csv', 'runs-template.csv'), RUN_CSV_TEMPLATE, 'text/csv;charset=utf-8'); return; }
+  const lv = e.target.closest('[data-level]'); if (lv) { setRunnerLevel(lv.dataset.level); toast(lv.dataset.level === 'beginner' ? T('Lauf-Einstieg gestartet – viel Spaß!', 'Running starter started – enjoy!') : T('Saisonplan aktiv.', 'Season plan active.')); return; }
+  const st = e.target.closest('[data-starter]'); if (st) { onStarter(st.dataset.starter); return; }
   const go = e.target.closest('[data-runsub-go]'); if (go) { runView.plan = go.dataset.runsubGo; store(KEYS.run, runView); renderRun(); return; }
   if (e.target.closest('#racesave')) { saveRaceFromForm(); return; }
   if (e.target.closest('#planics')) { exportPlanIcs(); return; }
@@ -2447,7 +2533,17 @@ $('runcontent').addEventListener('click', e => {
   if (d && confirm(T('Diesen Lauf löschen?', 'Delete this run?'))) { deleteRun(d.dataset.rundel); renderWeekRows(); renderLoad(); toast(T('Lauf gelöscht.', 'Run deleted.')); }
 });
 $('runcontent').addEventListener('keydown', e => { if (e.target.id === 'runkm' && e.key === 'Enter') { e.preventDefault(); addRunFromForm(); } if ((e.target.id === 'racename' || e.target.closest('#racegoal')) && e.key === 'Enter') { e.preventDefault(); saveRaceFromForm(); } });
-$('runcontent').addEventListener('change', e => { const t = e.target; if (t.id === 'icstime') { if (/^([01]\d|2[0-3]):[0-5]\d$/.test(t.value)) { icsRemind.time = t.value; store(KEYS.icsremind, icsRemind); toast(T(`Erinnerung um ${t.value}.`, `Reminder at ${t.value}.`)); } return; } if (t.id === 'runcsvfile') { if (t.files[0]) importRunCsv(t.files[0]); t.value = ''; return; } if (t.dataset && t.dataset.wk && t.getAttribute('aria-invalid') !== 'true') { const v = weekKm(t.dataset.wk, t.dataset.f); t.value = v === null ? '' : kmText(v); } });
+function onStarter(a) {
+  const s = getStarter();
+  if (a === 'go') { startRoutine(T(`Lauf-Einstieg · Woche ${s.week + 1}`, `Running starter · week ${s.week + 1}`), starterItems(s.week), starterLog); return; }
+  if (a === 'done') { starterLog(); return; }
+  if (a === 'undo') { if (s.done > 0) { s.done--; const i = s.log.map(x => x.w).lastIndexOf(s.week); if (i >= 0) s.log.splice(i, 1); putStarter(s); toast(T('Einheit zurückgenommen.', 'Session undone.')); } }
+  else if (a === 'next') { if (s.week < STARTER.weeks.length - 1) { s.week++; s.done = 0; putStarter(s); } }
+  else if (a === 'repeat') { s.done = 0; putStarter(s); toast(T(`Woche ${s.week + 1} noch einmal.`, `Week ${s.week + 1} once more.`)); }
+  else if (a === 'graduate' || a === 'runner') { setRunnerLevel('runner'); toast(a === 'graduate' ? T('Glückwunsch! Ab jetzt plant die App wie für Läufer.', 'Congratulations! From now on the app plans like for runners.') : T('Saisonplan aktiv.', 'Season plan active.')); return; }
+  renderRun();
+}
+$('runcontent').addEventListener('change', e => { const t = e.target; if (t.id === 'starterweek') { const s = getStarter(), v = Number(t.value); if (v !== s.week) { s.week = v; s.done = 0; putStarter(s); renderRun(); } return; } if (t.id === 'icstime') { if (/^([01]\d|2[0-3]):[0-5]\d$/.test(t.value)) { icsRemind.time = t.value; store(KEYS.icsremind, icsRemind); toast(T(`Erinnerung um ${t.value}.`, `Reminder at ${t.value}.`)); } return; } if (t.id === 'runcsvfile') { if (t.files[0]) importRunCsv(t.files[0]); t.value = ''; return; } if (t.dataset && t.dataset.wk && t.getAttribute('aria-invalid') !== 'true') { const v = weekKm(t.dataset.wk, t.dataset.f); t.value = v === null ? '' : kmText(v); } });
 for (const id of ['runcontent', 'mobcontent']) $(id).addEventListener('click', e => {
   const r = e.target.closest('[data-routine]'), m = e.target.closest('[data-mob]');
   if (r) { const k = r.dataset.routine, cur = runCurrent(); if (k === 'abc') startRoutine(T('Lauf-ABC', 'Running drills'), RUN_GUIDE.abc.drills); else if (cur) startRoutine(`${cur.label} · ${k === 'warmup' ? 'Warm-up' : 'Cooldown'}`, cur[k]); return; }

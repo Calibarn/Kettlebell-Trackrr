@@ -22,6 +22,7 @@ test('Zahlen: Formatierung unverändert (Komma auf Deutsch)', async ({ page }) =
 test('Kalender-Export: Testlauf heißt „Testlauf 5 km“, nicht „Qualität: …“', async ({ page }) => {
   const ics = await page.evaluate(() => {
     races = [{ id: 'h', name: 'HM', date: addDays(localDay(), 7 * 20), dist: 'hm', prio: 'A', goal: null, km: null }]; persistRaces();
+    runLog = [{ id: 'r1', date: addDays(localDay(), -3), km: 8 }]; persistRunLog(); // 5 km sind machbar
     profile.week.quality = WEEK_ORDER[6]; persistProfile(); // Sonntag: liegt nie in der Vergangenheit dieser Woche
     return planIcs(seasonPlan());
   });
@@ -34,6 +35,7 @@ test('Testlauf: ein vergangenes Rennen ohne Ergebnis zählt nicht als neuer Wert
     races = [{ id: 'p', name: 'Stadtlauf', date: addDays(localDay(), -5), dist: '10k', prio: 'B', goal: null, km: null },
       { id: 'h', name: 'HM', date: addDays(localDay(), 7 * 20), dist: 'hm', prio: 'A', goal: null, km: null }]; persistRaces();
     results = [{ id: 'o', date: addDays(localDay(), -90), km: 10, time: 3000, dist: '10k' }]; persistResults();
+    runLog = [{ id: 'r1', date: addDays(localDay(), -3), km: 8 }]; persistRunLog();
     showArea('laufen'); runView.tab = 'plan'; runView.plan = 'woche'; renderRun();
   });
   expect(await page.evaluate(() => seasonPlan().weeks[0].test)).toBe(true);

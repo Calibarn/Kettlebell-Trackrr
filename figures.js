@@ -226,6 +226,7 @@ FIG['Deadlift to Halo'] = { a: FIG['Kettlebell-Kreuzheben'].a, b: FIG['Halo um d
 FIG['Lunge to Press-out'] = { a: fr(P(LG_B, { e1: [104, 128], w1: [116, 112], e2: [100, 128], w2: [112, 112] }), [KB(122, 114)]), b: fr(P(LG_B, { e1: [120, 104], w1: [144, 102], e2: [118, 106], w2: [142, 104] }), [KB(152, 104)]), la: 'Ausfallschritt, Kugel an der Brust', lb: 'Kugel nach vorne drücken' };
 FIG['Pullover mit Rotation'] = { a: fr(P(FS, { e1: [84, 94], w1: [98, 82], e2: [116, 94], w2: [102, 82] }), [{ arrow: 'M70 80 Q100 98 130 80' }, KB(100, 74)]), b: fr(P(FS, { e1: [86, 38], w1: [94, 22], e2: [114, 38], w2: [106, 22] }), [KB(100, 14)]), la: 'vor der Brust drehen', lb: 'über den Kopf führen' };
 FIG['Cross-Body Lunge'] = { a: fr(SS, [KB(96, 124)]), b: fr(P(LG_B, { e1: [108, 122], w1: [126, 146], e2: [92, 126], w2: [96, 150] }), [{ arrow: 'M100 130 Q118 150 130 158' }, KB(130, 160)]), la: 'Kugel einarmig, aufrecht', lb: 'Schritt zurück, Kugel quer vorbei' };
+FIG['Locker laufen'] = { a: FIG['Einlaufen'].a, b: FIG['Einlaufen'].b, la: 'locker traben', lb: 'Gesprächstempo' };
 function getFigure(name, gear) { const f = FIG[name]; return typeof f === 'function' ? f(gear) : f || null; }
 
 function figLine(a, b, cls, w) { return `<path class="${cls}" d="M${a[0]} ${a[1]}L${b[0]} ${b[1]}" stroke-width="${w || 8}" stroke-linecap="round" fill="none"/>`; }
