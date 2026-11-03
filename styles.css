@@ -455,3 +455,8 @@ html.testbuild .largetitle::after{content:" Test";font-size:.5em;font-weight:700
 .kitadd input{flex:1 1 auto;min-width:0;height:40px;padding-top:0;padding-bottom:0}
 .kitadd .btn{flex:0 0 auto;height:40px}
 .kitadd input[aria-invalid=true]{box-shadow:0 0 0 2px var(--red) inset}
+/* Übungen & Varianten: Name antippbar → Anleitung mit Skizze */
+.sguide{border:0;background:none;padding:2px 0;margin:0;color:inherit;font:inherit;text-align:left;display:inline-flex;align-items:center;gap:6px;cursor:pointer}
+.sguide b{font-weight:600}
+.infoi{flex:none;display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;border:1.5px solid var(--blue);color:var(--blue);font:italic 700 12px/1 Georgia,'Times New Roman',serif;box-sizing:border-box}
+html[data-os=android] .infoi{border-color:var(--accent-ink);color:var(--accent-ink)}

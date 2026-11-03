@@ -664,6 +664,7 @@ const CHANGELOG = [
     ['Wochenplanung', 'Wochenplanung: Die Knöpfe stehen unter dem Text, der dadurch die volle Breite bekommt. Kacheln stehen zu dritt nebeneinander, die Krafttage passen in eine Zeile, „Messung speichern“ geht über die volle Breite.', 'ux'],
     ['App installieren', 'Im Handy-Browser steht ein kompakter Hinweis „Als App installieren“ dauerhaft ganz oben, mit Link zur Anleitung. Die Anleitung erklärt auch, wie vorhandene Daten aus dem Browser in die App kommen.', 'ux'],
     ['Heute dabei', '„Heute dabei“: Kettlebell, Bänder und Körpergewicht stehen nebeneinander in einer Reihe, die Beschriftung darüber.', 'ux'],
+    ['Übungen & Varianten', 'Übungen & Varianten: Übungsnamen antippen öffnet die Anleitung mit Skizze und Stufen – kein Hochscrollen zur Übungsliste mehr.', 'ux'],
     ['Neuigkeiten', 'Die Neuigkeiten sind nach Neu, Usability und Bugs gruppiert – statt bei jedem Punkt „Übersichtlicher“ oder „Behoben“ davorzuschreiben.', 'ux'],
     ['Laufen', 'Beim ersten Öffnen startet Laufen auf dem Reiter „Plan“ – dort beginnt auch der Lauf-Einstieg.', 'ux'],
     ['Körpermaße', 'Im Profil ist „Körpermaße“ beim ersten Öffnen zugeklappt wie die anderen Bereiche.', 'ux'],
