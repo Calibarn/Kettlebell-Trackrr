@@ -395,3 +395,6 @@ html[data-os=android] .sheet{border-radius:28px 28px 0 0}
 .planrows .moved .linkbtn{font-size:inherit;padding:0;margin:0}
 /* Sehr schmale Displays (z. B. 320 px): Reiter-Beschriftungen etwas kleiner, damit „Ganzkörper“ oder „Marathon“ nicht abgeschnitten werden */
 @media (max-width:340px){.segmented button{font-size:12px;padding-left:3px;padding-right:3px}#tabs.wrap button{font-size:12px}}
+#icsremindrow input[type=time]{flex:0 0 auto;width:auto;padding:6px 8px}
+#icsremindrow .chip{flex:0 0 auto;margin-left:6px}
+#icsremindrow input:disabled{opacity:.4}

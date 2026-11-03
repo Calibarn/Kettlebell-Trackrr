@@ -397,3 +397,20 @@ test('Aktuelle Form statt Zielzeit, Testläufe alle 8 Wochen ohne Ergebnis', asy
   await page.evaluate(() => { results = [{ id: 'o', date: addDays(localDay(), -70), km: 10, time: 3000, dist: '10k' }]; persistResults(); renderRun(); });
   await expect(page.locator('#runcontent')).toContainText('Zeit für einen Testlauf');
 });
+
+test('Kalender-Export: Erinnerung am Trainingstag optional, Uhrzeit wählbar', async ({ page }) => {
+  await openPlan(page);
+  await setRaces(page, [{ id: 'h', name: 'HM', date: await page.evaluate(() => addDays(localDay(), 7 * 20)), dist: 'hm', prio: 'A', goal: null, km: null }]);
+  await page.click('[data-runsub="woche"]');
+  expect(await page.evaluate(() => planIcs().includes('BEGIN:VALARM'))).toBe(false); // Standard: aus
+  await expect(page.locator('#icstime')).toBeDisabled();
+  await page.click('#icsremind');
+  await page.fill('#icstime', '06:30'); await page.dispatchEvent('#icstime', 'change');
+  const ics = await page.evaluate(() => planIcs());
+  expect(ics).toContain('TRIGGER:PT6H30M');
+  // nur an den einzelnen Einheiten, nicht am Wochen-Eintrag
+  const weekEv = ics.split('BEGIN:VEVENT').find(v => v.includes('UID:kb-plan-'));
+  expect(weekEv).not.toContain('VALARM');
+  await page.reload();
+  expect(await page.evaluate(() => icsRemind)).toEqual({ on: true, time: '06:30' });
+});

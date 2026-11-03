@@ -1470,7 +1470,9 @@ const EN_TEXT = {
 "Übungen ohne Gerät gibt es jetzt in drei Stufen – leicht, mittel, schwer. Einstellbar je Übung unter „Übungen & Varianten“; die Anleitung zeigt, wie die Übung leichter oder schwerer wird.": "Exercises without equipment now come in three levels – easy, medium, hard. Set per exercise under “Exercises & variants”; the instructions show how to make the exercise easier or harder.",
 "Trainingstempos, Testläufe, Abhaken, Stufen & Fehlerbehebungen": "Training paces, time trials, tick-off, levels & fixes",
 "Übersichtlicher": "Clearer",
-"„Übungen & Varianten“ zeigt die Variantenauswahl und ihre Begründung nur noch, wenn es mit deinen Geräten wirklich eine Wahl gibt.": "“Exercises & variants” only shows the variant choice and its reasoning when your equipment actually gives you a choice."
+"„Übungen & Varianten“ zeigt die Variantenauswahl und ihre Begründung nur noch, wenn es mit deinen Geräten wirklich eine Wahl gibt.": "“Exercises & variants” only shows the variant choice and its reasoning when your equipment actually gives you a choice.",
+"Kalender": "Calendar",
+"Der Plan-Export kann jetzt eine Erinnerung am Trainingstag mitbringen (Uhrzeit wählbar, Standard aus) – der Kalender meldet sich, auch wenn die App zu ist.": "The plan export can now include a reminder on training days (time selectable, off by default) – your calendar alerts you even with the app closed."
 };
 const EN_HTML = {
 "Kraft": "Strength",

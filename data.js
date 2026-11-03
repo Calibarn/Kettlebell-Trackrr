@@ -627,6 +627,7 @@ const CHANGELOG = [
     ['Testlauf', 'Alle 8 Wochen ohne Ergebnis oder Rennen plant der Plan einen 5-km-Testlauf statt der Qualitätseinheit ein. Ergebnis unter Bestzeiten eintragen – B-Rennen zählen genauso.'],
     ['Abhaken', 'Optional unter Profil → Trainingswoche: Einheiten im Plan abhaken und Verpasstes mit einem Tipp auf den nächsten passenden Tag derselben Woche legen. Gilt nur für die laufende Woche.'],
     ['Kraft', 'Im Zweifel fällt Kraft aus: Ein nachgeholter Lauf darf auf einen Krafttag rücken. Feste Krafttage (im Profil wählbar) werden dabei nie getauscht.'],
+    ['Kalender', 'Der Plan-Export kann jetzt eine Erinnerung am Trainingstag mitbringen (Uhrzeit wählbar, Standard aus) – der Kalender meldet sich, auch wenn die App zu ist.'],
     ['Körpergewicht', 'Übungen ohne Gerät gibt es jetzt in drei Stufen – leicht, mittel, schwer. Einstellbar je Übung unter „Übungen & Varianten“; die Anleitung zeigt, wie die Übung leichter oder schwerer wird.'],
     ['Schneller', 'Zahlen werden schneller formatiert – der Start mit vielen Einträgen geht spürbar flotter.'],
     ['Übersichtlicher', '„Übungen & Varianten“ zeigt die Variantenauswahl und ihre Begründung nur noch, wenn es mit deinen Geräten wirklich eine Wahl gibt.'],

@@ -5,7 +5,7 @@ const $ = id => document.getElementById(id);
 const KEYS = {
   entries: 'jan-kettlebell-tracker-v1', waist: 'jan-kb-waist-v1', sound: 'jan-kb-sound-v1', gear: 'jan-kb-gear-v1',
   choice: 'jan-kb-choice-v1', stage: 'jan-kb-stage-v1', plan: 'jan-kb-plan-v1', session: 'jan-kb-session-v1',
-  backup: 'jan-kb-lastbackup-v1', hint: 'jan-kb-installhint-v1', area: 'jan-kb-area-v1', run: 'jan-kb-runview-v1', audio: 'jan-kb-audio-v1', mob: 'jan-kb-mobview-v1', runweeks: 'jan-kb-runweeks-v1', runlog: 'jan-kb-runlog-v1', races: 'jan-kb-races-v1', profile: 'jan-kb-profile-v1', weight: 'jan-kb-weight-v1', skip: 'jan-kb-weekskip-v1', results: 'jan-kb-results-v1', bestview: 'jan-kb-bestview-v1', notes: 'jan-kb-notes-v1', weekplan: 'jan-kb-weekplan-v1'
+  backup: 'jan-kb-lastbackup-v1', hint: 'jan-kb-installhint-v1', area: 'jan-kb-area-v1', run: 'jan-kb-runview-v1', audio: 'jan-kb-audio-v1', mob: 'jan-kb-mobview-v1', runweeks: 'jan-kb-runweeks-v1', runlog: 'jan-kb-runlog-v1', races: 'jan-kb-races-v1', profile: 'jan-kb-profile-v1', weight: 'jan-kb-weight-v1', skip: 'jan-kb-weekskip-v1', results: 'jan-kb-results-v1', bestview: 'jan-kb-bestview-v1', notes: 'jan-kb-notes-v1', weekplan: 'jan-kb-weekplan-v1', icsremind: 'jan-kb-icsremind-v1'
 };
 /* Datensicherheit bei Updates:
    - Einträge, die diese Version nicht versteht, werden nie verworfen, sondern unverändert mitgespeichert.
@@ -1439,7 +1439,8 @@ function renderPlanSeason(S) {
   const rest = S.weeks.length - SHOW;
   return `<div class="header">${T(`Saison · ${S.weeks.length} Wochen`, `Season · ${S.weeks.length} weeks`)}</div><div class="group" id="planseason">${S.weeks.slice(0, SHOW).map(row).join('')}${rest > 0 ? `<details id="planmore"><summary class="row"><span class="txt"><b>${T(`Weitere ${rest} Wochen`, `${rest} more weeks`)}</b><small>${T(`bis ${esc(S.races.at(-1).name)} am ${dateGerman(S.races.at(-1).date)}`, `until ${esc(S.races.at(-1).name)} on ${dateGerman(S.races.at(-1).date)}`)}</small></span><span class="chev"></span></summary>${S.weeks.slice(SHOW).map((x, i) => row(x, i + SHOW)).join('')}</details>` : ''}</div>
   <p class="footer">${T('Spätere Wochen sind eine Vorschau: Jede Woche rechnet der Plan mit deinem echten Umfang neu.', 'Later weeks are a preview: every week the plan recalculates with your real volume.')}</p>
-  <div class="group" style="margin-top:12px"><button type="button" class="row" id="planics"><span class="icon" style="background:var(--red)">▦</span><span class="txt"><b>${T('In Kalender exportieren', 'Export to calendar')}</b><small>${T('Wochen, Longruns und Rennen als Kalenderdatei', 'Weeks, long runs and races as a calendar file')}</small></span><span class="chev"></span></button></div>
+  <div class="group" style="margin-top:12px"><button type="button" class="row" id="planics"><span class="icon" style="background:var(--red)">▦</span><span class="txt"><b>${T('In Kalender exportieren', 'Export to calendar')}</b><small>${T('Wochen, Longruns und Rennen als Kalenderdatei', 'Weeks, long runs and races as a calendar file')}</small></span><span class="chev"></span></button>
+    <div class="row" id="icsremindrow"><span class="txt"><b>${T('Erinnerung', 'Reminder')}</b><small>${T('am Trainingstag, vom Kalender', 'on training days, from your calendar')}</small></span><input type="time" id="icstime" value="${esc(icsRemind.time)}" ${icsRemind.on ? '' : 'disabled'} aria-label="${T('Uhrzeit der Erinnerung', 'Reminder time')}"><button type="button" class="chip" id="icsremind" aria-pressed="${icsRemind.on}">${icsRemind.on ? T('An', 'On') : T('Aus', 'Off')}</button></div></div>
   <p class="footer">${T('Am besten in einen eigenen Kalender „Laufplan“ importieren. Bei einem späteren Export diesen Kalender leeren und neu importieren – der Plan rechnet jede Woche mit deinem echten Umfang neu.', 'Best import into a separate “Running plan” calendar. For a later export empty this calendar and import again – the plan recalculates every week with your real volume.')}</p>`;
 }
 let raceEdit = null;
@@ -1792,7 +1793,7 @@ async function renderSyncStatus() {
 }
 
 /* ---------- Einstellungen zurücksetzen: Daten bleiben ---------- */
-const SETTING_KEYS = ['sound', 'gear', 'choice', 'stage', 'plan', 'area', 'run', 'audio', 'mob', 'profile', 'skip', 'hint', 'bestview', 'notes', 'weekplan'].map(k => KEYS[k]).concat(LANG_KEY);
+const SETTING_KEYS = ['sound', 'gear', 'choice', 'stage', 'plan', 'area', 'run', 'audio', 'mob', 'profile', 'skip', 'hint', 'bestview', 'notes', 'weekplan', 'icsremind'].map(k => KEYS[k]).concat(LANG_KEY);
 function settingsReset() {
   if (sessionActive()) { alert(T('Bitte das laufende Training zuerst beenden oder zurücksetzen.', 'Please finish or reset the current workout first.')); return; }
   if (!confirm(T('Einstellungen zurücksetzen?\n\nZurück auf den Ausgangszustand: Profil (Trainingswoche, Herzfrequenz, Geräte & Gewichte), Übungs-Varianten und Gewichte, Stufen, „Entfällt“, Ton und Ansichten.\n\nTrainings, Läufe, Wochensummen, Rennen, Gewicht und Bauchumfang bleiben erhalten. Gilt nur für dieses Gerät.', 'Reset settings?\n\nBack to the defaults: profile (training week, heart rate, equipment & weights), exercise variants and weights, stages, “Skip”, sound and views.\n\nWorkouts, runs, weekly totals, races, weight and waist are kept. Applies to this device only.'))) return;
@@ -2000,10 +2001,14 @@ function icsFold(line) { const enc = new TextEncoder(); let out = '', cur = '', 
 const icsText = t => String(t).replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
 const icsDay = d => d.replace(/-/g, '');
 // Saisonplan als Kalender: Woche ganztägig Mo–So, Longrun am Sonntag, Rennen am Renntag (A und B)
+// Erinnerung für den Kalender-Export (je Gerät): aus oder Uhrzeit am Trainingstag; ganztägige Termine → Alarm relativ zu 0:00
+let icsRemind = load(KEYS.icsremind, null);
+icsRemind = { on: isObj(icsRemind) && icsRemind.on === true, time: isObj(icsRemind) && /^([01]\d|2[0-3]):[0-5]\d$/.test(icsRemind.time) ? icsRemind.time : '17:00' };
+const icsAlarm = text => { if (!icsRemind.on) return []; const [h, m] = icsRemind.time.split(':').map(Number); return ['BEGIN:VALARM', 'ACTION:DISPLAY', `TRIGGER:PT${h}H${m}M`, 'DESCRIPTION:' + icsText(text), 'END:VALARM']; };
 function planIcs(S = seasonPlan()) {
   const utc = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z'), ev = [], today = localDay();
-  const add = (uid, from, to, summary, desc) => ev.push('BEGIN:VEVENT', `UID:${uid}@kb-tracker.local`, 'DTSTAMP:' + utc, 'DTSTART;VALUE=DATE:' + icsDay(from), 'DTEND;VALUE=DATE:' + icsDay(to),
-    'SUMMARY:' + icsText(summary), 'DESCRIPTION:' + icsText(desc), 'TRANSP:TRANSPARENT', 'END:VEVENT');
+  const add = (uid, from, to, summary, desc, alarm = false) => ev.push('BEGIN:VEVENT', `UID:${uid}@kb-tracker.local`, 'DTSTAMP:' + utc, 'DTSTART;VALUE=DATE:' + icsDay(from), 'DTEND;VALUE=DATE:' + icsDay(to),
+    'SUMMARY:' + icsText(summary), 'DESCRIPTION:' + icsText(desc), 'TRANSP:TRANSPARENT', ...(alarm ? icsAlarm(summary) : []), 'END:VEVENT');
   for (const x of S.weeks) {
     const [pl, pt] = SEASON.phase[phaseKey(x)], kv = kmRound(x.km), lv = kmRound(x.long);
     const sched = weekSchedule(x);
@@ -2012,7 +2017,7 @@ function planIcs(S = seasonPlan()) {
     for (const it of sched) {
       const day = addDays(x.week, dayIdx(it.d));
       if (it.kind === 'race' || it.kind === 'brace' || it.skip || day < today) continue;
-      add(`kb-${it.kind}-${day}`, day, addDays(day, 1), it.kind === 'quality' && x.phase !== 'recover' && !x.test ? T(`Qualität: ${it.detail}`, `Quality: ${it.detail}`) : it.title, it.detail);
+      add(`kb-${it.kind}-${day}`, day, addDays(day, 1), it.kind === 'quality' && x.phase !== 'recover' && !x.test ? T(`Qualität: ${it.detail}`, `Quality: ${it.detail}`) : it.title, it.detail, true);
     }
   }
   for (const r of races.filter(r => r.date >= today)) add(`kb-race-${r.id}`, r.date, addDays(r.date, 1), `🏁 ${r.name} (${raceLabel(r)})`,
@@ -2393,6 +2398,7 @@ $('runcontent').addEventListener('click', e => {
   const go = e.target.closest('[data-runsub-go]'); if (go) { runView.plan = go.dataset.runsubGo; store(KEYS.run, runView); renderRun(); return; }
   if (e.target.closest('#racesave')) { saveRaceFromForm(); return; }
   if (e.target.closest('#planics')) { exportPlanIcs(); return; }
+  if (e.target.closest('#icsremind')) { icsRemind.on = !icsRemind.on; store(KEYS.icsremind, icsRemind); renderRun(); toast(icsRemind.on ? T(`Erinnerung um ${icsRemind.time} – gilt für den nächsten Export.`, `Reminder at ${icsRemind.time} – applies to the next export.`) : T('Erinnerung aus – gilt für den nächsten Export.', 'Reminder off – applies to the next export.')); return; }
   if (e.target.closest('#bestsave')) { saveBestFromForm(); return; }
   const bg = e.target.closest('[data-bestgroup]'); if (bg) { bestView.group = bg.dataset.bestgroup; store(KEYS.bestview, bestView); renderRun(); return; }
   const bd = e.target.closest('[data-bestdel]'); if (bd) { if (confirm(T('Dieses Ergebnis löschen?', 'Delete this result?'))) { results = results.filter(r => r.id !== bd.dataset.bestdel); persistResults(); renderRun(); toast(T('Ergebnis gelöscht.', 'Result deleted.')); } return; }
@@ -2425,7 +2431,7 @@ $('runcontent').addEventListener('click', e => {
   if (d && confirm(T('Diesen Lauf löschen?', 'Delete this run?'))) { deleteRun(d.dataset.rundel); renderWeekRows(); renderLoad(); toast(T('Lauf gelöscht.', 'Run deleted.')); }
 });
 $('runcontent').addEventListener('keydown', e => { if (e.target.id === 'runkm' && e.key === 'Enter') { e.preventDefault(); addRunFromForm(); } if ((e.target.id === 'racename' || e.target.closest('#racegoal')) && e.key === 'Enter') { e.preventDefault(); saveRaceFromForm(); } });
-$('runcontent').addEventListener('change', e => { const t = e.target; if (t.id === 'runcsvfile') { if (t.files[0]) importRunCsv(t.files[0]); t.value = ''; return; } if (t.dataset && t.dataset.wk && t.getAttribute('aria-invalid') !== 'true') { const v = weekKm(t.dataset.wk, t.dataset.f); t.value = v === null ? '' : kmText(v); } });
+$('runcontent').addEventListener('change', e => { const t = e.target; if (t.id === 'icstime') { if (/^([01]\d|2[0-3]):[0-5]\d$/.test(t.value)) { icsRemind.time = t.value; store(KEYS.icsremind, icsRemind); toast(T(`Erinnerung um ${t.value}.`, `Reminder at ${t.value}.`)); } return; } if (t.id === 'runcsvfile') { if (t.files[0]) importRunCsv(t.files[0]); t.value = ''; return; } if (t.dataset && t.dataset.wk && t.getAttribute('aria-invalid') !== 'true') { const v = weekKm(t.dataset.wk, t.dataset.f); t.value = v === null ? '' : kmText(v); } });
 for (const id of ['runcontent', 'mobcontent']) $(id).addEventListener('click', e => {
   const r = e.target.closest('[data-routine]'), m = e.target.closest('[data-mob]');
   if (r) { const k = r.dataset.routine, cur = runCurrent(); if (k === 'abc') startRoutine(T('Lauf-ABC', 'Running drills'), RUN_GUIDE.abc.drills); else if (cur) startRoutine(`${cur.label} · ${k === 'warmup' ? 'Warm-up' : 'Cooldown'}`, cur[k]); return; }
