@@ -870,7 +870,7 @@ function renderProfile() {
       <div class="field wide"><label for="wkextraname">${T('Name der weiteren Einheit', 'Name of the other session')}</label><input id="wkextraname" type="text" maxlength="30" autocomplete="off" placeholder="${T('z. B. Kurs, Radfahren', 'e.g. class, cycling')}" value="${esc(w.extraName)}"></div>
     </div>
     <p class="tiny">${T('Kraft-Tage', 'Strength days')}</p><div class="chips days" role="group" aria-label="${T('Kraft-Tage', 'Strength days')}">${WEEK_ORDER.map(d => `<button type="button" class="chip" data-strength="${d}" aria-pressed="${w.strength.includes(d)}">${WD[d]}</button>`).join('')}</div>
-    ${w.strength.length ? `<p class="tiny">${T('Feste Krafttage – werden beim Nachholen nicht für einen Lauf getauscht', 'Fixed strength days – never swapped for a run when catching up')}</p><div class="chips days" role="group" aria-label="${T('Feste Krafttage', 'Fixed strength days')}">${WEEK_ORDER.filter(d => w.strength.includes(d)).map(d => `<button type="button" class="chip" data-strengthfix="${d}" aria-pressed="${w.strengthFixed.includes(d)}">${WD[d]}</button>`).join('')}</div>` : ''}
+    ${w.strength.length ? `<p class="tiny">${T('Feste Krafttage – beim Nachholen kommt dort kein Lauf dazu', 'Fixed strength days – no run is added there when catching up')}</p><div class="chips days" role="group" aria-label="${T('Feste Krafttage', 'Fixed strength days')}">${WEEK_ORDER.filter(d => w.strength.includes(d)).map(d => `<button type="button" class="chip" data-strengthfix="${d}" aria-pressed="${w.strengthFixed.includes(d)}">${WD[d]}</button>`).join('')}</div>` : ''}
     ${weekWarnings().map(t => `<div class="alert due">${esc(t)}</div>`).join('')}
     <p class="tiny">${T('Optional: im Plan abhaken, was erledigt ist, und Verpasstes in derselben Woche auf einen freien Tag verschieben.', 'Optional: tick off in the plan what is done and move missed sessions to a free day in the same week.')}</p><div class="chips"><button type="button" class="chip" data-wktrack aria-pressed="${w.track}">${T('Abhaken & nachholen', 'Tick off & catch up')}</button></div>`;
   const zr = n => zoneRange(n);
@@ -1358,10 +1358,13 @@ function weekSchedule(x) {
     it.key = it.kind === 'strength' ? 'strength-' + it.d : it.kind; it.skip = skip.includes(it.key);
     if (wp) {
       it.done = wp.done.includes(it.key); if (isWd(wp.moved[it.key])) { it.from = it.d; it.d = wp.moved[it.key]; }
-      // Kraft, die für einen nachgeholten Lauf ausfällt (steht nur im Wochenplan, nicht bei „Entfällt“)
-      const by = Object.keys(wp.autoSkip || {}).find(k => wp.autoSkip[k] === it.key && isWd(wp.moved[k]));
-      if (by && !it.skip) { it.skip = true; it.autoSkip = by; }
     }
+  }
+  // Kraft und Laufen am selben Tag gehen parallel: Kraft nach dem Lauf, nach Qualität oder Longrun ohne schwere Beinübungen
+  for (const it of out) if (it.kind === 'strength' && !it.skip) {
+    const runs = out.filter(o => o !== it && !o.skip && o.d === it.d && RUN(o)); if (!runs.length) continue;
+    const tip = runs.some(HARD) ? T('am selben Tag wie ein harter Lauf: danach, ohne schwere Beinübungen', 'same day as a hard run: afterwards, no heavy leg exercises') : T('am selben Tag wie ein Lauf: danach oder mit ein paar Stunden Abstand', 'same day as a run: afterwards or a few hours apart');
+    it.detail = it.detail ? `${it.detail} · ${tip}` : tip;
   }
   return out.sort((a, b) => dayIdx(a.d) - dayIdx(b.d));
 }
@@ -1370,19 +1373,20 @@ function weekSchedule(x) {
 let weekPlan = load(KEYS.weekplan, null);
 function curWeekPlan(week) {
   if (!profile.week.track || week !== weekStart(localDay())) return null;
-  if (!isObj(weekPlan) || weekPlan.week !== week) weekPlan = { week, done: [], moved: {}, autoSkip: {} };
-  if (!Array.isArray(weekPlan.done)) weekPlan.done = []; if (!isObj(weekPlan.moved)) weekPlan.moved = {}; if (!isObj(weekPlan.autoSkip)) weekPlan.autoSkip = {};
+  if (!isObj(weekPlan) || weekPlan.week !== week) weekPlan = { week, done: [], moved: {} };
+  if (!Array.isArray(weekPlan.done)) weekPlan.done = []; if (!isObj(weekPlan.moved)) weekPlan.moved = {};
+  delete weekPlan.autoSkip; // bis v52: Kraft fiel für einen nachgeholten Lauf aus – jetzt laufen beide parallel
   return weekPlan;
 }
 const storeWeekPlan = () => store(KEYS.weekplan, weekPlan);
 // Nächster passender Tag ab morgen (bzw. ab heute für Einheiten von gestern und früher), höchstens bis Sonntag:
 // harte Einheiten (Qualität, Longrun) nicht neben einer anderen harten Einheit oder einem Rennen, nichts am Renntag;
 // bevorzugt ein Tag ohne andere Einheit, sonst ein Tag ohne weiteren Lauf.
-// Im Zweifel fällt Kraft aus: Ein Lauf darf auf einen Krafttag rücken (die Kraft-Einheit entfällt dann, außer an festen Krafttagen), verpasste Kraft
-// wird nur auf einen ganz freien Tag gelegt – sonst lässt man sie diese Woche ausfallen.
+// Kraft und Laufen gehen parallel: Ein Lauf darf auf einen Krafttag rücken (die Kraft bleibt, außer an festen Krafttagen kommt dort kein Lauf dazu),
+// verpasste Kraft auf einen freien Tag oder zu einem lockeren Lauf – nicht zu Qualität, Longrun oder Rennen.
 const HARD = it => ['quality', 'long', 'race', 'brace'].includes(it.kind) && !(it.kind === 'quality' && /Locker|Easy/.test(it.title));
 const RUN = it => ['quality', 'long', 'group', 'race', 'brace'].includes(it.kind);
-// Feste Krafttage (Profil): werden beim Nachholen nie für einen Lauf getauscht
+// Feste Krafttage (Profil): beim Nachholen kommt dort kein Lauf dazu
 const fixedStrength = o => o.kind === 'strength' && profile.week.strengthFixed.includes(o.from !== undefined ? o.from : o.d);
 function catchUpDay(it, items) {
   const today = dayIdx(new Date(localDay() + 'T12:00:00').getDay()), start = dayIdx(it.d) < today ? today : today + 1;
@@ -1390,7 +1394,8 @@ function catchUpDay(it, items) {
   const ok = (i, strict) => {
     if (race && i >= dayIdx(race.d) - (HARD(it) ? 1 : 0)) return false;
     const same = others.filter(o => dayIdx(o.d) === i);
-    if ((strict || !RUN(it)) && same.length) return false; // zuerst ganz freie Tage; Kraft & Co. nur auf freie Tage
+    if (strict && same.length) return false; // zuerst ganz freie Tage
+    if (!RUN(it) && same.some(o => !(it.kind === 'strength' && RUN(o) && !HARD(o)))) return false; // Kraft: frei oder zu einem lockeren Lauf; Weiteres nur auf freie Tage
     if (RUN(it) && same.some(o => RUN(o) || fixedStrength(o))) return false; // Lauf: kein zweiter Lauf, kein fester Krafttag
     if (HARD(it) && others.some(o => HARD(o) && Math.abs(dayIdx(o.d) - i) <= 1)) return false;
     return true;
@@ -1421,9 +1426,9 @@ function schedRows(x) {
     const race = it.kind === 'race' || it.kind === 'brace', open = track && !race && !it.done && !it.skip;
     const to = open && dayIdx(it.d) <= today ? catchUpDay(it, items) : null;
     const none = open && to === null && dayIdx(it.d) < today ? `<small class="moved">${T('kein passender Tag mehr frei – diese Woche einfach ausfallen lassen', 'no suitable day left – just skip it this week')}</small>` : '';
-    const note = it.autoSkip ? `<small>${T('entfällt für den nachgeholten Lauf', 'skipped for the run you are catching up')}</small>` : it.skip ? `<small>${T('entfällt diese Woche', 'skipped this week')}</small>` : none + (it.from !== undefined ? `<small class="moved">${T(`verschoben von ${WD[it.from]}`, `moved from ${WD[it.from]}`)} · <button type="button" class="linkbtn" data-unmove="${it.key}">${T('rückgängig', 'undo')}</button></small>` : '') + (it.detail ? `<small>${esc(it.detail)}</small>` : '');
+    const note = it.skip ? `<small>${T('entfällt diese Woche', 'skipped this week')}</small>` : none + (it.from !== undefined ? `<small class="moved">${T(`verschoben von ${WD[it.from]}`, `moved from ${WD[it.from]}`)} · <button type="button" class="linkbtn" data-unmove="${it.key}">${T('rückgängig', 'undo')}</button></small>` : '') + (it.detail ? `<small>${esc(it.detail)}</small>` : '');
     const check = track && !race ? `<button type="button" class="schedcheck" data-done="${it.key}" aria-pressed="${!!it.done}" aria-label="${esc(it.title)} ${T('erledigt', 'done')}">${it.done ? '✓' : ''}</button>` : '';
-    const btns = race ? '' : (to !== null ? `<button type="button" class="btn small" data-move="${it.key}" data-to="${to}">${T(`→ ${WD[to]}`, `→ ${WD[to]}`)}</button>` : '') + (it.done || it.autoSkip ? '' : `<button type="button" class="btn small" data-skip="${it.key}" data-week="${x.week}">${it.skip ? T('Wieder rein', 'Restore') : T('Entfällt', 'Skip')}</button>`);
+    const btns = race ? '' : (to !== null ? `<button type="button" class="btn small" data-move="${it.key}" data-to="${to}">${T(`→ ${WD[to]}`, `→ ${WD[to]}`)}</button>` : '') + (it.done ? '' : `<button type="button" class="btn small" data-skip="${it.key}" data-week="${x.week}">${it.skip ? T('Wieder rein', 'Restore') : T('Entfällt', 'Skip')}</button>`);
     return `<div class="row sched-${it.kind}${it.skip ? ' skipped' : ''}${it.done ? ' done' : ''}">${check}<span class="dur">${WD[it.d]}</span><span class="txt"><b>${esc(it.title)}</b>${note}${btns ? `<span class="schedbtns">${btns}</span>` : ''}</span></div>`;
   }).join('');
 }
@@ -2533,21 +2538,15 @@ $('runcontent').addEventListener('click', e => {
   if (dn && wp) { const k = dn.dataset.done; wp.done = wp.done.includes(k) ? wp.done.filter(x => x !== k) : wp.done.concat(k); storeWeekPlan(); renderRun(); return; }
   const mv = e.target.closest('[data-move]');
   if (mv && wp) {
-    const to = Number(mv.dataset.to), x = seasonPlan().weeks[0];
-    // Lauf auf einen Krafttag: die Kraft-Einheit dort entfällt diese Woche
-    const clash = mv.dataset.move.startsWith('strength') || !x ? [] : weekSchedule(x).filter(o => o.kind === 'strength' && o.d === to && !o.skip && !o.done && !fixedStrength(o));
-    wp.moved[mv.dataset.move] = to; storeWeekPlan();
-    for (const o of clash) wp.autoSkip = Object.assign({}, wp.autoSkip, { [mv.dataset.move]: o.key });
-    storeWeekPlan();
-    renderRun();
-    toast(clash.length ? T(`Auf ${WD_LONG[to]} verschoben – Kraft entfällt dafür.`, `Moved to ${WD_LONG[to]} – strength is skipped instead.`) : T(`Auf ${WD_LONG[to]} verschoben.`, `Moved to ${WD_LONG[to]}.`));
+    const to = Number(mv.dataset.to);
+    wp.moved[mv.dataset.move] = to; storeWeekPlan(); renderRun();
+    toast(T(`Auf ${WD_LONG[to]} verschoben.`, `Moved to ${WD_LONG[to]}.`));
     return;
   }
   const um = e.target.closest('[data-unmove]');
   if (um && wp) {
     const k = um.dataset.unmove;
     delete wp.moved[k];
-    if (isObj(wp.autoSkip)) delete wp.autoSkip[k]; // die dafür ausgefallene Kraft-Einheit kommt zurück
     storeWeekPlan(); renderRun(); return;
   }
   if (e.target.closest('#racecancel')) { raceEdit = null; renderRun(); return; }

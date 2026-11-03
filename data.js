@@ -659,7 +659,7 @@ const CHANGELOG = [
     ['Renntempo', 'Auch das Renntempo in den Einheiten kommt aus deiner Form statt aus der Zielzeit.'],
     ['Testlauf', 'Alle 8 Wochen ohne Ergebnis oder Rennen plant der Plan einen 5-km-Testlauf statt der Qualitätseinheit ein – aber erst, wenn 5 km machbar sind (längster Lauf der letzten 30 Tage bzw. geplanter Longrun mindestens 5 km). Ergebnis unter Bestzeiten eintragen – B-Rennen zählen genauso.'],
     ['Abhaken', 'Optional unter Profil → Trainingswoche: Einheiten im Plan abhaken und Verpasstes mit einem Tipp auf den nächsten passenden Tag derselben Woche legen. Gilt nur für die laufende Woche.'],
-    ['Kraft', 'Im Zweifel fällt Kraft aus: Ein nachgeholter Lauf darf auf einen Krafttag rücken. Feste Krafttage (im Profil wählbar) werden dabei nie getauscht.'],
+    ['Kraft & Laufen', 'Kraft und Laufen dürfen am selben Tag liegen: Ein nachgeholter Lauf rückt auch auf einen Krafttag, die Kraft bleibt – mit dem Hinweis, sie nach dem Lauf zu machen (nach Qualität oder Longrun ohne schwere Beinübungen). Verpasste Kraft lässt sich auch zu einem lockeren Lauf legen. An festen Krafttagen (im Profil wählbar) kommt kein Lauf dazu.'],
     ['Kalender', 'Der Plan-Export kann jetzt eine Erinnerung am Trainingstag mitbringen (Uhrzeit wählbar, Standard aus) – der Kalender meldet sich, auch wenn die App zu ist.'],
     ['Körpergewicht', 'Übungen ohne Gerät gibt es jetzt in drei Stufen – leicht, mittel, schwer. Einstellbar je Übung unter „Übungen & Varianten“; die Anleitung zeigt, wie die Übung leichter oder schwerer wird.'],
     ['App-Start', 'Zahlen werden schneller formatiert – der Start mit vielen Einträgen geht spürbar flotter.', 'ux'],
@@ -677,7 +677,6 @@ const CHANGELOG = [
     ['Profil → Geräte & Gewichte', 'Profil → Geräte & Gewichte: Das Eingabefeld für Kettlebells und Bänder nutzt die volle Breite – vorher war der Platzhalter abgeschnitten und daneben eine leere Lücke.', 'bug'],
     ['Android', 'Android: Die Tab-Leiste passt jetzt auch auf schmale Telefone – „Mehr“ war abgeschnitten. Auf sehr schmalen Displays werden Reiter nicht mehr gekürzt.', 'bug'],
     ['Kalender-Export', 'Kalender-Export: Testläufe heißen „Testlauf 5 km“. Ein vergangenes Rennen ohne eingetragenes Ergebnis verschiebt den Testlauf nicht mehr – der Plan erinnert stattdessen ans Eintragen.', 'bug'],
-    ['Abhaken', 'Abhaken: Kraft, die für einen nachgeholten Lauf ausfällt, kommt beim Ausschalten oder Rückgängigmachen sicher zurück.', 'bug'],
     ['Feste Krafttage', 'Feste Krafttage gelten nur noch für gewählte Krafttage – ein abgewählter und später wieder gewählter Tag ist nicht mehr unerwartet „fest“.', 'bug'],
     ['Einstellungen zurücksetzen', '„Einstellungen zurücksetzen“ setzt auch Haken und Verschiebungen der laufenden Woche zurück.', 'bug']
   ] },

@@ -1519,7 +1519,9 @@ const EN_TEXT = {
 "Profil → Geräte & Gewichte": "Profile → Equipment & weights",
 "Die Neuigkeiten sind nach Neu, Usability und Bugs gruppiert – statt bei jedem Punkt „Übersichtlicher“ oder „Behoben“ davorzuschreiben.": "The news are grouped into New, Usability and Bugs – instead of putting “Clearer” or “Fixed” in front of every item.",
 "Beim ersten Öffnen startet Laufen auf dem Reiter „Plan“ – dort beginnt auch der Lauf-Einstieg.": "On first open, Running starts on the “Plan” tab – that is also where the running starter begins.",
-"Im Profil ist „Körpermaße“ beim ersten Öffnen zugeklappt wie die anderen Bereiche.": "In Profile, “Body measurements” is collapsed on first open like the other sections."
+"Im Profil ist „Körpermaße“ beim ersten Öffnen zugeklappt wie die anderen Bereiche.": "In Profile, “Body measurements” is collapsed on first open like the other sections.",
+"Kraft & Laufen": "Strength & running",
+"Kraft und Laufen dürfen am selben Tag liegen: Ein nachgeholter Lauf rückt auch auf einen Krafttag, die Kraft bleibt – mit dem Hinweis, sie nach dem Lauf zu machen (nach Qualität oder Longrun ohne schwere Beinübungen). Verpasste Kraft lässt sich auch zu einem lockeren Lauf legen. An festen Krafttagen (im Profil wählbar) kommt kein Lauf dazu.": "Strength and running may be on the same day: a run you catch up can also move onto a strength day, and the strength session stays – with the tip to do it after the run (after quality or the long run without heavy leg exercises). Missed strength can also be put next to an easy run. On fixed strength days (selectable in Profile) no run is added."
 };
 const EN_HTML = {
 "Kraft": "Strength",

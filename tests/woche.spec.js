@@ -1,4 +1,4 @@
-// Abhaken & nachholen: optional, nur laufende Woche; im Zweifel fällt Kraft aus, feste Krafttage bleiben
+// Abhaken & nachholen: optional, nur laufende Woche; Kraft und Laufen parallel, an festen Krafttagen kommt kein Lauf dazu
 const { test, expect } = require('./fixtures');
 
 // Mittwoch, 4.11.2026: Mo Kraft, Di Qualität, Mi Kraft, Do Laufgruppe, Fr Kraft, So Longrun
@@ -19,25 +19,33 @@ test('ohne Abhaken: keine Haken, nichts zu verschieben', async ({ page }) => {
   await expect(page.locator('#planschedule [data-move]')).toHaveCount(0);
 });
 
-test('verpasste Qualität rückt auf den Krafttag, die Kraft entfällt dafür; rückgängig möglich', async ({ page }) => {
+test('verpasste Qualität rückt auf den Krafttag, die Kraft bleibt parallel (mit Hinweis); rückgängig möglich', async ({ page }) => {
   await setup(page);
   await expect(page.locator('#planschedule .schedcheck')).toHaveCount(6);
   // Di vorbei: Vorschlag Mi (Kraft dort ist nicht fest)
   await expect(page.locator('[data-move="quality"]')).toHaveText('→ Mi');
   await page.click('[data-move="quality"]');
-  await expect(page.locator('#toast')).toContainText('Kraft entfällt dafür');
+  await expect(page.locator('#toast')).toHaveText('Auf Mittwoch verschoben.');
   await expect(row(page, 'quality', 'Mi')).toContainText('verschoben von Di');
-  await expect(row(page, 'strength', 'Mi')).toHaveClass(/skipped/);
+  await expect(row(page, 'strength', 'Mi')).not.toHaveClass(/skipped/);
+  await expect(row(page, 'strength', 'Mi')).toContainText('am selben Tag wie ein harter Lauf: danach, ohne schwere Beinübungen');
   await page.click('[data-unmove="quality"]');
   await expect(row(page, 'quality', 'Di')).toBeVisible();
-  await expect(row(page, 'strength', 'Mi')).not.toHaveClass(/skipped/);
+  await expect(row(page, 'strength', 'Mi')).not.toContainText('am selben Tag');
 });
 
-test('feste Krafttage werden nicht getauscht; verpasste Kraft nur auf einen freien Tag', async ({ page }) => {
+test('Kraft am Tag der Laufgruppe: parallel geplant, Hinweis „danach oder mit Abstand“', async ({ page }) => {
+  await setup(page);
+  await page.evaluate(() => { profile.week.strength = [1, 4]; persistProfile(); renderRun(); });
+  await expect(row(page, 'strength', 'Do')).toContainText('am selben Tag wie ein Lauf: danach oder mit ein paar Stunden Abstand');
+  await expect(row(page, 'group', 'Do')).toBeVisible();
+});
+
+test('an festen Krafttagen kommt kein Lauf dazu; verpasste Kraft zuerst auf einen freien Tag', async ({ page }) => {
   await setup(page, { fixed: [3] });
   // Mi ist fest, Do hat schon einen Lauf → Fr (Kraft dort ist nicht fest)
   await expect(page.locator('[data-move="quality"]')).toHaveText('→ Fr');
-  // Kraft vom Montag: nur ein ganz freier Tag kommt infrage → Sa
+  // Kraft vom Montag: zuerst ein ganz freier Tag → Sa
   await expect(page.locator('[data-move="strength-1"]')).toHaveText('→ Sa');
   // abgehakt: kein Vorschlag mehr
   await page.click('[data-done="strength-1"]');

@@ -50,17 +50,16 @@ test('Feste Krafttage nur unter den Krafttagen', async ({ page }) => {
   expect(await page.evaluate(() => normProfile({ week: { strength: [1, 4], strengthFixed: [1, 3, 9] } }).week.strengthFixed)).toEqual([1]);
 });
 
-test('Abhaken: für einen Lauf ausgefallene Kraft kommt zurück, wenn „Abhaken & nachholen“ ausgeschaltet wird', async ({ page }) => {
+test('Abhaken: ein nachgeholter Lauf lässt die Kraft am Zieltag stehen; alte „ausgefallen“-Einträge werden ignoriert', async ({ page }) => {
   await page.clock.setFixedTime(new Date('2026-11-04T10:00:00+01:00'));
   await page.reload();
   await page.evaluate(() => {
     races = [{ id: 'h', name: 'HM', date: '2027-03-21', dist: 'hm', prio: 'A', goal: null, km: null }]; persistRaces();
     Object.assign(profile.week, { quality: 2, long: 0, group: 4, strength: [1, 3, 5], extraDay: null, track: true, strengthFixed: [] }); persistProfile();
+    // Stand aus v52: Kraft am Mittwoch war für die Qualität ausgefallen
+    weekPlan = { week: weekStart(localDay()), done: [], moved: { quality: 3 }, autoSkip: { quality: 'strength-3' } }; storeWeekPlan();
     showArea('laufen'); runView.tab = 'plan'; runView.plan = 'woche'; renderRun();
   });
-  await page.click('[data-move="quality"]');
-  await expect(page.locator('#planschedule .sched-strength.skipped')).toContainText('entfällt für den nachgeholten Lauf');
-  expect(await page.evaluate(() => weekSkip[weekStart(localDay())] || [])).toEqual([]); // nicht bei „Entfällt“ abgelegt
-  await page.evaluate(() => { profile.week.track = false; persistProfile(); renderRun(); });
   await expect(page.locator('#planschedule .skipped')).toHaveCount(0);
+  await expect(page.locator('#planschedule .sched-strength', { hasText: 'Mi' })).toContainText('am selben Tag wie ein harter Lauf');
 });
