@@ -616,7 +616,7 @@ function renderCurrent() {
   }
 }
 function renderControls() {
-  const busy = sessionActive(); $('banners').classList.toggle('hide', busy); $('gearbar').classList.toggle('hide', busy);
+  const busy = sessionActive(); $('banners').classList.toggle('hide', busy); $('installbar').classList.toggle('hide', busy); $('gearbar').classList.toggle('hide', busy);
   const main = $('btnMain'), done = $('btnDone'), undoB = $('btnUndo'), next = $('btnNext'), circuit = !isSets() && !isInterval();
   if (sessionSaved) { main.textContent = T('✓ Gespeichert', '✓ Saved'); main.disabled = true; }
   else if (isFinished()) { main.textContent = T('💾 Speichern', '💾 Save'); main.disabled = false; }
@@ -2135,8 +2135,24 @@ function renderBackupBanner() {
   const due = saved.length + waist.length > 0 && (!last || last < localDay(limit));
   let html = '';
   if (due) html += `<div class="banner"><span class="bicon">💾</span><span>${last ? T(`Letzte Sicherung am ${dateGerman(last)}.`, `Last backup on ${dateGerman(last)}.`) : T('Noch keine Sicherung.', 'No backup yet.')} ${T('Die Daten liegen nur auf diesem Gerät.', 'The data is only on this device.')}</span><button class="btn small primary" type="button" id="backupnow">${T('Sichern', 'Back up')}</button></div>`;
-  if (document.documentElement.dataset.os === 'ios' && !standalone() && !load(KEYS.hint, false)) html += `<div class="banner"><span class="bicon">📲</span><span>${T('Für zuverlässige Speicherung: „Teilen“ → „Zum Home-Bildschirm“ und die App nur noch über das Symbol öffnen. Safari und die App haben getrennte Daten.', 'For reliable storage: “Share” → “Add to Home Screen” and only open the app via the icon. Safari and the app have separate data.')}</span><button class="btn small" type="button" id="hintclose">OK</button></div>`;
   $('banners').innerHTML = html;
+}
+// Im Handy-Browser (nicht als App geöffnet) dauerhaft ganz oben in jedem Bereich: Hinweis zum Installieren mit Link zur Anleitung.
+// Nicht wegklickbar – im Browser drohen getrennte bzw. gelöschte Daten. Während eines laufenden Trainings ausgeblendet.
+function renderInstallBar() {
+  const os = document.documentElement.dataset.os, el = $('installbar');
+  if ((os !== 'ios' && os !== 'android') || standalone()) { el.innerHTML = ''; return; }
+  el.innerHTML = `<div class="banner installbanner" role="note"><span class="bicon">📲</span><span class="itxt"><b>${T('Als App installieren', 'Install as an app')}</b><small>${os === 'ios'
+    ? T('„Teilen“ → „Zum Home-Bildschirm“ – so bleiben deine Daten sicher.', '“Share” → “Add to Home Screen” – that keeps your data safe.')
+    : T('Chrome-Menü ⋮ → „App installieren“ – so bleiben deine Daten sicher.', 'Chrome menu ⋮ → “Install app” – that keeps your data safe.')}
+    <button type="button" class="linkbtn" id="installguide">${T('Zur Anleitung', 'Open guide')}</button></small></span></div>`;
+}
+function openInstallGuide() {
+  showArea('mehr');
+  const s = $('sect-guide'), d = $('guide-install');
+  sectState.mehr = 'sect-guide'; store(KEYS.sections, sectState);
+  s.open = true; d.open = true;
+  requestAnimationFrame(() => d.scrollIntoView({ block: 'start', behavior: 'smooth' }));
 }
 async function renderStorageInfo() {
   let txt = standalone() ? T('Läuft als Home-Bildschirm-App.', 'Running as a home screen app.') : T('Läuft im Browser.', 'Running in the browser.');
@@ -2173,7 +2189,7 @@ function openExerciseGuide(i, origin) {
 // Plan ohne passende Geräte (z. B. Kettlebell entfernt): zurück zum Ganzkörper-Plan, sofern gerade nichts läuft
 function ensurePlanOwned() { if (!planOwned(plan) && !sessionActive()) { plan = 'wed'; store(KEYS.plan, plan); resetState(); } }
 function renderAll() {
-  ensurePlanOwned(); renderTabs(); renderGear(); renderHeader(); renderPhase(); renderList(); renderSettings(); renderHistory(); renderManual(); renderBackupBanner(); renderWeek();
+  ensurePlanOwned(); renderTabs(); renderGear(); renderHeader(); renderPhase(); renderList(); renderSettings(); renderHistory(); renderManual(); renderBackupBanner(); renderInstallBar(); renderWeek();
 }
 
 /* ---------- Bereiche: Kraft, Laufen, Mobility, Mehr ---------- */
@@ -2458,7 +2474,8 @@ $('savefile').addEventListener('click', exportBackup);
 $('importbtn').addEventListener('click', () => $('importfile').click());
 $('importfile').addEventListener('change', e => { if (e.target.files[0]) importBackup(e.target.files[0]); e.target.value = ''; });
 $('exportcsv').addEventListener('click', exportCsv);
-$('banners').addEventListener('click', e => { if (e.target.id === 'kbon') { gear.kb = true; store(KEYS.gear, gear); renderAll(); return; } if (e.target.id === 'backupnow') exportBackup(); if (e.target.id === 'hintclose') { store(KEYS.hint, true); renderBackupBanner(); } });
+$('banners').addEventListener('click', e => { if (e.target.id === 'kbon') { gear.kb = true; store(KEYS.gear, gear); renderAll(); return; } if (e.target.id === 'backupnow') exportBackup(); });
+$('installbar').addEventListener('click', e => { if (e.target.id === 'installguide') openInstallGuide(); });
 $('measuredate').value = localDay();
 $('measureform').addEventListener('submit', e => { e.preventDefault(); saveMeasureFromForm(); });
 $('area-profil').addEventListener('click', onProfileClick);

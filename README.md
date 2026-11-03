@@ -33,6 +33,7 @@ Mein persönlicher Trainings-Begleiter als Web-App für iPhone und Android – K
   - Übungen nach Körperbereich: Hüfte, Rücken, Schultern, Beine & Fuß
   - Kurzprogramme mit geführtem Timer inkl. Seitenwechsel und Ansage
 - **Mehr**: Neuigkeiten, Anleitung (inkl. Hinweise), Geräte-Sync, Datensicherung, Zurücksetzen
+- **Im Handy-Browser** (iPhone/Android, nicht als App geöffnet) steht in jedem Bereich ganz oben der Hinweis „Als App installieren“ mit Link zur Anleitung – nicht wegklickbar, während eines Trainings ausgeblendet
 
 ## Neuigkeiten (Patch Notes)
 

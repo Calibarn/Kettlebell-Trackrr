@@ -1496,7 +1496,8 @@ const EN_TEXT = {
 "Einen Testlauf gibt es erst, wenn 5 km machbar sind: in der laufenden Woche, wenn dein längster Lauf der letzten 30 Tage mindestens 5 km war, später, wenn der geplante Longrun der Woche so lang ist. Im Lauf-Einstieg nie.": "A time trial only comes once 5 km is doable: in the current week if your longest run of the last 30 days was at least 5 km, later if the planned long run of that week is that long. Never during the running starter.",
 "Lauf-Einstieg, Trainingstempos, Testläufe, Abhaken, Stufen & Fehlerbehebungen": "Running starter, training paces, time trials, tick-off, levels & bug fixes",
 "Neu beim Laufen? Im Profil unter Trainingswoche das Laufniveau „Einsteiger“ wählen (oder die Frage in Plan → Übersicht beantworten): 9 Wochen mit je 3 Einheiten aus Laufen und Gehen bis zu 30 Minuten am Stück – geführt mit Ansagen, ohne Testlauf und ohne Tempovorgaben. Nach drei Einheiten weiter oder die Woche wiederholen.": "New to running? Choose the running level “Beginner” in Profile under Training week (or answer the question in Plan → Overview): 9 weeks with 3 sessions each of running and walking up to 30 minutes non-stop – guided with voice prompts, no time trial and no pace targets. After three sessions move on or repeat the week.",
-"Alle 8 Wochen ohne Ergebnis oder Rennen plant der Plan einen 5-km-Testlauf statt der Qualitätseinheit ein – aber erst, wenn 5 km machbar sind (längster Lauf der letzten 30 Tage bzw. geplanter Longrun mindestens 5 km). Ergebnis unter Bestzeiten eintragen – B-Rennen zählen genauso.": "Every 8 weeks without a result or race the plan schedules a 5 km time trial instead of the quality session – but only once 5 km is doable (longest run of the last 30 days or planned long run at least 5 km). Enter the result under Best times – B races count just the same."
+"Alle 8 Wochen ohne Ergebnis oder Rennen plant der Plan einen 5-km-Testlauf statt der Qualitätseinheit ein – aber erst, wenn 5 km machbar sind (längster Lauf der letzten 30 Tage bzw. geplanter Longrun mindestens 5 km). Ergebnis unter Bestzeiten eintragen – B-Rennen zählen genauso.": "Every 8 weeks without a result or race the plan schedules a 5 km time trial instead of the quality session – but only once 5 km is doable (longest run of the last 30 days or planned long run at least 5 km). Enter the result under Best times – B races count just the same.",
+"Im Handy-Browser steht der Hinweis „Als App installieren“ jetzt dauerhaft ganz oben, mit Link zur Anleitung. Die Anleitung erklärt auch, wie vorhandene Daten aus dem Browser in die App kommen.": "In the phone browser the “Install as an app” hint now stays at the very top, with a link to the guide. The guide also explains how existing data gets from the browser into the app."
 };
 const EN_HTML = {
 "Kraft": "Strength",
@@ -1581,13 +1582,14 @@ const EN_HTML = {
 "App installieren": "Install the app",
 "Einmalig, damit die Daten sicher bleiben": "Once, so your data stays safe",
 "Die Adresse in <b>Safari</b> öffnen.": "Open the address in <b>Safari</b>.",
-"Unten auf <b>Teilen</b> tippen (Quadrat mit Pfeil).": "Tap <b>Share</b> at the bottom (square with arrow).",
+"Auf <b>Teilen</b> tippen (Quadrat mit Pfeil). Ab iOS 26 steckt es je nach Safari-Ansicht im Menü – hinter <b>•••</b> oder dem Symbol links in der Adressleiste.": "Tap <b>Share</b> (square with arrow). From iOS 26 on it sits in a menu depending on the Safari layout – behind <b>•••</b> or the icon on the left of the address bar.",
 "<b>Zum Home-Bildschirm</b> wählen und bestätigen.": "Choose <b>Add to Home Screen</b> and confirm.",
 "Ab jetzt nur noch über das neue Symbol öffnen. Safari und die App haben getrennte Daten.": "From now on only open it via the new icon. Safari and the app have separate data.",
 "Die Adresse in <b>Chrome</b> öffnen.": "Open the address in <b>Chrome</b>.",
 "Oben rechts das Menü (⋮) öffnen.": "Open the menu (⋮) at the top right.",
 "<b>App installieren</b> bzw. <b>Zum Startbildschirm hinzufügen</b> wählen.": "Choose <b>Install app</b> or <b>Add to Home screen</b>.",
 "Ab jetzt über das App-Symbol öffnen.": "From now on open it via the app icon.",
+"Schon Daten im Browser? Die App startet leer. Vorher unter <b>Mehr → Daten &amp; Datenschutz</b> sichern und in der App wiederherstellen – oder beide über den <b>Geräte-Sync</b> abgleichen.": "Already have data in the browser? The app starts empty. First back up under <b>More → Data &amp; privacy</b> and restore it in the app – or match both via <b>Device sync</b>.",
 "Das App-Symbol nicht löschen – dabei werden auf dem iPhone auch die Daten gelöscht. Für Updates ist keine Neuinstallation nötig.": "Don’t delete the app icon – on the iPhone that also deletes the data. Updates don’t need a reinstall.",
 "Kraft-Training starten": "Start a strength workout",
 "Plan wählen, Geräte einstellen, los": "Choose a plan, set equipment, go",
