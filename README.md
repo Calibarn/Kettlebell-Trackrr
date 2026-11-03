@@ -39,6 +39,10 @@ Mein persönlicher Trainings-Begleiter als Web-App für iPhone und Android – K
 
 `CHANGELOG` in `data.js`, neueste zuerst. Jeder Punkt ist `[Thema, Text, Art]` mit Art `'neu'` (Standard), `'ux'` (Usability) oder `'bug'`; das Fenster gruppiert danach unter „Neu“, „Usability“ und „Bugs“. Als Thema den betroffenen Bereich nehmen, nicht „Übersichtlicher“ oder „Behoben“; der älteste (letzte) Eintrag ist der Grundstand mit allen Funktionen. Neulinge sehen beim ersten Start die 3 neuesten Updates plus den Grundstand. Ein neuer Eintrag mit neuer `id` erscheint beim nächsten Start einmal als Fenster (abschaltbar unter **Mehr → Nach Updates anzeigen**) und steht danach unter **Mehr → Was ist neu?**. Bei jedem Update mit sichtbaren Änderungen: Eintrag oben ergänzen und in `sw.js` `VERSION` erhöhen.
 
+## Versionsnummer
+
+`APP_VERSION` in `data.js`, angezeigt unten unter **Mehr** (in der Testversion mit „Testversion“) und beim zugehörigen Neuigkeiten-Eintrag (`version`). Jede Veröffentlichung ist eine neue Nebenversion: 1.0, 1.1, 1.2 … Erhöht wird mit der ersten Änderung nach einer Veröffentlichung auf `dev`, damit die Testversion schon die kommende Nummer zeigt. Größere Umbauten (z. B. ein neues Datenformat) bekommen eine neue Hauptversion (2.0). Unabhängig davon steht in `sw.js` die Cache-Version, die bei jeder Änderung an den Dateien steigt.
+
 ## Testversion und Veröffentlichung
 
 - **Branch `dev`**: Hier landet jede Änderung. Nach grünen Tests stößt `.github/workflows/test.yml` den Pages-Workflow an, die Testversion liegt dann unter **…/Kettlebell-Trackrr/dev/** (Titel mit „Test“-Markierung).

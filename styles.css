@@ -460,3 +460,4 @@ html.testbuild .largetitle::after{content:" Test";font-size:.5em;font-weight:700
 .sguide b{font-weight:600}
 .infoi{flex:none;display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;border:1.5px solid var(--blue);color:var(--blue);font:italic 700 12px/1 Georgia,'Times New Roman',serif;box-sizing:border-box}
 html[data-os=android] .infoi{border-color:var(--accent-ink);color:var(--accent-ink)}
+.appversion{text-align:center;margin-top:20px}

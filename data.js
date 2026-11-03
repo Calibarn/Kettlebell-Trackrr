@@ -646,9 +646,14 @@ for (const [pk, m] of Object.entries(BEST)) for (const sl of PLANS[pk].slots) if
 
 /* Neuigkeiten („Patch Notes“): neueste zuerst. Neuer Eintrag = neue id; die App zeigt ihn beim nächsten Start einmal an.
    Der älteste (letzte) Eintrag ist der Grundstand mit allen Funktionen; Neulinge sehen ihn plus die 3 neuesten Updates. */
+/* Versionsnummer der App, angezeigt unter Mehr. Jede Veröffentlichung (mittwochs 00:00 aus dev nach main) ist eine neue
+   Nebenversion: 1.0, 1.1, 1.2 … Erhöht wird mit der ersten Änderung nach einer Veröffentlichung, damit die Testversion schon
+   die kommende Nummer zeigt. Der erste Neuigkeiten-Eintrag einer Version bekommt dieselbe Nummer (version). */
+const APP_VERSION = '1.0';
 // Ein Eintrag pro Tag: Änderungen desselben Tages kommen in den Eintrag des Tages (aka = frühere ids für „schon gesehen“)
 const CHANGELOG = [
-  { id: '2026-11-03', aka: ['2026-11-03b', '2026-11-03c'], date: '2026-11-03', title: 'Lauf-Einstieg, Trainingstempos, Testläufe, Abhaken, Stufen & Fehlerbehebungen', items: [
+  { id: '2026-11-03', aka: ['2026-11-03b', '2026-11-03c'], date: '2026-11-03', version: '1.0', title: 'Lauf-Einstieg, Trainingstempos, Testläufe, Abhaken, Stufen & Fehlerbehebungen', items: [
+    ['Version 1.0', 'Die App hat jetzt eine Versionsnummer – das hier ist Version 1.0. Sie steht unten unter Mehr und bei den Neuigkeiten; jede wöchentliche Veröffentlichung bekommt die nächste Nummer.'],
     ['Lauf-Einstieg', 'Neu beim Laufen? Im Profil unter Trainingswoche das Laufniveau „Einsteiger“ wählen (oder die Frage in Plan → Übersicht beantworten): 9 Wochen mit je 3 Einheiten aus Laufen und Gehen bis zu 30 Minuten am Stück – geführt mit Ansagen, ohne Testlauf und ohne Tempovorgaben. Nach drei Einheiten weiter oder die Woche wiederholen.'],
     ['Laufen', 'Plan → Übersicht zeigt deine Tempos für locker, Schwelle, Intervall und Marathon – aus deiner aktuellen Form: dem neuesten Ergebnis, solange es höchstens 3 % langsamer ist als das beste der letzten 12 Monate. Die Wochenplanung schreibt sie zu den passenden Einheiten.'],
     ['Renntempo', 'Auch das Renntempo in den Einheiten kommt aus deiner Form statt aus der Zielzeit.'],

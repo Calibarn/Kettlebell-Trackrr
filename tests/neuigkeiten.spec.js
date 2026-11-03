@@ -106,3 +106,12 @@ test('Neuigkeiten gruppiert nach Neu, Usability und Bugs; Thema steht nicht dopp
   await expect(first).toContainText('Android: Die Tab-Leiste');
   await expect(first).not.toContainText('Android: Android:');
 });
+
+test('Versionsnummer unter Mehr und beim Neuigkeiten-Eintrag', async ({ page }) => {
+  await page.evaluate(() => showArea('mehr'));
+  const v = await page.evaluate(() => APP_VERSION);
+  expect(v).toMatch(/^\d+\.\d+$/);
+  await expect(page.locator('#appversion')).toHaveText(`KB Tracker · Version ${v}`);
+  await page.click('#notesbtn');
+  await expect(page.locator('#notes-body')).toContainText('Version ' + v);
+});

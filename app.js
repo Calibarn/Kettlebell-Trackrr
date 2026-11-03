@@ -1944,11 +1944,12 @@ function seenIndex() {
 }
 function renderNotesRows() {
   $('noteshint').textContent = CHANGELOG.length ? `${T('Stand', 'As of')} ${dateGerman(CHANGELOG[0].date)}: ${CHANGELOG[0].title}` : '';
+  $('appversion').textContent = `KB Tracker · Version ${APP_VERSION}` + (KEY_NS ? T(' · Testversion', ' · test version') : '');
   $('notesautoval').textContent = notesOpt.auto !== false ? T('An', 'On') : T('Aus', 'Off');
 }
 // Steht das Thema schon am Textanfang („Android: …“, „„Heute dabei“: …“), wird es nicht doppelt gezeigt.
 const noteText = (t, d) => { const m = d.match(/^[„“”"]?([^:„“”"]{1,40})[“”"]?:\s+/); return m && m[1] === t ? d.slice(m[0].length) : d; };
-const notesEntry = c => `<h3>${esc(c.title)}</h3><p class="tiny" style="margin-top:0">${dateGerman(c.date)}</p>` + NOTE_KINDS.map(([k, de, en]) => {
+const notesEntry = c => `<h3>${esc(c.title)}</h3><p class="tiny" style="margin-top:0">${c.version ? `Version ${esc(c.version)} · ` : ''}${dateGerman(c.date)}</p>` + NOTE_KINDS.map(([k, de, en]) => {
   const items = c.items.filter(it => it[2] === k);
   return items.length ? `<p class="noteskind">${T(de, en)}</p><ul class="notes">${items.map(([t, d]) => `<li><b>${esc(t)}:</b> ${esc(noteText(t, d))}</li>`).join('')}</ul>` : '';
 }).join('');
