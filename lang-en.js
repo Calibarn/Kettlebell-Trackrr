@@ -1413,7 +1413,13 @@ const EN_TEXT = {
 "Englisch, AMRAP, Erholung & Aufgeräumt": "English, AMRAP, recovery & tidy-up",
 "Abhaken": "Tick off",
 "Plan → Übersicht zeigt deine Tempos für locker, Schwelle, Intervall und Marathon – aus deiner aktuellen Form: dem neuesten Ergebnis, solange es höchstens 3 % langsamer ist als das beste der letzten 12 Monate. Die Wochenplanung schreibt sie zu den passenden Einheiten.": "Plan → Overview shows your paces for easy, threshold, intervals and marathon – from your current form: the newest result as long as it is at most 3 % slower than the best of the last 12 months. The weekly plan adds them to the matching sessions.",
-"Auch das Renntempo in den Einheiten kommt aus deiner Form statt aus der Zielzeit.": "Race pace in the sessions also comes from your form instead of the goal time."
+"Auch das Renntempo in den Einheiten kommt aus deiner Form statt aus der Zielzeit.": "Race pace in the sessions also comes from your form instead of the goal time.",
+"Behoben": "Fixed",
+"Schneller": "Faster",
+"Android: Die Tab-Leiste passt jetzt auch auf schmale Telefone – „Mehr“ war abgeschnitten. Auf sehr schmalen Displays werden Reiter nicht mehr gekürzt.": "Android: the tab bar now fits narrow phones too – “More” was cut off. On very narrow displays tabs are no longer shortened.",
+"Kalender-Export: Testläufe heißen „Testlauf 5 km“. Ein vergangenes Rennen ohne eingetragenes Ergebnis verschiebt den Testlauf nicht mehr – der Plan erinnert stattdessen ans Eintragen.": "Calendar export: time trials are called “Time trial 5 km”. A past race without an entered result no longer postpones the time trial – the plan reminds you to enter it instead.",
+"Abhaken: Kraft, die für einen nachgeholten Lauf ausfällt, kommt beim Ausschalten oder Rückgängigmachen sicher zurück.": "Tick off: strength skipped for a run you catch up reliably comes back when you switch the feature off or undo.",
+"Zahlen werden schneller formatiert – der Start mit vielen Einträgen geht spürbar flotter.": "Numbers are formatted faster – starting up with many entries is noticeably quicker."
 };
 const EN_HTML = {
 "Kraft": "Strength",

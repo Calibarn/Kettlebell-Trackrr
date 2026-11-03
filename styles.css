@@ -276,7 +276,9 @@ html[data-os=android] .actionbar button{border-radius:100px}
 .tabbar .dot{position:absolute;margin:-30px 0 0 28px;width:8px;height:8px;border-radius:50%;background:var(--red)}
 html[data-os=android] .tabbar{border-top:0;background:var(--card)}
 html[data-os=android] .tabbar button{font-size:12px;gap:4px;color:var(--label)}
-html[data-os=android] .tabbar .ind{display:grid;place-items:center;width:64px;height:32px;border-radius:100px}
+html[data-os=android] .tabbar .ind{display:grid;place-items:center;width:64px;max-width:100%;height:32px;border-radius:100px}
+/* Tab-Leiste: Knöpfe dürfen schmaler als ihr Inhalt werden – sonst ragt „Mehr“ auf schmalen Android-Telefonen (360 px) aus dem Bild */
+.tabbar button{min-width:0;padding:0}
 html[data-os=android] .tabbar button[aria-selected=true] .ind{background:var(--accent-soft)}
 html[data-os=android] .tabbar button[aria-selected=true]{color:var(--label);font-weight:600}
 .toast{position:fixed;left:50%;transform:translateX(-50%) translateY(8px);bottom:calc(var(--tabbar) + var(--actbar) + env(safe-area-inset-bottom) + 16px);z-index:40;background:var(--elev);color:var(--label);padding:10px 16px;border-radius:100px;font-size:15px;font-weight:500;box-shadow:0 8px 30px rgba(0,0,0,.18);max-width:min(560px,92vw);text-align:center;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s}
@@ -391,3 +393,5 @@ html[data-os=android] .sheet{border-radius:28px 28px 0 0}
 .planrows .row.done .txt b{opacity:.55}
 .planrows .moved{color:var(--accent-ink)}
 .planrows .moved .linkbtn{font-size:inherit;padding:0;margin:0}
+/* Sehr schmale Displays (z. B. 320 px): Reiter-Beschriftungen etwas kleiner, damit „Ganzkörper“ oder „Marathon“ nicht abgeschnitten werden */
+@media (max-width:340px){.segmented button{font-size:12px;padding-left:3px;padding-right:3px}#tabs.wrap button{font-size:12px}}

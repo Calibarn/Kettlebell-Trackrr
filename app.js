@@ -32,8 +32,10 @@ function dateGerman(day) { const [y, m, d] = String(day).split('-'); return EN ?
 // Tag und Monat ohne Jahr: 02.11. bzw. 02/11
 const dateShort = day => dateGerman(day).slice(0, EN ? 5 : 6);
 function clock(s) { s = Math.max(0, Math.ceil(s)); return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'); }
-const kgText = v => Number(v).toLocaleString(LOCALE, { maximumFractionDigits: 1 });
-const cmString = v => Number(v).toLocaleString(LOCALE, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+// Zahlenformate einmal anlegen: toLocaleString mit Optionen baut bei jedem Aufruf einen neuen Formatierer (beim Start spürbar)
+const NUM1 = new Intl.NumberFormat(LOCALE, { maximumFractionDigits: 1 }), NUM1F = new Intl.NumberFormat(LOCALE, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+const kgText = v => NUM1.format(Number(v));
+const cmString = v => NUM1F.format(Number(v));
 
 /* ---------- Einstellungen: Geräte, Varianten, Gewichte ---------- */
 let gear = load(KEYS.gear, null);
@@ -60,13 +62,14 @@ function normProfile(p) {
   const hr = isObj(p.hr) ? p.hr : {}, kit = isObj(p.kit) ? p.kit : {}, wk = isObj(p.week) ? p.week : {};
   const kb = Array.isArray(kit.kb) ? [...new Set(kit.kb.filter(v => okNum(v, 0.5, 60)).map(v => Math.round(v * 2) / 2))].sort((a, b) => a - b) : d.kit.kb.slice();
   const bands = Array.isArray(kit.bands) ? [...new Set(kit.bands.filter(v => okNum(v, 1, 200)).map(Math.round))].sort((a, b) => a - b).slice(0, 6) : d.kit.bands.slice();
+  const strength = Array.isArray(wk.strength) ? [...new Set(wk.strength.filter(isWd))] : d.week.strength.slice();
   return {
     hr: { max: okNum(hr.max, 100, 230) ? Math.round(hr.max) : null, rest: okNum(hr.rest, 30, 120) ? Math.round(hr.rest) : null, z: okZones(hr.z) ? hr.z.map(Math.round) : null },
     kit: { kb, kbDefault: kb.includes(kit.kbDefault) ? kit.kbDefault : kb.includes(KB_DEFAULT) ? KB_DEFAULT : (kb.length ? kb[0] : KB_DEFAULT), bands },
     week: { group: wk.group === null ? null : isWd(wk.group) ? wk.group : d.week.group, quality: wk.quality === null ? null : isWd(wk.quality) ? wk.quality : d.week.quality, long: wk.long === null ? null : isWd(wk.long) ? wk.long : d.week.long,
-      strength: Array.isArray(wk.strength) ? [...new Set(wk.strength.filter(isWd))] : d.week.strength.slice(),
+      strength,
       extraName: typeof wk.extraName === 'string' ? wk.extraName.slice(0, 30) : '', extraDay: isWd(wk.extraDay) ? wk.extraDay : null, track: wk.track === true,
-      strengthFixed: Array.isArray(wk.strengthFixed) ? [...new Set(wk.strengthFixed.filter(isWd))] : [] }
+      strengthFixed: Array.isArray(wk.strengthFixed) ? [...new Set(wk.strengthFixed.filter(d => isWd(d) && strength.includes(d)))] : [] }
   };
 }
 // Unbekannte Felder (z. B. aus einer neueren Version) bleiben beim Speichern erhalten
@@ -777,7 +780,7 @@ let weights = weightLoaded.ok; const weightKeep = weightLoaded.keep;
 })();
 function persistWeight() { weights.sort((a, b) => a.date.localeCompare(b.date)); if (!store(KEYS.weight, weights.concat(weightKeep))) toast(T('Speichern im Browser nicht möglich – bitte Backup exportieren.', 'Saving in the browser failed – please export a backup.')); renderBackupBanner(); }
 weights.sort((a, b) => a.date.localeCompare(b.date));
-const kgOne = v => Number(v).toLocaleString(LOCALE, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+const kgOne = v => NUM1F.format(Number(v));
 // Ø Veränderung pro Woche: erster und letzter Wert der letzten 28 Tage, mindestens 7 Tage auseinander
 function weightRate(today = localDay()) {
   const win = weights.filter(e => e.date >= addDays(today, -28) && e.date <= today);
@@ -927,7 +930,7 @@ function onProfileChange(e) {
 /* ---------- Laufumfang: einzelne Läufe, Wochensummen, langer Lauf und Zielbereich der Woche ---------- */
 // Eingaben mit Komma oder Punkt; leer = nicht eingetragen (nicht 0)
 const kmNum = v => { const t = String(v ?? '').trim().replace(',', '.'); if (t === '') return null; const n = Number(t); return Number.isFinite(n) && n >= 0 && n <= 1000 ? Math.round(n * 10) / 10 : NaN; };
-const kmText = n => Number(n).toLocaleString(LOCALE, { maximumFractionDigits: 1 });
+const kmText = n => NUM1.format(Number(n));
 const rd1 = x => Math.round(x * 10) / 10;
 const okKm = v => v === null || v === undefined || (typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= 1000);
 const validRunWeek = e => isObj(e) && isDay(e.week) && okKm(e.km) && okKm(e.long);
@@ -1259,7 +1262,8 @@ function fitnessRef(today = localDay()) {
 /* Testläufe: Ist das letzte Ergebnis oder Rennen 8 Wochen her (oder gibt es noch keins), wird in der nächsten passenden Woche
    (Basis, Grundlage, Aufbau; keine Entlastungs- oder Rennwoche) die Qualitätseinheit zum 5-km-Testlauf. Danach wieder 8 Wochen. */
 function markTests(weeks) {
-  let last = [...results.map(r => r.date), ...races.filter(r => r.date <= localDay()).map(r => r.date)].sort().at(-1) || null;
+  // Nur eingetragene Ergebnisse zählen; ein vergangenes Rennen ohne Ergebnis ändert die Tempos nicht. Geplante Rennen zählen als künftiger Wert.
+  let last = results.map(r => r.date).filter(d => d <= localDay()).sort().at(-1) || null;
   for (const x of weeks) {
     if (x.a || x.b.length) { last = x.week; continue; }
     const due = !last || x.week >= weekStart(addDays(last, TEST_EVERY_DAYS));
@@ -1281,10 +1285,15 @@ const withPace = (txt, r) => {
 };
 // Lockere Einheiten: Bereich aus der Bestzeit anhängen
 const easyPace = () => { const tp = trainingPaces(); return tp ? ` · ${paceRange(tp.easy)}` : ''; };
+// Rennen der letzten 3 Wochen ohne eingetragenes Ergebnis: daran erinnern, damit die Tempos aktuell werden
+function missingResultHint() {
+  const today = localDay(), r = races.filter(x => x.date <= today && x.date >= addDays(today, -21) && !results.some(e => e.race === x.id || (e.date === x.date && Math.abs((e.km || 0) - raceKm(x)) < 0.5))).at(-1);
+  return r ? `<div class="alert">${T(`Wie lief <b>${esc(r.name)}</b>? Ergebnis unter <b>Bestzeiten</b> eintragen („Aus deinen Rennen übernehmen“) – dann passen die Tempos.`, `How did <b>${esc(r.name)}</b> go? Enter the result under <b>Best times</b> (“Take from your races”) – then the paces fit.`)}</div>` : '';
+}
 function renderPaces() {
   const tp = trainingPaces();
-  if (!tp) return `<div class="header">${T('Trainingstempos', 'Training paces')}</div><div class="group"><div class="row"><span class="txt"><small>${T('Unter <b>Bestzeiten</b> ein Ergebnis der letzten 12 Monate eintragen (3 bis 42 km) – dann stehen hier deine Tempos für locker, Schwelle, Intervall und Marathon.', 'Enter a result from the last 12 months under <b>Best times</b> (3 to 42 km) – then your paces for easy, threshold, intervals and marathon appear here.')}</small></span></div></div>`;
-  const r = tp.ref.r, stale = tp.ref.stale ? `<div class="alert due">${T(`Letztes Ergebnis vom ${dateGerman(tp.ref.newest)} – Zeit für einen Testlauf (5 km) oder ein B-Rennen. Danach unter <b>Bestzeiten</b> eintragen, dann passen die Tempos wieder.`, `Last result from ${dateGerman(tp.ref.newest)} – time for a time trial (5 km) or a B race. Then enter it under <b>Best times</b> so the paces fit again.`)}</div>` : '', rows = [[T('Locker & Longrun', 'Easy & long run'), paceRange(tp.easy), T('Gesprächstempo, Zone 2', 'conversational, zone 2')],
+  if (!tp) return `<div class="header">${T('Trainingstempos', 'Training paces')}</div>${missingResultHint()}<div class="group"><div class="row"><span class="txt"><small>${T('Unter <b>Bestzeiten</b> ein Ergebnis der letzten 12 Monate eintragen (3 bis 42 km) – dann stehen hier deine Tempos für locker, Schwelle, Intervall und Marathon.', 'Enter a result from the last 12 months under <b>Best times</b> (3 to 42 km) – then your paces for easy, threshold, intervals and marathon appear here.')}</small></span></div></div>`;
+  const r = tp.ref.r, stale = missingResultHint() || (tp.ref.stale ? `<div class="alert due">${T(`Letztes Ergebnis vom ${dateGerman(tp.ref.newest)} – Zeit für einen Testlauf (5 km) oder ein B-Rennen. Danach unter <b>Bestzeiten</b> eintragen, dann passen die Tempos wieder.`, `Last result from ${dateGerman(tp.ref.newest)} – time for a time trial (5 km) or a B race. Then enter it under <b>Best times</b> so the paces fit again.`)}</div>` : ''), rows = [[T('Locker & Longrun', 'Easy & long run'), paceRange(tp.easy), T('Gesprächstempo, Zone 2', 'conversational, zone 2')],
     [T('Marathontempo', 'Marathon pace'), hms(tp.marathon) + ' /km', T('lange Abschnitte im Marathonblock', 'long segments in a marathon block')],
     [T('Schwelle', 'Threshold'), paceRange(tp.threshold), T('kontrolliert hart, etwa eine Stunde haltbar', 'controlled hard, sustainable for about an hour')],
     [T('Intervall', 'Intervals'), '≈ ' + hms(tp.interval) + ' /km', T('etwa 5-km-Renntempo, 400–1000 m', 'about 5 km race pace, 400–1000 m')]];
@@ -1318,7 +1327,12 @@ function weekSchedule(x) {
   const skip = weekSkip[x.week] || [], wp = curWeekPlan(x.week);
   for (const it of out) {
     it.key = it.kind === 'strength' ? 'strength-' + it.d : it.kind; it.skip = skip.includes(it.key);
-    if (wp) { it.done = wp.done.includes(it.key); if (isWd(wp.moved[it.key])) { it.from = it.d; it.d = wp.moved[it.key]; } }
+    if (wp) {
+      it.done = wp.done.includes(it.key); if (isWd(wp.moved[it.key])) { it.from = it.d; it.d = wp.moved[it.key]; }
+      // Kraft, die für einen nachgeholten Lauf ausfällt (steht nur im Wochenplan, nicht bei „Entfällt“)
+      const by = Object.keys(wp.autoSkip || {}).find(k => wp.autoSkip[k] === it.key && isWd(wp.moved[k]));
+      if (by && !it.skip) { it.skip = true; it.autoSkip = by; }
+    }
   }
   return out.sort((a, b) => dayIdx(a.d) - dayIdx(b.d));
 }
@@ -1327,8 +1341,8 @@ function weekSchedule(x) {
 let weekPlan = load(KEYS.weekplan, null);
 function curWeekPlan(week) {
   if (!profile.week.track || week !== weekStart(localDay())) return null;
-  if (!isObj(weekPlan) || weekPlan.week !== week) weekPlan = { week, done: [], moved: {} };
-  if (!Array.isArray(weekPlan.done)) weekPlan.done = []; if (!isObj(weekPlan.moved)) weekPlan.moved = {};
+  if (!isObj(weekPlan) || weekPlan.week !== week) weekPlan = { week, done: [], moved: {}, autoSkip: {} };
+  if (!Array.isArray(weekPlan.done)) weekPlan.done = []; if (!isObj(weekPlan.moved)) weekPlan.moved = {}; if (!isObj(weekPlan.autoSkip)) weekPlan.autoSkip = {};
   return weekPlan;
 }
 const storeWeekPlan = () => store(KEYS.weekplan, weekPlan);
@@ -1378,9 +1392,9 @@ function schedRows(x) {
     const race = it.kind === 'race' || it.kind === 'brace', open = track && !race && !it.done && !it.skip;
     const to = open && dayIdx(it.d) <= today ? catchUpDay(it, items) : null;
     const none = open && to === null && dayIdx(it.d) < today ? `<small class="moved">${T('kein passender Tag mehr frei – diese Woche einfach ausfallen lassen', 'no suitable day left – just skip it this week')}</small>` : '';
-    const note = it.skip ? `<small>${T('entfällt diese Woche', 'skipped this week')}</small>` : none + (it.from !== undefined ? `<small class="moved">${T(`verschoben von ${WD[it.from]}`, `moved from ${WD[it.from]}`)} · <button type="button" class="linkbtn" data-unmove="${it.key}">${T('rückgängig', 'undo')}</button></small>` : '') + (it.detail ? `<small>${esc(it.detail)}</small>` : '');
+    const note = it.autoSkip ? `<small>${T('entfällt für den nachgeholten Lauf', 'skipped for the run you are catching up')}</small>` : it.skip ? `<small>${T('entfällt diese Woche', 'skipped this week')}</small>` : none + (it.from !== undefined ? `<small class="moved">${T(`verschoben von ${WD[it.from]}`, `moved from ${WD[it.from]}`)} · <button type="button" class="linkbtn" data-unmove="${it.key}">${T('rückgängig', 'undo')}</button></small>` : '') + (it.detail ? `<small>${esc(it.detail)}</small>` : '');
     const check = track && !race ? `<button type="button" class="schedcheck" data-done="${it.key}" aria-pressed="${!!it.done}" aria-label="${esc(it.title)} ${T('erledigt', 'done')}">${it.done ? '✓' : ''}</button>` : '';
-    const btns = race ? '' : (to !== null ? `<button type="button" class="btn small" data-move="${it.key}" data-to="${to}">${T(`→ ${WD[to]}`, `→ ${WD[to]}`)}</button>` : '') + (it.done ? '' : `<button type="button" class="btn small" data-skip="${it.key}" data-week="${x.week}">${it.skip ? T('Wieder rein', 'Restore') : T('Entfällt', 'Skip')}</button>`);
+    const btns = race ? '' : (to !== null ? `<button type="button" class="btn small" data-move="${it.key}" data-to="${to}">${T(`→ ${WD[to]}`, `→ ${WD[to]}`)}</button>` : '') + (it.done || it.autoSkip ? '' : `<button type="button" class="btn small" data-skip="${it.key}" data-week="${x.week}">${it.skip ? T('Wieder rein', 'Restore') : T('Entfällt', 'Skip')}</button>`);
     return `<div class="row sched-${it.kind}${it.skip ? ' skipped' : ''}${it.done ? ' done' : ''}">${check}<span class="dur">${WD[it.d]}</span><span class="txt"><b>${esc(it.title)}</b>${note}</span>${btns}</div>`;
   }).join('');
 }
@@ -1772,7 +1786,7 @@ async function renderSyncStatus() {
 }
 
 /* ---------- Einstellungen zurücksetzen: Daten bleiben ---------- */
-const SETTING_KEYS = ['sound', 'gear', 'choice', 'stage', 'plan', 'area', 'run', 'audio', 'mob', 'profile', 'skip', 'hint', 'bestview', 'notes'].map(k => KEYS[k]).concat(LANG_KEY);
+const SETTING_KEYS = ['sound', 'gear', 'choice', 'stage', 'plan', 'area', 'run', 'audio', 'mob', 'profile', 'skip', 'hint', 'bestview', 'notes', 'weekplan'].map(k => KEYS[k]).concat(LANG_KEY);
 function settingsReset() {
   if (sessionActive()) { alert(T('Bitte das laufende Training zuerst beenden oder zurücksetzen.', 'Please finish or reset the current workout first.')); return; }
   if (!confirm(T('Einstellungen zurücksetzen?\n\nZurück auf den Ausgangszustand: Profil (Trainingswoche, Herzfrequenz, Geräte & Gewichte), Übungs-Varianten und Gewichte, Stufen, „Entfällt“, Ton und Ansichten.\n\nTrainings, Läufe, Wochensummen, Rennen, Gewicht und Bauchumfang bleiben erhalten. Gilt nur für dieses Gerät.', 'Reset settings?\n\nBack to the defaults: profile (training week, heart rate, equipment & weights), exercise variants and weights, stages, “Skip”, sound and views.\n\nWorkouts, runs, weekly totals, races, weight and waist are kept. Applies to this device only.'))) return;
@@ -1992,7 +2006,7 @@ function planIcs(S = seasonPlan()) {
     for (const it of sched) {
       const day = addDays(x.week, dayIdx(it.d));
       if (it.kind === 'race' || it.kind === 'brace' || it.skip || day < today) continue;
-      add(`kb-${it.kind}-${day}`, day, addDays(day, 1), it.kind === 'quality' && x.phase !== 'recover' ? T(`Qualität: ${it.detail}`, `Quality: ${it.detail}`) : it.title, it.detail);
+      add(`kb-${it.kind}-${day}`, day, addDays(day, 1), it.kind === 'quality' && x.phase !== 'recover' && !x.test ? T(`Qualität: ${it.detail}`, `Quality: ${it.detail}`) : it.title, it.detail);
     }
   }
   for (const r of races.filter(r => r.date >= today)) add(`kb-race-${r.id}`, r.date, addDays(r.date, 1), `🏁 ${r.name} (${raceLabel(r)})`,
@@ -2235,7 +2249,7 @@ function renderWeek() {
   while (byWeek.has(w)) { streak++; w = addDays(w, -7); }
   $('weekcount').textContent = String(now.length);
   $('weekrange').textContent = `${T('KW', 'Wk')} ${isoWeek(cur)} · ${dateShort(cur)}–${dateShort(addDays(cur, 6))}`;
-  $('weekrpe').textContent = rated.length ? (rated.reduce((a, b) => a + b, 0) / rated.length).toLocaleString(LOCALE, { maximumFractionDigits: 1 }) : '–';
+  $('weekrpe').textContent = rated.length ? NUM1.format(rated.reduce((a, b) => a + b, 0) / rated.length) : '–';
   $('weekstreak').textContent = String(streak);
   const weeks = Array.from({ length: 8 }, (_, i) => addDays(cur, (i - 7) * 7)), counts = weeks.map(x => (byWeek.get(x) || []).length);
   // Kompaktes Diagramm: schmale viewBox, damit die Beschriftung auf dem Handy lesbar bleibt
@@ -2377,11 +2391,11 @@ $('runcontent').addEventListener('click', e => {
   if (dn && wp) { const k = dn.dataset.done; wp.done = wp.done.includes(k) ? wp.done.filter(x => x !== k) : wp.done.concat(k); storeWeekPlan(); renderRun(); return; }
   const mv = e.target.closest('[data-move]');
   if (mv && wp) {
-    const to = Number(mv.dataset.to), x = seasonPlan().weeks[0], week = weekStart(localDay());
+    const to = Number(mv.dataset.to), x = seasonPlan().weeks[0];
     // Lauf auf einen Krafttag: die Kraft-Einheit dort entfällt diese Woche
     const clash = mv.dataset.move.startsWith('strength') || !x ? [] : weekSchedule(x).filter(o => o.kind === 'strength' && o.d === to && !o.skip && !o.done && !fixedStrength(o));
     wp.moved[mv.dataset.move] = to; storeWeekPlan();
-    for (const o of clash) { toggleSkip(week, o.key); wp.autoSkip = Object.assign({}, wp.autoSkip, { [mv.dataset.move]: o.key }); }
+    for (const o of clash) wp.autoSkip = Object.assign({}, wp.autoSkip, { [mv.dataset.move]: o.key });
     storeWeekPlan();
     renderRun();
     toast(clash.length ? T(`Auf ${WD_LONG[to]} verschoben – Kraft entfällt dafür.`, `Moved to ${WD_LONG[to]} – strength is skipped instead.`) : T(`Auf ${WD_LONG[to]} verschoben.`, `Moved to ${WD_LONG[to]}.`));
@@ -2389,10 +2403,9 @@ $('runcontent').addEventListener('click', e => {
   }
   const um = e.target.closest('[data-unmove]');
   if (um && wp) {
-    const k = um.dataset.unmove, sk = isObj(wp.autoSkip) ? wp.autoSkip[k] : null, week = weekStart(localDay());
+    const k = um.dataset.unmove;
     delete wp.moved[k];
-    // die dafür ausgefallene Kraft-Einheit kommt zurück
-    if (sk) { if ((weekSkip[week] || []).includes(sk)) toggleSkip(week, sk); delete wp.autoSkip[k]; }
+    if (isObj(wp.autoSkip)) delete wp.autoSkip[k]; // die dafür ausgefallene Kraft-Einheit kommt zurück
     storeWeekPlan(); renderRun(); return;
   }
   if (e.target.closest('#racecancel')) { raceEdit = null; renderRun(); return; }
