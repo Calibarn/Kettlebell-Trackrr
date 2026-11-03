@@ -1419,7 +1419,10 @@ const EN_TEXT = {
 "Android: Die Tab-Leiste passt jetzt auch auf schmale Telefone – „Mehr“ war abgeschnitten. Auf sehr schmalen Displays werden Reiter nicht mehr gekürzt.": "Android: the tab bar now fits narrow phones too – “More” was cut off. On very narrow displays tabs are no longer shortened.",
 "Kalender-Export: Testläufe heißen „Testlauf 5 km“. Ein vergangenes Rennen ohne eingetragenes Ergebnis verschiebt den Testlauf nicht mehr – der Plan erinnert stattdessen ans Eintragen.": "Calendar export: time trials are called “Time trial 5 km”. A past race without an entered result no longer postpones the time trial – the plan reminds you to enter it instead.",
 "Abhaken: Kraft, die für einen nachgeholten Lauf ausfällt, kommt beim Ausschalten oder Rückgängigmachen sicher zurück.": "Tick off: strength skipped for a run you catch up reliably comes back when you switch the feature off or undo.",
-"Zahlen werden schneller formatiert – der Start mit vielen Einträgen geht spürbar flotter.": "Numbers are formatted faster – starting up with many entries is noticeably quicker."
+"Zahlen werden schneller formatiert – der Start mit vielen Einträgen geht spürbar flotter.": "Numbers are formatted faster – starting up with many entries is noticeably quicker.",
+"Feste Krafttage gelten nur noch für gewählte Krafttage – ein abgewählter und später wieder gewählter Tag ist nicht mehr unerwartet „fest“.": "Fixed strength days now only apply to selected strength days – a day you deselect and later select again is no longer unexpectedly “fixed”.",
+"„Einstellungen zurücksetzen“ setzt auch Haken und Verschiebungen der laufenden Woche zurück.": "“Reset settings” now also resets the ticks and moves of the current week.",
+"Trainingstempos, Testläufe, Abhaken & Fehlerbehebungen": "Training paces, time trials, tick-off & fixes"
 };
 const EN_HTML = {
 "Kraft": "Strength",

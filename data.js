@@ -594,7 +594,7 @@ for (const [pk, m] of Object.entries(BEST)) for (const sl of PLANS[pk].slots) if
    Der älteste (letzte) Eintrag ist der Grundstand mit allen Funktionen; Neulinge sehen ihn plus die 3 neuesten Updates. */
 // Ein Eintrag pro Tag: Änderungen desselben Tages kommen in den Eintrag des Tages (aka = frühere ids für „schon gesehen“)
 const CHANGELOG = [
-  { id: '2026-11-03', aka: ['2026-11-03b', '2026-11-03c'], date: '2026-11-03', title: 'Trainingstempos, Testläufe & Abhaken', items: [
+  { id: '2026-11-03', aka: ['2026-11-03b', '2026-11-03c'], date: '2026-11-03', title: 'Trainingstempos, Testläufe, Abhaken & Fehlerbehebungen', items: [
     ['Laufen', 'Plan → Übersicht zeigt deine Tempos für locker, Schwelle, Intervall und Marathon – aus deiner aktuellen Form: dem neuesten Ergebnis, solange es höchstens 3 % langsamer ist als das beste der letzten 12 Monate. Die Wochenplanung schreibt sie zu den passenden Einheiten.'],
     ['Renntempo', 'Auch das Renntempo in den Einheiten kommt aus deiner Form statt aus der Zielzeit.'],
     ['Testlauf', 'Alle 8 Wochen ohne Ergebnis oder Rennen plant der Plan einen 5-km-Testlauf statt der Qualitätseinheit ein. Ergebnis unter Bestzeiten eintragen – B-Rennen zählen genauso.'],
@@ -603,6 +603,8 @@ const CHANGELOG = [
     ['Behoben', 'Android: Die Tab-Leiste passt jetzt auch auf schmale Telefone – „Mehr“ war abgeschnitten. Auf sehr schmalen Displays werden Reiter nicht mehr gekürzt.'],
     ['Behoben', 'Kalender-Export: Testläufe heißen „Testlauf 5 km“. Ein vergangenes Rennen ohne eingetragenes Ergebnis verschiebt den Testlauf nicht mehr – der Plan erinnert stattdessen ans Eintragen.'],
     ['Behoben', 'Abhaken: Kraft, die für einen nachgeholten Lauf ausfällt, kommt beim Ausschalten oder Rückgängigmachen sicher zurück.'],
+    ['Behoben', 'Feste Krafttage gelten nur noch für gewählte Krafttage – ein abgewählter und später wieder gewählter Tag ist nicht mehr unerwartet „fest“.'],
+    ['Behoben', '„Einstellungen zurücksetzen“ setzt auch Haken und Verschiebungen der laufenden Woche zurück.'],
     ['Schneller', 'Zahlen werden schneller formatiert – der Start mit vielen Einträgen geht spürbar flotter.']
   ] },
   { id: '2026-11-02u', aka: ['2026-11-02b', '2026-11-02c', '2026-11-02d', '2026-11-02e'], date: '2026-11-02', title: 'Englisch, AMRAP, Erholung & Aufgeräumt', items: [
