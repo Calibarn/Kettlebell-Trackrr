@@ -663,6 +663,7 @@ const CHANGELOG = [
     ['Übersichtlicher', 'Während eines Trainings sind die Hinweise oben und „Heute dabei“ ausgeblendet – der Timer steht sofort im Blick.'],
     ['Übersichtlicher', 'Wochenplanung: Die Knöpfe stehen unter dem Text, der dadurch die volle Breite bekommt. Kacheln stehen zu dritt nebeneinander, die Krafttage passen in eine Zeile, „Messung speichern“ geht über die volle Breite.'],
     ['Übersichtlicher', 'Im Handy-Browser steht der Hinweis „Als App installieren“ jetzt dauerhaft ganz oben, mit Link zur Anleitung. Die Anleitung erklärt auch, wie vorhandene Daten aus dem Browser in die App kommen.'],
+    ['Übersichtlicher', '„Heute dabei“: Kettlebell, Bänder und Körpergewicht stehen nebeneinander in einer Reihe, die Beschriftung darüber.'],
     ['Behoben', 'Bei den Hinweisen oben stand das Symbol in einer eigenen Zeile – jetzt links neben dem Text.'],
     ['Behoben', 'Android: Die Tab-Leiste passt jetzt auch auf schmale Telefone – „Mehr“ war abgeschnitten. Auf sehr schmalen Displays werden Reiter nicht mehr gekürzt.'],
     ['Behoben', 'Kalender-Export: Testläufe heißen „Testlauf 5 km“. Ein vergangenes Rennen ohne eingetragenes Ergebnis verschiebt den Testlauf nicht mehr – der Plan erinnert stattdessen ans Eintragen.'],

@@ -526,7 +526,7 @@ function fitTabs() {
 }
 function renderGear() {
   if (PLANS[plan].kbOnly) { $('gearbar').innerHTML = `<span class="lbl">${T('Fest mit Kettlebell – „Heute dabei“ gilt für diesen Plan nicht.', 'Kettlebell only – “With me today” does not apply to this plan.')}</span>`; return; }
-  $('gearbar').innerHTML = `<span class="lbl">${T('Heute dabei:', 'With me today:')}</span>` +
+  $('gearbar').innerHTML = `<span class="lbl">${T('Heute dabei', 'With me today')}</span>` +
     (owns('kb') ? `<button class="chip" type="button" data-gear="kb" aria-pressed="${gear.kb}">Kettlebell</button>` : '') +
     (owns('band') ? `<button class="chip" type="button" data-gear="band" aria-pressed="${gear.band}">${T('Bänder', 'Bands')}</button>` : '') +
     `<button class="chip" type="button" data-gear="bw" aria-pressed="${gear.bw || (!(gear.kb && owns('kb')) && !(gear.band && owns('band')))}">${T('Körpergewicht', 'Body weight')}</button>` +

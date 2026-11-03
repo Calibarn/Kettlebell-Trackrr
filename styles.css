@@ -442,3 +442,9 @@ html.testbuild .largetitle::after{content:" Test";font-size:.5em;font-weight:700
 .installbanner .itxt{display:flex;flex-direction:column;gap:2px}
 .installbanner small{font-size:14px;color:var(--label2);line-height:1.35}
 .installbanner .linkbtn{padding:0;font-size:14px;font-weight:600;text-align:left}
+/* Heute dabei: Beschriftung darüber, die Geräte nebeneinander in einer Reihe (Auswahl an der Farbe, ohne Haken) */
+.gearrow{row-gap:6px}
+.gearrow .lbl{flex:1 0 100%}
+.gearrow .chip{flex:1 1 auto;padding:8px 10px;text-align:center;white-space:nowrap}
+.gearrow .chip[aria-pressed=true]::before{content:none}
+@media (max-width:340px){.gearrow .chip{padding:8px 6px}}
