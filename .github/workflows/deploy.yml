@@ -1,0 +1,52 @@
+# Veröffentlicht die App auf GitHub Pages: main ist die App, dev die Testversion unter /dev/.
+# Läuft bei jedem Push auf main und auf Anstoß (nach grünen Tests auf dev, siehe test.yml).
+name: Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+          path: main
+      - uses: actions/checkout@v6
+        with:
+          ref: dev
+          path: dev
+        continue-on-error: true
+      - name: Seite zusammenstellen
+        run: |
+          mkdir -p _site
+          rsync -a --exclude '.git*' --exclude 'tests' --exclude 'node_modules' --exclude 'package*.json' --exclude 'playwright.config.js' --exclude '*.md' main/ _site/
+          # Testversion nur, wenn sie ihren eigenen Speicherbereich hat (sonst würde sie die Daten der echten App teilen)
+          if [ -f dev/app.js ] && grep -q "KEY_NS" dev/app.js; then
+            mkdir -p _site/dev
+            rsync -a --exclude '.git*' --exclude 'tests' --exclude 'node_modules' --exclude 'package*.json' --exclude 'playwright.config.js' --exclude '*.md' dev/ _site/dev/
+            echo "Testversion unter /dev/ dabei"
+          else
+            echo "Testversion übersprungen"
+          fi
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4
