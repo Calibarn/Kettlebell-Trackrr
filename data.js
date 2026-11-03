@@ -592,29 +592,23 @@ for (const [pk, m] of Object.entries(BEST)) for (const sl of PLANS[pk].slots) if
 
 /* Neuigkeiten („Patch Notes“): neueste zuerst. Neuer Eintrag = neue id; die App zeigt ihn beim nächsten Start einmal an.
    Der älteste (letzte) Eintrag ist der Grundstand mit allen Funktionen; Neulinge sehen ihn plus die 3 neuesten Updates. */
+// Ein Eintrag pro Tag: Änderungen desselben Tages kommen in den Eintrag des Tages (aka = frühere ids für „schon gesehen“)
 const CHANGELOG = [
-  { id: '2026-11-03b', date: '2026-11-03', title: 'Testläufe & aktuelle Form', items: [
-    ['Laufen', 'Tempos und Renntempo kommen jetzt aus deiner aktuellen Form statt aus der Zielzeit: Es zählt das neueste Ergebnis, solange es höchstens 3 % langsamer ist als das beste der letzten 12 Monate.'],
-    ['Testlauf', 'Alle 8 Wochen ohne Ergebnis oder Rennen plant der Plan einen 5-km-Testlauf statt der Qualitätseinheit ein. Ergebnis unter Bestzeiten eintragen – B-Rennen zählen genauso.']
+  { id: '2026-11-03', aka: ['2026-11-03b', '2026-11-03c'], date: '2026-11-03', title: 'Trainingstempos, Testläufe & Abhaken', items: [
+    ['Laufen', 'Plan → Übersicht zeigt deine Tempos für locker, Schwelle, Intervall und Marathon – aus deiner aktuellen Form: dem neuesten Ergebnis, solange es höchstens 3 % langsamer ist als das beste der letzten 12 Monate. Die Wochenplanung schreibt sie zu den passenden Einheiten.'],
+    ['Renntempo', 'Auch das Renntempo in den Einheiten kommt aus deiner Form statt aus der Zielzeit.'],
+    ['Testlauf', 'Alle 8 Wochen ohne Ergebnis oder Rennen plant der Plan einen 5-km-Testlauf statt der Qualitätseinheit ein. Ergebnis unter Bestzeiten eintragen – B-Rennen zählen genauso.'],
+    ['Abhaken', 'Optional unter Profil → Trainingswoche: Einheiten im Plan abhaken und Verpasstes mit einem Tipp auf den nächsten passenden Tag derselben Woche legen. Gilt nur für die laufende Woche.'],
+    ['Kraft', 'Im Zweifel fällt Kraft aus: Ein nachgeholter Lauf darf auf einen Krafttag rücken. Feste Krafttage (im Profil wählbar) werden dabei nie getauscht.']
   ] },
-  { id: '2026-11-03', date: '2026-11-03', title: 'Trainingstempos', items: [
-    ['Laufen', 'Plan → Übersicht zeigt deine Tempos für locker, Schwelle, Intervall und Marathon – berechnet aus deinem besten Ergebnis der letzten 12 Monate. Die Wochenplanung schreibt sie zu den passenden Einheiten.'],
-    ['Renntempo', 'Ohne Zielzeit wird das Renntempo in den Einheiten aus deiner Bestzeit hochgerechnet.']
-  ] },
-  { id: '2026-11-02e', date: '2026-11-02', title: 'Erholung nach dem Rennen', items: [
-    ['Laufen', 'Nach dem A-Rennen zeigt der Plan in der Rennwoche und in den Erholungswochen, wie lange die Erholung nach der Distanz etwa dauert. Dazu neu unter Plan → Wissen: „Erholung nach dem Rennen“.']
-  ] },
-  { id: '2026-11-02d', date: '2026-11-02', title: 'AMRAP & Ausstattung', items: [
-    ['Kraft', 'Neuer Plan „AMRAP“: 20 Minuten so viele Runden wie möglich mit einer Kettlebell – Rotational Thruster, Deadlift to Halo, Lunge to Press-out, Pullover mit Rotation und Cross-Body Lunge, jeweils mit Anleitung und Skizze.'],
-    ['Ausstattung', 'Kraft bietet nur noch an, was du unter Profil → Geräte & Gewichte eingetragen hast: ohne Kettlebell keine Kettlebell-Übungen und -Pläne, ohne Bänder keine Band-Übungen.'],
-    ['Neu eingerichtet', 'Wer neu startet, beginnt ohne Kettlebell und Bänder und trägt seine Geräte im Profil ein. Bestehende Einstellungen bleiben unverändert.']
-  ] },
-  { id: '2026-11-02c', date: '2026-11-02', title: 'Englisch', items: [
+  { id: '2026-11-02u', aka: ['2026-11-02b', '2026-11-02c', '2026-11-02d', '2026-11-02e'], date: '2026-11-02', title: 'Englisch, AMRAP, Erholung & Aufgeräumt', items: [
     ['Sprache', 'Die App gibt es jetzt auch auf Englisch. Automatisch nach Gerätesprache: Deutsch bei deutscher Gerätesprache, sonst Englisch.'],
     ['Mehr', 'Unter Mehr → Sprache lässt sich Deutsch oder Englisch fest einstellen.'],
-    ['Ansagen', 'Sprachansagen kommen in der gewählten Sprache – mit einer Stimme, die auf dem Gerät läuft.']
-  ] },
-  { id: '2026-11-02b', date: '2026-11-02', title: 'Aufgeräumt & übersichtlicher', items: [
+    ['Ansagen', 'Sprachansagen kommen in der gewählten Sprache – mit einer Stimme, die auf dem Gerät läuft.'],
+    ['Kraft', 'Neuer Plan „AMRAP“: 20 Minuten so viele Runden wie möglich mit einer Kettlebell – Rotational Thruster, Deadlift to Halo, Lunge to Press-out, Pullover mit Rotation und Cross-Body Lunge, jeweils mit Anleitung und Skizze.'],
+    ['Ausstattung', 'Kraft bietet nur noch an, was du unter Profil → Geräte & Gewichte eingetragen hast: ohne Kettlebell keine Kettlebell-Übungen und -Pläne, ohne Bänder keine Band-Übungen.'],
+    ['Neu eingerichtet', 'Wer neu startet, beginnt ohne Kettlebell und Bänder und trägt seine Geräte im Profil ein. Bestehende Einstellungen bleiben unverändert.'],
+    ['Laufen', 'Nach dem A-Rennen zeigt der Plan in der Rennwoche und in den Erholungswochen, wie lange die Erholung nach der Distanz etwa dauert. Dazu neu unter Plan → Wissen: „Erholung nach dem Rennen“.'],
     ['Laufen', '„Wettkampf“ und „Training“ sind jetzt ein Reiter „Warm-up“: oben der Renntag (5 km bis Marathon), darunter Intervall, Speed und Longrun.'],
     ['Körpermaße', 'Gewicht und Bauchumfang in einem Formular und einem Protokoll, Diagramm zum Umschalten, eine Erinnerung und ein CSV-Export für beides.'],
     ['Skizzen', 'Ansicht von vorne in Lila, seitlich in Grün – jeweils mit kleiner Beschriftung.'],

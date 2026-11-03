@@ -11,7 +11,7 @@ test.describe('Neuigkeiten', () => {
     await page.click('#notes-close');
     await expect(page.locator('#notes')).toBeHidden();
     // das close-Ereignis des Dialogs kommt asynchron – darauf warten statt sofort zu lesen
-    await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem(KEYS.notes)).seen)).toBe(await page.evaluate(() => CHANGELOG[0].id));
+    await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem(KEYS.notes)).seen)).toBe(await page.evaluate(() => noteStamp(CHANGELOG[0])));
 
     await page.reload();
     await page.waitForTimeout(600);
@@ -54,6 +54,8 @@ test('Neuigkeiten: wer nichts gesehen hat, bekommt alle; wer den Grundstand kenn
   expect(await shown(await page.evaluate(() => CHANGELOG.at(-1).id))).toEqual(['Zweites Update', 'Erstes Update']);
   expect(await shown('neu1')).toEqual(['Zweites Update']);
   expect(await shown('neu2')).toEqual(['Zweites Update']);
+  // ein Tag, an dem neue Punkte dazugekommen sind, erscheint wieder; frühere ids des Tages (aka) zählen als derselbe Tag
+  expect(await shown('neu2@1')).toEqual(['Zweites Update']);
 });
 
 test('Neuigkeiten für Neulinge: höchstens die 3 neuesten Updates plus Grundstand', async ({ page }) => {
@@ -70,4 +72,20 @@ test('Neuigkeiten für Neulinge: höchstens die 3 neuesten Updates plus Grundsta
   expect(r.t).toEqual(['Update 5', 'Update 4', 'Update 3', 'Grundstand: alle Funktionen']);
   expect(r.hint).toBe(true);
   expect(r.t2).toEqual(['Update 5', 'Update 4', 'Update 3']); // wer u2 kennt, bekommt alles Neuere
+});
+
+test('Neuigkeiten: ein Eintrag pro Tag; neue Punkte am selben Tag zeigen den Tag erneut', async ({ page }) => {
+  const r = await page.evaluate(() => {
+    const real = CHANGELOG.slice(), base = real.at(-1);
+    const day = { id: 'd1', aka: ['d1b'], date: '2026-12-01', title: 'Tag 1', items: [['A', 'b']] };
+    CHANGELOG.splice(0, CHANGELOG.length, day, base);
+    const out = [];
+    for (const seen of ['d1@1', 'd1b', 'd1']) { notesOpt.seen = seen; out.push(seenIndex()); }
+    day.items.push(['C', 'd']); notesOpt.seen = 'd1@1'; out.push(seenIndex());
+    CHANGELOG.splice(0, CHANGELOG.length, ...real);
+    return out;
+  });
+  expect(r).toEqual([0, 1, 1, 1]);
+  const dates = await page.evaluate(() => CHANGELOG.slice(0, -1).map(c => c.date));
+  expect(new Set(dates).size).toBe(dates.length);
 });

@@ -386,3 +386,8 @@ html[data-os=android] .sheet{border-radius:28px 28px 0 0}
 .warmupsub .sublabel{flex:0 0 100%;font-size:11px;font-weight:600;color:var(--label2);text-transform:uppercase;letter-spacing:.03em;padding:5px 8px 1px}
 .warmupsub button{flex:1 1 20%}
 .row .rowselect{flex:0 0 auto;max-width:48%}
+.planrows .schedcheck{flex:0 0 auto;width:26px;height:26px;border-radius:50%;border:2px solid var(--label3);background:none;color:var(--on-accent);font-weight:700;font-size:14px;line-height:1;padding:0;margin-right:2px}
+.planrows .schedcheck[aria-pressed=true]{background:var(--accent);border-color:var(--accent)}
+.planrows .row.done .txt b{opacity:.55}
+.planrows .moved{color:var(--accent-ink)}
+.planrows .moved .linkbtn{font-size:inherit;padding:0;margin:0}

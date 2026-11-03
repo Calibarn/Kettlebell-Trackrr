@@ -5,7 +5,7 @@ const $ = id => document.getElementById(id);
 const KEYS = {
   entries: 'jan-kettlebell-tracker-v1', waist: 'jan-kb-waist-v1', sound: 'jan-kb-sound-v1', gear: 'jan-kb-gear-v1',
   choice: 'jan-kb-choice-v1', stage: 'jan-kb-stage-v1', plan: 'jan-kb-plan-v1', session: 'jan-kb-session-v1',
-  backup: 'jan-kb-lastbackup-v1', hint: 'jan-kb-installhint-v1', area: 'jan-kb-area-v1', run: 'jan-kb-runview-v1', audio: 'jan-kb-audio-v1', mob: 'jan-kb-mobview-v1', runweeks: 'jan-kb-runweeks-v1', runlog: 'jan-kb-runlog-v1', races: 'jan-kb-races-v1', profile: 'jan-kb-profile-v1', weight: 'jan-kb-weight-v1', skip: 'jan-kb-weekskip-v1', results: 'jan-kb-results-v1', bestview: 'jan-kb-bestview-v1', notes: 'jan-kb-notes-v1'
+  backup: 'jan-kb-lastbackup-v1', hint: 'jan-kb-installhint-v1', area: 'jan-kb-area-v1', run: 'jan-kb-runview-v1', audio: 'jan-kb-audio-v1', mob: 'jan-kb-mobview-v1', runweeks: 'jan-kb-runweeks-v1', runlog: 'jan-kb-runlog-v1', races: 'jan-kb-races-v1', profile: 'jan-kb-profile-v1', weight: 'jan-kb-weight-v1', skip: 'jan-kb-weekskip-v1', results: 'jan-kb-results-v1', bestview: 'jan-kb-bestview-v1', notes: 'jan-kb-notes-v1', weekplan: 'jan-kb-weekplan-v1'
 };
 /* Datensicherheit bei Updates:
    - Einträge, die diese Version nicht versteht, werden nie verworfen, sondern unverändert mitgespeichert.
@@ -65,7 +65,8 @@ function normProfile(p) {
     kit: { kb, kbDefault: kb.includes(kit.kbDefault) ? kit.kbDefault : kb.includes(KB_DEFAULT) ? KB_DEFAULT : (kb.length ? kb[0] : KB_DEFAULT), bands },
     week: { group: wk.group === null ? null : isWd(wk.group) ? wk.group : d.week.group, quality: wk.quality === null ? null : isWd(wk.quality) ? wk.quality : d.week.quality, long: wk.long === null ? null : isWd(wk.long) ? wk.long : d.week.long,
       strength: Array.isArray(wk.strength) ? [...new Set(wk.strength.filter(isWd))] : d.week.strength.slice(),
-      extraName: typeof wk.extraName === 'string' ? wk.extraName.slice(0, 30) : '', extraDay: isWd(wk.extraDay) ? wk.extraDay : null }
+      extraName: typeof wk.extraName === 'string' ? wk.extraName.slice(0, 30) : '', extraDay: isWd(wk.extraDay) ? wk.extraDay : null, track: wk.track === true,
+      strengthFixed: Array.isArray(wk.strengthFixed) ? [...new Set(wk.strengthFixed.filter(isWd))] : [] }
   };
 }
 // Unbekannte Felder (z. B. aus einer neueren Version) bleiben beim Speichern erhalten
@@ -848,7 +849,9 @@ function renderProfile() {
       <div class="field wide"><label for="wkextraname">${T('Name der weiteren Einheit', 'Name of the other session')}</label><input id="wkextraname" type="text" maxlength="30" autocomplete="off" placeholder="${T('z. B. Kurs, Radfahren', 'e.g. class, cycling')}" value="${esc(w.extraName)}"></div>
     </div>
     <p class="tiny">${T('Kraft-Tage', 'Strength days')}</p><div class="chips" role="group" aria-label="${T('Kraft-Tage', 'Strength days')}">${WEEK_ORDER.map(d => `<button type="button" class="chip" data-strength="${d}" aria-pressed="${w.strength.includes(d)}">${WD[d]}</button>`).join('')}</div>
-    ${weekWarnings().map(t => `<div class="alert due">${esc(t)}</div>`).join('')}`;
+    ${w.strength.length ? `<p class="tiny">${T('Feste Krafttage – werden beim Nachholen nicht für einen Lauf getauscht', 'Fixed strength days – never swapped for a run when catching up')}</p><div class="chips" role="group" aria-label="${T('Feste Krafttage', 'Fixed strength days')}">${WEEK_ORDER.filter(d => w.strength.includes(d)).map(d => `<button type="button" class="chip" data-strengthfix="${d}" aria-pressed="${w.strengthFixed.includes(d)}">${WD[d]}</button>`).join('')}</div>` : ''}
+    ${weekWarnings().map(t => `<div class="alert due">${esc(t)}</div>`).join('')}
+    <p class="tiny">${T('Optional: im Plan abhaken, was erledigt ist, und Verpasstes in derselben Woche auf einen freien Tag verschieben.', 'Optional: tick off in the plan what is done and move missed sessions to a free day in the same week.')}</p><div class="chips"><button type="button" class="chip" data-wktrack aria-pressed="${w.track}">${T('Abhaken & nachholen', 'Tick off & catch up')}</button></div>`;
   const zr = n => zoneRange(n);
   $('hrpanel').innerHTML = `<div class="raceform" style="padding:0">
       <div class="field"><label for="hrmax">${T('Maximale HF', 'Max HR')}</label><input id="hrmax" type="text" inputmode="numeric" autocomplete="off" placeholder="${T('z. B. 184', 'e.g. 184')}" value="${h.max ?? ''}"></div>
@@ -877,6 +880,8 @@ function profileChanged(what) {
 }
 function onProfileClick(e) {
   const t = e.target;
+  const sf = t.closest('[data-strengthfix]'); if (sf) { const d = Number(sf.dataset.strengthfix), f = profile.week.strengthFixed; profile.week.strengthFixed = f.includes(d) ? f.filter(x => x !== d) : f.concat(d); persistProfile(); renderProfile(); renderRun(); return; }
+  if (t.closest('[data-wktrack]')) { profile.week.track = !profile.week.track; persistProfile(); renderProfile(); renderRun(); return; }
   const sd = t.closest('[data-strength]');
   if (sd) { const d = Number(sd.dataset.strength), s = profile.week.strength; profile.week.strength = s.includes(d) ? s.filter(x => x !== d) : s.concat(d); profileChanged('week'); return; }
   if (t.id === 'hrcalc') {
@@ -1310,9 +1315,45 @@ function weekSchedule(x) {
   if (!x.a && !x.bLong && w.long !== null) { const lv = kmRound(x.long); add(w.long, 'long', x.noLong ? T('Locker oder frei', 'Easy or rest') : lv ? T(`Longrun ca. ${lv} km`, `Long run approx. ${lv} km`) : T('Longrun', 'Long run'), weekLongNote(x)); }
   for (const d of w.strength) if (!x.a || before(d, 2)) add(d, 'strength', T('Kraft', 'Strength'), x.a ? T('leicht, keine schweren Beinübungen', 'light, no heavy leg exercises') : x.phase === 'taper' ? T('ohne schwere Beinübungen', 'without heavy leg exercises') : x.phase === 'recover' ? T('leicht', 'light') : '');
   if (w.extraDay !== null && (!x.a || before(w.extraDay))) add(w.extraDay, 'extra', w.extraName || T('Weitere Einheit', 'Other session'), '');
-  const skip = weekSkip[x.week] || [];
-  for (const it of out) { it.key = it.kind === 'strength' ? 'strength-' + it.d : it.kind; it.skip = skip.includes(it.key); }
+  const skip = weekSkip[x.week] || [], wp = curWeekPlan(x.week);
+  for (const it of out) {
+    it.key = it.kind === 'strength' ? 'strength-' + it.d : it.kind; it.skip = skip.includes(it.key);
+    if (wp) { it.done = wp.done.includes(it.key); if (isWd(wp.moved[it.key])) { it.from = it.d; it.d = wp.moved[it.key]; } }
+  }
   return out.sort((a, b) => dayIdx(a.d) - dayIdx(b.d));
+}
+/* Abhaken & nachholen (optional, Profil → Trainingswoche): gilt nur für die laufende Woche.
+   Gespeichert wird { week, done: [Schlüssel], moved: { Schlüssel: Wochentag } }; in der nächsten Woche ist alles wieder frei. */
+let weekPlan = load(KEYS.weekplan, null);
+function curWeekPlan(week) {
+  if (!profile.week.track || week !== weekStart(localDay())) return null;
+  if (!isObj(weekPlan) || weekPlan.week !== week) weekPlan = { week, done: [], moved: {} };
+  if (!Array.isArray(weekPlan.done)) weekPlan.done = []; if (!isObj(weekPlan.moved)) weekPlan.moved = {};
+  return weekPlan;
+}
+const storeWeekPlan = () => store(KEYS.weekplan, weekPlan);
+// Nächster passender Tag ab morgen (bzw. ab heute für Einheiten von gestern und früher), höchstens bis Sonntag:
+// harte Einheiten (Qualität, Longrun) nicht neben einer anderen harten Einheit oder einem Rennen, nichts am Renntag;
+// bevorzugt ein Tag ohne andere Einheit, sonst ein Tag ohne weiteren Lauf.
+// Im Zweifel fällt Kraft aus: Ein Lauf darf auf einen Krafttag rücken (die Kraft-Einheit entfällt dann, außer an festen Krafttagen), verpasste Kraft
+// wird nur auf einen ganz freien Tag gelegt – sonst lässt man sie diese Woche ausfallen.
+const HARD = it => ['quality', 'long', 'race', 'brace'].includes(it.kind) && !(it.kind === 'quality' && /Locker|Easy/.test(it.title));
+const RUN = it => ['quality', 'long', 'group', 'race', 'brace'].includes(it.kind);
+// Feste Krafttage (Profil): werden beim Nachholen nie für einen Lauf getauscht
+const fixedStrength = o => o.kind === 'strength' && profile.week.strengthFixed.includes(o.from !== undefined ? o.from : o.d);
+function catchUpDay(it, items) {
+  const today = dayIdx(new Date(localDay() + 'T12:00:00').getDay()), start = dayIdx(it.d) < today ? today : today + 1;
+  const others = items.filter(o => o !== it && !o.skip), race = others.find(o => o.kind === 'race');
+  const ok = (i, strict) => {
+    if (race && i >= dayIdx(race.d) - (HARD(it) ? 1 : 0)) return false;
+    const same = others.filter(o => dayIdx(o.d) === i);
+    if ((strict || !RUN(it)) && same.length) return false; // zuerst ganz freie Tage; Kraft & Co. nur auf freie Tage
+    if (RUN(it) && same.some(o => RUN(o) || fixedStrength(o))) return false; // Lauf: kein zweiter Lauf, kein fester Krafttag
+    if (HARD(it) && others.some(o => HARD(o) && Math.abs(dayIdx(o.d) - i) <= 1)) return false;
+    return true;
+  };
+  for (const strict of [true, false]) for (let i = start; i <= 6; i++) if (ok(i, strict)) return WEEK_ORDER[i];
+  return null;
 }
 // „Entfällt“ je Woche, z. B. wenn die Laufgruppe ausfällt; alte Wochen werden aufgeräumt
 let weekSkip = load(KEYS.skip, {});
@@ -1329,6 +1370,19 @@ const kmRound = v => v === null || v === undefined ? null : Math.round(v);
 function goalLine(r) {
   if (!r.goal) return '';
   return T(` · Ziel ${hms(r.goal)} = ${paceText(r.goal, raceKm(r))}`, ` · goal ${hms(r.goal)} = ${paceText(r.goal, raceKm(r))}`);
+}
+// Zeilen der Wochenplanung; mit „Abhaken & nachholen“ zusätzlich Haken, Nachholen-Vorschlag und Rückgängig
+function schedRows(x) {
+  const items = weekSchedule(x), track = !!curWeekPlan(x.week), today = dayIdx(new Date(localDay() + 'T12:00:00').getDay());
+  return items.map(it => {
+    const race = it.kind === 'race' || it.kind === 'brace', open = track && !race && !it.done && !it.skip;
+    const to = open && dayIdx(it.d) <= today ? catchUpDay(it, items) : null;
+    const none = open && to === null && dayIdx(it.d) < today ? `<small class="moved">${T('kein passender Tag mehr frei – diese Woche einfach ausfallen lassen', 'no suitable day left – just skip it this week')}</small>` : '';
+    const note = it.skip ? `<small>${T('entfällt diese Woche', 'skipped this week')}</small>` : none + (it.from !== undefined ? `<small class="moved">${T(`verschoben von ${WD[it.from]}`, `moved from ${WD[it.from]}`)} · <button type="button" class="linkbtn" data-unmove="${it.key}">${T('rückgängig', 'undo')}</button></small>` : '') + (it.detail ? `<small>${esc(it.detail)}</small>` : '');
+    const check = track && !race ? `<button type="button" class="schedcheck" data-done="${it.key}" aria-pressed="${!!it.done}" aria-label="${esc(it.title)} ${T('erledigt', 'done')}">${it.done ? '✓' : ''}</button>` : '';
+    const btns = race ? '' : (to !== null ? `<button type="button" class="btn small" data-move="${it.key}" data-to="${to}">${T(`→ ${WD[to]}`, `→ ${WD[to]}`)}</button>` : '') + (it.done ? '' : `<button type="button" class="btn small" data-skip="${it.key}" data-week="${x.week}">${it.skip ? T('Wieder rein', 'Restore') : T('Entfällt', 'Skip')}</button>`);
+    return `<div class="row sched-${it.kind}${it.skip ? ' skipped' : ''}${it.done ? ' done' : ''}">${check}<span class="dur">${WD[it.d]}</span><span class="txt"><b>${esc(it.title)}</b>${note}</span>${btns}</div>`;
+  }).join('');
 }
 function renderPlanWeek(S) {
   const x = S.weeks[0], [pl, pt] = SEASON.phase[phaseKey(x)];
@@ -1347,7 +1401,7 @@ function renderPlanWeek(S) {
       <div class="metric"><span>${T('Longrun', 'Long run')}</span><b>${x.a || x.noLong || x.bLong ? '–' : longVal === null ? '?' : T('ca. ', 'approx. ') + longVal + ' km'}</b><small>${esc(weekLongNote(x))}</small></div>
       <div class="metric"><span>${T('Woche', 'Week')}</span><b>${kmVal === null ? '?' : T('ca. ', 'approx. ') + kmVal + ' km'}</b><small>${x.cut ? T('Entlastungswoche', 'deload week') : x.phase === 'taper' ? T('reduziert', 'reduced') : T('höchstens +10 %', 'at most +10 %')}</small></div>
     </div>
-    <div class="planrows" id="planschedule">${weekSchedule(x).map(it => `<div class="row sched-${it.kind}${it.skip ? ' skipped' : ''}"><span class="dur">${WD[it.d]}</span><span class="txt"><b>${esc(it.title)}</b>${it.skip ? `<small>${T('entfällt diese Woche', 'skipped this week')}</small>` : it.detail ? `<small>${esc(it.detail)}</small>` : ''}</span>${it.kind === 'race' || it.kind === 'brace' ? '' : `<button type="button" class="btn small" data-skip="${it.key}" data-week="${x.week}">${it.skip ? T('Wieder rein', 'Restore') : T('Entfällt', 'Skip')}</button>`}</div>`).join('')}</div>
+    <div class="planrows" id="planschedule">${schedRows(x)}</div>
     <p class="tiny">${T('Tage stellst du unter <b>Profil → Trainingswoche</b> ein. „Entfällt“ gilt nur für diese Woche.', 'Set the days under <b>Profile → Training week</b>. “Skip” applies to this week only.')}</p>
     ${recNote}${bs}
     ${S.hasData ? '' : `<p class="tiny">${T('Für Longrun und Wochen-km: unter <b>Umfang</b> deine Läufe oder Wochensummen der letzten Wochen eintragen.', 'For long run and weekly km: enter your runs or weekly totals of the last weeks under <b>Volume</b>.')}</p>`}
@@ -1555,7 +1609,7 @@ const SYNC_COLLS = {
   results: { key: KEYS.results, id: e => isObj(e) && typeof e.id === 'string' ? e.id : null }
 };
 // Einstellungen, die zwischen Geräten gleich sein sollen (Ton, Stimme und „Heute dabei“ bleiben je Gerät)
-const SYNC_SETTINGS = { choices: KEYS.choice, stages: KEYS.stage, profile: KEYS.profile, weekSkip: KEYS.skip };
+const SYNC_SETTINGS = { choices: KEYS.choice, stages: KEYS.stage, profile: KEYS.profile, weekSkip: KEYS.skip, weekPlan: KEYS.weekplan };
 const SYNC_TRACKED = new Set(Object.values(SYNC_COLLS).map(c => c.key).concat(Object.values(SYNC_SETTINGS)));
 const syncHash = s => { let h = 5381; for (let i = 0; i < s.length; i++) h = (h * 33 ^ s.charCodeAt(i)) >>> 0; return h.toString(36) + s.length.toString(36); };
 const rawGet = k => { try { const r = localStorage.getItem(k); return r === null ? null : JSON.parse(r); } catch (e) { return null; } };
@@ -1761,6 +1815,14 @@ new MutationObserver(syncScrollLock).observe(document.body, { subtree: true, att
 /* ---------- Neuigkeiten: beim ersten Start nach einem Update, danach unter Mehr ---------- */
 const notesDlg = $('notes');
 let notesOpt = load(KEYS.notes, null); if (!isObj(notesOpt)) notesOpt = { seen: null, auto: true };
+// Ein Eintrag pro Tag, der im Lauf des Tages wachsen kann: „gesehen“ merkt sich id und Anzahl der Punkte (z. B. „2026-11-03@5“)
+const noteStamp = c => c.id + '@' + c.items.length;
+function seenIndex() {
+  const [sid, n] = String(notesOpt.seen || '').split('@'), i = CHANGELOG.findIndex(c => c.id === sid || (c.aka || []).includes(sid));
+  if (i < 0) return -1;
+  const c = CHANGELOG[i], full = c.id === sid && (n === undefined ? !c.aka : Number(n) === c.items.length);
+  return full ? i : i + 1; // derselbe Tag mit neuen Punkten (oder nur ein früherer Teil davon gesehen) zählt als neu
+}
 function renderNotesRows() {
   $('noteshint').textContent = CHANGELOG.length ? `${T('Stand', 'As of')} ${dateGerman(CHANGELOG[0].date)}: ${CHANGELOG[0].title}` : '';
   $('notesautoval').textContent = notesOpt.auto !== false ? T('An', 'On') : T('Aus', 'Off');
@@ -1768,7 +1830,7 @@ function renderNotesRows() {
 const notesEntry = c => `<h3>${esc(c.title)}</h3><p class="tiny" style="margin-top:0">${dateGerman(c.date)}</p><ul class="notes">${c.items.map(([t, d]) => `<li><b>${esc(t)}:</b> ${esc(d)}</li>`).join('')}</ul>`;
 function openNotes(all) {
   // Gesehenen Eintrag kennt die App: alles Neuere. Noch nie etwas gesehen (oder unbekannt): die letzten Updates plus Grundstand (ältester Eintrag).
-  const NEW_FOR_NEWCOMERS = 3, i = CHANGELOG.findIndex(c => c.id === notesOpt.seen), base = CHANGELOG.at(-1);
+  const NEW_FOR_NEWCOMERS = 3, i = seenIndex(), base = CHANGELOG.at(-1);
   const updates = CHANGELOG.slice(0, -1), skipped = i < 0 && updates.length > NEW_FOR_NEWCOMERS;
   const fresh = all ? CHANGELOG : i >= 0 ? CHANGELOG.slice(0, Math.max(1, i)) : updates.slice(0, NEW_FOR_NEWCOMERS).concat(base);
   $('notes-title').textContent = all ? T('Neuigkeiten', 'News') : T('Neu in der App', 'New in the app');
@@ -1776,7 +1838,7 @@ function openNotes(all) {
     + (all ? '' : `<p class="tiny">${T('Alle Neuigkeiten findest du jederzeit unter <b>Mehr → Was ist neu?</b>', 'You can find all news any time under <b>More → What\'s new?</b>')}</p>`);
   if (!notesDlg.open) notesDlg.showModal();
 }
-notesDlg.addEventListener('close', () => { if (CHANGELOG.length) { notesOpt.seen = CHANGELOG[0].id; store(KEYS.notes, notesOpt); } });
+notesDlg.addEventListener('close', () => { if (CHANGELOG.length) { notesOpt.seen = noteStamp(CHANGELOG[0]); store(KEYS.notes, notesOpt); } });
 $('notes-close').addEventListener('click', () => notesDlg.close());
 $('notesbtn').addEventListener('click', () => openNotes(true));
 // Sprache: Automatisch nach Gerätesprache (Deutsch → Deutsch, sonst Englisch) oder fest. Wechsel lädt die App neu.
@@ -2311,6 +2373,28 @@ $('runcontent').addEventListener('click', e => {
   const bg = e.target.closest('[data-bestgroup]'); if (bg) { bestView.group = bg.dataset.bestgroup; store(KEYS.bestview, bestView); renderRun(); return; }
   const bd = e.target.closest('[data-bestdel]'); if (bd) { if (confirm(T('Dieses Ergebnis löschen?', 'Delete this result?'))) { results = results.filter(r => r.id !== bd.dataset.bestdel); persistResults(); renderRun(); toast(T('Ergebnis gelöscht.', 'Result deleted.')); } return; }
   const sk = e.target.closest('[data-skip]'); if (sk) { toggleSkip(sk.dataset.week, sk.dataset.skip); renderRun(); return; }
+  const dn = e.target.closest('[data-done]'), wp = curWeekPlan(weekStart(localDay()));
+  if (dn && wp) { const k = dn.dataset.done; wp.done = wp.done.includes(k) ? wp.done.filter(x => x !== k) : wp.done.concat(k); storeWeekPlan(); renderRun(); return; }
+  const mv = e.target.closest('[data-move]');
+  if (mv && wp) {
+    const to = Number(mv.dataset.to), x = seasonPlan().weeks[0], week = weekStart(localDay());
+    // Lauf auf einen Krafttag: die Kraft-Einheit dort entfällt diese Woche
+    const clash = mv.dataset.move.startsWith('strength') || !x ? [] : weekSchedule(x).filter(o => o.kind === 'strength' && o.d === to && !o.skip && !o.done && !fixedStrength(o));
+    wp.moved[mv.dataset.move] = to; storeWeekPlan();
+    for (const o of clash) { toggleSkip(week, o.key); wp.autoSkip = Object.assign({}, wp.autoSkip, { [mv.dataset.move]: o.key }); }
+    storeWeekPlan();
+    renderRun();
+    toast(clash.length ? T(`Auf ${WD_LONG[to]} verschoben – Kraft entfällt dafür.`, `Moved to ${WD_LONG[to]} – strength is skipped instead.`) : T(`Auf ${WD_LONG[to]} verschoben.`, `Moved to ${WD_LONG[to]}.`));
+    return;
+  }
+  const um = e.target.closest('[data-unmove]');
+  if (um && wp) {
+    const k = um.dataset.unmove, sk = isObj(wp.autoSkip) ? wp.autoSkip[k] : null, week = weekStart(localDay());
+    delete wp.moved[k];
+    // die dafür ausgefallene Kraft-Einheit kommt zurück
+    if (sk) { if ((weekSkip[week] || []).includes(sk)) toggleSkip(week, sk); delete wp.autoSkip[k]; }
+    storeWeekPlan(); renderRun(); return;
+  }
   if (e.target.closest('#racecancel')) { raceEdit = null; renderRun(); return; }
   if (e.target.closest('#racedel')) { if (raceEdit && confirm(T('Dieses Rennen löschen?', 'Delete this race?'))) { races = races.filter(r => r.id !== raceEdit); persistRaces(); raceEdit = null; renderRun(); toast(T('Rennen gelöscht.', 'Race deleted.')); } return; }
   const re = e.target.closest('[data-raceedit]'); if (re) { raceEdit = re.dataset.raceedit; renderRun(); $('racename').focus(); window.scrollTo({ top: 0 }); return; }
@@ -2367,7 +2451,7 @@ $('syncfile').addEventListener('change', e => { const f = e.target.files[0]; e.t
 $('syncstatus').addEventListener('click', e => { if (e.target.id === 'syncforget') handleSet(null).then(renderSyncStatus); });
 window.addEventListener('pagehide', () => { clearTimeout(syncTimer); syncTrack(); });
 renderAll(); renderWaist(); renderWeight(); renderProfile(); renderStorageInfo(); renderRun(); renderSyncStatus(); renderNotesRows();
-if (CHANGELOG.length && notesOpt.auto !== false && notesOpt.seen !== CHANGELOG[0].id) setTimeout(() => { if (!document.querySelector('dialog[open]')) openNotes(false); }, 300); renderMobility(); showArea(area, false);
+if (CHANGELOG.length && notesOpt.auto !== false && notesOpt.seen !== noteStamp(CHANGELOG[0])) setTimeout(() => { if (!document.querySelector('dialog[open]')) openNotes(false); }, 300); renderMobility(); showArea(area, false);
 if (/iPad|iPhone|iPod/.test(navigator.userAgent) || document.documentElement.dataset.os === 'ios') $('savefilehint').textContent = T('Öffnet „Teilen“ → „In Dateien sichern“', 'Opens “Share” → “Save to Files”');
 if (restored) { toast(running ? T('Laufendes Training wiederhergestellt.', 'Running workout restored.') : T('Unterbrochenes Training wiederhergestellt.', 'Interrupted workout restored.')); if (running) keepAwake(true); }
 setInterval(() => { tick(); routineTick(); }, 200);
