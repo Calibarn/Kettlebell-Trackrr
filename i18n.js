@@ -6,7 +6,7 @@
    - tr(text) für Inhalte aus data.js (Wörterbuch EN_TEXT in lang-en.js),
    - localizeContent() ersetzt reine Anzeige-Texte in data.js beim Start,
    - localizeHtml() die festen Texte in index.html (Wörterbuch EN_HTML in lang-en.js). */
-const LANG_KEY = 'jan-kb-lang-v1';
+const LANG_KEY = KEY_NS + 'jan-kb-lang-v1';
 const LANG_PREF = (() => { try { const v = JSON.parse(localStorage.getItem(LANG_KEY)); return v === 'de' || v === 'en' ? v : 'auto'; } catch (e) { return 'auto'; } })();
 const deviceLang = () => { const l = (navigator.languages && navigator.languages[0]) || navigator.language || 'de'; return /^de\b/i.test(l) ? 'de' : 'en'; };
 const LANG = LANG_PREF === 'auto' ? deviceLang() : LANG_PREF, EN = LANG === 'en', LOCALE = EN ? 'en-GB' : 'de-DE';

@@ -1472,7 +1472,11 @@ const EN_TEXT = {
 "Übersichtlicher": "Clearer",
 "„Übungen & Varianten“ zeigt die Variantenauswahl und ihre Begründung nur noch, wenn es mit deinen Geräten wirklich eine Wahl gibt.": "“Exercises & variants” only shows the variant choice and its reasoning when your equipment actually gives you a choice.",
 "Kalender": "Calendar",
-"Der Plan-Export kann jetzt eine Erinnerung am Trainingstag mitbringen (Uhrzeit wählbar, Standard aus) – der Kalender meldet sich, auch wenn die App zu ist.": "The plan export can now include a reminder on training days (time selectable, off by default) – your calendar alerts you even with the app closed."
+"Der Plan-Export kann jetzt eine Erinnerung am Trainingstag mitbringen (Uhrzeit wählbar, Standard aus) – der Kalender meldet sich, auch wenn die App zu ist.": "The plan export can now include a reminder on training days (time selectable, off by default) – your calendar alerts you even with the app closed.",
+"Weniger scrollen: Profil, Mehr und Laufen haben aufklappbare Bereiche – es ist immer nur einer offen, und die App merkt sich, welcher. Die zugeklappte Zeile zeigt das Wichtigste, z. B. deine Trainingstage oder das letzte Gewicht.": "Less scrolling: Profile, More and Running have collapsible sections – only one is open at a time, and the app remembers which. The collapsed row shows the key facts, e.g. your training days or your last weight.",
+"Während eines Trainings sind die Hinweise oben und „Heute dabei“ ausgeblendet – der Timer steht sofort im Blick.": "During a workout the hints at the top and “With me today” are hidden – the timer is in view right away.",
+"Wochenplanung: Die Knöpfe stehen unter dem Text, der dadurch die volle Breite bekommt. Kacheln stehen zu dritt nebeneinander, die Krafttage passen in eine Zeile, „Messung speichern“ geht über die volle Breite.": "Weekly plan: the buttons sit below the text, which now gets the full width. Tiles sit three in a row, the strength days fit into one line, “Save measurement” spans the full width.",
+"Bei den Hinweisen oben stand das Symbol in einer eigenen Zeile – jetzt links neben dem Text.": "In the hints at the top the icon sat on its own line – now it is left of the text."
 };
 const EN_HTML = {
 "Kraft": "Strength",
@@ -1551,7 +1555,9 @@ const EN_HTML = {
 "Nach Updates anzeigen": "Show after updates",
 "Neuigkeiten beim ersten Start nach einem Update": "News on the first start after an update",
 "Sprache": "Language",
+"Hilfe & Daten": "Help & data",
 "Anleitung": "Guide",
+"So funktioniert die App – Training, Laufen, Daten": "How the app works – training, running, data",
 "App installieren": "Install the app",
 "Einmalig, damit die Daten sicher bleiben": "Once, so your data stays safe",
 "Die Adresse in <b>Safari</b> öffnen.": "Open the address in <b>Safari</b>.",
@@ -1657,6 +1663,7 @@ const EN_HTML = {
 "<b>Laufen &amp; Beschwerden</b>": "<b>Running &amp; complaints</b>",
 "Nach einem harten Longrun ist die Kraft-Einheit optional. Bei Schmerzen im Mittelfuß Wadenheben, Standwaage, Ausfallschritte und Sprungübungen im Lauf-ABC anpassen oder auslassen.": "After a hard long run the strength session is optional. With midfoot pain adapt or skip calf raises, single-leg balance, lunges and the jumping drills.",
 "Geräte-Sync": "Device sync",
+"Mehrere Geräte über eine Datei im Cloud-Ordner": "Several devices via one file in a cloud folder",
 "Sync laden": "Load sync",
 "Stand aus der Sync-Datei übernehmen": "Take over the state from the sync file",
 "Sync speichern": "Save sync",
@@ -1675,6 +1682,7 @@ const EN_HTML = {
 "iPhone/iPad: Speichern öffnet „Teilen“ → <b>In Dateien sichern</b> → Cloud-Ordner wählen → <b>Ersetzen</b>.": "iPhone/iPad: saving opens “Share” → <b>Save to Files</b> → choose the cloud folder → <b>Replace</b>.",
 "Die App verbindet sich dafür mit keinem Server – die Datei bewegt dein Cloud-Dienst. Das Backup unter „Daten“ bleibt zusätzlich sinnvoll.": "The app doesn’t connect to any server for this – your cloud service moves the file. The backup under “Data” is still worthwhile.",
 "Daten & Datenschutz": "Data & privacy",
+"Sichern, Wiederherstellen, Zurücksetzen": "Back up, restore, reset",
 "In Datei sichern": "Save to file",
 "Backup als Datei auf diesem Gerät ablegen": "Store a backup as a file on this device",
 "Aus Datei wiederherstellen": "Restore from file",

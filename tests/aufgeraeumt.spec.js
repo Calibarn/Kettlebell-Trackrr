@@ -1,4 +1,4 @@
-const { test, expect } = require('./fixtures');
+const { test, expect, openSect } = require('./fixtures');
 
 // Aufräum-Update: Warm-up-Reiter, Overlays, Sync als Sicherung, Skizzenfarben, Struktur
 test('Laufen: ein Reiter „Warm-up“ mit Renntag und Training; alte Auswahl wird übernommen', async ({ page }) => {
@@ -17,6 +17,7 @@ test('Laufen: ein Reiter „Warm-up“ mit Renntag und Training; alte Auswahl wi
 
 test('Overlay offen: Seite dahinter scrollt nicht, beim Schließen geht es an derselben Stelle weiter', async ({ page }) => {
   await page.evaluate(() => showArea('mehr', false));
+  await openSect(page, 'sect-guide'); // aufgeklappte Anleitung macht die Seite lang genug
   await page.evaluate(() => window.scrollTo(0, 600));
   const y = await page.evaluate(() => window.scrollY);
   expect(y).toBeGreaterThan(300);
@@ -36,6 +37,7 @@ test('Sync speichern zählt als Sicherung; Wiederherstellen erkennt eine Sync-Da
   await page.waitForTimeout(300);
   await page.evaluate(() => showArea('mehr'));
   const dl = page.waitForEvent('download');
+  await openSect(page, 'sect-sync');
   await page.click('#syncsave');
   await dl;
   expect(await page.evaluate(() => load(KEYS.backup, null))).toBe(await page.evaluate(() => localDay()));

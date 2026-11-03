@@ -29,3 +29,17 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 7
+
+  # Testversion: nach grünen Tests auf dev die Seite neu veröffentlichen (main bleibt, dev kommt unter /dev/).
+  # Der Pages-Workflow läuft auf main, weil nur main auf GitHub Pages veröffentlichen darf.
+  deploy-test:
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - run: gh workflow run deploy.yml --ref main -R "${{ github.repository }}"
+        env:
+          GH_TOKEN: ${{ github.token }}
+

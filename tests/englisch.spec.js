@@ -25,7 +25,7 @@ test.describe('Gerät auf Englisch', () => {
       renderAll();
     });
     for (const pk of await page.evaluate(() => PLAN_ORDER)) {
-      await page.evaluate(k => { showArea('kraft'); plan = k; resetState(); renderAll(); document.querySelectorAll('details').forEach(d => { d.open = true; }); }, pk);
+      await page.evaluate(k => { showArea('kraft'); plan = k; resetState(); renderAll(); document.querySelectorAll('details').forEach(d => { delete d.dataset.acc; d.open = true; }); }, pk);
       for (const g of ['kb', 'band', 'bw']) await page.evaluate(([k, gg]) => { for (let i = 0; i < exList().length; i++) openExerciseGuide(i); document.querySelectorAll('dialog[open]').forEach(d => d.close()); }, [pk, g]);
       expect(await germanLines(page), pk).toEqual([]);
     }
@@ -41,7 +41,7 @@ test.describe('Gerät auf Englisch', () => {
     await expect(page.locator('#rate-title')).toHaveText('Session saved');
     expect(await germanLines(page)).toEqual([]);
     await page.click('[data-rpe="7"]'); await page.click('#rateform button[type=submit]');
-    await page.evaluate(() => { showArea('kraft'); document.querySelectorAll('details').forEach(d => { d.open = true; }); });
+    await page.evaluate(() => { showArea('kraft'); document.querySelectorAll('details').forEach(d => { delete d.dataset.acc; d.open = true; }); });
     expect(await germanLines(page)).toEqual([]);
     await page.evaluate(() => document.querySelectorAll('dialog[open]').forEach(d => d.close()));
     const views = await page.evaluate(() => {
@@ -53,7 +53,7 @@ test.describe('Gerät auf Englisch', () => {
       await page.evaluate(([aa, t]) => { showArea(aa); runView.tab = t; renderRun(); }, [a, tab]);
       for (let i = 0; i < await page.locator('#runsub button:visible').count(); i++) {
         await page.locator('#runsub button:visible').nth(i).click();
-        await page.evaluate(() => document.querySelectorAll('details').forEach(d => { d.open = true; }));
+        await page.evaluate(() => document.querySelectorAll('details').forEach(d => { delete d.dataset.acc; d.open = true; }));
         expect(await germanLines(page), tab + ' ' + i).toEqual([]);
       }
     }
@@ -62,7 +62,7 @@ test.describe('Gerät auf Englisch', () => {
       await page.locator('#mobtabs button:visible').nth(t).click();
       for (let i = 0; i < await page.locator('#mobsub button:visible').count(); i++) { await page.locator('#mobsub button:visible').nth(i).click(); expect(await germanLines(page)).toEqual([]); }
     }
-    for (const a of ['profil', 'mehr']) { await page.evaluate(x => { showArea(x); document.querySelectorAll('details').forEach(d => { d.open = true; }); }, a); expect(await germanLines(page), a).toEqual([]); }
+    for (const a of ['profil', 'mehr']) { await page.evaluate(x => { showArea(x); document.querySelectorAll('details').forEach(d => { delete d.dataset.acc; d.open = true; }); }, a); expect(await germanLines(page), a).toEqual([]); }
     await page.evaluate(() => { for (const n of Object.keys(GUIDES)) openGuide(n, 'bw'); openNotes(true); });
     expect(await germanLines(page)).toEqual([]);
     expect(await page.evaluate(() => [...i18nMissing])).toEqual([]);

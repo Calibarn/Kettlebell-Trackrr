@@ -1,4 +1,4 @@
-const { test, expect } = require('./fixtures');
+const { test, expect, openSect } = require('./fixtures');
 
 // Laufen → Plan: Saisonplan aus A-/B-Rennen, Rennen verwalten, Renntempo-Rechner.
 const RACES = [
@@ -359,6 +359,7 @@ test('Trainingstempos: aus der besten Leistung der letzten 12 Monate, im Plan be
   await expect(page.locator('#runcontent')).toContainText('Unter Bestzeiten ein Ergebnis der letzten 12 Monate eintragen');
   // 10 km in 50:00 vor einem Monat, ältere schnellere Zeit zählt nicht mehr
   await page.evaluate(() => { results = [{ id: 'a', date: addDays(localDay(), -30), km: 10, time: 3000, dist: '10k' }, { id: 'o', date: addDays(localDay(), -400), km: 10, time: 2700, dist: '10k' }]; persistResults(); renderRun(); });
+  await openSect(page, 'sect-paces');
   const rows = await page.locator('#planpaces .row').allInnerTexts();
   expect(rows.map(r => r.replace(/\s+/g, ' '))).toEqual([
     expect.stringContaining('6:00–6:30 /km'), expect.stringContaining('5:27 /km'), expect.stringContaining('5:05–5:15 /km'), expect.stringContaining('≈ 4:48 /km')]);

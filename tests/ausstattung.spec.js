@@ -1,5 +1,5 @@
 // Ausstattung aus dem Profil: Kraft bietet nur an, was eingetragen ist. Dazu der AMRAP-Plan.
-const { test, expect, closeRating } = require('./fixtures');
+const { test, expect, closeRating, openSect } = require('./fixtures');
 
 test.describe('neu eingerichtet (keine Geräte)', () => {
   test.use({ kit: false });
@@ -22,6 +22,7 @@ test.describe('neu eingerichtet (keine Geräte)', () => {
 
   test('Kettlebell im Profil eintragen → Kettlebell-Pläne und -Chip erscheinen; wieder entfernen → zurück zum Ganzkörper-Plan', async ({ page }) => {
     await page.evaluate(() => showArea('profil'));
+    await openSect(page, 'sect-kit');
     await page.fill('#kbnew', '16'); await page.click('#kbadd');
     await expect(page.locator('#tabs button')).toHaveText(['Ganzkörper', 'Tabata', 'AMRAP', 'Läufer', 'Oberkörper', 'Core', 'Büro']);
     await expect(page.locator('#gearbar [data-gear]')).toHaveCount(2);

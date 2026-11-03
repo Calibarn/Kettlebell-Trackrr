@@ -36,6 +36,13 @@ Mein persönlicher Trainings-Begleiter als Web-App für iPhone und Android – K
 
 `CHANGELOG` in `data.js`, neueste zuerst; der älteste (letzte) Eintrag ist der Grundstand mit allen Funktionen. Neulinge sehen beim ersten Start die 3 neuesten Updates plus den Grundstand. Ein neuer Eintrag mit neuer `id` erscheint beim nächsten Start einmal als Fenster (abschaltbar unter **Mehr → Nach Updates anzeigen**) und steht danach unter **Mehr → Was ist neu?**. Bei jedem Update mit sichtbaren Änderungen: Eintrag oben ergänzen und in `sw.js` `VERSION` erhöhen.
 
+## Testversion und Veröffentlichung
+
+- **Branch `dev`**: Hier landet jede Änderung. Nach grünen Tests stößt `.github/workflows/test.yml` den Pages-Workflow an, die Testversion liegt dann unter **…/Kettlebell-Trackrr/dev/** (Titel mit „Test“-Markierung).
+- **Branch `main`**: die echte App. Eine geplante Aufgabe übernimmt den Stand von `dev` einmal pro Woche, **mittwochs um 00:00** (nur bei grünen Tests, nur als Fast-Forward). `.github/workflows/deploy.yml` veröffentlicht bei jedem Push auf `main`.
+- **Getrennte Daten**: Beide Versionen liegen unter derselben Adresse. Die Testversion nutzt deshalb eigene Speicherschlüssel (`dev:` vorn, `KEY_NS` in `platform.js`), einen eigenen Cache (`dev-kbt-…` in `sw.js`), eine eigene Sync-Datei (`kb-tracker-test-sync.json`) und ein eigenes Manifest (`manifest-test.webmanifest`). Sie kann die Daten der echten App nicht verändern.
+- GitHub → Settings → Pages: Quelle „GitHub Actions“.
+
 ## Sprache (Deutsch / Englisch)
 
 Automatisch nach Gerätesprache: Deutsch bei deutscher Gerätesprache (`de`, `de-AT`, `de-CH` …), sonst Englisch. Unter **Mehr → Sprache** lässt sich Deutsch oder Englisch fest einstellen (je Gerät, wird nicht synchronisiert; „Einstellungen zurücksetzen“ stellt wieder auf Automatisch).

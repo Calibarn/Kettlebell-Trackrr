@@ -1,4 +1,4 @@
-const { test, expect, forward, closeRating } = require('./fixtures');
+const { test, expect, forward, closeRating, openSect } = require('./fixtures');
 
 test('lädt ohne Fehler und zeigt alle Kraft-Pläne', async ({ page }) => {
   await expect(page.locator('#tabs button')).toHaveText(['Ganzkörper', 'Tabata', 'AMRAP', 'Läufer', 'Oberkörper', 'Core', 'Büro']);
@@ -234,6 +234,7 @@ test.describe('iPhone mit Audio Session API', () => {
   test.use({ initScripts: ['navigator.audioSession = { type: "auto" };'] });
   test('„Ton trotz Stummschalter“ schaltet auf playback', async ({ page }) => {
     await page.evaluate(() => showArea('profil'));
+    await openSect(page, 'sect-tone');
     await expect(page.locator('#loudrow')).toBeVisible();
     expect(await page.evaluate(() => navigator.audioSession.type)).toBe('auto');
     await page.click('#loudrow');

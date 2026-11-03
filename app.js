@@ -5,13 +5,15 @@ const $ = id => document.getElementById(id);
 const KEYS = {
   entries: 'jan-kettlebell-tracker-v1', waist: 'jan-kb-waist-v1', sound: 'jan-kb-sound-v1', gear: 'jan-kb-gear-v1',
   choice: 'jan-kb-choice-v1', stage: 'jan-kb-stage-v1', plan: 'jan-kb-plan-v1', session: 'jan-kb-session-v1',
-  backup: 'jan-kb-lastbackup-v1', hint: 'jan-kb-installhint-v1', area: 'jan-kb-area-v1', run: 'jan-kb-runview-v1', audio: 'jan-kb-audio-v1', mob: 'jan-kb-mobview-v1', runweeks: 'jan-kb-runweeks-v1', runlog: 'jan-kb-runlog-v1', races: 'jan-kb-races-v1', profile: 'jan-kb-profile-v1', weight: 'jan-kb-weight-v1', skip: 'jan-kb-weekskip-v1', results: 'jan-kb-results-v1', bestview: 'jan-kb-bestview-v1', notes: 'jan-kb-notes-v1', weekplan: 'jan-kb-weekplan-v1', icsremind: 'jan-kb-icsremind-v1'
+  backup: 'jan-kb-lastbackup-v1', hint: 'jan-kb-installhint-v1', area: 'jan-kb-area-v1', run: 'jan-kb-runview-v1', audio: 'jan-kb-audio-v1', mob: 'jan-kb-mobview-v1', runweeks: 'jan-kb-runweeks-v1', runlog: 'jan-kb-runlog-v1', races: 'jan-kb-races-v1', profile: 'jan-kb-profile-v1', weight: 'jan-kb-weight-v1', skip: 'jan-kb-weekskip-v1', results: 'jan-kb-results-v1', bestview: 'jan-kb-bestview-v1', notes: 'jan-kb-notes-v1', weekplan: 'jan-kb-weekplan-v1', icsremind: 'jan-kb-icsremind-v1', sections: 'jan-kb-sections-v1'
 };
 /* Datensicherheit bei Updates:
    - Einträge, die diese Version nicht versteht, werden nie verworfen, sondern unverändert mitgespeichert.
    - Unlesbare Daten werden vor dem Überschreiben unter einem eigenen Schlüssel aufbewahrt.
    - Vor einer Formatänderung (SCHEMA) wird eine Sicherung im Backup-Format angelegt. */
-const SCHEMA = 3, SCHEMA_KEY = 'jan-kb-schema-v1', PRE_UPDATE_KEY = 'jan-kb-sicherung-vor-update';
+// Testversion (…/dev/): alle Schlüssel mit eigenem Präfix, siehe platform.js
+for (const k of Object.keys(KEYS)) KEYS[k] = KEY_NS + KEYS[k];
+const SCHEMA = 3, SCHEMA_KEY = KEY_NS + 'jan-kb-schema-v1', PRE_UPDATE_KEY = KEY_NS + 'jan-kb-sicherung-vor-update';
 const loadIssues = [];
 function loadList(key, valid) {
   let raw = null; try { raw = localStorage.getItem(key); } catch (e) { }
@@ -614,6 +616,7 @@ function renderCurrent() {
   }
 }
 function renderControls() {
+  const busy = sessionActive(); $('banners').classList.toggle('hide', busy); $('gearbar').classList.toggle('hide', busy);
   const main = $('btnMain'), done = $('btnDone'), undoB = $('btnUndo'), next = $('btnNext'), circuit = !isSets() && !isInterval();
   if (sessionSaved) { main.textContent = T('✓ Gespeichert', '✓ Saved'); main.disabled = true; }
   else if (isFinished()) { main.textContent = T('💾 Speichern', '💾 Save'); main.disabled = false; }
@@ -802,6 +805,8 @@ function renderMeasures() {
   const tint = (el, rows, f) => { const d = rows.length < 2 ? 0 : rows.at(-1)[f] - rows[0][f]; el.style.color = d < 0 ? 'var(--accent-ink)' : d > 0 ? 'var(--orange)' : ''; };
   $('weightlatest').textContent = nw ? kgOne(nw.kg) + ' kg' : '–'; $('weightlastdate').textContent = nw ? dateGerman(nw.date) : T('Noch keine Messung', 'No measurement yet');
   $('waistlatest').textContent = nb ? cmString(nb.cm) + ' cm' : '–'; $('waistlastdate').textContent = nb ? dateGerman(nb.date) : T('Noch keine Messung', 'No measurement yet');
+  // Kurzfassung in der zugeklappten Zeile: letzte Werte
+  { const last = [nw, nb].filter(Boolean).map(x => x.date).sort().at(-1); $('sum-measure').textContent = nw || nb ? [nw ? kgOne(nw.kg) + ' kg' : '', nb ? cmString(nb.cm) + ' cm' : ''].filter(Boolean).join(' · ') + ` (${dateShort(last)})` : T('Noch keine Messung', 'No measurement yet'); }
   $('weightdelta').textContent = delta(W, 'kg', kgOne, 'kg'); tint($('weightdelta'), W, 'kg');
   $('waistdelta').textContent = delta(B, 'cm', cmString, 'cm'); tint($('waistdelta'), B, 'cm');
   const rate = weightRate(); $('weightrate').textContent = rate === null ? '–' : (rate > 0 ? '+' : '') + kgOne(rate) + ' kg';
@@ -850,6 +855,11 @@ function weekWarnings(w = profile.week) {
 }
 function renderProfile() {
   const w = profile.week, h = profile.hr, k = profile.kit;
+  // Kurzfassungen in den zugeklappten Zeilen
+  const days = a => a.length ? WEEK_ORDER.filter(d => a.includes(d)).map(d => WD[d]).join(', ') : T('keine', 'none');
+  $('sum-week').textContent = [w.quality !== null ? `${T('Qualität', 'Quality')} ${WD[w.quality]}` : '', w.long !== null ? `${T('Longrun', 'Long run')} ${WD[w.long]}` : '', `${T('Kraft', 'Strength')} ${days(w.strength)}`].filter(Boolean).join(' · ');
+  $('sum-hr').textContent = h.z ? `Zone 2: ${zoneRange(2)}` : T('Noch keine Zonen', 'No zones yet');
+  $('sum-kit').textContent = k.kb.length || k.bands.length ? [k.kb.length ? `Kettlebell ${k.kb.map(kgText).join(' · ')} kg` : '', k.bands.length ? T(`${k.bands.length} ${k.bands.length === 1 ? 'Band' : 'Bänder'}`, `${k.bands.length} ${k.bands.length === 1 ? 'band' : 'bands'}`) : ''].filter(Boolean).join(' · ') : T('Noch keine Geräte – nur Körpergewicht', 'No equipment yet – body weight only');
   $('weekpanel').innerHTML = `<div class="raceform" style="padding:0">
       <div class="field"><label for="wkquality">${T('Qualität (Intervall/Tempo)', 'Quality (intervals/tempo)')}</label>${wdSelect('wkquality', w.quality, T('keine', 'none'))}</div>
       <div class="field"><label for="wklong">${T('Longrun', 'Long run')}</label>${wdSelect('wklong', w.long, T('keine', 'none'))}</div>
@@ -857,8 +867,8 @@ function renderProfile() {
       <div class="field"><label for="wkextraday">${T('Weitere Einheit', 'Other session')}</label>${wdSelect('wkextraday', w.extraDay, T('keine', 'none'))}</div>
       <div class="field wide"><label for="wkextraname">${T('Name der weiteren Einheit', 'Name of the other session')}</label><input id="wkextraname" type="text" maxlength="30" autocomplete="off" placeholder="${T('z. B. Kurs, Radfahren', 'e.g. class, cycling')}" value="${esc(w.extraName)}"></div>
     </div>
-    <p class="tiny">${T('Kraft-Tage', 'Strength days')}</p><div class="chips" role="group" aria-label="${T('Kraft-Tage', 'Strength days')}">${WEEK_ORDER.map(d => `<button type="button" class="chip" data-strength="${d}" aria-pressed="${w.strength.includes(d)}">${WD[d]}</button>`).join('')}</div>
-    ${w.strength.length ? `<p class="tiny">${T('Feste Krafttage – werden beim Nachholen nicht für einen Lauf getauscht', 'Fixed strength days – never swapped for a run when catching up')}</p><div class="chips" role="group" aria-label="${T('Feste Krafttage', 'Fixed strength days')}">${WEEK_ORDER.filter(d => w.strength.includes(d)).map(d => `<button type="button" class="chip" data-strengthfix="${d}" aria-pressed="${w.strengthFixed.includes(d)}">${WD[d]}</button>`).join('')}</div>` : ''}
+    <p class="tiny">${T('Kraft-Tage', 'Strength days')}</p><div class="chips days" role="group" aria-label="${T('Kraft-Tage', 'Strength days')}">${WEEK_ORDER.map(d => `<button type="button" class="chip" data-strength="${d}" aria-pressed="${w.strength.includes(d)}">${WD[d]}</button>`).join('')}</div>
+    ${w.strength.length ? `<p class="tiny">${T('Feste Krafttage – werden beim Nachholen nicht für einen Lauf getauscht', 'Fixed strength days – never swapped for a run when catching up')}</p><div class="chips days" role="group" aria-label="${T('Feste Krafttage', 'Fixed strength days')}">${WEEK_ORDER.filter(d => w.strength.includes(d)).map(d => `<button type="button" class="chip" data-strengthfix="${d}" aria-pressed="${w.strengthFixed.includes(d)}">${WD[d]}</button>`).join('')}</div>` : ''}
     ${weekWarnings().map(t => `<div class="alert due">${esc(t)}</div>`).join('')}
     <p class="tiny">${T('Optional: im Plan abhaken, was erledigt ist, und Verpasstes in derselben Woche auf einen freien Tag verschieben.', 'Optional: tick off in the plan what is done and move missed sessions to a free day in the same week.')}</p><div class="chips"><button type="button" class="chip" data-wktrack aria-pressed="${w.track}">${T('Abhaken & nachholen', 'Tick off & catch up')}</button></div>`;
   const zr = n => zoneRange(n);
@@ -1024,17 +1034,15 @@ function renderUmfang() {
   return `<div class="intro">${esc(tr(LOAD_INTRO))}</div>
     <div class="header">${T('Nächster langer Lauf', 'Next long run')}</div><div class="group"><div class="panel" style="border:0;padding-top:12px" id="longresult"></div></div>
     <div class="header">${T('Lauf eintragen', 'Add a run')}</div><div class="group"><div class="runadd"><input type="date" id="rundate" value="${today}" max="${today}" aria-label="${T('Datum des Laufs', 'Date of the run')}"><input type="text" inputmode="decimal" autocomplete="off" id="runkm" placeholder="km" aria-label="${T('Kilometer des Laufs', 'Kilometres of the run')}"><button type="button" class="btn small primary" id="runaddbtn">${T('Hinzufügen', 'Add')}</button></div><div id="runlist"></div></div>
-    <div class="group" style="margin-top:12px">
+    <div class="group sectgroup">${sectHtml('umfang', 'sect-csv', '⇅', 'var(--accent)', T('Läufe aus CSV', 'Runs from CSV'), T('Import aus Uhr oder Tabelle, Vorlage zum Ausfüllen', 'import from a watch or spreadsheet, template to fill in'), `
       <button type="button" class="row" id="runcsvbtn"><span class="icon" style="background:var(--accent)">⇧</span><span class="txt"><b>${T('Läufe aus CSV importieren', 'Import runs from CSV')}</b><small>${T('Spalten Datum und km, z. B. aus Strava oder deiner Uhr', 'Columns date and km, e.g. from Strava or your watch')}</small></span><span class="chev"></span></button>
       <button type="button" class="row" id="runcsvtpl"><span class="icon" style="background:var(--blue)">⇩</span><span class="txt"><b>${T('CSV-Vorlage herunterladen', 'Download CSV template')}</b><small>${T('Zum Ausfüllen in Numbers, Excel oder Google Tabellen', 'To fill in with Numbers, Excel or Google Sheets')}</small></span><span class="chev"></span></button>
       <input type="file" accept=".csv,text/csv,text/plain" id="runcsvfile" class="hide">
-    </div>
     <div id="runcsvresult"></div>
     <p class="footer">${T('Eine Zeile pro Lauf. Datum als 26.10.2026 oder 2026-10-26, km mit Komma oder Punkt. Läufe mit gleichem Datum und gleichen km werden übersprungen.', 'One line per run. Date as 26.10.2026 or 2026-10-26, km with comma or point. Runs with the same date and km are skipped.')}</p>
-    <p class="footer">${T('Mit Datum rechnet die App die 30 Tage exakt und markiert Läufe, die mehr als 10 % über dem längsten der 30 Tage davor lagen. Wochen mit eingetragenen Läufen werden automatisch zusammengezählt.', 'With dates the app calculates the 30 days exactly and marks runs that were more than 10 % above the longest of the 30 days before. Weeks with entered runs are added up automatically.')}</p>
+    <p class="footer">${T('Mit Datum rechnet die App die 30 Tage exakt und markiert Läufe, die mehr als 10 % über dem längsten der 30 Tage davor lagen. Wochen mit eingetragenen Läufen werden automatisch zusammengezählt.', 'With dates the app calculates the 30 days exactly and marks runs that were more than 10 % above the longest of the 30 days before. Weeks with entered runs are added up automatically.')}</p>`)}</div>
     <div class="header">${T('Diese Woche · KW ', 'This week · wk ')}${isoWeek(cur)}</div><div class="group"><div class="panel" style="border:0;padding-top:12px" id="loadresult"></div></div>
-    <div class="header">${T('Wochensummen', 'Weekly totals')}</div><div class="group" style="padding:0 16px" id="kmweeks"></div>
-    <p class="footer">${T('Für Wochen ohne einzelne Läufe: km von Montag bis Sonntag und den längsten Lauf, z. B. aus deiner Uhr. Pausenwoche: 0. Alles bleibt nur auf diesem Gerät und ist im Backup enthalten.', 'For weeks without single runs: km from Monday to Sunday and the longest run, e.g. from your watch. Rest week: 0. Everything stays on this device only and is included in the backup.')}</p>
+    <div class="group sectgroup">${sectHtml('umfang', 'sect-weeks', '∑', '#5e5ce6', T('Wochensummen', 'Weekly totals'), T('für Wochen ohne einzelne Läufe', 'for weeks without single runs'), `<div style="padding:0 16px" id="kmweeks"></div><p class="footer">${T('Für Wochen ohne einzelne Läufe: km von Montag bis Sonntag und den längsten Lauf, z. B. aus deiner Uhr. Pausenwoche: 0. Alles bleibt nur auf diesem Gerät und ist im Backup enthalten.', 'For weeks without single runs: km from Monday to Sunday and the longest run, e.g. from your watch. Rest week: 0. Everything stays on this device only and is included in the backup.')}</p>`)}</div>
     <div class="header">${T('Verlauf · 8 Wochen', 'History · 8 weeks')}</div><div class="group"><div class="panel" style="border:0;padding-top:4px" id="loadchart"></div></div>
     <p class="footer">${esc(tr(LOAD_NOTE))}</p>`;
 }
@@ -1249,6 +1257,12 @@ function seasonPlan(today = localDay(), opt = {}) {
   return { weeks, warn, races: next, hasData: L !== null || W !== null, start };
 }
 const phaseKey = x => x.cut ? 'cut' : x.phase;
+/* Aufklappbare Bereiche (Akkordeon): je Gruppe (data-acc) ist höchstens einer offen; welcher, merkt sich das Gerät.
+   Zugeklappt wird nur Nachschlagewissen und selten Genutztes – was man jedes Mal braucht, bleibt sichtbar. */
+let sectState = load(KEYS.sections, {}); if (!isObj(sectState)) sectState = {};
+const sectOpen = (acc, id, def = false) => Object.prototype.hasOwnProperty.call(sectState, acc) ? sectState[acc] === id : def;
+const sectHtml = (acc, id, icon, color, title, sub, body, def = false) => `<details class="sect" data-acc="${acc}" id="${id}"${sectOpen(acc, id, def) ? ' open' : ''}><summary class="row"><span class="icon" style="background:${color}">${icon}</span><span class="txt"><b>${title}</b>${sub ? `<small>${sub}</small>` : ''}</span><span class="chev"></span></summary><div class="sectbody">${body}</div></details>`;
+function applySections() { document.querySelectorAll('details.sect[data-acc]').forEach(d => { const o = sectOpen(d.dataset.acc, d.id, d.hasAttribute('data-default-open')); if (d.open !== o) d.open = o; }); }
 /* Trainingstempos aus der besten Leistung der letzten 12 Monate (Bestzeiten): per Riegel auf 10 km umgerechnet.
    Locker = 10-km-Pace + 60–90 s, Schwelle = Renntempo 15 km bis HM, Intervall ≈ 5-km-Renntempo, Marathontempo per Riegel. */
 // Aktuelle Form: das neueste Ergebnis, solange es höchstens 3 % langsamer ist als das beste der letzten 12 Monate – sonst das beste
@@ -1303,8 +1317,9 @@ function renderPaces() {
     [T('Marathontempo', 'Marathon pace'), hms(tp.marathon) + ' /km', T('lange Abschnitte im Marathonblock', 'long segments in a marathon block')],
     [T('Schwelle', 'Threshold'), paceRange(tp.threshold), T('kontrolliert hart, etwa eine Stunde haltbar', 'controlled hard, sustainable for about an hour')],
     [T('Intervall', 'Intervals'), '≈ ' + hms(tp.interval) + ' /km', T('etwa 5-km-Renntempo, 400–1000 m', 'about 5 km race pace, 400–1000 m')]];
-  return `<div class="header">${T('Trainingstempos', 'Training paces')}</div>${stale}<div class="group" id="planpaces">${rows.map(([n, v, d]) => `<div class="row"><span class="txt"><b>${esc(n)}</b><small>${esc(d)}</small></span><span class="val">${esc(v)}</span></div>`).join('')}</div>
-    <p class="footer">${T(`Aus deinem Ergebnis ${esc(groupLabel(resultGroup(r)))} in ${hms(r.time)} am ${dateGerman(r.date)}, mit Riegel umgerechnet. Es zählt das neueste Ergebnis, solange es höchstens 3 % langsamer ist als dein bestes der letzten 12 Monate – so werden die Tempos mit jedem Testlauf oder Rennen aktuell, nicht aus der Zielzeit. Richtwerte – bei Hitze, Wind, Hügeln oder müden Beinen langsamer.`, `From your result ${esc(groupLabel(resultGroup(r)))} in ${hms(r.time)} on ${dateGerman(r.date)}, converted with Riegel. Your newest result counts as long as it is at most 3 % slower than your best of the last 12 months – so the paces follow every time trial or race, not the goal time. Guidelines – slower in heat, wind, hills or with tired legs.`)}</p>`;
+  const mmss = v => hms(v), sum = `${T('locker', 'easy')} ${mmss(tp.easy[0])}–${mmss(tp.easy[1])} · ${T('Schwelle', 'threshold')} ${mmss(tp.threshold[0])}–${mmss(tp.threshold[1])} /km`;
+  return `${stale}<div class="group sectgroup">${sectHtml('runplan', 'sect-paces', '⏱', 'var(--accent)', T('Trainingstempos', 'Training paces'), sum, `<div id="planpaces">${rows.map(([n, v, d]) => `<div class="row"><span class="txt"><b>${esc(n)}</b><small>${esc(d)}</small></span><span class="val">${esc(v)}</span></div>`).join('')}</div>
+    <p class="footer">${T(`Aus deinem Ergebnis ${esc(groupLabel(resultGroup(r)))} in ${hms(r.time)} am ${dateGerman(r.date)}, mit Riegel umgerechnet. Es zählt das neueste Ergebnis, solange es höchstens 3 % langsamer ist als dein bestes der letzten 12 Monate – so werden die Tempos mit jedem Testlauf oder Rennen aktuell, nicht aus der Zielzeit. Richtwerte – bei Hitze, Wind, Hügeln oder müden Beinen langsamer.`, `From your result ${esc(groupLabel(resultGroup(r)))} in ${hms(r.time)} on ${dateGerman(r.date)}, converted with Riegel. Your newest result counts as long as it is at most 3 % slower than your best of the last 12 months – so the paces follow every time trial or race, not the goal time. Guidelines – slower in heat, wind, hills or with tired legs.`)}</p>`)}</div>`;
 }
 function weekKey(x) {
   const t = SEASON.key[x.phase] || SEASON.key.basis, list = t[x.target.dist] || t.all, odd = isoWeek(x.week) % 2;
@@ -1401,7 +1416,7 @@ function schedRows(x) {
     const note = it.autoSkip ? `<small>${T('entfällt für den nachgeholten Lauf', 'skipped for the run you are catching up')}</small>` : it.skip ? `<small>${T('entfällt diese Woche', 'skipped this week')}</small>` : none + (it.from !== undefined ? `<small class="moved">${T(`verschoben von ${WD[it.from]}`, `moved from ${WD[it.from]}`)} · <button type="button" class="linkbtn" data-unmove="${it.key}">${T('rückgängig', 'undo')}</button></small>` : '') + (it.detail ? `<small>${esc(it.detail)}</small>` : '');
     const check = track && !race ? `<button type="button" class="schedcheck" data-done="${it.key}" aria-pressed="${!!it.done}" aria-label="${esc(it.title)} ${T('erledigt', 'done')}">${it.done ? '✓' : ''}</button>` : '';
     const btns = race ? '' : (to !== null ? `<button type="button" class="btn small" data-move="${it.key}" data-to="${to}">${T(`→ ${WD[to]}`, `→ ${WD[to]}`)}</button>` : '') + (it.done || it.autoSkip ? '' : `<button type="button" class="btn small" data-skip="${it.key}" data-week="${x.week}">${it.skip ? T('Wieder rein', 'Restore') : T('Entfällt', 'Skip')}</button>`);
-    return `<div class="row sched-${it.kind}${it.skip ? ' skipped' : ''}${it.done ? ' done' : ''}">${check}<span class="dur">${WD[it.d]}</span><span class="txt"><b>${esc(it.title)}</b>${note}</span>${btns}</div>`;
+    return `<div class="row sched-${it.kind}${it.skip ? ' skipped' : ''}${it.done ? ' done' : ''}">${check}<span class="dur">${WD[it.d]}</span><span class="txt"><b>${esc(it.title)}</b>${note}${btns ? `<span class="schedbtns">${btns}</span>` : ''}</span></div>`;
   }).join('');
 }
 function renderPlanWeek(S) {
@@ -1437,8 +1452,8 @@ function renderPlanSeason(S) {
     return `<div class="row planweek${i === 0 ? ' now' : ''}${x.a ? ' race' : ''}"><span class="dur">${T('KW', 'Wk')} ${isoWeek(x.week)}<small>${dateShort(x.week)}</small></span><span class="txt"><b><span class="phasedot ph-${phaseKey(x)}"></span>${esc(pl)}${marks ? ` · ${marks}` : ''}</b>${nums ? `<small>${nums}</small>` : ''}</span></div>`;
   };
   const rest = S.weeks.length - SHOW;
-  return `<div class="header">${T(`Saison · ${S.weeks.length} Wochen`, `Season · ${S.weeks.length} weeks`)}</div><div class="group" id="planseason">${S.weeks.slice(0, SHOW).map(row).join('')}${rest > 0 ? `<details id="planmore"><summary class="row"><span class="txt"><b>${T(`Weitere ${rest} Wochen`, `${rest} more weeks`)}</b><small>${T(`bis ${esc(S.races.at(-1).name)} am ${dateGerman(S.races.at(-1).date)}`, `until ${esc(S.races.at(-1).name)} on ${dateGerman(S.races.at(-1).date)}`)}</small></span><span class="chev"></span></summary>${S.weeks.slice(SHOW).map((x, i) => row(x, i + SHOW)).join('')}</details>` : ''}</div>
-  <p class="footer">${T('Spätere Wochen sind eine Vorschau: Jede Woche rechnet der Plan mit deinem echten Umfang neu.', 'Later weeks are a preview: every week the plan recalculates with your real volume.')}</p>
+  const nx = S.weeks[1], seasonSum = nx ? T(`nächste Woche: ${esc(SEASON.phase[phaseKey(nx)][0])}`, `next week: ${esc(SEASON.phase[phaseKey(nx)][0])}`) + (nx.test ? T(' · Testlauf', ' · time trial') : '') + (nx.b.length ? ' · ' + T('B-Rennen', 'B race') : '') : '';
+  return `<div class="group sectgroup">${sectHtml('runplan', 'sect-season', '📆', '#5e5ce6', T(`Saison · ${S.weeks.length} Wochen`, `Season · ${S.weeks.length} weeks`), seasonSum, `<div id="planseason">${S.weeks.slice(0, SHOW).map(row).join('')}${rest > 0 ? `<details id="planmore"><summary class="row"><span class="txt"><b>${T(`Weitere ${rest} Wochen`, `${rest} more weeks`)}</b><small>${T(`bis ${esc(S.races.at(-1).name)} am ${dateGerman(S.races.at(-1).date)}`, `until ${esc(S.races.at(-1).name)} on ${dateGerman(S.races.at(-1).date)}`)}</small></span><span class="chev"></span></summary>${S.weeks.slice(SHOW).map((x, i) => row(x, i + SHOW)).join('')}</details>` : ''}</div><p class="footer">${T('Spätere Wochen sind eine Vorschau: Jede Woche rechnet der Plan mit deinem echten Umfang neu.', 'Later weeks are a preview: every week the plan recalculates with your real volume.')}</p>`)}</div>
   <div class="group" style="margin-top:12px"><button type="button" class="row" id="planics"><span class="icon" style="background:var(--red)">▦</span><span class="txt"><b>${T('In Kalender exportieren', 'Export to calendar')}</b><small>${T('Wochen, Longruns und Rennen als Kalenderdatei', 'Weeks, long runs and races as a calendar file')}</small></span><span class="chev"></span></button>
     <div class="row" id="icsremindrow"><span class="txt"><b>${T('Erinnerung', 'Reminder')}</b><small>${T('am Trainingstag, vom Kalender', 'on training days, from your calendar')}</small></span><input type="time" id="icstime" value="${esc(icsRemind.time)}" ${icsRemind.on ? '' : 'disabled'} aria-label="${T('Uhrzeit der Erinnerung', 'Reminder time')}"><button type="button" class="chip" id="icsremind" aria-pressed="${icsRemind.on}">${icsRemind.on ? T('An', 'On') : T('Aus', 'Off')}</button></div></div>
   <p class="footer">${T('Am besten in einen eigenen Kalender „Laufplan“ importieren. Bei einem späteren Export diesen Kalender leeren und neu importieren – der Plan rechnet jede Woche mit deinem echten Umfang neu.', 'Best import into a separate “Running plan” calendar. For a later export empty this calendar and import again – the plan recalculates every week with your real volume.')}</p>`;
@@ -1482,7 +1497,7 @@ function renderPlanGuide() {
       <div class="field hide" id="pckmfield"><label for="pckm">${T('Distanz in km', 'Distance in km')}</label><input id="pckm" type="text" inputmode="decimal" autocomplete="off" placeholder="${T('z. B. 20', 'e.g. 20')}"></div>
       <div class="field wide"><label>${T('Zielzeit', 'Goal time')}</label>${timeFields('pctime', null, T('Zielzeit', 'Goal time'))}</div>
     </div><div class="panel" id="pcout"></div></div>
-    <div class="header">${T('Wissen', 'Knowledge')}</div><div class="group manual">${SEASON_GUIDE.map(g => `<details><summary class="row"><span class="txt"><b>${esc(g.title)}</b><small>${esc(g.sub)}</small></span><span class="chev"></span></summary><div class="panel"><ul>${g.items.map(t => `<li>${esc(t)}</li>`).join('')}</ul></div></details>`).join('')}</div>
+    <div class="header">${T('Wissen', 'Knowledge')}</div><div class="group manual">${SEASON_GUIDE.map(g => `<details data-acc="wissen"><summary class="row"><span class="txt"><b>${esc(g.title)}</b><small>${esc(g.sub)}</small></span><span class="chev"></span></summary><div class="panel"><ul>${g.items.map(t => `<li>${esc(t)}</li>`).join('')}</ul></div></details>`).join('')}</div>
     <p class="footer">${esc(SEASON.note)}</p>`;
 }
 function renderPace() {
@@ -1619,7 +1634,7 @@ function renderPlan() {
 /* ---------- Sync zwischen Geräten über eine Datei (iCloud Drive, Google Drive, OneDrive, Dropbox …) ----------
    Jeder Eintrag hat einen Änderungszeitpunkt, gelöschte Einträge eine Löschmarke. Beim Laden gewinnt je Eintrag der neuere
    Stand; nichts wird blind überschrieben. Änderungen erkennt die App beim Speichern im Browser (store) über einen Prüfwert. */
-const SYNC_META = 'jan-kb-sync-v1', SYNC_FILE = 'kb-tracker-sync.json', SYNC_MSG = 'jan-kb-sync-msg';
+const SYNC_META = KEY_NS + 'jan-kb-sync-v1', SYNC_FILE = KEY_NS ? 'kb-tracker-test-sync.json' : 'kb-tracker-sync.json', SYNC_MSG = KEY_NS + 'jan-kb-sync-msg';
 const SYNC_COLLS = {
   entries: { key: KEYS.entries, id: e => isObj(e) && e.plan && e.date ? String(e.id || `legacy-${e.plan}-${e.date}-${e.total}-${e.at || ''}`) : null },
   waist: { key: KEYS.waist, id: e => isObj(e) && isDay(e.date) ? e.date : null },
@@ -1714,7 +1729,7 @@ function syncMerge(remote) {
 const canHandle = () => !!(window.showSaveFilePicker && window.showOpenFilePicker && window.indexedDB);
 function idb(mode, fn) {
   return new Promise((ok, fail) => {
-    const rq = indexedDB.open('kb-tracker', 1);
+    const rq = indexedDB.open(KEY_NS ? 'kb-tracker-test' : 'kb-tracker', 1);
     rq.onupgradeneeded = () => rq.result.createObjectStore('kv');
     rq.onerror = () => fail(rq.error);
     rq.onsuccess = () => { const tx = rq.result.transaction('kv', mode), st = tx.objectStore('kv'), r = fn(st); tx.oncomplete = () => ok(r && r.result); tx.onerror = () => fail(tx.error); };
@@ -1793,7 +1808,7 @@ async function renderSyncStatus() {
 }
 
 /* ---------- Einstellungen zurücksetzen: Daten bleiben ---------- */
-const SETTING_KEYS = ['sound', 'gear', 'choice', 'stage', 'plan', 'area', 'run', 'audio', 'mob', 'profile', 'skip', 'hint', 'bestview', 'notes', 'weekplan', 'icsremind'].map(k => KEYS[k]).concat(LANG_KEY);
+const SETTING_KEYS = ['sound', 'gear', 'choice', 'stage', 'plan', 'area', 'run', 'audio', 'mob', 'profile', 'skip', 'hint', 'bestview', 'notes', 'weekplan', 'icsremind', 'sections'].map(k => KEYS[k]).concat(LANG_KEY);
 function settingsReset() {
   if (sessionActive()) { alert(T('Bitte das laufende Training zuerst beenden oder zurücksetzen.', 'Please finish or reset the current workout first.')); return; }
   if (!confirm(T('Einstellungen zurücksetzen?\n\nZurück auf den Ausgangszustand: Profil (Trainingswoche, Herzfrequenz, Geräte & Gewichte), Übungs-Varianten und Gewichte, Stufen, „Entfällt“, Ton und Ansichten.\n\nTrainings, Läufe, Wochensummen, Rennen, Gewicht und Bauchumfang bleiben erhalten. Gilt nur für dieses Gerät.', 'Reset settings?\n\nBack to the defaults: profile (training week, heart rate, equipment & weights), exercise variants and weights, stages, “Skip”, sound and views.\n\nWorkouts, runs, weekly totals, races, weight and waist are kept. Applies to this device only.'))) return;
@@ -1806,7 +1821,7 @@ function settingsReset() {
 }
 
 /* ---------- Werkseinstellung: alle Daten dieses Geräts löschen ---------- */
-const APP_KEY = k => k.startsWith('jan-kb') || k.startsWith('jan-kettlebell');
+const APP_KEY = k => k.startsWith(KEY_NS + 'jan-kb') || k.startsWith(KEY_NS + 'jan-kettlebell');
 async function factoryReset() {
   if (sessionActive() && !confirm(T('Es läuft gerade ein Training. Trotzdem fortfahren?', 'A workout is running. Continue anyway?'))) return;
   if (!confirm(T('Werkseinstellung: Alle Daten auf diesem Gerät werden gelöscht – Trainings, Läufe, Wochensummen, Rennen, Gewicht, Bauchumfang, Profil und Einstellungen.\n\nDie Sync-Datei in deiner Cloud und andere Geräte bleiben unberührt.\n\nFortfahren?', 'Factory reset: all data on this device will be deleted – workouts, runs, weekly totals, races, weight, waist, profile and settings.\n\nThe sync file in your cloud and other devices are not affected.\n\nContinue?'))) return;
@@ -2281,6 +2296,7 @@ function renderAudioRows() {
   $('voiceval').textContent = vOk ? (audioOpt.voice ? T('An', 'On') : T('Aus', 'Off')) : T('Nicht verfügbar', 'Not available');
   $('voicehint').textContent = vOk ? T(`Übung, Seitenwechsel, Runden · Stimme: ${voice.name}`, `Exercise, side changes, rounds · voice: ${voice.name}`) : T('Keine deutsche Stimme auf dem Gerät gefunden. Online-Stimmen werden aus Datenschutzgründen nicht genutzt.', 'No English voice found on the device. Online voices are not used for privacy reasons.');
   $('voicerow').disabled = !vOk;
+  $('sum-tone').textContent = `${T('Ton', 'Sound')} ${soundEnabled ? T('an', 'on') : T('aus', 'off')} · ${T('Ansagen', 'Voice')} ${vOk && audioOpt.voice ? T('an', 'on') : T('aus', 'off')}`;
   $('loudrow').classList.toggle('hide', !hasAudioSession());
   $('loudval').textContent = audioOpt.loud ? T('An', 'On') : T('Aus', 'Off');
 }
@@ -2463,6 +2479,23 @@ $('planhint').addEventListener('click', e => {
 });
 $('voicerow').addEventListener('click', () => { audioOpt.voice = !audioOpt.voice; store(KEYS.audio, audioOpt); renderAudioRows(); if (audioOpt.voice) { audioReady(); say(T('Sprachansagen an.', 'Voice prompts on.'), 0); } toast(audioOpt.voice ? T('Sprachansagen an.', 'Voice prompts on.') : T('Sprachansagen aus.', 'Voice prompts off.')); });
 $('loudrow').addEventListener('click', () => { audioOpt.loud = !audioOpt.loud; store(KEYS.audio, audioOpt); applyAudioSession(); renderAudioRows(); audioReady(); cue('step'); toast(audioOpt.loud ? T('Ton auch bei Stummschalter.', 'Sound even in silent mode.') : T('Stummschalter wird wieder beachtet.', 'Silent switch is respected again.')); });
+
+// Aufklappen mit data-acc: öffnet sich ein Eintrag, klappen die anderen derselben Gruppe zu (weniger scrollen).
+// toggle blubbert nicht hoch, daher in der Capture-Phase am Dokument; der geöffnete Eintrag bleibt im Blick.
+document.addEventListener('toggle', e => {
+  const d = e.target; if (!(d instanceof HTMLDetailsElement) || !d.dataset.acc) return;
+  const acc = d.dataset.acc;
+  if (d.classList.contains('sect') && d.id) {
+    if (d.open) sectState[acc] = d.id; else if (sectState[acc] === d.id || !Object.prototype.hasOwnProperty.call(sectState, acc)) sectState[acc] = null;
+    store(KEYS.sections, sectState);
+  }
+  if (!d.open) return;
+  let moved = false;
+  for (const o of document.querySelectorAll(`details[data-acc="${acc}"][open]`)) if (o !== d) { o.open = false; moved = true; }
+  const sum = d.querySelector(':scope > summary');
+  if (moved && sum && sum.getBoundingClientRect().top < 0) sum.scrollIntoView({ block: 'start' });
+}, true);
+applySections();
 
 /* ---------- Start ---------- */
 schemaCheck();

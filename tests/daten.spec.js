@@ -1,5 +1,5 @@
 const fs = require('fs');
-const { test, expect, closeRating } = require('./fixtures');
+const { test, expect, closeRating, openSect } = require('./fixtures');
 
 const OLD_BACKUP = {
   version: 2,
@@ -25,6 +25,7 @@ test('altes Backup importieren, Duplikate überspringen, Sicherung enthält alle
 
   await page.evaluate(() => showArea('mehr'));
   const dl = page.waitForEvent('download');
+  await openSect(page, 'sect-data');
   await page.click('#savefile');
   const backup = JSON.parse(fs.readFileSync(await (await dl).path(), 'utf8'));
   expect([backup.version, backup.entries.length, backup.waist.length]).toEqual([3, 3, 2]);
@@ -50,6 +51,7 @@ test('Update-Sicherheit: Unbekanntes bleibt, Unlesbares wird aufbewahrt, Sicheru
   expect(raw.map(e => e.id)).toContain('zukunft');
   expect(raw).toHaveLength(3);
   await page.evaluate(() => showArea('mehr'));
+  await openSect(page, 'sect-data');
   await expect(page.locator('#preupdate')).toBeVisible();
 });
 
@@ -60,6 +62,7 @@ test('CSV enthält Anstrengung und Notiz, Formeln werden entschärft', async ({ 
   await page.click('#rateform button[type=submit]');
   await page.evaluate(() => showArea('mehr'));
   const dl = page.waitForEvent('download');
+  await openSect(page, 'sect-data');
   await page.click('#exportcsv');
   const lines = fs.readFileSync(await (await dl).path(), 'utf8').replace(/^﻿/, '').split('\r\n');
   expect(lines[0].split(';').slice(-2)).toEqual(['Anstrengung (1-10)', 'Notiz']);

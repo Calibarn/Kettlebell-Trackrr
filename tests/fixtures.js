@@ -43,4 +43,7 @@ const expect = base.expect;
 async function forward(page, seconds) { await page.evaluate(s => { startedAt -= s * 1000; tick(); }, seconds); }
 async function closeRating(page) { await expect(page.locator('#rate')).toBeVisible(); await page.click('#rate-skip'); await expect(page.locator('#rate')).toBeHidden(); }
 
-module.exports = { test, expect, forward, closeRating };
+// Aufklappbaren Bereich öffnen (Profil, Mehr, Laufen) – wie ein Tipp auf die Zeile
+async function openSect(page, id) { await page.evaluate(i => { const d = document.getElementById(i); if (!d) throw Error('Bereich fehlt: ' + i); d.open = true; try { if (d.classList.contains('sect')) sectState[d.dataset.acc] = d.id; } catch (e) {} }, id); }
+
+module.exports = { test, expect, forward, closeRating, openSect };

@@ -398,3 +398,31 @@ html[data-os=android] .sheet{border-radius:28px 28px 0 0}
 #icsremindrow input[type=time]{flex:0 0 auto;width:auto;padding:6px 8px}
 #icsremindrow .chip{flex:0 0 auto;margin-left:6px}
 #icsremindrow input:disabled{opacity:.4}
+/* Mehr: aufklappbare Bereiche (Anleitung, Sync, Daten); geöffnet wird immer nur einer (data-acc in app.js) */
+.sectbody{background:var(--fill);border-top:.5px solid var(--sep)}
+.sectbody>.row:first-child::before,.sectbody>details:first-child>.row::before{display:none}
+.sectbody .footer{margin:8px 16px 12px}
+.sectbody .panel{background:none}
+details.sect+details.sect>summary.row::before{content:"";position:absolute;top:0;left:16px;right:0;border-top:.5px solid var(--sep)}
+/* Hinweise oben: Symbol links neben dem Text (vorher landete es durch min-width in einer eigenen Zeile) */
+.banner .bicon{flex:0 0 auto;min-width:0}
+.banner span:not(.bicon){min-width:0}
+.banner{flex-wrap:nowrap}
+/* Wochenplanung: Knöpfe unter den Text, damit der Text die volle Breite hat */
+.planrows .schedbtns{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.planrows .schedbtns .btn.small{padding:4px 10px;font-size:13px}
+/* Profil: Wochentage in einer Zeile */
+.chips.days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.chips.days .chip{padding:6px 0;text-align:center}
+.chips.days .chip[aria-pressed=true]::before{content:none}
+/* Formulare: Knopf über die volle Breite, Text bricht nicht um */
+.formgrid .btn.wide{grid-column:1/-1;white-space:nowrap}
+/* Kacheln: ab 360 px drei nebeneinander statt einer einzelnen in voller Breite */
+@media(min-width:360px) and (max-width:420px){.metrics:not(.two){grid-template-columns:repeat(3,minmax(0,1fr))}.metrics:not(.two) .metric:last-child{grid-column:auto}.metrics:not(.two) .metric b{font-size:17px}}
+.sectgroup{margin-top:12px}
+.measmore{border-top:.5px solid var(--sep)}
+.sectbody #planpaces .row,.sectbody #planseason .row{background:none}
+/* Testversion: deutlich erkennbar */
+html.testbuild .largetitle::after{content:" Test";font-size:.5em;font-weight:700;color:#fff;background:var(--orange);border-radius:6px;padding:2px 7px;margin-left:8px;vertical-align:middle}
+/* Wochenplanung mit Haken: Tag schmaler, damit der Text mehr Platz hat */
+#planschedule .schedcheck+.dur{min-width:2.6em}

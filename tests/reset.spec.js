@@ -1,4 +1,4 @@
-const { test, expect, closeRating } = require('./fixtures');
+const { test, expect, closeRating, openSect } = require('./fixtures');
 
 // Zurücksetzen: Einstellungen (Daten bleiben) und Werkseinstellung (alles weg, mit Bestätigung)
 async function fill(page) {
@@ -21,6 +21,7 @@ test('Einstellungen zurücksetzen: Profil und Übungen auf Ausgangszustand, Date
   await fill(page);
   await page.evaluate(() => showArea('mehr'));
   answer(page, [true]);
+  await openSect(page, 'sect-data');
   await Promise.all([page.waitForEvent('load'), page.click('#settingsreset')]);
   expect(await page.evaluate(() => [saved.length, runLog.length, races.length, weights.length])).toEqual([1, 1, 1, 1]);
   expect(await page.evaluate(() => [profile.week.quality, profile.kit.kb, Object.keys(choices).length, Object.keys(weekSkip).length])).toEqual([2, [], 0, 0]); // Ausgangszustand: keine Kettlebell eingetragen
@@ -31,6 +32,7 @@ test('Werkseinstellung: falsches Wort löscht nichts, LÖSCHEN löscht alles ink
   await fill(page);
   const dev = await page.evaluate(() => syncMeta.device);
   await page.evaluate(() => showArea('mehr'));
+  await openSect(page, 'sect-data');
   // abbrechen bei der ersten Frage
   answer(page, [false]);
   await page.click('#factoryreset');

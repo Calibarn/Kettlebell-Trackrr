@@ -1,5 +1,5 @@
 const fs = require('fs');
-const { test, expect } = require('./fixtures');
+const { test, expect, openSect } = require('./fixtures');
 
 // Geräte-Sync: zwei getrennte Browser-Profile = zwei Geräte, die Sync-Datei wird von Hand weitergereicht.
 async function device(browser) {
@@ -14,6 +14,7 @@ async function device(browser) {
 async function save(page) {
   await page.evaluate(() => showArea('mehr'));
   const dl = page.waitForEvent('download');
+  await openSect(page, 'sect-sync');
   await page.click('#syncsave');
   const d = await dl;
   expect(d.suggestedFilename()).toBe('kb-tracker-sync.json');
@@ -88,6 +89,7 @@ test('Sync: falsche Datei wird abgelehnt, Speicherort wird je Gerät gemerkt', a
   await page.evaluate(() => showArea('mehr'));
   await page.setInputFiles('#syncfile', { name: 'x.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({ version: 3, entries: [] })) });
   await expect(page.locator('#toast')).toContainText('keine Sync-Datei');
+  await openSect(page, 'sect-sync');
   await page.fill('#syncplace', 'iCloud Drive › KB Tracker');
   await page.dispatchEvent('#syncplace', 'change');
   await expect(page.locator('#syncstatus')).toContainText('in iCloud Drive › KB Tracker');

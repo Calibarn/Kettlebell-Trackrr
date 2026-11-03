@@ -1,5 +1,5 @@
 const fs = require('fs');
-const { test, expect } = require('./fixtures');
+const { test, expect, openSect } = require('./fixtures');
 
 // Wochen relativ zu heute: 0 = laufende Woche (Montag), 1 = Vorwoche usw.
 const weeksAgo = page => page.evaluate(() => [0, 1, 2, 3, 4, 5, 6].map(i => addDays(weekStart(localDay()), -7 * i)));
@@ -7,6 +7,7 @@ async function openUmfang(page) {
   await page.evaluate(() => showArea('laufen'));
   await page.click('[data-runtab="umfang"]');
   await expect(page.locator('#runsub')).toBeHidden();
+  await openSect(page, 'sect-weeks'); // Wochensummen sind aufklappbar
 }
 const field = (w, f = 'km') => `[data-wk="${w}"][data-f="${f}"]`;
 async function addRun(page, date, km) {
@@ -103,6 +104,7 @@ test('Umfang: Wochen und Läufe im Backup, Import ergänzt nur Fehlendes', async
   await addRun(page, w[1], '10');
   await page.evaluate(() => showArea('mehr'));
   const dl = page.waitForEvent('download');
+  await openSect(page, 'sect-data');
   await page.click('#savefile');
   const backup = JSON.parse(fs.readFileSync(await (await dl).path(), 'utf8'));
   expect(backup.runWeeks).toEqual([{ week: w[2], km: 30, long: null }]);
@@ -121,6 +123,7 @@ test('Umfang: Wochen und Läufe im Backup, Import ergänzt nur Fehlendes', async
 test('Umfang: Läufe aus CSV importieren, Vorlage herunterladen, Duplikate und Fehler melden', async ({ page }) => {
   await openUmfang(page);
   const dl = page.waitForEvent('download');
+  await openSect(page, 'sect-csv');
   await page.click('#runcsvtpl');
   const d = await dl;
   expect(d.suggestedFilename()).toBe('laeufe-vorlage.csv');

@@ -1,10 +1,11 @@
-const { test, expect } = require('./fixtures');
+const { test, expect, openSect } = require('./fixtures');
 
 // Profil: Herzfrequenz-Zonen, Trainingswoche, Geräte & Gewichte, Körpergewicht
 const openProfil = page => page.evaluate(() => showArea('profil'));
 
 test('Herzfrequenz: Zonen nach Karvonen, manuell anpassbar, im Plan als bpm', async ({ page }) => {
   await openProfil(page);
+  await openSect(page, 'sect-hr');
   await page.fill('#hrmax', '184');
   await page.fill('#hrrest', '60');
   await page.click('#hrcalc');
@@ -34,6 +35,7 @@ test('Trainingswoche: Tage aus dem Profil im Plan und im Kalender, Hinweise bei 
   const date = await page.evaluate(() => addDays(localDay(), 7 * 12));
   await page.evaluate(d => { races = [{ id: 'h', name: 'HM', date: d, dist: 'hm', prio: 'A', goal: 7140 }]; persistRaces(); }, date);
   await openProfil(page);
+  await openSect(page, 'sect-week');
   await page.selectOption('#wkquality', '6');
   await expect(page.locator('#weekpanel .alert')).toContainText('Qualität am Samstag direkt vor dem Longrun');
   await page.selectOption('#wkquality', '4');
@@ -67,6 +69,7 @@ test('Trainingswoche: Tage aus dem Profil im Plan und im Kalender, Hinweise bei 
 
 test('Geräte & Gewichte: eigene Kettlebells und Bänder steuern die Auswahl im Kraft-Bereich', async ({ page }) => {
   await openProfil(page);
+  await openSect(page, 'sect-kit');
   await page.fill('#kbnew', '16');
   await page.click('#kbadd');
   await page.fill('#kbnew', '8,5');
@@ -148,6 +151,7 @@ test('Trainingswoche: Einheiten dauerhaft abschalten oder nur diese Woche „Ent
   await page.evaluate(d => { races = [{ id: 'h', name: 'HM', date: d, dist: 'hm', prio: 'A', goal: null }]; persistRaces(); }, date);
   // dauerhaft: Qualität „keine“ → Hinweis, fehlt im Plan
   await openProfil(page);
+  await openSect(page, 'sect-week');
   await page.selectOption('#wkquality', '');
   await expect(page.locator('#weekpanel .alert')).toContainText('Ohne Qualitätseinheit');
   expect(await page.evaluate(() => profile.week.quality)).toBeNull();
