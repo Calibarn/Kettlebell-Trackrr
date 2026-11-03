@@ -1234,17 +1234,52 @@ function seasonPlan(today = localDay(), opt = {}) {
   return { weeks, warn, races: next, hasData: L !== null || W !== null, start };
 }
 const phaseKey = x => x.cut ? 'cut' : x.phase;
-// Bei Tempo-Abschnitten das Renntempo aus der Zielzeit dahinterschreiben
-const withPace = (txt, r) => r.goal && /tempo|pace/i.test(txt) ? `${txt} (${paceText(r.goal, raceKm(r))})` : txt;
+/* Trainingstempos aus der besten Leistung der letzten 12 Monate (Bestzeiten): per Riegel auf 10 km umgerechnet.
+   Locker = 10-km-Pace + 60–90 s, Schwelle = Renntempo 15 km bis HM, Intervall ≈ 5-km-Renntempo, Marathontempo per Riegel. */
+function fitnessRef(today = localDay()) {
+  const from = addDays(today, -365); let best = null;
+  for (const r of results) {
+    if (r.date < from || r.date > today) continue;
+    const km = groupKm(resultGroup(r)); if (!(km >= 3 && km <= 43)) continue;
+    const t10 = riegel(r.time, km, 10); if (!best || t10 < best.t10) best = { t10, r, km };
+  }
+  return best;
+}
+function trainingPaces(today) {
+  const ref = fitnessRef(today); if (!ref) return null;
+  const at = d => riegel(ref.t10, 10, d) / d, p10 = ref.t10 / 10, r5 = v => Math.round(v / 5) * 5;
+  return { ref, easy: [r5(p10 + 60), r5(p10 + 90)], marathon: at(42.195), threshold: [r5(at(15)), r5(at(21.0975))], interval: at(5) };
+}
+const paceRange = ([a, b]) => `${hms(a)}–${hms(b)} /km`;
+// Renntempo: aus der Zielzeit, sonst aus der aktuellen Bestzeit hochgerechnet
+const racePace = r => r.goal ? r.goal / raceKm(r) : (() => { const tp = trainingPaces(); return tp ? riegel(tp.ref.t10, 10, raceKm(r)) / raceKm(r) : null; })();
+// Bei Tempo-Abschnitten das Renntempo dahinterschreiben, bei Schwelle den Schwellenbereich aus der Bestzeit
+const withPace = (txt, r) => {
+  const p = /tempo|pace/i.test(txt) ? racePace(r) : null, tp = /Schwelle|threshold/i.test(txt) ? trainingPaces() : null;
+  return txt + (p ? ` (${hms(p)} /km)` : '') + (tp ? ` (${paceRange(tp.threshold)})` : '');
+};
+// Lockere Einheiten: Bereich aus der Bestzeit anhängen
+const easyPace = () => { const tp = trainingPaces(); return tp ? ` · ${paceRange(tp.easy)}` : ''; };
+function renderPaces() {
+  const tp = trainingPaces();
+  if (!tp) return `<div class="header">${T('Trainingstempos', 'Training paces')}</div><div class="group"><div class="row"><span class="txt"><small>${T('Unter <b>Bestzeiten</b> ein Ergebnis der letzten 12 Monate eintragen (3 bis 42 km) – dann stehen hier deine Tempos für locker, Schwelle, Intervall und Marathon.', 'Enter a result from the last 12 months under <b>Best times</b> (3 to 42 km) – then your paces for easy, threshold, intervals and marathon appear here.')}</small></span></div></div>`;
+  const r = tp.ref.r, rows = [[T('Locker & Longrun', 'Easy & long run'), paceRange(tp.easy), T('Gesprächstempo, Zone 2', 'conversational, zone 2')],
+    [T('Marathontempo', 'Marathon pace'), hms(tp.marathon) + ' /km', T('lange Abschnitte im Marathonblock', 'long segments in a marathon block')],
+    [T('Schwelle', 'Threshold'), paceRange(tp.threshold), T('kontrolliert hart, etwa eine Stunde haltbar', 'controlled hard, sustainable for about an hour')],
+    [T('Intervall', 'Intervals'), '≈ ' + hms(tp.interval) + ' /km', T('etwa 5-km-Renntempo, 400–1000 m', 'about 5 km race pace, 400–1000 m')]];
+  return `<div class="header">${T('Trainingstempos', 'Training paces')}</div><div class="group" id="planpaces">${rows.map(([n, v, d]) => `<div class="row"><span class="txt"><b>${esc(n)}</b><small>${esc(d)}</small></span><span class="val">${esc(v)}</span></div>`).join('')}</div>
+    <p class="footer">${T(`Aus deinem Ergebnis ${esc(groupLabel(resultGroup(r)))} in ${hms(r.time)} am ${dateGerman(r.date)} (beste Leistung der letzten 12 Monate, mit Riegel umgerechnet). Richtwerte – bei Hitze, Wind, Hügeln oder müden Beinen langsamer.`, `From your result ${esc(groupLabel(resultGroup(r)))} in ${hms(r.time)} on ${dateGerman(r.date)} (best performance of the last 12 months, converted with Riegel). Guidelines – slower in heat, wind, hills or with tired legs.`)}</p>`;
+}
 function weekKey(x) {
   const t = SEASON.key[x.phase] || SEASON.key.basis, list = t[x.target.dist] || t.all, odd = isoWeek(x.week) % 2;
-  return (x.cut ? T('kürzer: ', 'shorter: ') : '') + withPace(list[odd ? 0 : 1], x.target);
+  const txt = list[odd ? 0 : 1], tp = /^(Intervall|Intervals):/.test(txt) ? trainingPaces() : null;
+  return (x.cut ? T('kürzer: ', 'shorter: ') : '') + withPace(txt, x.target) + (tp ? ` (≈ ${hms(tp.interval)} /km)` : '') + (x.phase === 'recover' ? easyPace() : '');
 }
 function weekLongNote(x) {
   if (x.a) return T('kein Longrun – Rennwoche', 'no long run – race week');
   if (x.bLong) return T(`${x.bRace.name} ersetzt den Longrun`, `${x.bRace.name} replaces the long run`);
   if (x.noLong) return T('kein Longrun', 'no long run');
-  const t = SEASON.long[x.phase]; return hrize(withPace(typeof t === 'string' ? t : t[x.target.dist], x.target));
+  const t = SEASON.long[x.phase]; return hrize(withPace(typeof t === 'string' ? t : t[x.target.dist], x.target)) + easyPace();
 }
 // Einheiten der Woche auf die Tage aus dem Profil verteilt, Montag bis Sonntag
 const dayIdx = d => WEEK_ORDER.indexOf(d);
@@ -1255,7 +1290,7 @@ function weekSchedule(x) {
   if (x.a) add(new Date(x.a.date + 'T12:00:00').getDay(), 'race', T(`Rennen: ${x.a.name}`, `Race: ${x.a.name}`), raceLabel(x.a) + goalLine(x.a));
   if (x.bRace) add(new Date(x.bRace.date + 'T12:00:00').getDay(), 'brace', T(`B-Rennen: ${x.bRace.name}`, `B race: ${x.bRace.name}`), raceLabel(x.bRace) + goalLine(x.bRace) + (x.bSpike ? T(' · locker, nicht auf Zeit', ' · easy, not for time') : ''));
   if (w.quality !== null && (!x.a || before(w.quality, 2)) && !x.bRace) add(w.quality, 'quality', x.phase === 'recover' ? T('Locker laufen', 'Easy run') : T('Qualität', 'Quality'), weekKey(x));
-  if (w.group !== null && (!x.a || before(w.group))) add(w.group, 'group', T('Laufgruppe', 'Running group'), hrize(x.a ? T('ganz locker, Zone 2', 'very easy, Zone 2') : T('locker, Zone 2', 'easy, Zone 2')));
+  if (w.group !== null && (!x.a || before(w.group))) add(w.group, 'group', T('Laufgruppe', 'Running group'), hrize(x.a ? T('ganz locker, Zone 2', 'very easy, Zone 2') : T('locker, Zone 2', 'easy, Zone 2')) + easyPace());
   if (!x.a && !x.bLong && w.long !== null) { const lv = kmRound(x.long); add(w.long, 'long', x.noLong ? T('Locker oder frei', 'Easy or rest') : lv ? T(`Longrun ca. ${lv} km`, `Long run approx. ${lv} km`) : T('Longrun', 'Long run'), weekLongNote(x)); }
   for (const d of w.strength) if (!x.a || before(d, 2)) add(d, 'strength', T('Kraft', 'Strength'), x.a ? T('leicht, keine schweren Beinübungen', 'light, no heavy leg exercises') : x.phase === 'taper' ? T('ohne schwere Beinübungen', 'without heavy leg exercises') : x.phase === 'recover' ? T('leicht', 'light') : '');
   if (w.extraDay !== null && (!x.a || before(w.extraDay))) add(w.extraDay, 'extra', w.extraName || T('Weitere Einheit', 'Other session'), '');
@@ -1484,9 +1519,10 @@ function renderPlan() {
     const recBox = lastA && sinceW <= SEASON.dist[lastA.dist].recover.length && SEASON.recoverNote[lastA.dist]
       ? `<div class="header">${T('Erholung', 'Recovery')}</div><div class="group"><div class="panel" style="border:0;padding-top:12px" id="planrecover"><div class="phasebadge ph-recover">${esc(SEASON.phase.recover[0])}</div><p class="loadstatus">${T(`<b>${esc(lastA.name)}</b> am ${dayLabel(lastA.date)}`, `<b>${esc(lastA.name)}</b> on ${dayLabel(lastA.date)}`)}</p><p class="tiny" style="margin-top:2px">${esc(SEASON.phase.recover[1])}</p><div class="alert">${esc(SEASON.recoverNote[lastA.dist])}</div></div></div>` : '';
     $('runcontent').innerHTML = `<div class="intro">${esc(SEASON.intro)}</div>${recBox}<div class="group"><div class="row"><span class="txt"><b>${T('Noch kein A-Rennen geplant', 'No A race planned yet')}</b><small>${T('Unter „Rennen“ ein Hauptrennen mit Datum und Distanz eintragen.', 'Enter a main race with date and distance under “Races”.')}</small></span><button type="button" class="btn small primary" data-runsub-go="rennen">${T('Rennen eintragen', 'Add race')}</button></div></div>`;
+    $('runcontent').insertAdjacentHTML('beforeend', renderPaces());
     return;
   }
-  $('runcontent').innerHTML = (S.warn.length ? S.warn.map(w => `<div class="alert due">${esc(w)}</div>`).join('') : '') + renderPlanWeek(S) + renderPlanSeason(S) + `<p class="footer">${esc(SEASON.note)}</p>`;
+  $('runcontent').innerHTML = (S.warn.length ? S.warn.map(w => `<div class="alert due">${esc(w)}</div>`).join('') : '') + renderPlanWeek(S) + renderPaces() + renderPlanSeason(S) + `<p class="footer">${esc(SEASON.note)}</p>`;
 }
 
 /* ---------- Sync zwischen Geräten über eine Datei (iCloud Drive, Google Drive, OneDrive, Dropbox …) ----------

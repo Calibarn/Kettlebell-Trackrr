@@ -350,3 +350,20 @@ test('Erholung: in der Rennwoche und in den Erholungswochen steht, wie lange die
   await page.click('[data-runsub="wissen"]');
   await expect(page.locator('#runcontent')).toContainText('Erholung nach dem Rennen');
 });
+
+test('Trainingstempos: aus der besten Leistung der letzten 12 Monate, im Plan bei den passenden Einheiten', async ({ page }) => {
+  await openPlan(page);
+  const later = await page.evaluate(() => addDays(localDay(), 7 * 20));
+  await setRaces(page, [{ id: 'h', name: 'Mein HM', date: later, dist: 'hm', prio: 'A', goal: null }]);
+  await page.click('[data-runsub="woche"]');
+  await expect(page.locator('#runcontent')).toContainText('Unter Bestzeiten ein Ergebnis der letzten 12 Monate eintragen');
+  // 10 km in 50:00 vor einem Monat, ältere schnellere Zeit zählt nicht mehr
+  await page.evaluate(() => { results = [{ id: 'a', date: addDays(localDay(), -30), km: 10, time: 3000, dist: '10k' }, { id: 'o', date: addDays(localDay(), -400), km: 10, time: 2700, dist: '10k' }]; persistResults(); renderRun(); });
+  const rows = await page.locator('#planpaces .row').allInnerTexts();
+  expect(rows.map(r => r.replace(/\s+/g, ' '))).toEqual([
+    expect.stringContaining('6:00–6:30 /km'), expect.stringContaining('5:27 /km'), expect.stringContaining('5:05–5:15 /km'), expect.stringContaining('≈ 4:48 /km')]);
+  await expect(page.locator('#runcontent')).toContainText('10 km in 50:00');
+  // Laufgruppe bekommt den lockeren Bereich, ohne Zielzeit wird das Renntempo aus der Bestzeit hochgerechnet
+  await expect(page.locator('#planschedule .sched-group')).toContainText('6:00–6:30 /km');
+  expect(await page.evaluate(() => [hms(racePace(races[0])), withPace('3 × 10 Min. Schwelle', races[0])])).toEqual(['5:14', '3 × 10 Min. Schwelle (5:05–5:15 /km)']);
+});

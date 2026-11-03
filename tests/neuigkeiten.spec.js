@@ -10,7 +10,8 @@ test.describe('Neuigkeiten', () => {
     await expect(page.locator('#notes-body h3').first()).toHaveText(await page.evaluate(() => CHANGELOG[0].title));
     await page.click('#notes-close');
     await expect(page.locator('#notes')).toBeHidden();
-    expect(await page.evaluate(() => JSON.parse(localStorage.getItem(KEYS.notes)).seen)).toBe(await page.evaluate(() => CHANGELOG[0].id));
+    // das close-Ereignis des Dialogs kommt asynchron – darauf warten statt sofort zu lesen
+    await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem(KEYS.notes)).seen)).toBe(await page.evaluate(() => CHANGELOG[0].id));
 
     await page.reload();
     await page.waitForTimeout(600);

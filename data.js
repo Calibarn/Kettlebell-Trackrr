@@ -409,7 +409,9 @@ const SEASON_GUIDE = [
     'Prognose für andere Distanzen (Riegel-Formel): Zeit₂ = Zeit₁ × (Distanz₂ ÷ Distanz₁)^1,06. Beispiel: 10 km in 55:05 → Halbmarathon 55:05 × 2,10975^1,06 ≈ 2:01:32, Marathon ≈ 4:13:24, 5 km ≈ 26:25.',
     'Der Exponent 1,06 bildet ab, dass man auf längeren Strecken langsamer wird. Die Formel stammt aus Daten gut trainierter Läufer: Für den Marathon ist sie bei weniger als etwa 50 km pro Woche meist zu optimistisch – eher 5–10 % Puffer einplanen. Am verlässlichsten ist eine Prognose aus einer Bestzeit über eine ähnliche Distanz.',
     'Eigene Distanz (z. B. 20 km): Für Plan und Trainingsstufe zählt die nächstliegende Kategorie (bis 7,5 km → 5 km, bis 15 km → 10 km, bis 30 km → Halbmarathon, darüber Marathon). Die Zielzeit wird dafür per Riegel auf diese Distanz umgerechnet; Pace und Zwischenzeiten rechnet die App mit den echten km.',
-    'Renntempo in den Einheiten („im HM-Tempo“) ist die Pace aus der Zielzeit deines Rennens. Schwelle hat bewusst keine feste Pace: „kontrolliert hart“, etwa das Tempo, das du eine Stunde halten könntest.',
+    'Renntempo in den Einheiten („im HM-Tempo“) ist die Pace aus der Zielzeit deines Rennens; ohne Zielzeit aus deiner aktuellen Bestzeit hochgerechnet.',
+    'Trainingstempos (Plan → Übersicht): Grundlage ist dein bestes Ergebnis der letzten 12 Monate, per Riegel auf 10 km umgerechnet. Locker = 10-km-Pace + 60–90 s/km, Schwelle = Renntempo für 15 km bis Halbmarathon (etwa eine Stunde haltbar), Intervall ≈ 5-km-Renntempo, Marathontempo per Riegel. Beispiel 10 km in 50:00: locker 6:00–6:30, Schwelle 5:05–5:15, Intervall 4:48, Marathon 5:27 /km.',
+    'Die Tempos sind Richtwerte. Bei Hitze, Wind, Hügeln oder müden Beinen gilt das Gefühl bzw. die Herzfrequenz-Zone, nicht die Uhr.',
     'Herzfrequenz-Zonen (Karvonen): Ruhe-HF + Anteil × (max. HF − Ruhe-HF), Zone 1 ab 50 %, Zone 2 ab 60 %, Zone 3 ab 70 %, Zone 4 ab 80 %, Zone 5 ab 90 %. Beispiel: max. 184, Ruhe 60 → Zone 2 ab 60 + 0,6 × 124 = 134 bpm.'
   ] },
   { title: 'Tempo & Pacing', sub: 'gleichmäßig statt schnell los', items: [
@@ -590,6 +592,10 @@ for (const [pk, m] of Object.entries(BEST)) for (const sl of PLANS[pk].slots) if
 /* Neuigkeiten („Patch Notes“): neueste zuerst. Neuer Eintrag = neue id; die App zeigt ihn beim nächsten Start einmal an.
    Der älteste (letzte) Eintrag ist der Grundstand mit allen Funktionen; Neulinge sehen ihn plus die 3 neuesten Updates. */
 const CHANGELOG = [
+  { id: '2026-11-03', date: '2026-11-03', title: 'Trainingstempos', items: [
+    ['Laufen', 'Plan → Übersicht zeigt deine Tempos für locker, Schwelle, Intervall und Marathon – berechnet aus deinem besten Ergebnis der letzten 12 Monate. Die Wochenplanung schreibt sie zu den passenden Einheiten.'],
+    ['Renntempo', 'Ohne Zielzeit wird das Renntempo in den Einheiten aus deiner Bestzeit hochgerechnet.']
+  ] },
   { id: '2026-11-02e', date: '2026-11-02', title: 'Erholung nach dem Rennen', items: [
     ['Laufen', 'Nach dem A-Rennen zeigt der Plan in der Rennwoche und in den Erholungswochen, wie lange die Erholung nach der Distanz etwa dauert. Dazu neu unter Plan → Wissen: „Erholung nach dem Rennen“.']
   ] },

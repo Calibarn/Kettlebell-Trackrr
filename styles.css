@@ -48,8 +48,9 @@ html[data-os=android] .largetitle{font-size:28px;font-weight:500;letter-spacing:
 #runtabs button{flex:1 0 auto;padding-left:4px;padding-right:4px;font-size:12.5px}
 /* Kraft-Pläne: eine Zeile, solange alle draufpassen (iPad, Rechner, wenige Pläne); sonst zweizeilig statt seitlich wischen (fitTabs in app.js) */
 #tabs button{flex:1 0 auto;padding-left:4px;padding-right:4px}
-#tabs.wrap{display:grid;grid-template-columns:repeat(var(--cols,4),minmax(0,1fr))}
-#tabs.wrap button{padding-left:2px;padding-right:2px}
+/* Umbruch ohne Lücke: Zeile 1 mit --cols Plänen, die übrigen teilen sich die zweite Zeile gleichmäßig (7 Pläne: 4 + 3 über die volle Breite) */
+#tabs.wrap{flex-wrap:wrap;row-gap:2px}
+#tabs.wrap button{flex:1 1 calc(100% / var(--cols, 4) - 2px);padding-left:2px;padding-right:2px}
 html[data-os=android] #tabs.wrap{border-radius:18px}
 html[data-os=android] #tabs.wrap button{border-right:1px solid var(--label3)}
 html[data-os=android] #tabs.wrap button.rowend{border-right:0}
