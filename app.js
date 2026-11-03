@@ -1231,19 +1231,35 @@ function seasonPlan(today = localDay(), opt = {}) {
     const pre = weeks.slice(0, i0 < 0 ? 0 : i0).filter(x => x.target === r && x.long !== null && x.long !== undefined).at(-1);
     if (pre && pre.long < pk.long * 0.9) warn.push(T(`${r.name}: Mit +10 % pro Woche schaffst du bis zum Tapering einen Longrun von etwa ${Math.round(pre.long)} km – das Ziel sind ${pk.long} km. Mehr Vorlauf einplanen oder das Ziel locker angehen.`, `${r.name}: with +10 % per week you reach a long run of about ${Math.round(pre.long)} km by the taper – the target is ${pk.long} km. Plan more lead time or approach the goal easily.`));
   }
+  markTests(weeks);
   return { weeks, warn, races: next, hasData: L !== null || W !== null, start };
 }
 const phaseKey = x => x.cut ? 'cut' : x.phase;
 /* Trainingstempos aus der besten Leistung der letzten 12 Monate (Bestzeiten): per Riegel auf 10 km umgerechnet.
    Locker = 10-km-Pace + 60–90 s, Schwelle = Renntempo 15 km bis HM, Intervall ≈ 5-km-Renntempo, Marathontempo per Riegel. */
+// Aktuelle Form: das neueste Ergebnis, solange es höchstens 3 % langsamer ist als das beste der letzten 12 Monate – sonst das beste
+const FORM_TOLERANCE = 0.03, TEST_EVERY_DAYS = 56;
 function fitnessRef(today = localDay()) {
-  const from = addDays(today, -365); let best = null;
+  const from = addDays(today, -365), list = [];
   for (const r of results) {
     if (r.date < from || r.date > today) continue;
     const km = groupKm(resultGroup(r)); if (!(km >= 3 && km <= 43)) continue;
-    const t10 = riegel(r.time, km, 10); if (!best || t10 < best.t10) best = { t10, r, km };
+    list.push({ t10: riegel(r.time, km, 10), r, km });
   }
-  return best;
+  if (!list.length) return null;
+  const best = list.reduce((a, b) => b.t10 < a.t10 ? b : a), newest = list.reduce((a, b) => b.r.date > a.r.date ? b : a);
+  const ref = newest.t10 <= best.t10 * (1 + FORM_TOLERANCE) ? newest : best;
+  return Object.assign({}, ref, { newest: newest.r.date, stale: newest.r.date < addDays(today, -TEST_EVERY_DAYS) });
+}
+/* Testläufe: Ist das letzte Ergebnis oder Rennen 8 Wochen her (oder gibt es noch keins), wird in der nächsten passenden Woche
+   (Basis, Grundlage, Aufbau; keine Entlastungs- oder Rennwoche) die Qualitätseinheit zum 5-km-Testlauf. Danach wieder 8 Wochen. */
+function markTests(weeks) {
+  let last = [...results.map(r => r.date), ...races.filter(r => r.date <= localDay()).map(r => r.date)].sort().at(-1) || null;
+  for (const x of weeks) {
+    if (x.a || x.b.length) { last = x.week; continue; }
+    const due = !last || x.week >= weekStart(addDays(last, TEST_EVERY_DAYS));
+    if (due && ['basis', 'base', 'build'].includes(x.phase) && !x.cut) { x.test = true; last = x.week; }
+  }
 }
 function trainingPaces(today) {
   const ref = fitnessRef(today); if (!ref) return null;
@@ -1251,8 +1267,8 @@ function trainingPaces(today) {
   return { ref, easy: [r5(p10 + 60), r5(p10 + 90)], marathon: at(42.195), threshold: [r5(at(15)), r5(at(21.0975))], interval: at(5) };
 }
 const paceRange = ([a, b]) => `${hms(a)}–${hms(b)} /km`;
-// Renntempo: aus der Zielzeit, sonst aus der aktuellen Bestzeit hochgerechnet
-const racePace = r => r.goal ? r.goal / raceKm(r) : (() => { const tp = trainingPaces(); return tp ? riegel(tp.ref.t10, 10, raceKm(r)) / raceKm(r) : null; })();
+// Renntempo aus der aktuellen Form; nur ohne jedes Ergebnis als Notlösung aus der Zielzeit
+const racePace = r => { const tp = trainingPaces(); return tp ? riegel(tp.ref.t10, 10, raceKm(r)) / raceKm(r) : r.goal ? r.goal / raceKm(r) : null; };
 // Bei Tempo-Abschnitten das Renntempo dahinterschreiben, bei Schwelle den Schwellenbereich aus der Bestzeit
 const withPace = (txt, r) => {
   const p = /tempo|pace/i.test(txt) ? racePace(r) : null, tp = /Schwelle|threshold/i.test(txt) ? trainingPaces() : null;
@@ -1263,12 +1279,12 @@ const easyPace = () => { const tp = trainingPaces(); return tp ? ` · ${paceRang
 function renderPaces() {
   const tp = trainingPaces();
   if (!tp) return `<div class="header">${T('Trainingstempos', 'Training paces')}</div><div class="group"><div class="row"><span class="txt"><small>${T('Unter <b>Bestzeiten</b> ein Ergebnis der letzten 12 Monate eintragen (3 bis 42 km) – dann stehen hier deine Tempos für locker, Schwelle, Intervall und Marathon.', 'Enter a result from the last 12 months under <b>Best times</b> (3 to 42 km) – then your paces for easy, threshold, intervals and marathon appear here.')}</small></span></div></div>`;
-  const r = tp.ref.r, rows = [[T('Locker & Longrun', 'Easy & long run'), paceRange(tp.easy), T('Gesprächstempo, Zone 2', 'conversational, zone 2')],
+  const r = tp.ref.r, stale = tp.ref.stale ? `<div class="alert due">${T(`Letztes Ergebnis vom ${dateGerman(tp.ref.newest)} – Zeit für einen Testlauf (5 km) oder ein B-Rennen. Danach unter <b>Bestzeiten</b> eintragen, dann passen die Tempos wieder.`, `Last result from ${dateGerman(tp.ref.newest)} – time for a time trial (5 km) or a B race. Then enter it under <b>Best times</b> so the paces fit again.`)}</div>` : '', rows = [[T('Locker & Longrun', 'Easy & long run'), paceRange(tp.easy), T('Gesprächstempo, Zone 2', 'conversational, zone 2')],
     [T('Marathontempo', 'Marathon pace'), hms(tp.marathon) + ' /km', T('lange Abschnitte im Marathonblock', 'long segments in a marathon block')],
     [T('Schwelle', 'Threshold'), paceRange(tp.threshold), T('kontrolliert hart, etwa eine Stunde haltbar', 'controlled hard, sustainable for about an hour')],
     [T('Intervall', 'Intervals'), '≈ ' + hms(tp.interval) + ' /km', T('etwa 5-km-Renntempo, 400–1000 m', 'about 5 km race pace, 400–1000 m')]];
-  return `<div class="header">${T('Trainingstempos', 'Training paces')}</div><div class="group" id="planpaces">${rows.map(([n, v, d]) => `<div class="row"><span class="txt"><b>${esc(n)}</b><small>${esc(d)}</small></span><span class="val">${esc(v)}</span></div>`).join('')}</div>
-    <p class="footer">${T(`Aus deinem Ergebnis ${esc(groupLabel(resultGroup(r)))} in ${hms(r.time)} am ${dateGerman(r.date)} (beste Leistung der letzten 12 Monate, mit Riegel umgerechnet). Richtwerte – bei Hitze, Wind, Hügeln oder müden Beinen langsamer.`, `From your result ${esc(groupLabel(resultGroup(r)))} in ${hms(r.time)} on ${dateGerman(r.date)} (best performance of the last 12 months, converted with Riegel). Guidelines – slower in heat, wind, hills or with tired legs.`)}</p>`;
+  return `<div class="header">${T('Trainingstempos', 'Training paces')}</div>${stale}<div class="group" id="planpaces">${rows.map(([n, v, d]) => `<div class="row"><span class="txt"><b>${esc(n)}</b><small>${esc(d)}</small></span><span class="val">${esc(v)}</span></div>`).join('')}</div>
+    <p class="footer">${T(`Aus deinem Ergebnis ${esc(groupLabel(resultGroup(r)))} in ${hms(r.time)} am ${dateGerman(r.date)}, mit Riegel umgerechnet. Es zählt das neueste Ergebnis, solange es höchstens 3 % langsamer ist als dein bestes der letzten 12 Monate – so werden die Tempos mit jedem Testlauf oder Rennen aktuell, nicht aus der Zielzeit. Richtwerte – bei Hitze, Wind, Hügeln oder müden Beinen langsamer.`, `From your result ${esc(groupLabel(resultGroup(r)))} in ${hms(r.time)} on ${dateGerman(r.date)}, converted with Riegel. Your newest result counts as long as it is at most 3 % slower than your best of the last 12 months – so the paces follow every time trial or race, not the goal time. Guidelines – slower in heat, wind, hills or with tired legs.`)}</p>`;
 }
 function weekKey(x) {
   const t = SEASON.key[x.phase] || SEASON.key.basis, list = t[x.target.dist] || t.all, odd = isoWeek(x.week) % 2;
@@ -1289,7 +1305,7 @@ function weekSchedule(x) {
   const before = (d, gap = 1) => dayIdx(d) <= rd - gap;
   if (x.a) add(new Date(x.a.date + 'T12:00:00').getDay(), 'race', T(`Rennen: ${x.a.name}`, `Race: ${x.a.name}`), raceLabel(x.a) + goalLine(x.a));
   if (x.bRace) add(new Date(x.bRace.date + 'T12:00:00').getDay(), 'brace', T(`B-Rennen: ${x.bRace.name}`, `B race: ${x.bRace.name}`), raceLabel(x.bRace) + goalLine(x.bRace) + (x.bSpike ? T(' · locker, nicht auf Zeit', ' · easy, not for time') : ''));
-  if (w.quality !== null && (!x.a || before(w.quality, 2)) && !x.bRace) add(w.quality, 'quality', x.phase === 'recover' ? T('Locker laufen', 'Easy run') : T('Qualität', 'Quality'), weekKey(x));
+  if (w.quality !== null && (!x.a || before(w.quality, 2)) && !x.bRace) add(w.quality, 'quality', x.phase === 'recover' ? T('Locker laufen', 'Easy run') : x.test ? T('Testlauf 5 km', 'Time trial 5 km') : T('Qualität', 'Quality'), x.test ? T('nach 15 Min. Einlaufen 5 km so schnell, wie du gleichmäßig durchhalten kannst – danach unter Bestzeiten eintragen, dann passen die Tempos', 'after a 15 min warm-up run 5 km as fast as you can hold evenly – then enter it under Best times so the paces update') : weekKey(x));
   if (w.group !== null && (!x.a || before(w.group))) add(w.group, 'group', T('Laufgruppe', 'Running group'), hrize(x.a ? T('ganz locker, Zone 2', 'very easy, Zone 2') : T('locker, Zone 2', 'easy, Zone 2')) + easyPace());
   if (!x.a && !x.bLong && w.long !== null) { const lv = kmRound(x.long); add(w.long, 'long', x.noLong ? T('Locker oder frei', 'Easy or rest') : lv ? T(`Longrun ca. ${lv} km`, `Long run approx. ${lv} km`) : T('Longrun', 'Long run'), weekLongNote(x)); }
   for (const d of w.strength) if (!x.a || before(d, 2)) add(d, 'strength', T('Kraft', 'Strength'), x.a ? T('leicht, keine schweren Beinübungen', 'light, no heavy leg exercises') : x.phase === 'taper' ? T('ohne schwere Beinübungen', 'without heavy leg exercises') : x.phase === 'recover' ? T('leicht', 'light') : '');
@@ -1342,7 +1358,7 @@ function renderPlanWeek(S) {
 function renderPlanSeason(S) {
   const SHOW = 8, row = (x, i) => {
     const [pl] = SEASON.phase[phaseKey(x)], lv = kmRound(x.long), kv = kmRound(x.km);
-    const marks = (x.a ? [`🏁 ${esc(x.a.name)} · A`] : []).concat(x.b.map(b => `${esc(b.name)} · B`)).join(' · ');
+    const marks = (x.a ? [`🏁 ${esc(x.a.name)} · A`] : []).concat(x.b.map(b => `${esc(b.name)} · B`), x.test ? [`⏱ ${T('Testlauf', 'Time trial')}`] : []).join(' · ');
     const nums = [x.a ? T('Rennen', 'Race') : x.bLong ? T(`Rennen ${raceLabel(x.bRace)} statt Longrun`, `race ${raceLabel(x.bRace)} instead of long run`) : x.noLong ? T('kein Longrun', 'no long run') : lv === null || lv === undefined ? '' : T(`Longrun ${lv} km`, `long run ${lv} km`), kv === null || kv === undefined ? '' : T(`Woche ${kv} km`, `week ${kv} km`)].filter(Boolean).join(' · ');
     return `<div class="row planweek${i === 0 ? ' now' : ''}${x.a ? ' race' : ''}"><span class="dur">${T('KW', 'Wk')} ${isoWeek(x.week)}<small>${dateShort(x.week)}</small></span><span class="txt"><b><span class="phasedot ph-${phaseKey(x)}"></span>${esc(pl)}${marks ? ` · ${marks}` : ''}</b>${nums ? `<small>${nums}</small>` : ''}</span></div>`;
   };

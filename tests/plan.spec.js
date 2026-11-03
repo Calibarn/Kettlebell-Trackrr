@@ -367,3 +367,33 @@ test('Trainingstempos: aus der besten Leistung der letzten 12 Monate, im Plan be
   await expect(page.locator('#planschedule .sched-group')).toContainText('6:00–6:30 /km');
   expect(await page.evaluate(() => [hms(racePace(races[0])), withPace('3 × 10 Min. Schwelle', races[0])])).toEqual(['5:14', '3 × 10 Min. Schwelle (5:05–5:15 /km)']);
 });
+
+test('Aktuelle Form statt Zielzeit, Testläufe alle 8 Wochen ohne Ergebnis', async ({ page }) => {
+  await openPlan(page);
+  const later = await page.evaluate(() => addDays(localDay(), 7 * 20));
+  await setRaces(page, [{ id: 'h', name: 'Mein HM', date: later, dist: 'hm', prio: 'A', goal: 6000 }]);
+  // ohne Ergebnis: diese Woche ist Testlauf, Renntempo notfalls aus der Zielzeit
+  await page.click('[data-runsub="woche"]');
+  await expect(page.locator('#planschedule .sched-quality')).toContainText('Testlauf 5 km');
+  expect(await page.evaluate(() => hms(racePace(races[0])))).toBe('4:44');
+  // neuestes Ergebnis 4 % langsamer als das beste → das beste zählt; nur 2 % langsamer → das neueste zählt
+  const ref = await page.evaluate(() => {
+    const d = n => addDays(localDay(), -n);
+    results = [{ id: 'b', date: d(30), km: 10, time: 2880, dist: '10k' }, { id: 'n', date: d(10), km: 10, time: 3000, dist: '10k' }];
+    const a = fitnessRef().r.id;
+    results[1].time = 2940; const b = fitnessRef().r.id;
+    persistResults(); renderRun();
+    return [a, b, hms(racePace(races[0]))];
+  });
+  expect(ref).toEqual(['b', 'n', '5:07']);
+  // Testläufe: frühestens 8 Wochen nach dem letzten Ergebnis, dann wieder 8 Wochen später, nie in Tapering oder Rennwoche
+  const tests = await page.evaluate(() => { const S = seasonPlan(); return { weeks: S.weeks.filter(x => x.test).map(x => [x.week, x.phase]), first: weekStart(addDays(results[1].date, 56)) }; });
+  expect(tests.weeks.length).toBeGreaterThan(0);
+  expect(tests.weeks[0][0] >= tests.first).toBe(true);
+  expect(tests.weeks.every(([, p]) => ['basis', 'base', 'build'].includes(p))).toBe(true);
+  for (let i = 1; i < tests.weeks.length; i++) expect(await page.evaluate(([a, b]) => weeksBetween(a, b), [tests.weeks[i - 1][0], tests.weeks[i][0]])).toBeGreaterThanOrEqual(8);
+  await expect(page.locator('#planschedule .sched-quality')).not.toContainText('Testlauf');
+  // altes Ergebnis → Hinweis auf Testlauf
+  await page.evaluate(() => { results = [{ id: 'o', date: addDays(localDay(), -70), km: 10, time: 3000, dist: '10k' }]; persistResults(); renderRun(); });
+  await expect(page.locator('#runcontent')).toContainText('Zeit für einen Testlauf');
+});
