@@ -89,3 +89,8 @@ test('Neuigkeiten: ein Eintrag pro Tag; neue Punkte am selben Tag zeigen den Tag
   const dates = await page.evaluate(() => CHANGELOG.slice(0, -1).map(c => c.date));
   expect(new Set(dates).size).toBe(dates.length);
 });
+
+test('Neuigkeiten: je Tag erst Neuerungen, dann Optimierungen, zuletzt Fehlerbehebungen', async ({ page }) => {
+  const order = await page.evaluate(() => CHANGELOG.map(c => c.items.map(([k]) => k === 'Behoben' ? 2 : ['Schneller', 'Übersichtlicher'].includes(k) ? 1 : 0)));
+  for (const o of order) expect(o).toEqual(o.slice().sort((a, b) => a - b));
+});

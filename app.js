@@ -106,18 +106,22 @@ function availableGears(sl, pk) {
   const act = ['kb', 'band', 'bw'].filter(g => gear[g] && owns(g)); if (!act.length) act.push('bw');
   return (sl.order || ['kb', 'band', 'bw']).filter(g => sl.v[g] && act.includes(g));
 }
+const LVL_LABEL = { leicht: T('leicht', 'easy'), mittel: T('mittel', 'medium'), schwer: T('schwer', 'hard') };
 function resolve(pk, sl) {
   const avail = availableGears(sl, pk), c = isObj(choices[slotKey(pk, sl)]) ? choices[slotKey(pk, sl)] : {};
   // Ersatz nur, wenn es die Übung mit Geräten gäbe, aber nicht mit den gewählten; reine Körpergewicht-Übungen gehen immer
   const bwOnly = Object.keys(sl.v).every(k => k === 'bw'), fallback = !avail.length && !bwOnly, auto = !avail.includes(c.pref);
   const g = !auto ? c.pref : (avail[0] || (sl.v.bw ? 'bw' : Object.keys(sl.v)[0]));
   if (!avail.length) avail.push(g);
-  const [name, reps, note] = sl.v[g];
+  const [name, reps, baseNote] = sl.v[g];
+  // Körpergewicht in drei Stufen (nicht bei Übungen mit eigenen Stufen); mittel = wie beschrieben
+  const lvls = g === 'bw' && !sl.stages && BW_LEVELS[name] ? BW_LEVELS[name] : null, lvl = lvls && ['leicht', 'schwer'].includes(c.lvl) ? c.lvl : 'mittel';
+  const note = lvls && lvl !== 'mittel' ? tr(lvls[lvl === 'leicht' ? 0 : 1]) : baseNote;
   const bo = bandOptions(), kg = c.kg === undefined || c.kg === null ? profile.kit.kbDefault : validKg(c.kg);
   const band = bo.includes(String(c.band)) ? String(c.band) : bo.includes(sl.band || '20') ? (sl.band || '20') : bo[0];
-  const gearText = (g === 'kb' ? (kg > 0 ? `Kettlebell ${kgText(kg)} kg` : T('Kettlebell ohne Gewicht', 'Kettlebell without weight')) : g === 'band' ? bandLabel(band) : T('Körpergewicht', 'Body weight')) + (fallback ? T(' (Ersatz)', ' (substitute)') : '');
-  const cfg = g === 'kb' ? 'kb:' + kg : g === 'band' ? 'band:' + band : 'bw';
-  return { slot: sl, g, name, reps, note, kg, band, gearText, cfg, avail, auto, fallback };
+  const gearText = (g === 'kb' ? (kg > 0 ? `Kettlebell ${kgText(kg)} kg` : T('Kettlebell ohne Gewicht', 'Kettlebell without weight')) : g === 'band' ? bandLabel(band) : T('Körpergewicht', 'Body weight') + (lvls && lvl !== 'mittel' ? ' · ' + LVL_LABEL[lvl] : '')) + (fallback ? T(' (Ersatz)', ' (substitute)') : '');
+  const cfg = g === 'kb' ? 'kb:' + kg : g === 'band' ? 'band:' + band : 'bw' + (lvl !== 'mittel' ? ':' + lvl : '');
+  return { slot: sl, g, name, reps, note, kg, band, gearText, cfg, avail, auto, fallback, lvls, lvl };
 }
 function stageOf(pk, sl) { if (!sl.stages) return null; const s = stages[slotKey(pk, sl)]; return sl.stages.includes(s) ? s : sl.stages[0]; }
 const exList = (pk = plan) => PLANS[pk].slots.map(sl => resolve(pk, sl));
@@ -154,7 +158,7 @@ function emomSegments(pk) {
 const segments = (pk = plan) => isTabata(pk) ? tabataSegments() : emomSegments(pk);
 const workTotal = (pk = plan) => segments(pk).filter(x => x.type === 'work').length;
 function phaseSecs(pk, i) { return isInterval(pk) && i === 1 ? segments(pk).at(-1).end : PLANS[pk].durations[i] * 60; }
-const cfgText = c => !c ? '' : c === 'bw' ? T('Körpergewicht', 'Body weight') : c.startsWith('kb:') ? kgText(c.slice(3)) + ' kg' : c.startsWith('band:') ? bandLabel(c.slice(5)) : c;
+const cfgText = c => !c ? '' : c === 'bw' ? T('Körpergewicht', 'Body weight') : /^bw:(leicht|schwer)$/.test(c) ? T('Körpergewicht', 'Body weight') + ' · ' + LVL_LABEL[c.slice(3)] : c.startsWith('kb:') ? kgText(c.slice(3)) + ' kg' : c.startsWith('band:') ? bandLabel(c.slice(5)) : c;
 
 /* ---------- Einträge & Vergleichbarkeit ---------- */
 function validEntry(e) {
@@ -468,6 +472,7 @@ function setsAdvice(e, i) {
   if (!top || !Array.isArray(r) || r.length < x.slot.sets || !r.every(v => typeof v === 'number' && v >= top)) return null;
   const sl = x.slot, k = sl.stages ? sl.stages.indexOf(st) : -1;
   if (sl.stages && k >= 0 && k < sl.stages.length - 1) return { text: T('Nächste Stufe: ', 'Next stage: ') + tr(sl.stages[k + 1]), stage: sl.stages[k + 1] };
+  if (x.lvls && x.lvl !== 'schwer') { const to = x.lvl === 'leicht' ? 'mittel' : 'schwer'; return { text: T('Nächste Stufe: ', 'Next level: ') + LVL_LABEL[to], lvl: to }; }
   if (sl.emom) return { text: x.g === 'kb' ? T('Schwerere Kugel', 'Heavier bell') : x.g === 'band' ? T('Stärkeres Band', 'Stronger band') : T('Oben 2 Sek. halten', 'Hold 2 sec at the top') };
   if (/Sek\./.test(x.reps)) return { text: x.g === 'kb' ? T('Schwerere Kugel oder länger halten', 'Heavier bell or hold longer') : T('Länger halten', 'Hold longer') };
   return { text: x.g === 'kb' ? T('Mehr Gewicht', 'More weight') + (sl.stages ? '' : T(' oder 3 Sek. absenken', ' or lower over 3 sec')) : x.g === 'band' ? T('Stärkeres Band', 'Stronger band') : T('Schwerere Variante oder 3 Sek. absenken', 'Harder variant or lower over 3 sec') };
@@ -671,7 +676,7 @@ function renderList() {
     let lastTxt = T('Noch kein Eintrag', 'No entry yet');
     if (last && (last.cfg || []).length === ex.length && last.sets[i]) lastTxt = `${T('Zuletzt', 'Last')} (${dateGerman(last.date)}): ${last.sets[i].map(r => r ?? '–').join(' / ')}${last.stages && last.stages[i] ? ' · ' + esc(tr(last.stages[i])) : ''} · ${esc(cfgText(last.cfg[i]))}${last.names && last.names[i] !== x.name ? ' · ' + esc(tr(last.names[i])) : ''}`;
     const adv = setsAdvice(last, i);
-    const advHtml = adv ? `<div class="advice"><span>${T('↑ Alle Sätze an der Obergrenze – bereit für mehr:', '↑ All sets at the upper limit – ready for more:')} <b>${esc(adv.text)}</b></span>${adv.stage ? `<button type="button" class="btn small" data-advance="${sl.id}" data-to="${esc(adv.stage)}">${T('Übernehmen', 'Apply')}</button>` : ''}</div>` : '';
+    const advHtml = adv ? `<div class="advice"><span>${T('↑ Alle Sätze an der Obergrenze – bereit für mehr:', '↑ All sets at the upper limit – ready for more:')} <b>${esc(adv.text)}</b></span>${adv.stage ? `<button type="button" class="btn small" data-advance="${sl.id}" data-to="${esc(adv.stage)}">${T('Übernehmen', 'Apply')}</button>` : adv.lvl ? `<button type="button" class="btn small" data-lvlup="${sl.id}" data-to="${adv.lvl}">${T('Übernehmen', 'Apply')}</button>` : ''}</div>` : '';
     const em = sl.emom ? '<div class="timedctl" style="padding:8px 0 0"><button type="button" class="btn small primary" id="emomstart">' + T('▶ EMOM starten', '▶ Start EMOM') + '</button><strong class="stepclock" id="emomclock">03:00</strong></div><p class="tiny" id="emominfo"></p>' : '';
     html += `<div class="setcard"><div class="sethead"><button type="button" class="setname" data-ex="${i}">${esc(tr(sl.stages && /^Bulgarian/.test(st) ? 'Bulgarian Split Squat' : x.name))} <span class="info">ⓘ</span></button><span class="setmeta">${esc(tr(x.reps))}</span></div><div class="setmeta">${esc(x.gearText)} · ${esc(x.note)}</div>${stageSel}<div class="setrow">${inputs}</div><div class="setmeta">${lastTxt}</div>${advHtml}${em}</div>`;
   });
@@ -702,9 +707,10 @@ function renderSettings() {
     const best = r.avail[0];
     const opts = `<option value="auto" ${r.auto ? 'selected' : ''}>${T('Automatisch', 'Automatic')}: ${esc(tr(sl.v[best][0]))}</option>` + (r.avail.length > 1 ? r.avail.map(g => `<option value="${g}" ${!r.auto && g === r.g ? 'selected' : ''}>${esc(GEAR_LABEL[g])}: ${esc(tr(sl.v[g][0]))}</option>`).join('') : '');
     const param = r.g === 'kb' ? kgParam(`data-kg="${sl.id}"`, r.kg, T(`Gewicht für ${r.name}`, `Weight for ${tr(r.name)}`))
+      : r.lvls ? `<select data-lvl="${sl.id}" aria-label="${esc(T(`Stufe für ${r.name}`, `Level for ${tr(r.name)}`))}">${['leicht', 'mittel', 'schwer'].map(v => `<option value="${v}"${v === r.lvl ? ' selected' : ''}>${T('Stufe', 'Level')}: ${esc(LVL_LABEL[v])}</option>`).join('')}</select>`
       : r.g === 'band' ? `<select data-band="${sl.id}" aria-label="${esc(T(`Band für ${r.name}`, `Band for ${tr(r.name)}`))}">${bandOptions().map(b => `<option value="${b}" ${b === r.band ? 'selected' : ''}>${esc(bandLabel(b).replace(/^Band /, ''))}</option>`).join('')}</select>` : '<span class="param">–</span>';
-    const why = sl.why && r.auto && !r.fallback && Object.keys(sl.v).length > 1 ? tr(sl.why) : r.fallback ? T('Mit deinen Geräten gibt es hier keine Variante – Körpergewicht als Ersatz.', 'There is no variant for your equipment here – body weight as a substitute.') : !r.auto ? T('Manuell gewählt.', 'Chosen manually.') : '';
-    return `<div class="srow"><div class="sname"><b>${esc(tr(r.name))}</b>${why ? `<small>${esc(why)}</small>` : ''}</div><select data-pref="${sl.id}" ${r.avail.length < 2 && r.auto ? 'disabled' : ''} aria-label="${T('Variante', 'Variant')}">${opts}</select>${param}</div>`;
+    const why = sl.why && r.auto && !r.fallback && r.avail.length > 1 ? tr(sl.why) : r.fallback ? T('Mit deinen Geräten gibt es hier keine Variante – Körpergewicht als Ersatz.', 'There is no variant for your equipment here – body weight as a substitute.') : !r.auto ? T('Manuell gewählt.', 'Chosen manually.') : '';
+    return `<div class="srow"><div class="sname"><b>${esc(tr(r.name))}</b>${why ? `<small>${esc(why)}</small>` : ''}</div>${r.avail.length < 2 && r.auto ? '' : `<select data-pref="${sl.id}" aria-label="${T('Variante', 'Variant')}">${opts}</select>`}${param}</div>`;
   }).join('');
   const tbRows = isTabata() ? (() => { const c = tabataCfg(); return `<div class="srow"><div class="sname"><b>${T('Runden je Übung', 'Rounds per exercise')}</b><small>${T('Empfehlung zum Einstieg: 6', 'Recommended to start: 6')}</small></div><select data-tabata="rounds" aria-label="${T('Runden je Übung', 'Rounds per exercise')}">${TABATA_ROUNDS.map(v => `<option value="${v}" ${v === c.rounds ? 'selected' : ''}>${v} ${T('Runden', 'rounds')}</option>`).join('')}</select><span class="param">20″ / 10″</span></div><div class="srow"><div class="sname"><b>${T('Pause zwischen Übungen', 'Rest between exercises')}</b><small>${T('Empfehlung zum Einstieg: 90 Sek.', 'Recommended to start: 90 sec')}</small></div><select data-tabata="blockRest" aria-label="${T('Pause zwischen Übungen', 'Rest between exercises')}">${TABATA_RESTS.map(v => `<option value="${v}" ${v === c.blockRest ? 'selected' : ''}>${v} ${T('Sek.', 'sec')}</option>`).join('')}</select><span class="param">${Math.round(phaseSecs('tabata', 1) / 60)} ${T('Min.', 'min')}</span></div>`; })() : '';
   const emRows = isEmomPlan() ? (() => { const c = emomCfg(), n = PLANS[pk].slots.length; return `<div class="srow"><div class="sname"><b>${T('Runden', 'Rounds')}</b><small>${T(`Empfehlung zum Einstieg: 5 (${5 * n} Min.)`, `Recommended to start: 5 (${5 * n} min)`)}</small></div><select data-icfg="rounds" aria-label="${T('Runden', 'Rounds')}">${EMOM_ROUNDS.map(v => `<option value="${v}" ${v === c.rounds ? 'selected' : ''}>${T(`${v} Runden · ${v * n} Min.`, `${v} rounds · ${v * n} min`)}</option>`).join('')}</select><span class="param">${T('1 Übung je Min.', '1 exercise per min')}</span></div>`; })() : '';
@@ -2042,6 +2048,7 @@ function openGuide(name, g, opts = {}) {
   $('guide-title').textContent = tr(name);
   let extra = '';
   const sl = opts.slot;
+  if (opts.lvls) extra += `<h3>${T('Leichter oder schwerer', 'Easier or harder')}</h3><ol class="stagelist">${[['leicht', tr(opts.lvls[0])], ['mittel', T('Ausführung wie oben beschrieben', 'As described above')], ['schwer', tr(opts.lvls[1])]].map(([v, t]) => `<li class="${v === opts.lvl ? 'cur' : ''}"><b>${esc(LVL_LABEL[v])}${v === opts.lvl ? T(' (gewählt)', ' (selected)') : ''}</b> – ${esc(t)}</li>`).join('')}</ol><p>${T('Die Stufe stellst du unter <b>Übungen &amp; Varianten</b> ein. Schaffst du die Wiederholungen sauber und locker, eine Stufe hoch; klappt die Übung nicht sauber, eine runter.', 'Set the level under <b>Exercises &amp; variants</b>. If the reps feel clean and easy, go up a level; if the exercise does not work cleanly, go down one.')}</p>`;
   if (sl && sl.stages) extra += `<h3>${T('Stufen &amp; Progression', 'Stages &amp; progression')}</h3><ol class="stagelist">` + sl.stages.map(s => `<li class="${s === opts.stage ? 'cur' : ''}"><b>${esc(tr(s))}${s === opts.stage ? T(' (gewählt)', ' (selected)') : ''}</b> – ${esc(STAGE_INFO[s] || '')}</li>`).join('') + `</ol><p>${T('Erst eine Stufe weiter, wenn alle Sätze mit 15 sauberen Wiederholungen klappen. Auf der neuen Stufe wieder bei etwa 8 Wiederholungen beginnen.', 'Only move up a stage when all sets work with 15 clean reps. On the new stage start again at about 8 reps.')}</p>`;
   if (sl && sl.stages && sl.stages.some(s => /Tempo/.test(s))) extra += `<h3>${T('Was heißt Tempo 3-1-1?', 'What does tempo 3-1-1 mean?')}</h3><p class="guidecue">${esc(tr(TEMPO_TEXT))}</p>`;
   if (sl && sl.emom) extra += `<h3>${T('Was heißt EMOM?', 'What does EMOM mean?')}</h3><p>${esc(tr(EMOM_TEXT))}</p>`;
@@ -2056,7 +2063,7 @@ function openGuide(name, g, opts = {}) {
 function openExerciseGuide(i, origin) {
   const x = exList()[i]; if (!x) return;
   const st = stageOf(plan, x.slot), name = x.slot.stages && /^Bulgarian/.test(st || '') ? 'Bulgarian Split Squat' : x.name;
-  openGuide(name, x.g, { origin, slot: x.slot, stage: st, gearText: x.gearText, reps: isTabata() ? tabataCfg().rounds + T(' × 20 Sek.', ' × 20 sec') : x.reps, tabata: isTabata(), emomPlan: isEmomPlan() });
+  openGuide(name, x.g, { origin, slot: x.slot, stage: st, lvls: x.lvls, lvl: x.lvl, gearText: x.gearText, reps: isTabata() ? tabataCfg().rounds + T(' × 20 Sek.', ' × 20 sec') : x.reps, tabata: isTabata(), emomPlan: isEmomPlan() });
 }
 
 // Plan ohne passende Geräte (z. B. Kettlebell entfernt): zurück zum Ganzkörper-Plan, sofern gerade nichts läuft
@@ -2298,6 +2305,8 @@ $('stepstatus').addEventListener('click', e => { if (isInterval() && phase === 1
 for (const id of ['warmup', 'cooldown']) $(id).addEventListener('click', e => { const b = e.target.closest('[data-guide-name]'); if (b) openGuide(b.dataset.guideName, 'bw', { origin: b }); });
 $('worklist').addEventListener('click', e => {
   if (e.target.closest('#emomstart')) { startEmom(); return; }
+  const lu = e.target.closest('[data-lvlup]');
+  if (lu) { updateChoice(lu.dataset.lvlup, { lvl: lu.dataset.to === 'mittel' ? null : lu.dataset.to }); renderAll(); toast(T('Stufe umgestellt: ', 'Level changed: ') + LVL_LABEL[lu.dataset.to]); return; }
   const a = e.target.closest('[data-advance]');
   if (a) { stages[plan + '.' + a.dataset.advance] = a.dataset.to; store(KEYS.stage, stages); renderList(); renderStats(); renderHistory(); toast(T('Stufe umgestellt: ', 'Stage changed: ') + tr(a.dataset.to)); return; }
   const b = e.target.closest('[data-ex]'); if (b) openExerciseGuide(Number(b.dataset.ex), b);
@@ -2315,10 +2324,11 @@ $('settings').addEventListener('change', e => {
     const k = plan + '.cfg'; choices[k] = Object.assign({}, isObj(choices[k]) ? choices[k] : {}, { [ck]: Number(t.value) }); store(KEYS.choice, choices);
     renderAll(); toast(T('Gespeichert.', 'Saved.')); return;
   }
-  const id = t.dataset.pref || t.dataset.kg || t.dataset.band; if (!id) return;
+  const id = t.dataset.pref || t.dataset.kg || t.dataset.band || t.dataset.lvl; if (!id) return;
   if (settingsLocked()) { alert(T('Bitte das laufende Training zuerst beenden oder zurücksetzen.', 'Please finish or reset the current workout first.')); renderSettings(); return; }
   if (t.dataset.pref) updateChoice(id, { pref: t.value === 'auto' ? null : t.value });
   else if (t.dataset.kg) { const v = Number(String(t.value).replace(',', '.')); if (t.value === '' || !Number.isFinite(v) || v < 0 || v > 60) { alert(T('Bitte ein Gewicht zwischen 0 und 60 kg eingeben.', 'Please enter a weight between 0 and 60 kg.')); renderSettings(); return; } updateChoice(id, { kg: v }); }
+  else if (t.dataset.lvl) updateChoice(id, { lvl: t.value === 'mittel' ? null : t.value });
   else updateChoice(id, { band: t.value });
   renderAll(); toast(T('Gespeichert.', 'Saved.'));
 });

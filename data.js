@@ -488,6 +488,33 @@ const SIDED = new Set(['Hüftbeuger-Dehnung', 'Brustdehnung am Türrahmen', 'Nac
   'Tauben-Dehnung', 'Knie-zur-Wand', 'Brustwirbel-Rotation im Vierfüßlerstand', 'Figure-4 Gesäß', 'Adduktoren', 'Open Book',
   'Hüft-CARs', 'Beinheben im Sitzen', 'Beinüberheben im Sitzen', 'Knieheben im Stand', 'Fußgelenkkreisen', 'Sprunggelenk mit Kettlebell', 'Soleus-Dehnung', 'Einbeinstand']);
 
+/* Körpergewicht in drei Stufen: leicht / mittel (= Ausführung wie beschrieben) / schwer. Bei Kettlebell und Band regelt das Gewicht.
+   Übungen mit eigenen Stufen (Split Squat → Bulgarian) bekommen keine. */
+const BW_LEVELS = {
+  "Hüftheben": ["Beide Füße am Boden, Oberkörper flach – Bewegung kleiner, wenn nötig", "Einbeinig: ein Bein gestreckt in der Luft, Seiten abwechseln"],
+  "Holzhacker": ["Kleinere Diagonale, nur bis Brusthöhe", "Tiefer in die Knie, oben auf die Zehenspitzen und zügig"],
+  "Armkreisen mit Spannung": ["Kleine Kreise, Arme dürfen leicht gebeugt sein", "Große, langsame Kreise mit voller Spannung, oben kurz halten"],
+  "Kniebeugen": ["Auf einen Stuhl setzen und wieder aufstehen (Box Squat)", "Langsam absenken (3 Sek.), unten 1 Sek. halten"],
+  "Ausfallschritte": ["Kleinerer Schritt, mit einer Hand an Wand oder Stuhl abstützen", "Langsam absenken, unten 1 Sek. halten – oder im Gehen"],
+  "Seitstütz": ["Knie am Boden lassen", "Beine gestreckt, oberes Bein anheben"],
+  "Y-T-W in Bauchlage": ["Stirn auf einem Handtuch, Arme nur kurz anheben", "Positionen je 2 Sek. halten, Daumen zeigen nach oben"],
+  "Liegestütze erhöht": ["Hände höher abstützen (Küchenzeile, Wand)", "Hände niedriger (Stuhl) oder auf dem Boden"],
+  "Enge Liegestütze erhöht": ["Hände höher abstützen (Küchenzeile, Wand)", "Hände niedriger (Stuhl) oder auf dem Boden"],
+  "Handtuch-Curl (halten)": ["Mit halber Kraft ziehen", "Mit voller Kraft ziehen, Ellenbogen 90°"],
+  "Standwaage": ["Fußspitze des hinteren Beins bleibt am Boden, Hand an der Wand", "Ohne Halt, unten 2 Sek. halten"],
+  "Stehende Knie-Ellenbogen-Crunches": ["Langsam, Knie nur bis Hüfthöhe", "Zügig, Knie über Hüfthöhe, Oberkörper dreht mit"],
+  "Einbeiniges Wadenheben": ["Beidbeinig", "Vom Treppenabsatz, Ferse unter die Stufe absenken"],
+  "Unterarmstütz": ["Knie am Boden", "Abwechselnd ein Bein anheben"],
+  "Pike-Liegestütze erhöht": ["Hände höher abstützen, Hüfte weniger hoch", "Füße erhöht (Stuhl), Kopf Richtung Boden"],
+  "Wand-Seitheben (halten)": ["Mit halber Kraft gegen die Wand drücken", "Mit voller Kraft drücken, länger halten"],
+  "Schwimmer in Bauchlage": ["Arme nur kurz anheben, Stirn bleibt am Boden", "Arme und Beine angehoben halten, langsam"],
+  "Dead Bug": ["Nur die Arme oder nur die Beine bewegen", "Langsam strecken, gestreckt 2 Sek. halten"],
+  "Wand-Engel": ["Etwas Abstand zur Wand, kleinere Bewegung", "Langsam, Hände und Unterarme bleiben ganz an der Wand"],
+  "Bird Dog": ["Nur einen Arm oder nur ein Bein strecken", "Gestreckt 2 Sek. halten, Knie schwebt knapp über dem Boden"],
+  "Clamshells": ["Kleinere Bewegung, Kopf auf dem Arm ablegen", "Oben 2 Sek. halten, Füße leicht angehoben"],
+  "Brustwirbel-Rotation im Vierfüßlerstand": ["Kleinere Drehung", "Hand hinter dem Rücken, langsam und weit drehen"],
+  "Bergsteiger erhöht": ["Hände höher abstützen, ruhiges Tempo", "Hände auf dem Boden, zügig"]
+};
 /* Erklärungen zu Stufen, Tempo, Bändern und EMOM (Lauftraining) */
 const STAGE_INFO = {
   'Split Squat': 'Beide Füße am Boden, großer Schritt. Einstiegsstufe.',
@@ -594,18 +621,20 @@ for (const [pk, m] of Object.entries(BEST)) for (const sl of PLANS[pk].slots) if
    Der älteste (letzte) Eintrag ist der Grundstand mit allen Funktionen; Neulinge sehen ihn plus die 3 neuesten Updates. */
 // Ein Eintrag pro Tag: Änderungen desselben Tages kommen in den Eintrag des Tages (aka = frühere ids für „schon gesehen“)
 const CHANGELOG = [
-  { id: '2026-11-03', aka: ['2026-11-03b', '2026-11-03c'], date: '2026-11-03', title: 'Trainingstempos, Testläufe, Abhaken & Fehlerbehebungen', items: [
+  { id: '2026-11-03', aka: ['2026-11-03b', '2026-11-03c'], date: '2026-11-03', title: 'Trainingstempos, Testläufe, Abhaken, Stufen & Fehlerbehebungen', items: [
     ['Laufen', 'Plan → Übersicht zeigt deine Tempos für locker, Schwelle, Intervall und Marathon – aus deiner aktuellen Form: dem neuesten Ergebnis, solange es höchstens 3 % langsamer ist als das beste der letzten 12 Monate. Die Wochenplanung schreibt sie zu den passenden Einheiten.'],
     ['Renntempo', 'Auch das Renntempo in den Einheiten kommt aus deiner Form statt aus der Zielzeit.'],
     ['Testlauf', 'Alle 8 Wochen ohne Ergebnis oder Rennen plant der Plan einen 5-km-Testlauf statt der Qualitätseinheit ein. Ergebnis unter Bestzeiten eintragen – B-Rennen zählen genauso.'],
     ['Abhaken', 'Optional unter Profil → Trainingswoche: Einheiten im Plan abhaken und Verpasstes mit einem Tipp auf den nächsten passenden Tag derselben Woche legen. Gilt nur für die laufende Woche.'],
     ['Kraft', 'Im Zweifel fällt Kraft aus: Ein nachgeholter Lauf darf auf einen Krafttag rücken. Feste Krafttage (im Profil wählbar) werden dabei nie getauscht.'],
+    ['Körpergewicht', 'Übungen ohne Gerät gibt es jetzt in drei Stufen – leicht, mittel, schwer. Einstellbar je Übung unter „Übungen & Varianten“; die Anleitung zeigt, wie die Übung leichter oder schwerer wird.'],
+    ['Schneller', 'Zahlen werden schneller formatiert – der Start mit vielen Einträgen geht spürbar flotter.'],
+    ['Übersichtlicher', '„Übungen & Varianten“ zeigt die Variantenauswahl und ihre Begründung nur noch, wenn es mit deinen Geräten wirklich eine Wahl gibt.'],
     ['Behoben', 'Android: Die Tab-Leiste passt jetzt auch auf schmale Telefone – „Mehr“ war abgeschnitten. Auf sehr schmalen Displays werden Reiter nicht mehr gekürzt.'],
     ['Behoben', 'Kalender-Export: Testläufe heißen „Testlauf 5 km“. Ein vergangenes Rennen ohne eingetragenes Ergebnis verschiebt den Testlauf nicht mehr – der Plan erinnert stattdessen ans Eintragen.'],
     ['Behoben', 'Abhaken: Kraft, die für einen nachgeholten Lauf ausfällt, kommt beim Ausschalten oder Rückgängigmachen sicher zurück.'],
     ['Behoben', 'Feste Krafttage gelten nur noch für gewählte Krafttage – ein abgewählter und später wieder gewählter Tag ist nicht mehr unerwartet „fest“.'],
-    ['Behoben', '„Einstellungen zurücksetzen“ setzt auch Haken und Verschiebungen der laufenden Woche zurück.'],
-    ['Schneller', 'Zahlen werden schneller formatiert – der Start mit vielen Einträgen geht spürbar flotter.']
+    ['Behoben', '„Einstellungen zurücksetzen“ setzt auch Haken und Verschiebungen der laufenden Woche zurück.']
   ] },
   { id: '2026-11-02u', aka: ['2026-11-02b', '2026-11-02c', '2026-11-02d', '2026-11-02e'], date: '2026-11-02', title: 'Englisch, AMRAP, Erholung & Aufgeräumt', items: [
     ['Sprache', 'Die App gibt es jetzt auch auf Englisch. Automatisch nach Gerätesprache: Deutsch bei deutscher Gerätesprache, sonst Englisch.'],
