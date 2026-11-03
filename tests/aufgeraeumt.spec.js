@@ -73,3 +73,10 @@ test('Struktur: Wochenübersicht bei Kraft, Hinweise in der Anleitung, Rechenweg
   await expect(page.locator('#bestcalc')).toContainText('≈ 2:01:32');
   await expect(page.locator('#bestcalc')).toContainText('≈ 4:13:24');
 });
+
+test('Neu eingerichtet: Laufen startet auf „Plan“, Körpermaße ist zugeklappt', async ({ page }) => {
+  await page.evaluate(() => showArea('laufen'));
+  await expect(page.locator('#runtabs [aria-selected="true"]')).toHaveText('Plan');
+  await page.evaluate(() => showArea('profil'));
+  await expect(page.locator('#sect-measure')).not.toHaveAttribute('open', '');
+});

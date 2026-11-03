@@ -99,6 +99,7 @@ test('Geräte & Gewichte: eigene Kettlebells und Bänder steuern die Auswahl im 
 
 test('Körpermaße: Gewicht und Bauchumfang in einem Formular, ersetzen, Trend, Diagramm-Umschalter, löschen, Backup und Import', async ({ page }) => {
   await openProfil(page);
+  await openSect(page, 'sect-measure');
   const d = await page.evaluate(() => [21, 14, 7, 0].map(n => addDays(localDay(), -n)));
   const save = async (date, kg, cm = '') => { await page.fill('#measuredate', date); await page.fill('#measurekg', kg); await page.fill('#measurecm', cm); await page.click('#measureform button[type=submit]'); };
   for (const [i, kg] of ['123,4', '122,6', '122,3', '121,6'].entries()) await save(d[i], kg, i === 0 ? '118' : i === 3 ? '116,5' : '');

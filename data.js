@@ -657,20 +657,23 @@ const CHANGELOG = [
     ['Kraft', 'Im Zweifel fällt Kraft aus: Ein nachgeholter Lauf darf auf einen Krafttag rücken. Feste Krafttage (im Profil wählbar) werden dabei nie getauscht.'],
     ['Kalender', 'Der Plan-Export kann jetzt eine Erinnerung am Trainingstag mitbringen (Uhrzeit wählbar, Standard aus) – der Kalender meldet sich, auch wenn die App zu ist.'],
     ['Körpergewicht', 'Übungen ohne Gerät gibt es jetzt in drei Stufen – leicht, mittel, schwer. Einstellbar je Übung unter „Übungen & Varianten“; die Anleitung zeigt, wie die Übung leichter oder schwerer wird.'],
-    ['Schneller', 'Zahlen werden schneller formatiert – der Start mit vielen Einträgen geht spürbar flotter.'],
-    ['Übersichtlicher', '„Übungen & Varianten“ zeigt die Variantenauswahl und ihre Begründung nur noch, wenn es mit deinen Geräten wirklich eine Wahl gibt.'],
-    ['Übersichtlicher', 'Weniger scrollen: Profil, Mehr und Laufen haben aufklappbare Bereiche – es ist immer nur einer offen, und die App merkt sich, welcher. Die zugeklappte Zeile zeigt das Wichtigste, z. B. deine Trainingstage oder das letzte Gewicht.'],
-    ['Übersichtlicher', 'Während eines Trainings sind die Hinweise oben und „Heute dabei“ ausgeblendet – der Timer steht sofort im Blick.'],
-    ['Übersichtlicher', 'Wochenplanung: Die Knöpfe stehen unter dem Text, der dadurch die volle Breite bekommt. Kacheln stehen zu dritt nebeneinander, die Krafttage passen in eine Zeile, „Messung speichern“ geht über die volle Breite.'],
-    ['Übersichtlicher', 'Im Handy-Browser steht der Hinweis „Als App installieren“ jetzt dauerhaft ganz oben, mit Link zur Anleitung. Die Anleitung erklärt auch, wie vorhandene Daten aus dem Browser in die App kommen.'],
-    ['Übersichtlicher', '„Heute dabei“: Kettlebell, Bänder und Körpergewicht stehen nebeneinander in einer Reihe, die Beschriftung darüber.'],
-    ['Behoben', 'Bei den Hinweisen oben stand das Symbol in einer eigenen Zeile – jetzt links neben dem Text.'],
-    ['Behoben', 'Profil → Geräte & Gewichte: Das Eingabefeld für Kettlebells und Bänder nutzt die volle Breite – vorher war der Platzhalter abgeschnitten und daneben eine leere Lücke.'],
-    ['Behoben', 'Android: Die Tab-Leiste passt jetzt auch auf schmale Telefone – „Mehr“ war abgeschnitten. Auf sehr schmalen Displays werden Reiter nicht mehr gekürzt.'],
-    ['Behoben', 'Kalender-Export: Testläufe heißen „Testlauf 5 km“. Ein vergangenes Rennen ohne eingetragenes Ergebnis verschiebt den Testlauf nicht mehr – der Plan erinnert stattdessen ans Eintragen.'],
-    ['Behoben', 'Abhaken: Kraft, die für einen nachgeholten Lauf ausfällt, kommt beim Ausschalten oder Rückgängigmachen sicher zurück.'],
-    ['Behoben', 'Feste Krafttage gelten nur noch für gewählte Krafttage – ein abgewählter und später wieder gewählter Tag ist nicht mehr unerwartet „fest“.'],
-    ['Behoben', '„Einstellungen zurücksetzen“ setzt auch Haken und Verschiebungen der laufenden Woche zurück.']
+    ['App-Start', 'Zahlen werden schneller formatiert – der Start mit vielen Einträgen geht spürbar flotter.', 'ux'],
+    ['Übungen & Varianten', '„Übungen & Varianten“ zeigt die Variantenauswahl und ihre Begründung nur noch, wenn es mit deinen Geräten wirklich eine Wahl gibt.', 'ux'],
+    ['Profil, Mehr & Laufen', 'Weniger scrollen: Profil, Mehr und Laufen haben aufklappbare Bereiche – es ist immer nur einer offen, und die App merkt sich, welcher. Die zugeklappte Zeile zeigt das Wichtigste, z. B. deine Trainingstage oder das letzte Gewicht.', 'ux'],
+    ['Im Training', 'Während eines Trainings sind die Hinweise oben und „Heute dabei“ ausgeblendet – der Timer steht sofort im Blick.', 'ux'],
+    ['Wochenplanung', 'Wochenplanung: Die Knöpfe stehen unter dem Text, der dadurch die volle Breite bekommt. Kacheln stehen zu dritt nebeneinander, die Krafttage passen in eine Zeile, „Messung speichern“ geht über die volle Breite.', 'ux'],
+    ['App installieren', 'Im Handy-Browser steht ein kompakter Hinweis „Als App installieren“ dauerhaft ganz oben, mit Link zur Anleitung. Die Anleitung erklärt auch, wie vorhandene Daten aus dem Browser in die App kommen.', 'ux'],
+    ['Heute dabei', '„Heute dabei“: Kettlebell, Bänder und Körpergewicht stehen nebeneinander in einer Reihe, die Beschriftung darüber.', 'ux'],
+    ['Neuigkeiten', 'Die Neuigkeiten sind nach Neu, Usability und Bugs gruppiert – statt bei jedem Punkt „Übersichtlicher“ oder „Behoben“ davorzuschreiben.', 'ux'],
+    ['Laufen', 'Beim ersten Öffnen startet Laufen auf dem Reiter „Plan“ – dort beginnt auch der Lauf-Einstieg.', 'ux'],
+    ['Körpermaße', 'Im Profil ist „Körpermaße“ beim ersten Öffnen zugeklappt wie die anderen Bereiche.', 'ux'],
+    ['Hinweise', 'Bei den Hinweisen oben stand das Symbol in einer eigenen Zeile – jetzt links neben dem Text.', 'bug'],
+    ['Profil → Geräte & Gewichte', 'Profil → Geräte & Gewichte: Das Eingabefeld für Kettlebells und Bänder nutzt die volle Breite – vorher war der Platzhalter abgeschnitten und daneben eine leere Lücke.', 'bug'],
+    ['Android', 'Android: Die Tab-Leiste passt jetzt auch auf schmale Telefone – „Mehr“ war abgeschnitten. Auf sehr schmalen Displays werden Reiter nicht mehr gekürzt.', 'bug'],
+    ['Kalender-Export', 'Kalender-Export: Testläufe heißen „Testlauf 5 km“. Ein vergangenes Rennen ohne eingetragenes Ergebnis verschiebt den Testlauf nicht mehr – der Plan erinnert stattdessen ans Eintragen.', 'bug'],
+    ['Abhaken', 'Abhaken: Kraft, die für einen nachgeholten Lauf ausfällt, kommt beim Ausschalten oder Rückgängigmachen sicher zurück.', 'bug'],
+    ['Feste Krafttage', 'Feste Krafttage gelten nur noch für gewählte Krafttage – ein abgewählter und später wieder gewählter Tag ist nicht mehr unerwartet „fest“.', 'bug'],
+    ['Einstellungen zurücksetzen', '„Einstellungen zurücksetzen“ setzt auch Haken und Verschiebungen der laufenden Woche zurück.', 'bug']
   ] },
   { id: '2026-11-02u', aka: ['2026-11-02b', '2026-11-02c', '2026-11-02d', '2026-11-02e'], date: '2026-11-02', title: 'Englisch, AMRAP, Erholung & Aufgeräumt', items: [
     ['Sprache', 'Die App gibt es jetzt auch auf Englisch. Automatisch nach Gerätesprache: Deutsch bei deutscher Gerätesprache, sonst Englisch.'],
@@ -680,14 +683,14 @@ const CHANGELOG = [
     ['Ausstattung', 'Kraft bietet nur noch an, was du unter Profil → Geräte & Gewichte eingetragen hast: ohne Kettlebell keine Kettlebell-Übungen und -Pläne, ohne Bänder keine Band-Übungen.'],
     ['Neu eingerichtet', 'Wer neu startet, beginnt ohne Kettlebell und Bänder und trägt seine Geräte im Profil ein. Bestehende Einstellungen bleiben unverändert.'],
     ['Laufen', 'Nach dem A-Rennen zeigt der Plan in der Rennwoche und in den Erholungswochen, wie lange die Erholung nach der Distanz etwa dauert. Dazu neu unter Plan → Wissen: „Erholung nach dem Rennen“.'],
-    ['Laufen', '„Wettkampf“ und „Training“ sind jetzt ein Reiter „Warm-up“: oben der Renntag (5 km bis Marathon), darunter Intervall, Speed und Longrun.'],
-    ['Körpermaße', 'Gewicht und Bauchumfang in einem Formular und einem Protokoll, Diagramm zum Umschalten, eine Erinnerung und ein CSV-Export für beides.'],
-    ['Skizzen', 'Ansicht von vorne in Lila, seitlich in Grün – jeweils mit kleiner Beschriftung.'],
-    ['Kraft', 'Die Wochenübersicht steht jetzt im Bereich Kraft; die Einstellung je Übung heißt „Übungen & Varianten“.'],
-    ['Sync & Backup', '„Sync speichern“ zählt als Sicherung; „Aus Datei wiederherstellen“ erkennt Sync-Dateien und gleicht sie richtig ab.'],
-    ['Erklärt', 'Plan → Wissen → „Zeiten & Prognosen“ und bei den Bestzeiten „So wird gerechnet“ zeigen, wie Pace, Zwischenzeiten und Prognosen entstehen.'],
-    ['Overlays', 'Ist eine Anleitung oder ein Fenster offen, scrollt die Seite dahinter nicht mehr mit.'],
-    ['Mehr', 'Doppelte Hinweise entfernt, der Rest steht in der Anleitung.']
+    ['Laufen', '„Wettkampf“ und „Training“ sind jetzt ein Reiter „Warm-up“: oben der Renntag (5 km bis Marathon), darunter Intervall, Speed und Longrun.', 'ux'],
+    ['Körpermaße', 'Gewicht und Bauchumfang in einem Formular und einem Protokoll, Diagramm zum Umschalten, eine Erinnerung und ein CSV-Export für beides.', 'ux'],
+    ['Skizzen', 'Ansicht von vorne in Lila, seitlich in Grün – jeweils mit kleiner Beschriftung.', 'ux'],
+    ['Kraft', 'Die Wochenübersicht steht jetzt im Bereich Kraft; die Einstellung je Übung heißt „Übungen & Varianten“.', 'ux'],
+    ['Sync & Backup', '„Sync speichern“ zählt als Sicherung; „Aus Datei wiederherstellen“ erkennt Sync-Dateien und gleicht sie richtig ab.', 'ux'],
+    ['Erklärt', 'Plan → Wissen → „Zeiten & Prognosen“ und bei den Bestzeiten „So wird gerechnet“ zeigen, wie Pace, Zwischenzeiten und Prognosen entstehen.', 'ux'],
+    ['Overlays', 'Ist eine Anleitung oder ein Fenster offen, scrollt die Seite dahinter nicht mehr mit.', 'ux'],
+    ['Mehr', 'Doppelte Hinweise entfernt, der Rest steht in der Anleitung.', 'ux']
   ] },
   { id: '2026-11-02', date: '2026-11-02', title: 'Grundstand: alle Funktionen', items: [
     ['Kraft', 'Sechs Pläne für zu Hause: Ganzkörper-Zirkel, Tabata, Läufer (Sätze), Oberkörper-Zirkel, Core (EMOM mit Kettlebell) und Büro – jeweils mit Aufwärmen, Cooldown, Timer, Sprachansagen und Abhaken.'],
@@ -707,3 +710,6 @@ const CHANGELOG = [
     ['App', 'Als WebApp auf den Home-Bildschirm, funktioniert offline, hell und dunkel, Darstellung für iPhone und Android. Neuigkeiten wie diese erscheinen nach Updates einmal und stehen unter Mehr.']
   ] }
 ];
+// Jeder Punkt: [Thema, Text, Art]. Art: 'neu' (Standard), 'ux' (Usability) oder 'bug' – die Neuigkeiten gruppieren danach.
+const NOTE_KINDS = [['neu', 'Neu', 'New'], ['ux', 'Usability', 'Usability'], ['bug', 'Bugs', 'Bugs']];
+CHANGELOG.forEach(c => c.items.forEach(it => { if (!NOTE_KINDS.some(k => k[0] === it[2])) it[2] = 'neu'; }));

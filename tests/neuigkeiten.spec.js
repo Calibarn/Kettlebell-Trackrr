@@ -94,3 +94,15 @@ test('Neuigkeiten: je Tag erst Neuerungen, dann Optimierungen, zuletzt Fehlerbeh
   const order = await page.evaluate(() => CHANGELOG.map(c => c.items.map(([k]) => k === 'Behoben' ? 2 : ['Schneller', 'Übersichtlicher'].includes(k) ? 1 : 0)));
   for (const o of order) expect(o).toEqual(o.slice().sort((a, b) => a - b));
 });
+
+test('Neuigkeiten gruppiert nach Neu, Usability und Bugs; Thema steht nicht doppelt', async ({ page }) => {
+  await page.evaluate(() => openNotes(true));
+  const first = page.locator('#notes-body');
+  const kinds = await page.evaluate(() => { const c = CHANGELOG[0]; return NOTE_KINDS.filter(k => c.items.some(it => it[2] === k[0])).map(k => k[1]); });
+  expect(kinds).toEqual(['Neu', 'Usability', 'Bugs']);
+  await expect(first.locator('.noteskind').first()).toHaveText('Neu');
+  expect(await page.evaluate(() => CHANGELOG.every(c => c.items.every(it => ['neu', 'ux', 'bug'].includes(it[2]))))).toBe(true);
+  expect(await page.evaluate(() => CHANGELOG[0].items.some(it => ['Übersichtlicher', 'Behoben', 'Schneller'].includes(it[0])))).toBe(false);
+  await expect(first).toContainText('Android: Die Tab-Leiste');
+  await expect(first).not.toContainText('Android: Android:');
+});

@@ -1945,7 +1945,12 @@ function renderNotesRows() {
   $('noteshint').textContent = CHANGELOG.length ? `${T('Stand', 'As of')} ${dateGerman(CHANGELOG[0].date)}: ${CHANGELOG[0].title}` : '';
   $('notesautoval').textContent = notesOpt.auto !== false ? T('An', 'On') : T('Aus', 'Off');
 }
-const notesEntry = c => `<h3>${esc(c.title)}</h3><p class="tiny" style="margin-top:0">${dateGerman(c.date)}</p><ul class="notes">${c.items.map(([t, d]) => `<li><b>${esc(t)}:</b> ${esc(d)}</li>`).join('')}</ul>`;
+// Steht das Thema schon am Textanfang („Android: …“, „„Heute dabei“: …“), wird es nicht doppelt gezeigt.
+const noteText = (t, d) => { const m = d.match(/^[„“”"]?([^:„“”"]{1,40})[“”"]?:\s+/); return m && m[1] === t ? d.slice(m[0].length) : d; };
+const notesEntry = c => `<h3>${esc(c.title)}</h3><p class="tiny" style="margin-top:0">${dateGerman(c.date)}</p>` + NOTE_KINDS.map(([k, de, en]) => {
+  const items = c.items.filter(it => it[2] === k);
+  return items.length ? `<p class="noteskind">${T(de, en)}</p><ul class="notes">${items.map(([t, d]) => `<li><b>${esc(t)}:</b> ${esc(noteText(t, d))}</li>`).join('')}</ul>` : '';
+}).join('');
 function openNotes(all) {
   // Gesehenen Eintrag kennt die App: alles Neuere. Noch nie etwas gesehen (oder unbekannt): die letzten Updates plus Grundstand (ältester Eintrag).
   const NEW_FOR_NEWCOMERS = 3, i = seenIndex(), base = CHANGELOG.at(-1);
@@ -2142,10 +2147,9 @@ function renderBackupBanner() {
 function renderInstallBar() {
   const os = document.documentElement.dataset.os, el = $('installbar');
   if ((os !== 'ios' && os !== 'android') || standalone()) { el.innerHTML = ''; return; }
-  el.innerHTML = `<div class="banner installbanner" role="note"><span class="bicon">📲</span><span class="itxt"><b>${T('Als App installieren', 'Install as an app')}</b><small>${os === 'ios'
-    ? T('„Teilen“ → „Zum Home-Bildschirm“ – so bleiben deine Daten sicher.', '“Share” → “Add to Home Screen” – that keeps your data safe.')
-    : T('Chrome-Menü ⋮ → „App installieren“ – so bleiben deine Daten sicher.', 'Chrome menu ⋮ → “Install app” – that keeps your data safe.')}
-    <button type="button" class="linkbtn" id="installguide">${T('Zur Anleitung', 'Open guide')}</button></small></span></div>`;
+  el.innerHTML = `<div class="banner installbanner" role="note"><span class="bicon">📲</span><span class="itxt"><b>${T('Als App installieren', 'Install as an app')}</b> <small>${os === 'ios'
+    ? T('„Teilen“ → „Zum Home-Bildschirm“', '“Share” → “Add to Home Screen”')
+    : T('Chrome-Menü ⋮ → „App installieren“', 'Chrome menu ⋮ → “Install app”')} · <button type="button" class="linkbtn" id="installguide">${T('Anleitung', 'Guide')}</button></small></span></div>`;
 }
 function openInstallGuide() {
   showArea('mehr');
@@ -2198,7 +2202,7 @@ let area = ['kraft', 'laufen', 'mobility', 'profil', 'mehr'].includes(load(KEYS.
 const WARMUPS = RUN_GUIDE.race.concat(RUN_GUIDE.training);
 let runView = load(KEYS.run, null); if (!isObj(runView)) runView = {};
 { const old = runView.tab === 'training' ? runView.training : runView.tab === 'race' ? runView.race : null, tab = ['race', 'training'].includes(runView.tab) ? 'warmup' : runView.tab;
-  runView = { tab: ['warmup', 'abc', 'umfang', 'plan'].includes(tab) ? tab : 'warmup', warmup: WARMUPS.some(w => w.id === (old || runView.warmup)) ? (old || runView.warmup) : '5k', plan: ['woche', 'rennen', 'bestzeiten', 'wissen'].includes(runView.plan) ? runView.plan : 'woche' }; }
+  runView = { tab: ['warmup', 'abc', 'umfang', 'plan'].includes(tab) ? tab : 'plan', warmup: WARMUPS.some(w => w.id === (old || runView.warmup)) ? (old || runView.warmup) : '5k', plan: ['woche', 'rennen', 'bestzeiten', 'wissen'].includes(runView.plan) ? runView.plan : 'woche' }; }
 function showArea(a, scroll = true) {
   area = a; store(KEYS.area, a);
   for (const x of ['kraft', 'laufen', 'mobility', 'profil', 'mehr']) $('area-' + x).classList.toggle('hide', x !== a);

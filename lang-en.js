@@ -1499,7 +1499,24 @@ const EN_TEXT = {
 "Alle 8 Wochen ohne Ergebnis oder Rennen plant der Plan einen 5-km-Testlauf statt der Qualitätseinheit ein – aber erst, wenn 5 km machbar sind (längster Lauf der letzten 30 Tage bzw. geplanter Longrun mindestens 5 km). Ergebnis unter Bestzeiten eintragen – B-Rennen zählen genauso.": "Every 8 weeks without a result or race the plan schedules a 5 km time trial instead of the quality session – but only once 5 km is doable (longest run of the last 30 days or planned long run at least 5 km). Enter the result under Best times – B races count just the same.",
 "Im Handy-Browser steht der Hinweis „Als App installieren“ jetzt dauerhaft ganz oben, mit Link zur Anleitung. Die Anleitung erklärt auch, wie vorhandene Daten aus dem Browser in die App kommen.": "In the phone browser the “Install as an app” hint now stays at the very top, with a link to the guide. The guide also explains how existing data gets from the browser into the app.",
 "„Heute dabei“: Kettlebell, Bänder und Körpergewicht stehen nebeneinander in einer Reihe, die Beschriftung darüber.": "“With me today”: kettlebell, bands and body weight sit side by side in one row, with the label above.",
-"Profil → Geräte & Gewichte: Das Eingabefeld für Kettlebells und Bänder nutzt die volle Breite – vorher war der Platzhalter abgeschnitten und daneben eine leere Lücke.": "Profile → Equipment & weights: the input for kettlebells and bands uses the full width – before, the placeholder was cut off with an empty gap next to it."
+"Profil → Geräte & Gewichte: Das Eingabefeld für Kettlebells und Bänder nutzt die volle Breite – vorher war der Platzhalter abgeschnitten und daneben eine leere Lücke.": "Profile → Equipment & weights: the input for kettlebells and bands uses the full width – before, the placeholder was cut off with an empty gap next to it.",
+"Im Handy-Browser steht ein kompakter Hinweis „Als App installieren“ dauerhaft ganz oben, mit Link zur Anleitung. Die Anleitung erklärt auch, wie vorhandene Daten aus dem Browser in die App kommen.": "In the phone browser a compact “Install as an app” hint stays at the very top, with a link to the guide. The guide also explains how existing data gets from the browser into the app.",
+"Übungen & Varianten": "Exercises & variants",
+"App-Start": "App start",
+"Profil, Mehr & Laufen": "Profile, More & Running",
+"Im Training": "During a workout",
+"Wochenplanung": "Weekly plan",
+"App installieren": "Install the app",
+"Heute dabei": "With me today",
+"Hinweise": "Hints",
+"Android": "Android",
+"Feste Krafttage": "Fixed strength days",
+"Einstellungen zurücksetzen": "Reset settings",
+"Neuigkeiten": "News",
+"Profil → Geräte & Gewichte": "Profile → Equipment & weights",
+"Die Neuigkeiten sind nach Neu, Usability und Bugs gruppiert – statt bei jedem Punkt „Übersichtlicher“ oder „Behoben“ davorzuschreiben.": "The news are grouped into New, Usability and Bugs – instead of putting “Clearer” or “Fixed” in front of every item.",
+"Beim ersten Öffnen startet Laufen auf dem Reiter „Plan“ – dort beginnt auch der Lauf-Einstieg.": "On first open, Running starts on the “Plan” tab – that is also where the running starter begins.",
+"Im Profil ist „Körpermaße“ beim ersten Öffnen zugeklappt wie die anderen Bereiche.": "In Profile, “Body measurements” is collapsed on first open like the other sections."
 };
 const EN_HTML = {
 "Kraft": "Strength",
