@@ -448,3 +448,8 @@ html.testbuild .largetitle::after{content:" Test";font-size:.5em;font-weight:700
 .gearrow .chip{flex:1 1 auto;padding:8px 10px;text-align:center;white-space:nowrap}
 .gearrow .chip[aria-pressed=true]::before{content:none}
 @media (max-width:340px){.gearrow .chip{padding:8px 6px}}
+/* Profil → Geräte: Eingabe über die volle Breite, Knopf daneben (vorher leere Mittelspalte, Platzhalter abgeschnitten) */
+.kitadd{display:flex;gap:8px;align-items:center;padding:8px 0}
+.kitadd input{flex:1 1 auto;min-width:0;height:40px;padding-top:0;padding-bottom:0}
+.kitadd .btn{flex:0 0 auto;height:40px}
+.kitadd input[aria-invalid=true]{box-shadow:0 0 0 2px var(--red) inset}
