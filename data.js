@@ -106,7 +106,7 @@ PLANS.amrap = {
   warmup: [['0:30', 'Marschieren auf der Stelle'], ['0:45', 'Schulter- und Armkreisen'], ['0:45', 'Hüftbeuge ohne Gewicht'], ['0:45', 'Kniebeugen ohne Gewicht'], ['0:45', 'Ausfallschritt mit Rotation'], ['0:30', 'Halo um den Kopf']],
   cooldown: [['0:30 × 2', 'Hüftbeuger-Dehnung'], ['0:30 × 2', 'Vorderer Oberschenkel'], ['0:30 × 2', 'Brustdehnung am Türrahmen'], ['1:00', 'Kindhaltung']]
 };
-/* Core: EMOM mit einer Kettlebell, komplett im Knien. Fest auf Kettlebell – „Heute dabei“ gilt hier nicht (kbOnly). */
+/* Core: EMOM mit einer Kettlebell, komplett im Knien. Fest auf Kettlebell – die Geräte-Auswahl gilt hier nicht (kbOnly). */
 PLANS.core = {
   tab: 'Core', label: 'Core · Oberkörper & Rumpf im Knien', short: 'Core', mode: 'emom', kbOnly: true, durations: [4, 0, 4],
   intro: 'EMOM mit einer Kettlebell, komplett im Knien: Zu Beginn jeder Minute die Wiederholungen der nächsten Übung, im Rest der Minute Pause. Drei Übungen im Wechsel, 5 Runden = 15 Minuten. Ohne die Beine als breite Basis muss der Rumpf jede Bewegung stabilisieren. Läuft automatisch mit Ton und Ansage.',
@@ -607,8 +607,18 @@ const EXTRA = {
 };
 for (const [pk, m] of Object.entries(EXTRA)) for (const sl of PLANS[pk].slots) if (m[sl.id]) { const { _band, ...v } = m[sl.id]; Object.assign(sl.v, v); if (_band) sl.band = _band; }
 
+/* Was man zusätzlich zu Kettlebell und Bändern bereitlegen sollte (Kraft, Zeile „Du brauchst“), nach Übungsnamen –
+   Hauptteil sowie Aufwärmen und Cooldown. Matte: alles im Liegen, Knien, Vierfüßlerstand oder Sitzen am Boden. */
+const PREP = {
+  mat: ['Bird Dog', 'Brustwirbel-Rotation im Vierfüßlerstand', 'Clamshells', 'Clamshells mit Band', 'Clean & Press im halben Kniestand', 'Dead Bug', 'Dead Bug mit Band', 'Dead Bug mit Kettlebell',
+    'Floor Press', 'Hüftheben', 'Hüftheben mit Band', 'Kettlebell-Pullover', 'Pullover im Kniestand', 'Schwimmer in Bauchlage', 'Seitstütz', 'Squeeze Press am Boden', 'Unterarmstütz',
+    'Y-T-W in Bauchlage', 'Übergabe im Grätschsitz', 'Wrestler-Halo', 'Katze-Kuh', 'Kindhaltung', 'Hüftbeuger-Dehnung', 'Figure-4 Gesäß'],
+  support: ['Liegestütze erhöht', 'Enge Liegestütze erhöht', 'Bergsteiger erhöht', 'Pike-Liegestütze erhöht'],
+  towel: ['Handtuch-Curl (halten)']
+};
+
 /* Beste Variante je Übungsplatz: Rangfolge nach Wirksamkeit (vorne = bevorzugt).
-   Die App nimmt die erste Variante, deren Gerät unter „Heute dabei“ gewählt ist.
+   Die App nimmt die erste Variante, deren Gerät für den Plan gewählt ist (Geräte je Plan).
    Grundlage: 12-kg-Kettlebell, Bänder 10/20/30 kg, eigenes Körpergewicht. */
 const BEST = {
   wed: {
@@ -677,6 +687,9 @@ const CHANGELOG = [
     ['Neuer Name', 'Die App heißt jetzt Tagwerk – sie kann längst mehr als Kettlebell: Kraft, Laufen und Mobility, jeden Tag das, was dran ist. Deine Daten und die Sync-Datei bleiben, wie sie sind. Ein schon installiertes App-Icon behält auf dem iPhone den alten Namen. Wer es neu hinzufügen will, macht vorher unbedingt „Sync speichern“ oder ein Backup – beim Entfernen kann iOS die Daten der App löschen.', 'neu'],
     ['Startbildschirm', 'Beim Öffnen zeigt die App kurz Icon, Namen und Version – nur so lange, bis sie bereit ist, und nicht bei laufendem Training. Antippen blendet ihn sofort aus.', 'neu'],
     ['Ergebnis nach dem Rennen', 'Ab dem Tag nach einem Rennen fragt die Startseite nach deiner Zeit und speichert sie als Ergebnis – die Trainingstempos passen sich danach an. Bei Wings for Life trägst du die geschafften km ein (die Zeit kommt vom Catcher Car), beim Pace Race das Level. „Nicht gelaufen“ beendet die Frage.', 'neu'],
+    ['Geräte je Plan', '„Heute dabei“ heißt jetzt „Geräte“ und gilt je Plan: z. B. Ganzkörper mit Kettlebell und Körpergewicht, Tabata nur Kettlebell, Läufer mit Band. Jeder Plan merkt sich seine Auswahl, sie wird mit den anderen Geräten abgeglichen. Bis du einen Plan umstellst, gilt die bisherige Auswahl.', 'neu'],
+    ['Vorbereitung', 'Unter „Geräte“ steht, was du für den Plan bereitlegen solltest – aus den Übungen, die er gerade nutzt: Kettlebell mit Gewicht, Bänder, eine Matte bei Übungen am Boden, Stuhl oder Sofa zum Abstützen.', 'neu'],
+    ['Urlaub', 'Profil → Geräte & Gewichte → Urlaub von–bis: In dieser Zeit ist in allen Plänen nur Körpergewicht vorgewählt, AMRAP und Core sind ausgeblendet. Im Urlaub dazugeschaltete Geräte gelten nur dort, danach gelten wieder deine Geräte je Plan.', 'neu'],
     ['Startseite', 'Beim Öffnen zeigt die App „Heute“: was heute dran ist (Kraft mit Start-Knopf, Läufe aus dem Plan, Lauf-Einstieg), die Woche auf einen Blick und je Bereich eine Kachel mit dem aktuellen Stand. Läuft gerade ein Training, geht es direkt zum Timer.', 'neu'],
     ['Plan je Krafttag', 'Je Krafttag lässt sich im Profil unter Trainingswoche ein fester Plan wählen, z. B. Mo Ganzkörper, Do Läufer. Wochenplanung, Startseite und Kalender zeigen ihn, „Starten“ auf der Startseite stellt ihn direkt ein. Standard bleibt „frei“: der zuletzt genutzte Plan.', 'neu'],
     ['Mobility', 'Bis zum Ende geführte Mobility-Routinen zählen jetzt für die Woche.', 'neu'],

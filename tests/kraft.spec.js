@@ -48,10 +48,29 @@ test('Kettlebell: Holzhacker im Ganzkörper-Zirkel, Pullover im Oberkörper', as
   expect(names[2]).toEqual(expect.arrayContaining(['Kettlebell-Pullover', 'Squeeze Press am Boden', 'Floor Press']));
 });
 
-test('Geräte-Auswahl wird gemerkt', async ({ page }) => {
+test('Geräte je Plan: Auswahl gilt nur für diesen Plan, wird gemerkt und abgeglichen', async ({ page }) => {
+  const plans = () => page.evaluate(() => ({ cur: plan, wed: planGear('wed'), run: planGear('run'), stored: choices['wed.gear'] || null }));
+  await page.evaluate(() => setPlan('wed'));
+  await expect(page.locator('#gearbar .lbl').first()).toHaveText('Geräte für Ganzkörper');
   await page.click('[data-gear="band"]');
+  await expect(page.locator('#toast')).toContainText('Ganzkörper: Bänder aus');
+  let p = await plans();
+  expect(p.wed).toEqual({ kb: true, band: false, bw: true });
+  // anderer Plan: unverändert (bisherige Auswahl dieses Geräts)
+  expect(p.run).toEqual({ kb: true, band: true, bw: true });
+  // Läufer nur mit Band
+  await page.evaluate(() => setPlan('run'));
+  await page.click('[data-gear="kb"]'); await page.click('[data-gear="bw"]');
+  expect((await plans()).run).toEqual({ kb: false, band: true, bw: false });
+  expect(await page.evaluate(() => exList('run').every(x => ['band', 'bw'].includes(x.g)))).toBe(true);
   await page.reload();
-  expect(await page.evaluate(() => gear)).toEqual({ kb: true, band: false, bw: true });
+  p = await plans();
+  expect([p.wed, p.run]).toEqual([{ kb: true, band: false, bw: true }, { kb: false, band: true, bw: false }]);
+  // steckt in den Übungs-Einstellungen → wird mit den anderen Geräten abgeglichen
+  expect(await page.evaluate(() => [JSON.parse(localStorage.getItem(KEYS.choice))['run.gear'], SYNC_SETTINGS.choices === KEYS.choice])).toEqual([{ kb: false, band: true, bw: false }, true]);
+  // alles aus → Körpergewicht
+  await page.click('[data-gear="band"]');
+  expect((await plans()).run).toEqual({ kb: false, band: false, bw: true });
 });
 
 test('Zirkel: abhaken, Zeitübung, zurücknehmen, Wiederherstellen, Speichern mit Bewertung', async ({ page }) => {
@@ -133,7 +152,7 @@ test('Core: fest mit Kettlebell, egal was bei „Heute dabei“ steht', async ({
   expect(r).toEqual(Array(4).fill('kb,kb,kb'));
   await page.click('[data-gear="kb"]');
   await page.click('[data-plan="core"]');
-  await expect(page.locator('#gearbar')).toContainText('Fest mit Kettlebell');
+  await expect(page.locator('#gearbar')).toContainText('Core ist fest mit Kettlebell');
   await expect(page.locator('#gearbar [data-gear]')).toHaveCount(0);
   await expect(page.locator('#worklist .row small').first()).toContainText('Kettlebell 12 kg');
   await expect(page.locator('#worklist')).not.toContainText('Ersatz');
@@ -255,4 +274,59 @@ test('Plan-Leiste: zweizeilig, wenn nicht alle Pläne in eine Zeile passen; brei
   await page.evaluate(() => { profile.kit.kb = []; profileChanged('kit'); showArea('kraft'); });
   await expect(page.locator('#tabs button')).toHaveCount(5);
   await expect(page.locator('#tabs')).not.toHaveClass(/wrap/);
+});
+
+test('„Du brauchst“: aus den Übungen des Plans – Gewichte, Bänder, Matte, Erhöhung', async ({ page }) => {
+  const needs = () => page.locator('#gearbar .needs');
+  // Büro mit allen Geräten: Kettlebell, Band, Matte (Hüftheben, Bird Dog, Kindhaltung …)
+  await page.evaluate(() => { setPlan('office'); setPlanGear('office', { kb: true, band: true, bw: true }); renderAll(); });
+  await expect(needs()).toContainText('Du brauchst:');
+  await expect(needs()).toContainText('Kettlebell 12 kg');
+  await expect(needs()).toContainText('Matte');
+  // nur Körpergewicht: keine Kettlebell, kein Band
+  await page.evaluate(() => { setPlanGear('office', { kb: false, band: false, bw: true }); renderAll(); });
+  await expect(needs()).not.toContainText('Kettlebell');
+  await expect(needs()).not.toContainText('Band');
+  // verschiedene Gewichte werden zusammengefasst
+  await page.evaluate(() => { profile.kit.kb = [8, 12]; setPlanGear('office', { kb: true, band: false, bw: false }); updateChoice('squat', { kg: 8 }); renderAll(); });
+  await expect(needs()).toContainText('Kettlebell 8 + 12 kg');
+  // Liegestütze erhöht → Stuhl, Bank oder Sofa
+  const sup = await page.evaluate(() => { const pk = Object.keys(PLANS).find(k => PLANS[k].slots.some(sl => Object.values(sl.v).some(v => PREP.support.includes(v[0])))); setPlan(pk); setPlanGear(pk, { kb: false, band: false, bw: true }); renderAll(); return pk; });
+  expect(sup).toBeTruthy();
+  await expect(needs()).toContainText('Stuhl, Bank oder Sofa');
+  // feste Kettlebell-Pläne zeigen es auch
+  await page.evaluate(() => { setPlan('core'); renderAll(); });
+  await expect(needs()).toContainText('Kettlebell');
+  await expect(needs()).toContainText('Matte');
+});
+
+test('Urlaub von–bis: alle Pläne nur Körpergewicht, AMRAP/Core weg, dazugeschaltete Geräte nur im Urlaub, danach wieder je Plan', async ({ page }) => {
+  const day = n => page.evaluate(d => addDays(localDay(), d), n);
+  await page.evaluate(() => { setPlan('wed'); setPlanGear('wed', { kb: true, band: false, bw: true }); setPlan('core'); renderAll(); });
+  await page.evaluate(() => showArea('profil'));
+  await page.evaluate(() => { const d = document.getElementById('sect-kit'); d.open = true; });
+  await page.fill('#vacfrom', await day(-1));
+  await page.fill('#vacto', await day(5));
+  await expect(page.locator('#toast')).toContainText('nur Körpergewicht');
+  expect(await page.evaluate(() => [!!vacation(), planGear('wed'), planGear('run'), planOwned('core'), plan])).toEqual([true, { kb: false, band: false, bw: true }, { kb: false, band: false, bw: true }, false, 'wed']);
+  await expect(page.locator('#sum-kit')).toContainText('Urlaub');
+  await page.evaluate(() => showArea('kraft'));
+  await expect(page.locator('#gearbar .lbl').first()).toContainText('Urlaub bis');
+  expect(await page.evaluate(() => exList('wed').every(x => x.g === 'bw'))).toBe(true);
+  await expect(page.locator('#tabs [data-plan="core"]')).toHaveCount(0);
+  // Bänder dazuschalten: gilt nur für den Urlaub, die Ganzkörper-Auswahl bleibt
+  await page.click('[data-gear="band"]');
+  await expect(page.locator('#toast')).toContainText('Urlaub: Bänder an');
+  expect(await page.evaluate(() => [planGear('run').band, choices['wed.gear'], profile.kit.vacation.gear])).toEqual([true, { kb: true, band: false, bw: true }, { kb: false, band: true, bw: true }]);
+  // nach dem Urlaub: wieder je Plan
+  await page.evaluate(() => { profile.kit.vacation.to = addDays(localDay(), -1); persistProfile(); renderAll(); });
+  expect(await page.evaluate(() => [vacation(), planGear('wed'), planOwned('core')])).toEqual([null, { kb: true, band: false, bw: true }, true]);
+  // falsche Reihenfolge wird markiert, Löschen entfernt den Urlaub
+  await page.evaluate(() => showArea('profil'));
+  await page.evaluate(() => { document.getElementById('sect-kit').open = true; });
+  await page.fill('#vacfrom', await day(10));
+  await page.fill('#vacto', await day(3));
+  await expect(page.locator('#vacto')).toHaveAttribute('aria-invalid', 'true');
+  await page.click('#vacclear');
+  expect(await page.evaluate(() => profile.kit.vacation)).toBe(null);
 });

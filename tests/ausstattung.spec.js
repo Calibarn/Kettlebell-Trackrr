@@ -45,7 +45,7 @@ test('AMRAP: 20 Minuten Zirkel mit einer Kettlebell, Runden + Übungen werden ge
   await page.evaluate(() => setPlan('amrap'));
   expect(await page.evaluate(() => [PLANS.amrap.mode, phaseSecs('amrap', 1) / 60, exList().map(x => x.name)]))
     .toEqual(['circuit', 20, ['Rotational Thruster', 'Deadlift to Halo', 'Lunge to Press-out', 'Pullover mit Rotation', 'Cross-Body Lunge']]);
-  await expect(page.locator('#gearbar')).toContainText('Fest mit Kettlebell');
+  await expect(page.locator('#gearbar')).toContainText('AMRAP ist fest mit Kettlebell');
   await page.click('#btnMain'); await page.click('#btnNext');
   for (let i = 0; i < 7; i++) await page.click('#btnDone');
   await page.click('#btnNext'); await page.click('#btnNext');

@@ -6,7 +6,7 @@ Mein persönlicher Trainings-Begleiter als Web-App für iPhone und Android – K
 
 - **Kraft** (mit Timer und Verlauf)
   - Ganzkörper (Zirkel), Tabata (komplett automatisch, mit Kettlebell, Band oder Körpergewicht), Läufer (Sätze mit Progression), Oberkörper (z. B. nach dem Longrun), Core (EMOM im Knien, fest mit Kettlebell), Büro (Haltung & Rücken)
-  - „Heute dabei“: Kettlebell, Bänder und Körpergewicht wählen – je Übung wird automatisch die wirksamste Variante aus der Auswahl genommen (Rangfolge mit Begründung in `data.js`, `BEST`). Ohne Auswahl gilt Körpergewicht. Die Auswahl wird gemerkt.
+  - Geräte je Plan (z. B. Ganzkörper: Kettlebell + Körpergewicht, Tabata: Kettlebell, Läufer: Band), darunter „Du brauchst“ (Gewichte, Bänder, Matte …); Urlaub von–bis im Profil: nur Körpergewicht. Kettlebell, Bänder und Körpergewicht wählen – je Übung wird automatisch die wirksamste Variante aus der Auswahl genommen (Rangfolge mit Begründung in `data.js`, `BEST`). Ohne Auswahl gilt Körpergewicht. Die Auswahl wird gemerkt.
   - Gewicht je Übung (vorbelegt 12 kg) und Bandstärke unter „Übungen, Geräte & Gewichte“
   - Ton-Countdown und Sprachansagen (nächste Übung, Seitenwechsel, Rundenende), automatische Aufwärm-/Cooldown-Abläufe, Zeitübungen, Swing-EMOM
   - Bestwerte vergleichen nur Einheiten mit gleichem Aufbau; nach dem Speichern Zusammenfassung mit neuem Bestwert
@@ -74,7 +74,7 @@ Unter **Mehr → Daten & Datenschutz**:
 Unter **Mehr → Geräte-Sync** schreibt **Sync speichern** den kompletten Stand in `kb-tracker-sync.json`, **Sync laden** gleicht ihn ab. Die Datei liegt in einem Cloud-Ordner, den alle Geräte sehen (iCloud Drive, Google Drive, OneDrive, Dropbox) – die App selbst verbindet sich mit keinem Server.
 
 - Abgleich je Eintrag mit Änderungszeitpunkt und Löschmarken: neu, geändert und gelöscht kommen an, der neuere Stand gewinnt. Vorhandene Daten zählen beim ersten Sync als „alt“ (Zeitstempel 0), damit sie fremde Änderungen nicht überstimmen.
-- Abgeglichen: Trainings, Läufe, Wochensummen, Rennen, Gewicht, Bauchumfang, Übungs-Einstellungen, Stufen, Profil, „Entfällt“. Je Gerät bleiben Ton, Stimme und „Heute dabei“.
+- Abgeglichen: Trainings, Läufe, Wochensummen, Rennen, Gewicht, Bauchumfang, Übungs-Einstellungen, Stufen, Profil, „Entfällt“. Die Geräte je Plan gehören zu den Übungs-Einstellungen; je Gerät bleiben Ton und Stimme.
 - Chrome/Edge am Mac/PC: **Sync-Datei festlegen** merkt sich die Datei (File System Access API, Handle in IndexedDB); Speichern gleicht vorher mit der Datei ab.
 - iPhone/iPad: Speichern über „Teilen“ → In Dateien sichern → Ersetzen, Laden über die Dateiauswahl. Web-Apps können dort keinen Pfad selbst öffnen; der Speicherort lässt sich als Erinnerung je Gerät eintragen.
 
