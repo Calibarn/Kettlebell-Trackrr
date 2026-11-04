@@ -1825,7 +1825,7 @@ const startIcon = (k, cls = '') => `<span class="sicon si-${k}${cls}" aria-hidde
 // Was heute dran ist: aus dem Saisonplan (mit Abhaken/Verschieben), sonst aus den Tagen im Profil; dazu der Lauf-Einstieg
 function todayItems() {
   const today = localDay(), wd = new Date(today + 'T12:00:00').getDay(), w = profile.week, out = [];
-  const kraft = (pk = plan) => { const ex = exList(pk); return { kind: 'strength', title: `${T('Kraft', 'Strength')} · ${tr(PLANS[pk].tab)}`, detail: `${ex.length} ${T("Übungen", "exercises")} · ${Math.round(phaseSecs(pk, 1) / 60)} ${T("Min.", "min")}`, act: 'kraft', plan: pk }; };
+  const kraft = (pk = plan) => { const ex = exList(pk); return { kind: 'strength', title: `${T('Kraft', 'Strength')} · ${tr(PLANS[pk].tab)}`, detail: `${ex.length} ${T("Übungen", "exercises")} · ${Math.round(phaseSecs(pk, 1) / 60)} ${T("Min.", "min")}`, act: 'kraft', plan: pk, need: planNeeds(pk) }; };
   if (runnerLevel() === 'beginner') {
     const s = getStarter(), doneToday = s.log.some(x => x.d === today);
     if (doneToday || s.done < STARTER_N) out.push({ kind: 'starter', title: T(`Lauf-Einstieg · Woche ${s.week + 1}`, `Running starter · week ${s.week + 1}`), detail: starterSummary(s.week), act: 'starter', done: doneToday });
@@ -1889,7 +1889,7 @@ function renderStart() {
   $('startdate').textContent = new Intl.DateTimeFormat(LOCALE, { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date(today + 'T12:00:00'));
   const btn = it => it.done ? `<span class="sdone">✓ ${T('erledigt', 'done')}</span>` : it.act === 'kraft' || it.act === 'starter' ? `<button type="button" class="btn small primary sgo" data-startact="${it.act}"${it.plan ? ` data-startplan="${it.plan}"` : ''}>▶ ${T('Starten', 'Start')}</button>` : it.act ? `<button type="button" class="btn small sgo" data-startact="${it.act}">${T('Details', 'Details')}</button>` : '';
   const ico = it => startIcon(it.kind === 'strength' ? 'kraft' : it.kind === 'extra' ? 'mehr' : 'laufen');
-  const rows = items.length ? items.map(it => `<div class="srowt${it.done ? ' isdone' : ''}">${ico(it)}<span class="txt"><b>${esc(it.title)}</b>${it.detail || it.note ? `<small>${esc([it.detail, it.note].filter(Boolean).join(' · '))}</small>` : ''}${it.tip ? `<small class="stip">${esc(it.tip)}</small>` : ''}</span>${btn(it)}</div>`).join('')
+  const rows = items.length ? items.map(it => `<div class="srowt${it.done ? ' isdone' : ''}">${ico(it)}<span class="txt"><b>${esc(it.title)}</b>${it.detail || it.note ? `<small>${esc([it.detail, it.note].filter(Boolean).join(' · '))}</small>` : ''}${it.need && it.need.length && !it.done ? `<small class="sneed"><b>${T('Du brauchst', 'You need')}:</b> ${esc(it.need.join(' · '))}</small>` : ''}${it.tip ? `<small class="stip">${esc(it.tip)}</small>` : ''}</span>${btn(it)}</div>`).join('')
     : `<div class="srowt">${startIcon('mobility')}<span class="txt"><b>${T('Heute ist nichts geplant', 'Nothing planned today')}</b><small>${T('Ruhetag – oder eine kurze Mobility-Routine', 'Rest day – or a short mobility routine')}</small></span><button type="button" class="btn small sgo" data-go="mobility">Mobility</button></div>`;
   // Diese Woche: Kraft gegen die Krafttage im Profil, Laufen gegen den Plan bzw. den Schnitt der letzten 4 Wochen, Mobility als Anzahl
   const nK = saved.filter(e => e.date >= wk && e.date <= today).length, pK = profile.week.strength.length;

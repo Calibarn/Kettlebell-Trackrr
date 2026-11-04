@@ -165,3 +165,13 @@ test.describe('Ergebnis nach dem Rennen', () => {
     await expect(page.locator('#racelist')).toContainText('gelaufen: 18,4 km in 1:44:38');
   });
 });
+
+test('Startseite: beim Kraft-Eintrag steht, was du bereitlegen solltest', async ({ page }) => {
+  await page.evaluate(() => { const d = new Date(localDay() + 'T12:00:00').getDay(); profile.week.strength = [d]; profile.week.strengthPlan = { [d]: 'wed' }; persistProfile(); setPlanGear('wed', { kb: true, band: false, bw: true }); showArea('start'); });
+  const row = page.locator('#startcontent .srowt', { hasText: 'Kraft · Ganzkörper' });
+  await expect(row.locator('.sneed')).toContainText('Du brauchst: Kettlebell 12 kg');
+  await expect(row.locator('.sneed')).toContainText('Matte');
+  // im Urlaub nur, was ohne Geräte gebraucht wird
+  await page.evaluate(() => { profile.kit.vacation = { from: localDay(), to: addDays(localDay(), 3), gear: { kb: false, band: false, bw: true } }; persistProfile(); renderStart(); });
+  await expect(row.locator('.sneed')).not.toContainText('Kettlebell');
+});
