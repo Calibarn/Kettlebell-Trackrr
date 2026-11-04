@@ -147,3 +147,40 @@ test('Umfang: Läufe aus CSV importieren, Vorlage herunterladen, Duplikate und F
   // Zukunft wird abgelehnt
   expect(await page.evaluate(() => parseRunCsv(`Datum;km\n${addDays(localDay(), 3)};5`).bad)).toEqual([2]);
 });
+
+test('Rennen füllen Lücken im Umfang: ab dem ersten Lauf, nur an Tagen ohne Lauf, nicht in Wochen mit Wochensumme', async ({ page }) => {
+  const r = await page.evaluate(() => {
+    const d = n => addDays(localDay(), n), out = {};
+    // Läufe vor 10 und 3 Tagen; Rennen vor 12 (vor dem ersten Lauf), 6 (Lücke) und 3 Tagen (da ist schon ein Lauf)
+    runLog = [{ id: 'a', date: d(-10), km: 8 }, { id: 'b', date: d(-3), km: 6 }]; persistRunLog();
+    results = [{ id: 'x1', date: d(-12), km: 10, time: 3000, dist: '10k', name: 'Vorher' }, { id: 'x2', date: d(-6), km: 21.0975, time: 7200, dist: 'hm', name: 'Stadt-HM' }, { id: 'x3', date: d(-3), km: 5, time: 1500, dist: '5k', name: 'Parkrun' }]; persistResults();
+    races = [{ id: 'p', name: 'Pace Race', date: d(-5), dist: '10k', prio: 'A', goal: null, km: 12, fmt: 'pace', level: 11.753 }]; persistRaces();
+    out.runs = allRuns().map(x => [x.id, x.km]);
+    out.longest = longestIn(localDay()).km;
+    out.stored = runLog.length; // nichts gespeichert
+    // ein eingetragener Lauf am Renntag ersetzt das Rennen
+    addRun(d(-6), 21.4); out.replaced = allRuns().filter(x => x.date === d(-6)).map(x => x.km);
+    // ohne eingetragene Läufe zählen Rennen nicht (die Woche wäre unvollständig)
+    const keep = runLog; runLog = []; out.none = raceRuns().length; runLog = keep;
+    // Woche, die über ihre Wochensumme zählt: die enthält das Rennen schon
+    runLog = [{ id: 'c', date: d(-40), km: 5 }]; runWeeks = [{ week: weekStart(d(-6)), km: 40, long: null }];
+    out.sum = [weekKm(weekStart(d(-6))), raceRuns().some(x => x.date === d(-6))];
+    return out;
+  });
+  expect(r.runs).toEqual([['a', 8], ['race-x2', 21.1], ['race-p', 11.8], ['b', 6]]);
+  expect([r.longest, r.stored, r.replaced, r.none]).toEqual([21.1, 2, [21.4], 0]);
+  expect(r.sum).toEqual([40, false]);
+});
+
+test('Umfang zeigt Rennen aus dem Ergebnis ohne Löschen; Ergebnis speichern meldet die km', async ({ page }) => {
+  await page.evaluate(() => {
+    const d = n => addDays(localDay(), n);
+    runLog = [{ id: 'a', date: d(-10), km: 8 }]; persistRunLog(); runWeeks = []; persistRunWeeks();
+    storeResult({ id: 'x2', date: d(-4), km: 21.0975, time: 7200, dist: 'hm', name: 'Stadt-HM' });
+  });
+  await expect(page.locator('#toast')).toContainText('21,1 km im Umfang');
+  await openUmfang(page);
+  await expect(page.locator('#runlist .racerun')).toContainText('Stadt-HM · aus dem Ergebnis');
+  await expect(page.locator('#runlist .racerun [data-rundel]')).toHaveCount(0);
+  await expect(page.locator('#runlist [data-rundel]')).toHaveCount(1);
+});

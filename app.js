@@ -5,7 +5,7 @@ const $ = id => document.getElementById(id);
 const KEYS = {
   entries: 'jan-kettlebell-tracker-v1', waist: 'jan-kb-waist-v1', sound: 'jan-kb-sound-v1', gear: 'jan-kb-gear-v1',
   choice: 'jan-kb-choice-v1', stage: 'jan-kb-stage-v1', plan: 'jan-kb-plan-v1', session: 'jan-kb-session-v1',
-  backup: 'jan-kb-lastbackup-v1', hint: 'jan-kb-installhint-v1', area: 'jan-kb-area-v1', run: 'jan-kb-runview-v1', audio: 'jan-kb-audio-v1', mob: 'jan-kb-mobview-v1', runweeks: 'jan-kb-runweeks-v1', runlog: 'jan-kb-runlog-v1', races: 'jan-kb-races-v1', profile: 'jan-kb-profile-v1', weight: 'jan-kb-weight-v1', skip: 'jan-kb-weekskip-v1', results: 'jan-kb-results-v1', bestview: 'jan-kb-bestview-v1', notes: 'jan-kb-notes-v1', weekplan: 'jan-kb-weekplan-v1', icsremind: 'jan-kb-icsremind-v1', sections: 'jan-kb-sections-v1', starter: 'jan-kb-starter-v1', moblog: 'jan-kb-moblog-v1'
+  backup: 'jan-kb-lastbackup-v1', hint: 'jan-kb-installhint-v1', area: 'jan-kb-area-v1', run: 'jan-kb-runview-v1', audio: 'jan-kb-audio-v1', mob: 'jan-kb-mobview-v1', runweeks: 'jan-kb-runweeks-v1', runlog: 'jan-kb-runlog-v1', races: 'jan-kb-races-v1', profile: 'jan-kb-profile-v1', weight: 'jan-kb-weight-v1', skip: 'jan-kb-weekskip-v1', results: 'jan-kb-results-v1', bestview: 'jan-kb-bestview-v1', notes: 'jan-kb-notes-v1', weekplan: 'jan-kb-weekplan-v1', icsremind: 'jan-kb-icsremind-v1', sections: 'jan-kb-sections-v1', starter: 'jan-kb-starter-v1', moblog: 'jan-kb-moblog-v1', runask: 'jan-kb-runask-v1'
 };
 /* Datensicherheit bei Updates:
    - Einträge, die diese Version nicht versteht, werden nie verworfen, sondern unverändert mitgespeichert.
@@ -74,7 +74,12 @@ const HR_PCT = [0.5, 0.6, 0.7, 0.8, 0.9]; // Karvonen: Anteil der Herzfrequenzre
 const isWd = v => Number.isInteger(v) && v >= 0 && v <= 6;
 const okNum = (v, lo, hi) => typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi;
 const okZones = z => Array.isArray(z) && z.length === 5 && z.every((v, i) => okNum(v, 30, 230) && (i === 0 || v > z[i - 1]));
-const EXTRA_TYPES = ['easy', 'quality', 'other'];
+const EXTRA_TYPES = ['easy', 'recovery', 'quality', 'other'];
+// Weitere Einheiten: Name aus dem Profil, sonst nach der Art; Regenerationslauf = locker laufen, nur kürzer und noch ruhiger
+const EXTRA_NAME = { easy: ['Lockerer Lauf', 'Easy run'], recovery: ['Regenerationslauf', 'Recovery run'], quality: ['Qualität 2', 'Quality 2'], other: ['Weitere Einheit', 'Other session'] };
+const extraTitle = e => e.name || T(...EXTRA_NAME[e.type]);
+const extraKind = e => e.type === 'easy' || e.type === 'recovery' ? 'easy' : e.type === 'quality' ? 'quality2' : 'extra';
+const recoveryDetail = () => hrize(T('sehr locker, 20–40 Min., Zone 1', 'very easy, 20–40 min, Zone 1'));
 function normExtras(wk) {
   const raw = Array.isArray(wk.extras) ? wk.extras : isWd(wk.extraDay) ? [{ d: wk.extraDay, type: 'other', name: wk.extraName }] : [];
   return raw.filter(e => isObj(e) && isWd(e.d)).slice(0, 4).map(e => ({ d: e.d, type: EXTRA_TYPES.includes(e.type) ? e.type : 'other', name: typeof e.name === 'string' ? e.name.slice(0, 30) : '' }));
@@ -915,8 +920,8 @@ function renderProfile() {
     <p class="tiny">${T('Weitere Einheiten – z. B. ein zweiter lockerer Lauf, eine zweite Qualität oder Rad, Kurs, Regeneration', 'Other sessions – e.g. a second easy run, a second quality session or cycling, a class, recovery')}</p>
     <div id="wkextras">${w.extras.map((e, i) => `<div class="raceform extrarow" style="padding:0">
       <div class="field"><label for="wkxd${i}">${T('Tag', 'Day')}</label>${wdSelect('wkxd' + i, e.d, null).replace('<select ', `<select data-xday="${i}" `)}</div>
-      <div class="field"><label for="wkxt${i}">${T('Art', 'Type')}</label><select id="wkxt${i}" data-xtype="${i}">${[['easy', T('Lockerer Lauf', 'Easy run')], ['quality', T('Intervall/Tempo (2. Qualität)', 'Intervals/tempo (2nd quality)')], ['other', T('Anderes (Rad, Kurs …)', 'Other (cycling, class …)')]].map(([v, l]) => `<option value="${v}"${e.type === v ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select></div>
-      <div class="field wide"><label for="wkxn${i}">${T('Name (optional)', 'Name (optional)')}</label><div class="kitadd" style="margin:0"><input id="wkxn${i}" data-xname="${i}" type="text" maxlength="30" autocomplete="off" placeholder="${e.type === 'other' ? T('z. B. Radfahren, Blaze', 'e.g. cycling, class') : T('z. B. Regeneration', 'e.g. recovery run')}" value="${esc(e.name)}"><button type="button" class="btn small danger" data-xdel="${i}" aria-label="${T('Einheit entfernen', 'Remove session')}">${T('Entfernen', 'Remove')}</button></div></div>
+      <div class="field"><label for="wkxt${i}">${T('Art', 'Type')}</label><select id="wkxt${i}" data-xtype="${i}">${[['easy', T('Lockerer Lauf', 'Easy run')], ['recovery', T('Regeneration', 'Recovery run')], ['quality', T('Intervall/Tempo (2. Qualität)', 'Intervals/tempo (2nd quality)')], ['other', T('Anderes (Rad, Kurs …)', 'Other (cycling, class …)')]].map(([v, l]) => `<option value="${v}"${e.type === v ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select></div>
+      <div class="field wide"><label for="wkxn${i}">${T('Name (optional)', 'Name (optional)')}</label><div class="kitadd" style="margin:0"><input id="wkxn${i}" data-xname="${i}" type="text" maxlength="30" autocomplete="off" placeholder="${e.type === 'other' ? T('z. B. Radfahren, Blaze', 'e.g. cycling, class') : T('z. B. Feierabendrunde', 'e.g. after-work run')}" value="${esc(e.name)}"><button type="button" class="btn small danger" data-xdel="${i}" aria-label="${T('Einheit entfernen', 'Remove session')}">${T('Entfernen', 'Remove')}</button></div></div>
     </div>`).join('')}</div>
     ${w.extras.length < 4 ? `<div class="chips"><button type="button" class="chip" id="wkxadd">＋ ${T('Weitere Einheit', 'Other session')}</button></div>` : ''}
     <p class="tiny">${T('Kraft-Tage', 'Strength days')}</p><div class="chips days" role="group" aria-label="${T('Kraft-Tage', 'Strength days')}">${WEEK_ORDER.map(d => `<button type="button" class="chip" data-strength="${d}" aria-pressed="${w.strength.includes(d)}">${WD[d]}</button>`).join('')}</div>
@@ -1049,7 +1054,24 @@ const runWeeksLoaded = loadList(KEYS.runweeks, validRunWeek), runLogLoaded = loa
 let runWeeks = runWeeksLoaded.ok, runLog = runLogLoaded.ok; const runWeeksKeep = runWeeksLoaded.keep, runLogKeep = runLogLoaded.keep;
 function persistRunWeeks() { if (!store(KEYS.runweeks, runWeeks.concat(runWeeksKeep))) toast(T('Speichern im Browser nicht möglich – bitte Backup exportieren.', 'Saving in the browser failed – please export a backup.')); renderBackupBanner(); }
 function persistRunLog() { if (!store(KEYS.runlog, runLog.concat(runLogKeep))) toast(T('Speichern im Browser nicht möglich – bitte Backup exportieren.', 'Saving in the browser failed – please export a backup.')); renderBackupBanner(); }
-const weekRuns = w => { const e = addDays(w, 6); return runLog.filter(r => r.date >= w && r.date <= e); };
+/* Rennen füllen Lücken im Umfang: ein Ergebnis (Bestzeiten, Wings for Life, Pace-Race-Level) zählt als Lauf an Tagen ohne eingetragenen Lauf.
+   Nur ab dem ersten eingetragenen Lauf bzw. der ersten Wochensumme (davor wäre die Woche unvollständig) und nicht in Wochen, die über ihre
+   Wochensumme zählen (die enthält das Rennen schon). Nichts wird gespeichert: ein später eingetragener Lauf am selben Tag ersetzt das Rennen. */
+function raceRuns() {
+  const today = localDay(), days = new Set(runLog.map(r => r.date)), runWk = new Set(runLog.map(r => weekStart(r.date)));
+  const sumWk = new Set(runWeeks.filter(e => !runWk.has(e.week)).map(e => e.week)), first = [runLog[0] && runLog[0].date, runWeeks[0] && runWeeks[0].week].filter(Boolean).sort()[0];
+  if (!first) return [];
+  const by = new Map(), put = (date, km, name, id) => {
+    if (!(km >= 0.5) || date < first || date > today || days.has(date) || sumWk.has(weekStart(date))) return;
+    const o = by.get(date); if (!o || km > o.km) by.set(date, { id: 'race-' + id, date, km: rd1(km), race: true, name: name || '' });
+  };
+  results.forEach(r => put(r.date, r.km, r.name, r.id));
+  races.forEach(r => { if (r.fmt === 'pace' && typeof r.level === 'number') put(r.date, r.level, r.name, r.id); });
+  return [...by.values()];
+}
+const allRuns = () => runLog.concat(raceRuns()).sort((a, b) => a.date.localeCompare(b.date));
+const ranOn = d => allRuns().some(r => r.date === d);
+const weekRuns = w => { const e = addDays(w, 6); return allRuns().filter(r => r.date >= w && r.date <= e); };
 const manualKm = (w, f = 'km') => { const e = runWeeks.find(x => x.week === w); return e && typeof e[f] === 'number' ? e[f] : null; };
 // Wochenwert: aus den einzelnen Läufen, sonst die eingetragene Wochensumme (bleibt gespeichert, falls Läufe gelöscht werden)
 const weekKm = (w, f = 'km') => { const rs = weekRuns(w); if (!rs.length) return manualKm(w, f); return f === 'km' ? rd1(rs.reduce((a, r) => a + r.km, 0)) : Math.max(...rs.map(r => r.km)); };
@@ -1065,7 +1087,7 @@ function deleteRun(id) { runLog = runLog.filter(r => r.id !== id); persistRunLog
 // Längster Lauf der 30 Tage bis „day“ (before: nur die Tage davor – zum Prüfen eines Laufs).
 // Einzelne Läufe zählen taggenau; Wochen ohne Einzelläufe über ihren „längsten Lauf“, wenn die ganze Woche im Zeitraum liegt.
 function longestIn(day, before = false, skip = null) {
-  const from = addDays(day, -30), cand = runLog.filter(r => r !== skip && r.date >= from && (before ? r.date < day : r.date <= day)).map(r => ({ km: r.km, date: r.date }));
+  const from = addDays(day, -30), cand = allRuns().filter(r => r.id !== (skip && skip.id) && r.date >= from && (before ? r.date < day : r.date <= day)).map(r => ({ km: r.km, date: r.date }));
   for (let w = weekStart(day); w >= from; w = addDays(w, -7)) {
     if (before && addDays(w, 6) >= day) continue;
     const v = weekRuns(w).length ? null : manualKm(w, 'long');
@@ -1152,8 +1174,10 @@ function renderLoad() {
   const today = localDay(), L = loadFor(weekStart(today)), R = longestIn(today);
   $('longresult').innerHTML = R ? `<div class="longnext"><b>${T(`höchstens ${kmText(R.max)} km`, `at most ${kmText(R.max)} km`)}</b><span>${T(`Längster Lauf der letzten 30 Tage: ${kmText(R.km)} km ${R.date ? 'am ' + dayLabel(R.date) : `(KW ${isoWeek(R.week)}, aus der Wochensumme)`} – plus 10 %.`, `Longest run of the last 30 days: ${kmText(R.km)} km ${R.date ? 'on ' + dayLabel(R.date) : `(wk ${isoWeek(R.week)}, from the weekly total)`} – plus 10 %.`)}</span></div>`
     : `<p class="loadstatus">${T('Trag Läufe mit Datum ein (oder bei den Wochensummen den längsten Lauf) – dann steht hier, wie lang dein nächster langer Lauf höchstens sein sollte.', 'Enter runs with a date (or the longest run in the weekly totals) – then this shows the maximum length of your next long run.')}</p>`;
-  const recent = runLog.filter(r => r.date >= addDays(today, -30) && r.date <= today).slice().reverse();
-  $('runlist').innerHTML = recent.length ? recent.map(r => { const sp = runSpike(r); return `<div class="row"><span class="dur">${dayLabel(r.date)}</span><span class="txt"><b>${kmText(r.km)} km</b>${sp ? `<small class="spike">${T(`+${sp} % gegenüber dem längsten der 30 Tage davor`, `+${sp} % over the longest of the 30 days before`)}</small>` : ''}</span><button type="button" class="btn small danger" data-rundel="${esc(r.id)}" aria-label="${T(`Lauf vom ${dateGerman(r.date)} löschen`, `Delete run of ${dateGerman(r.date)}`)}">${T('Löschen', 'Delete')}</button></div>`; }).join('')
+  const recent = allRuns().filter(r => r.date >= addDays(today, -30) && r.date <= today).reverse();
+  // Rennen aus dem Ergebnis: ohne Löschen – ein eingetragener Lauf am selben Tag ersetzt es
+  $('runlist').innerHTML = recent.length ? recent.map(r => { const sp = runSpike(r); return `<div class="row${r.race ? ' racerun' : ''}"><span class="dur">${dayLabel(r.date)}</span><span class="txt"><b>${kmText(r.km)} km</b>${r.race ? `<small>🏁 ${esc(r.name || T('Rennen', 'Race'))} · ${T('aus dem Ergebnis', 'from the result')}</small>` : ''}${sp ? `<small class="spike">${T(`+${sp} % gegenüber dem längsten der 30 Tage davor`, `+${sp} % over the longest of the 30 days before`)}</small>` : ''}</span>${r.race ? '' : `<button type="button" class="btn small danger" data-rundel="${esc(r.id)}" aria-label="${T(`Lauf vom ${dateGerman(r.date)} löschen`, `Delete run of ${dateGerman(r.date)}`)}">${T('Löschen', 'Delete')}</button>`}</div>`; }).join('')
+      + (recent.some(r => r.race) ? `<p class="footer">${T('Rennen zählen automatisch an Tagen ohne eingetragenen Lauf – trägst du für den Tag einen Lauf ein (z. B. mit den km deiner Uhr), zählt nur der.', 'Races count automatically on days without an entered run – if you enter a run for that day (e.g. with your watch’s km), only that one counts.')}</p>` : '')
     : `<div class="row"><span class="txt"><small>${T('Noch keine einzelnen Läufe in den letzten 30 Tagen.', 'No single runs in the last 30 days yet.')}</small></span></div>`;
   box.innerHTML = (L.n ? `<div class="metrics two">
       <div class="metric"><span>${T('Schnitt 4 Wochen', 'Average 4 weeks')}</span><b>${L.avg === null ? '–' : kmText(L.avg) + ' km'}</b><small>${L.n < 4 ? T(`vorläufig: ${L.n} von 4 Wochen`, `provisional: ${L.n} of 4 weeks`) : T('Basis für diese Woche', 'basis for this week')}</small></div>
@@ -1464,7 +1488,7 @@ const withPace = (txt, r) => {
 const easyPace = () => { const tp = trainingPaces(); return tp ? ` · ${paceRange(tp.easy)}` : ''; };
 // Rennen der letzten 3 Wochen ohne eingetragenes Ergebnis: daran erinnern, damit die Tempos aktuell werden
 function missingResultHint() {
-  const today = localDay(), r = races.filter(x => x.date <= today && x.date >= addDays(today, -21) && x.fmt !== 'pace' && !results.some(e => e.race === x.id || (e.date === x.date && Math.abs((e.km || 0) - raceKm(x)) < 0.5))).at(-1);
+  const today = localDay(), r = races.filter(x => x.date <= today && x.date >= addDays(today, -21) && x.fmt !== 'pace' && !x.dns && !results.some(e => e.race === x.id || (e.date === x.date && Math.abs((e.km || 0) - raceKm(x)) < 0.5))).at(-1);
   return r ? `<div class="alert">${T(`Wie lief <b>${esc(r.name)}</b>? Ergebnis unter <b>Bestzeiten</b> eintragen („Aus deinen Rennen übernehmen“) – dann passen die Tempos.`, `How did <b>${esc(r.name)}</b> go? Enter the result under <b>Best times</b> (“Take from your races”) – then the paces fit.`)}</div>` : '';
 }
 function renderPaces() {
@@ -1511,11 +1535,12 @@ function weekSchedule(x) {
   for (const d of w.strength) if (!x.a || before(d, 2)) add(d, 'strength', strengthTitle(d), x.a ? T('leicht, keine schweren Beinübungen', 'light, no heavy leg exercises') : x.phase === 'taper' ? T('ohne schwere Beinübungen', 'without heavy leg exercises') : x.phase === 'recover' ? T('leicht', 'light') : '');
   // Weitere Einheiten: lockerer Lauf, zweite Qualität (die andere Einheit der Woche; in Erholung, Tapering und B-Rennwoche locker) oder anderes
   w.extras.forEach((e, i) => {
-    const key = 'x' + i, easyRun = () => add(e.d, 'easy', e.name || T('Lockerer Lauf', 'Easy run'), hrize(T('locker, Zone 2', 'easy, Zone 2')) + easyPace(), { key });
+    const key = 'x' + i;
     if (x.a && !before(e.d, e.type === 'quality' ? 2 : 1)) return;
-    if (e.type === 'easy') easyRun();
+    if (e.type === 'easy') add(e.d, 'easy', extraTitle(e), hrize(T('locker, Zone 2', 'easy, Zone 2')) + easyPace(), { key });
+    else if (e.type === 'recovery') add(e.d, 'easy', extraTitle(e), recoveryDetail(), { key });
     else if (e.type === 'quality') { if (['recover', 'taper'].includes(x.phase) || x.bRace || x.test) add(e.d, 'quality2', e.name || T('Lockerer Lauf', 'Easy run'), hrize(T('locker statt Tempo, Zone 2', 'easy instead of speed, Zone 2')) + easyPace(), { key, easy: true }); else add(e.d, 'quality2', e.name || T('Qualität 2', 'Quality 2'), weekKey(x, true), { key }); }
-    else add(e.d, 'extra', e.name || T('Weitere Einheit', 'Other session'), '', { key });
+    else add(e.d, 'extra', extraTitle(e), '', { key });
   });
   const skip = weekSkip[x.week] || [], wp = curWeekPlan(x.week);
   for (const it of out) {
@@ -1862,9 +1887,9 @@ function saveBestFromForm() {
   storeResult(r); renderRun();
 }
 // Ergebnis speichern (Bestzeiten oder Startseite): neue Bestzeit erkennen, Ansicht auf die Distanz stellen
-function storeResult(r, after = '.') {
+function storeResult(r) {
   const g = resultGroup(r), before = results.filter(x => resultGroup(x) === g), wasPb = before.length && before.every(x => r.time < x.time);
-  results.push(r); persistResults(); bestView.group = wflResult(r) ? 'wfl' : g; store(KEYS.bestview, bestView);
+  results.push(r); persistResults(); const after = raceVolNote(r.date); bestView.group = wflResult(r) ? 'wfl' : g; store(KEYS.bestview, bestView);
   if (wflResult(r)) { toast(T(`✓ ${r.name}: ${kmText(r.km)} km gespeichert (${hms(r.time)})`, `✓ ${r.name}: ${kmText(r.km)} km saved (${hms(r.time)})`) + after); return; }
   toast((wasPb ? T(`🏆 Neue Bestzeit über ${groupLabel(g)}: ${hms(r.time)} (−${hms(Math.min(...before.map(x => x.time)) - r.time)})`, `🏆 New best time over ${groupLabel(g)}: ${hms(r.time)} (−${hms(Math.min(...before.map(x => x.time)) - r.time)})`) : T(`✓ ${hms(r.time)} über ${groupLabel(g)} gespeichert`, `✓ ${hms(r.time)} over ${groupLabel(g)} saved`)) + after);
 }
@@ -1908,58 +1933,59 @@ function todayItems() {
     w.long === wd && { kind: 'long', title: T('Longrun', 'Long run'), detail: hrize(T('locker, Zone 2', 'easy, Zone 2')) },
     w.group === wd && { kind: 'group', title: T('Laufgruppe', 'Running group'), detail: hrize(T('locker, Zone 2', 'easy, Zone 2')) },
     w.strength.includes(wd) && { kind: 'strength', plan: dayPlan(wd), base: '', sameDay: [w.quality, w.long].includes(wd) ? 'hard' : w.group === wd ? 'easy' : null },
-    ...w.extras.filter(e => e.d === wd).map(e => e.type === 'easy' ? { kind: 'easy', title: e.name || T('Lockerer Lauf', 'Easy run'), detail: hrize(T('locker, Zone 2', 'easy, Zone 2')) }
-      : e.type === 'quality' ? { kind: 'quality2', title: e.name || T('Qualität 2', 'Quality 2'), detail: T('Intervall oder Tempo', 'Intervals or tempo') } : { kind: 'extra', title: e.name || T('Weitere Einheit', 'Other session'), detail: '' })].filter(Boolean);
+    ...w.extras.filter(e => e.d === wd).map(e => ({ kind: extraKind(e), title: extraTitle(e), detail: e.type === 'easy' ? hrize(T('locker, Zone 2', 'easy, Zone 2')) : e.type === 'recovery' ? recoveryDetail() : e.type === 'quality' ? T('Intervall oder Tempo', 'Intervals or tempo') : '' }))].filter(Boolean);
   // Kraft am Lauftag: der Hinweis steht kurz in einer eigenen Zeile (im Wochenplan ausführlicher)
   const tip = it => !it.sameDay ? '' : it.base && /Beinübungen|leg exercises/.test(it.base) ? T('Nach dem Lauf', 'After the run') : it.sameDay === 'hard' ? T('Nach dem Lauf, ohne schwere Beinübungen', 'After the run, no heavy leg exercises') : T('Nach dem Lauf oder mit ein paar Stunden Abstand', 'After the run or a few hours apart');
   for (const it of items) out.push(it.kind === 'strength' ? Object.assign(kraft(it.plan || plan), { done: it.done, note: it.sameDay ? it.base : it.detail, tip: tip(it) }) : Object.assign({}, it, { act: RUN(it) ? 'plan' : null }));
   return out;
 }
-/* Startseite: nach einem Rennen nach dem Ergebnis fragen – ab dem Tag danach, bis 3 Wochen –, damit es nicht vergessen wird.
+/* Startseite: nach einem A- oder B-Rennen nach dem Ergebnis fragen – ab dem Tag danach, bis es eingetragen ist –, damit es nicht vergessen wird.
    Normal: Zeit → Bestzeiten. Wings for Life: geschaffte km, die Zeit ist die des Catcher Cars. Pace Race: Level – nur beim Rennen,
    nicht unter Bestzeiten (Pausen). „Nicht gelaufen“ merkt sich das Rennen, dann fragt die App nicht mehr. */
-const RESULT_ASK_DAYS = 21;
 const raceResult = r => results.find(e => e.race === r.id) || (r.fmt ? null : results.find(e => e.date === r.date && Math.abs((e.km || 0) - raceKm(r)) < 0.5)) || null;
 const raceAnswered = r => !!r.dns || (r.fmt === 'pace' ? r.level !== undefined : !!raceResult(r));
 const levelText = v => new Intl.NumberFormat(LOCALE, { maximumFractionDigits: 3 }).format(v);
-function pendingResult() {
-  const today = localDay(), from = addDays(today, -RESULT_ASK_DAYS);
-  return races.filter(r => r.date < today && r.date >= from && !raceAnswered(r)).sort((a, b) => a.date.localeCompare(b.date))[0] || null;
+function pendingResults() {
+  const today = localDay();
+  return races.filter(r => r.date < today && !raceAnswered(r)).sort((a, b) => a.date.localeCompare(b.date));
 }
-function resultCard(r) {
-  const field = r.fmt === 'wfl' ? `<label for="sreskm">${T('Geschafft bis km', 'Reached km')}</label><input id="sreskm" type="text" inputmode="decimal" autocomplete="off" placeholder="${T('z. B. 18,4', 'e.g. 18.4')}"><small class="tiny" id="sresinfo">${T('Die Zeit rechnet die App aus dem Catcher Car.', 'The app takes the time from the Catcher Car.')}</small>`
-    : r.fmt === 'pace' ? `<label for="sreslevel">${T('Geschafftes Level', 'Level reached')}</label><input id="sreslevel" type="text" inputmode="decimal" autocomplete="off" placeholder="${T('z. B. 11,753', 'e.g. 11.753')}">`
-    : `<label>${T('Deine Zeit', 'Your time')}</label>${timeFields('srestime', null, T('Zeit', 'Time'))}`;
-  return `<div class="scard sres" id="startresult"><p class="skicker">${T('Ergebnis eintragen', 'Enter result')}</p>
+// Mehrere offene Einträge: der erste behält die festen IDs, die weiteren bekommen eine Nummer
+const sfx = i => i ? '-' + i : '';
+function resultCard(r, i = 0) {
+  const s = sfx(i);
+  const field = r.fmt === 'wfl' ? `<label for="sreskm${s}">${T('Geschafft bis km', 'Reached km')}</label><input id="sreskm${s}" data-wflkm="${s}" type="text" inputmode="decimal" autocomplete="off" placeholder="${T('z. B. 18,4', 'e.g. 18.4')}"><small class="tiny" id="sresinfo${s}">${T('Die Zeit rechnet die App aus dem Catcher Car.', 'The app takes the time from the Catcher Car.')}</small>`
+    : r.fmt === 'pace' ? `<label for="sreslevel${s}">${T('Geschafftes Level', 'Level reached')}</label><input id="sreslevel${s}" type="text" inputmode="decimal" autocomplete="off" placeholder="${T('z. B. 11,753', 'e.g. 11.753')}">`
+    : `<label>${T('Deine Zeit', 'Your time')}</label>${timeFields('srestime' + s, null, T('Zeit', 'Time'))}`;
+  return `<div class="scard sres" id="startresult${s}"><p class="skicker">${T('Ergebnis eintragen', 'Enter result')}</p>
     <div class="srowt">${startIcon('laufen')}<span class="txt"><b>${T(`Wie lief ${esc(r.name)}?`, `How did ${esc(r.name)} go?`)}</b><small>${esc(dateGerman(r.date) + ' · ' + raceLabel(r))}</small></span></div>
     <div class="sresin">${field}</div>
-    <div class="sresact"><button type="button" class="btn small" data-resdns="${esc(r.id)}">${T('Nicht gelaufen', 'Did not run')}</button><button type="button" class="btn small primary" data-ressave="${esc(r.id)}">${T('Speichern', 'Save')}</button></div></div>`;
+    <div class="sresact"><button type="button" class="btn small" data-resdns="${esc(r.id)}">${T('Nicht gelaufen', 'Did not run')}</button><button type="button" class="btn small primary" data-ressave="${esc(r.id)}" data-i="${i}">${T('Speichern', 'Save')}</button></div></div>`;
 }
-function saveStartResult(id) {
-  const r = races.find(x => x.id === id); if (!r) return;
+// Hinweis im Toast, ob das Rennen in die Wochen-km zählt (siehe raceRuns)
+const raceVolNote = date => { const x = raceRuns().find(r => r.date === date); return x ? T(` – ${kmText(x.km)} km im Umfang.`, ` – ${kmText(x.km)} km in volume.`) : '.'; };
+function saveStartResult(id, i = 0) {
+  const r = races.find(x => x.id === id), s = sfx(i); if (!r) return;
   if (r.fmt === 'pace') {
-    const t = String($('sreslevel').value).trim().replace(',', '.'), v = t === '' ? NaN : Number(t);
-    if (!(Number.isFinite(v) && v > 0 && v <= PACE_RACE.levels)) { $('sreslevel').setAttribute('aria-invalid', 'true'); toast(T(`Bitte das Level eintragen (bis ${PACE_RACE.levels}), z. B. 11,753.`, `Please enter the level (up to ${PACE_RACE.levels}), e.g. 11.753.`)); return; }
-    r.level = Math.round(v * 1000) / 1000; persistRaces(); bestView.group = 'pace'; store(KEYS.bestview, bestView); const logged = logRaceRun(r.date, Math.round(r.level * 10) / 10); renderStart();
-    toast(T(`✓ ${r.name}: Level ${levelText(r.level)} gespeichert`, `✓ ${r.name}: level ${levelText(r.level)} saved`) + logged); return;
+    const t = String($('sreslevel' + s).value).trim().replace(',', '.'), v = t === '' ? NaN : Number(t);
+    if (!(Number.isFinite(v) && v > 0 && v <= PACE_RACE.levels)) { $('sreslevel' + s).setAttribute('aria-invalid', 'true'); toast(T(`Bitte das Level eintragen (bis ${PACE_RACE.levels}), z. B. 11,753.`, `Please enter the level (up to ${PACE_RACE.levels}), e.g. 11.753.`)); return; }
+    r.level = Math.round(v * 1000) / 1000; persistRaces(); bestView.group = 'pace'; store(KEYS.bestview, bestView); renderStart();
+    toast(T(`✓ ${r.name}: Level ${levelText(r.level)} gespeichert`, `✓ ${r.name}: level ${levelText(r.level)} saved`) + raceVolNote(r.date)); return;
   }
   let km = raceKm(r), time;
   if (r.fmt === 'wfl') {
-    km = kmNum($('sreskm').value);
-    if (km === null || Number.isNaN(km) || km < 1 || km > 100) { $('sreskm').setAttribute('aria-invalid', 'true'); toast(T('Bitte die geschafften km eintragen, z. B. 18,4.', 'Please enter the km you reached, e.g. 18.4.')); return; }
+    km = kmNum($('sreskm' + s).value);
+    if (km === null || Number.isNaN(km) || km < 1 || km > 100) { $('sreskm' + s).setAttribute('aria-invalid', 'true'); toast(T('Bitte die geschafften km eintragen, z. B. 18,4.', 'Please enter the km you reached, e.g. 18.4.')); return; }
     time = Math.round(carTime(km));
   } else {
-    time = readTime('srestime');
-    if (time === null || Number.isNaN(time)) { markTime('srestime', true); toast(T('Bitte die Zeit eintragen (Minuten und Sekunden höchstens 59).', 'Please enter the time (minutes and seconds at most 59).')); return; }
+    time = readTime('srestime' + s);
+    if (time === null || Number.isNaN(time)) { markTime('srestime' + s, true); toast(T('Bitte die Zeit eintragen (Minuten und Sekunden höchstens 59).', 'Please enter the time (minutes and seconds at most 59).')); return; }
   }
-  const logged = logRaceRun(r.date, Math.round(km * 10) / 10);
-  storeResult({ id: uid(), date: r.date, km, time, dist: r.km || r.fmt ? null : r.dist, name: r.name, race: r.id }, logged);
+  storeResult({ id: uid(), date: r.date, km, time, dist: r.km || r.fmt ? null : r.dist, name: r.name, race: r.id });
   renderStart();
 }
-// Das Rennen zählt auch in die Wochen-km – außer, an dem Tag ist schon ein Lauf eingetragen (z. B. per Import)
-function logRaceRun(date, km) { if (runLog.some(x => x.date === date) || !(km >= 0.5)) return '.'; addRun(date, km); return T(` – ${kmText(km)} km im Umfang.`, ` – ${kmText(km)} km in volume.`); }
-/* Startseite: ab dem Tag nach einem geplanten Lauf nach den km fragen (bis 7 Tage zurück), damit die Wochen-km stimmen.
-   Erledigt, sobald an dem Tag ein Lauf eingetragen ist, die Woche eine eigene Wochensumme hat oder die Einheit „entfällt“. */
+/* Startseite: ab dem Tag nach einem geplanten Lauf nach den km fragen, bis er eingetragen ist, damit die Wochen-km stimmen.
+   Erledigt, sobald an dem Tag ein Lauf (oder ein Rennen) eingetragen ist, die Woche eine eigene Wochensumme hat oder die Einheit „entfällt“.
+   Damit nicht jedes Mal die ganze Vergangenheit geprüft wird, merkt sich die App den ersten noch offenen Tag. */
 const RUN_ASK_DAYS = 7, RUN_KINDS = ['quality', 'quality2', 'long', 'group', 'easy'];
 function plannedRunsOn(day, cache = {}) {
   const w = profile.week, wd = new Date(day + 'T12:00:00').getDay(), wk = weekStart(day), skip = weekSkip[wk] || [];
@@ -1967,24 +1993,37 @@ function plannedRunsOn(day, cache = {}) {
   const items = cache[wk] ? cache[wk].filter(o => o.d === wd && RUN_KINDS.includes(o.kind))
     : [w.quality === wd && { kind: 'quality', key: 'quality', title: T('Qualität', 'Quality'), detail: '' }, w.long === wd && { kind: 'long', key: 'long', title: T('Longrun', 'Long run'), detail: '' },
       w.group === wd && { kind: 'group', key: 'group', title: T('Laufgruppe', 'Running group'), detail: '' },
-      ...w.extras.map((e, i) => ({ e, i })).filter(({ e }) => e.d === wd && e.type !== 'other').map(({ e, i }) => ({ kind: e.type === 'easy' ? 'easy' : 'quality2', key: 'x' + i, title: e.name || (e.type === 'easy' ? T('Lockerer Lauf', 'Easy run') : T('Qualität 2', 'Quality 2')), detail: '' }))].filter(Boolean);
+      ...w.extras.map((e, i) => ({ e, i })).filter(({ e }) => e.d === wd && e.type !== 'other').map(({ e, i }) => ({ kind: extraKind(e), key: 'x' + i, title: extraTitle(e), detail: '' }))].filter(Boolean);
   return items.filter(o => !o.skip && !skip.includes(o.key));
 }
-function pendingRun() {
-  if (runnerLevel() === 'beginner') return null;
-  const today = localDay(), cache = {};
-  for (let i = RUN_ASK_DAYS; i >= 1; i--) {
-    const d = addDays(today, -i); if (runLog.some(r => r.date === d) || manualKm(weekStart(d)) !== null) continue;
-    const it = plannedRunsOn(d, cache)[0]; if (it) return { day: d, item: it };
+// Ohne gemerkten Tag (neues Gerät, erste Nutzung) wird eine Woche zurück gefragt
+function pendingRuns() {
+  if (runnerLevel() === 'beginner') return [];
+  const today = localDay(), cache = {}, out = [], done = new Set(allRuns().map(r => r.date));
+  let from = load(KEYS.runask, null); if (!isDay(from) || from > today) from = addDays(today, -RUN_ASK_DAYS);
+  for (let d = from; d < today; d = addDays(d, 1)) {
+    if (done.has(d) || manualKm(weekStart(d)) !== null) continue;
+    const it = plannedRunsOn(d, cache)[0]; if (it) out.push({ day: d, item: it });
   }
-  return null;
+  const next = out.length ? out[0].day : today; if (next !== from) store(KEYS.runask, next);
+  return out;
 }
-function runCard(p) {
-  const it = p.item, when = p.day === addDays(localDay(), -1) ? T('Gestern', 'Yesterday') : dayLabel(p.day), ref = `${p.day}|${it.key}`;
-  return `<div class="scard sres" id="startrun"><p class="skicker">${T('Lauf nachtragen', 'Log run')}</p>
+function runCard(p, i = 0) {
+  const it = p.item, s = sfx(i), when = p.day === addDays(localDay(), -1) ? T('Gestern', 'Yesterday') : dayLabel(p.day), ref = `${p.day}|${it.key}`;
+  return `<div class="scard sres" id="startrun${s}"><p class="skicker">${T('Lauf nachtragen', 'Log run')}</p>
     <div class="srowt">${startIcon('laufen')}<span class="txt"><b>${esc(`${when} · ${it.title}`)}</b>${it.detail ? `<small>${esc(it.detail)}</small>` : ''}</span></div>
-    <div class="sresin"><label for="srunkm">${T('Gelaufen (km)', 'Ran (km)')}</label><input id="srunkm" type="text" inputmode="decimal" autocomplete="off" placeholder="${T('z. B. 8,5', 'e.g. 8.5')}"></div>
-    <div class="sresact"><button type="button" class="btn small" data-runskip="${esc(ref)}">${T('Nicht gelaufen', 'Did not run')}</button><button type="button" class="btn small primary" data-runsave="${esc(ref)}">${T('Speichern', 'Save')}</button></div></div>`;
+    <div class="sresin"><label for="srunkm${s}">${T('Gelaufen (km)', 'Ran (km)')}</label><input id="srunkm${s}" type="text" inputmode="decimal" autocomplete="off" placeholder="${T('z. B. 8,5', 'e.g. 8.5')}"></div>
+    <div class="sresact"><button type="button" class="btn small" data-runskip="${esc(ref)}">${T('Nicht gelaufen', 'Did not run')}</button><button type="button" class="btn small primary" data-runsave="${esc(ref)}" data-i="${i}">${T('Speichern', 'Save')}</button></div></div>`;
+}
+/* Offene Einträge: Rennen zuerst, dann Läufe, jeweils das älteste zuerst. Der erste steht offen da, weitere sind eingeklappt
+   (bleiben nach dem Speichern aufgeklappt, wenn sie es waren). */
+let startMoreOpen = false;
+function pendingHtml() {
+  const list = pendingResults().map(r => ({ r })).concat(pendingRuns()), card = (p, i) => p.r ? resultCard(p.r, i) : runCard(p, i);
+  if (!list.length) return '';
+  const runs = list.filter(p => !p.r).length;
+  return card(list[0], 0) + (list.length > 1 ? `<details class="smore" id="startmore"${startMoreOpen ? ' open' : ''}><summary class="scard"><span>${T(`${list.length - 1} weitere offen`, `${list.length - 1} more open`)}</span><span class="chev"></span></summary>
+    ${list.slice(1).map((p, i) => card(p, i + 1)).join('')}${runs > 1 ? `<div class="smoreact"><button type="button" class="btn small" data-runskipall>${T(`Alle ${runs} offenen Läufe: nicht gelaufen`, `All ${runs} open runs: did not run`)}</button></div>` : ''}</details>` : '');
 }
 function renderStart() {
   const today = localDay(), wk = weekStart(today), items = todayItems();
@@ -2003,7 +2042,7 @@ function renderStart() {
   const week = [[T('Kraft', 'Strength'), pK ? `${nK} ${T('von', 'of')} ${pK}` : `${nK} ×`, bar(nK, pK, 'b-kraft')], [run[2], run[0], run[1]], ['Mobility', `${nM} ×`, '']];
   // Kacheln mit Stand
   const lastK = saved.slice().sort((a, b) => (a.date + (a.at || '')).localeCompare(b.date + (b.at || ''))).at(-1);
-  const nextRace = races.filter(r => r.date >= today).sort((a, b) => a.date.localeCompare(b.date))[0], lastRun = runLog.at(-1);
+  const nextRace = races.filter(r => r.date >= today).sort((a, b) => a.date.localeCompare(b.date))[0], lastRun = allRuns().at(-1);
   const s = getStarter(), lastM = getMobLog().at(-1), lastW = weights.at(-1), lastB = load(KEYS.backup, null);
   const kTxt = lastK ? T(`Zuletzt ${WD[new Date(lastK.date + 'T12:00:00').getDay()]} · ${PLANS[lastK.plan] ? PLANS[lastK.plan].tab : ''}`, `Last ${WD[new Date(lastK.date + 'T12:00:00').getDay()]} · ${PLANS[lastK.plan] ? tr(PLANS[lastK.plan].tab) : ''}`) : T('Noch keine Einheit', 'No session yet');
   const rTxt = runnerLevel() === 'beginner' ? T(`Einstieg · Woche ${s.week + 1} von ${STARTER.weeks.length}`, `Starter · week ${s.week + 1} of ${STARTER.weeks.length}`)
@@ -2013,24 +2052,26 @@ function renderStart() {
   const pTxt = lastW ? T(`Gewicht ${kgOne(lastW.kg)} kg`, `Weight ${kgOne(lastW.kg)} kg`) : T('Woche, Geräte, Maße', 'Week, equipment, measurements');
   const bTxt = `Version ${APP_VERSION} · ` + (lastB ? T(`Sicherung ${daysAgo(lastB)}`, `backup ${daysAgo(lastB)}`) : T('noch keine Sicherung', 'no backup yet'));
   const tile = (k, name, sub, wide) => `<button type="button" class="stile${wide ? ' wide' : ''}" data-go="${k}"><span class="sthead">${startIcon(k)}<b>${name}</b></span><small>${esc(sub)}</small></button>`;
-  const pend = pendingResult(), prun = pend ? null : pendingRun();
-  $('startcontent').innerHTML = `${pend ? resultCard(pend) : prun ? runCard(prun) : ''}<div class="scard"><p class="skicker">${T('Heute dran', 'On today')}</p>${rows}</div>
+  $('startcontent').innerHTML = `${pendingHtml()}<div class="scard"><p class="skicker">${T('Heute dran', 'On today')}</p>${rows}</div>
     <div class="scard"><p class="skicker">${T('Diese Woche', 'This week')}</p><div class="sweek">${week.map(([l, v, b]) => `<div><small>${esc(l)}</small><b>${esc(v)}</b>${b}</div>`).join('')}</div></div>
     <div class="stiles">${tile('kraft', T('Kraft', 'Strength'), kTxt)}${tile('laufen', T('Laufen', 'Running'), rTxt)}${tile('mobility', 'Mobility', mTxt)}${tile('profil', T('Profil', 'Profile'), pTxt)}${tile('mehr', T('Mehr', 'More'), bTxt, true)}</div>`;
 }
 $('startcontent').addEventListener('input', e => {
   const t = e.target; tpartJump(t); t.removeAttribute('aria-invalid'); if (t.closest && t.closest('.timein')) markTime(t.closest('.timein').id, false);
-  if (t.id === 'sreskm') { const km = kmNum(t.value); $('sresinfo').textContent = km >= 1 && km <= 100 ? T(`Catcher Car bei km ${kmText(km)} nach ${hms(carTime(km))} – das wird deine Zeit.`, `Catcher Car at km ${kmText(km)} after ${hms(carTime(km))} – that will be your time.`) : T('Die Zeit rechnet die App aus dem Catcher Car.', 'The app takes the time from the Catcher Car.'); }
+  if (t.dataset.wflkm !== undefined) { const km = kmNum(t.value); $('sresinfo' + t.dataset.wflkm).textContent = km >= 1 && km <= 100 ? T(`Catcher Car bei km ${kmText(km)} nach ${hms(carTime(km))} – das wird deine Zeit.`, `Catcher Car at km ${kmText(km)} after ${hms(carTime(km))} – that will be your time.`) : T('Die Zeit rechnet die App aus dem Catcher Car.', 'The app takes the time from the Catcher Car.'); }
 });
+$('startcontent').addEventListener('toggle', e => { if (e.target.id === 'startmore') startMoreOpen = e.target.open; }, true);
 $('startcontent').addEventListener('click', e => {
   const g = e.target.closest('[data-go]'); if (g) { showArea(g.dataset.go); return; }
-  const rs = e.target.closest('[data-ressave]'); if (rs) { saveStartResult(rs.dataset.ressave); return; }
+  const rs = e.target.closest('[data-ressave]'); if (rs) { saveStartResult(rs.dataset.ressave, Number(rs.dataset.i) || 0); return; }
+  const skipRun = (day, key) => { const wk = weekStart(day); weekSkip[wk] = [...new Set((weekSkip[wk] || []).concat(key))]; };
+  if (e.target.closest('[data-runskipall]')) { const l = pendingRuns(); l.forEach(p => skipRun(p.day, p.item.key)); store(KEYS.skip, weekSkip); renderStart(); toast(T(`Notiert: ${l.length} Läufe nicht gelaufen.`, `Noted: ${l.length} runs not run.`)); return; }
   const ru = e.target.closest('[data-runsave]'), rk = e.target.closest('[data-runskip]');
   if (ru || rk) {
-    const [day, key] = (ru || rk).dataset[ru ? 'runsave' : 'runskip'].split('|'), wk = weekStart(day);
-    if (rk) { weekSkip[wk] = [...new Set((weekSkip[wk] || []).concat(key))]; store(KEYS.skip, weekSkip); renderStart(); toast(T(`Notiert: ${dayLabel(day)} nicht gelaufen.`, `Noted: ${dayLabel(day)} not run.`)); return; }
-    const km = kmNum($('srunkm').value);
-    if (km === null || Number.isNaN(km) || km < 0.5 || km > 100) { $('srunkm').setAttribute('aria-invalid', 'true'); toast(T('Bitte die km eintragen, z. B. 8,5.', 'Please enter the km, e.g. 8.5.')); return; }
+    const [day, key] = (ru || rk).dataset[ru ? 'runsave' : 'runskip'].split('|'), wk = weekStart(day), f = 'srunkm' + sfx(Number(ru && ru.dataset.i) || 0);
+    if (rk) { skipRun(day, key); store(KEYS.skip, weekSkip); renderStart(); toast(T(`Notiert: ${dayLabel(day)} nicht gelaufen.`, `Noted: ${dayLabel(day)} not run.`)); return; }
+    const km = kmNum($(f).value);
+    if (km === null || Number.isNaN(km) || km < 0.5 || km > 100) { $(f).setAttribute('aria-invalid', 'true'); toast(T('Bitte die km eintragen, z. B. 8,5.', 'Please enter the km, e.g. 8.5.')); return; }
     addRun(day, km); const wp = curWeekPlan(wk); if (wp && !wp.done.includes(key)) { wp.done.push(key); storeWeekPlan(); }
     renderStart(); toast(T(`✓ ${kmText(km)} km am ${dayLabel(day)} eingetragen.`, `✓ ${kmText(km)} km on ${dayLabel(day)} logged.`)); return;
   }

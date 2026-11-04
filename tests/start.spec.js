@@ -116,9 +116,8 @@ test.describe('Ergebnis nach dem Rennen', () => {
   const setRaces = (page, list) => page.evaluate(l => { races = l.map(r => Object.assign({}, r)); persistRaces(); showArea('start'); }, list);
   const day = (page, n) => page.evaluate(d => addDays(localDay(), d), n);
   test('ab dem Tag danach fragt die Startseite nach der Zeit und speichert sie als Ergebnis', async ({ page }) => {
-    await setRaces(page, [{ id: 'heute', name: 'Heutiger Lauf', date: await day(page, 0), dist: '10k', prio: 'B', goal: null },
-      { id: 'alt', name: 'Alter Lauf', date: await day(page, -30), dist: '10k', prio: 'B', goal: null }]);
-    await expect(page.locator('#startresult')).toHaveCount(0); // am Renntag selbst noch nicht, nach 3 Wochen nicht mehr
+    await setRaces(page, [{ id: 'heute', name: 'Heutiger Lauf', date: await day(page, 0), dist: '10k', prio: 'B', goal: null }]);
+    await expect(page.locator('#startresult')).toHaveCount(0); // am Renntag selbst noch nicht
     await setRaces(page, [{ id: 'hm', name: 'Berliner HM', date: await day(page, -1), dist: 'hm', prio: 'A', goal: 7140 }]);
     await expect(page.locator('#startresult')).toContainText('Wie lief Berliner HM?');
     await page.click('[data-ressave="hm"]');
@@ -145,7 +144,7 @@ test.describe('Ergebnis nach dem Rennen', () => {
     await page.click('[data-ressave="w"]');
     expect(await page.evaluate(() => results.map(r => [r.race, r.dist, r.km, r.time]))).toEqual([['w', null, 18.4, 6278]]);
     await expect(page.locator('#startresult b')).toHaveText(/Wie lief (Pace Race|Stadtlauf)\?/);
-    const next = await page.locator('[data-ressave]').getAttribute('data-ressave');
+    const next = await page.locator('#startresult [data-ressave]').getAttribute('data-ressave');
     if (next === 'x') { await page.click('[data-resdns="x"]'); }
     await expect(page.locator('#startresult b')).toHaveText('Wie lief Pace Race?');
     await page.fill('#sreslevel', '30');
@@ -204,13 +203,39 @@ test.describe('Lauf nachtragen', () => {
     await page.evaluate(() => { runWeeks = []; persistRunWeeks(); profile.week.runner = 'beginner'; persistProfile(); renderStart(); });
     await expect(page.locator('#startrun')).toHaveCount(0);
   });
-  test('Rennergebnis trägt die km auch in den Umfang ein, außer am Tag ist schon ein Lauf', async ({ page }) => {
-    const y = await page.evaluate(() => addDays(localDay(), -1));
-    await page.evaluate(d => { profile.week = Object.assign(profile.week, { group: null, quality: null, long: null, runner: 'runner' }); persistProfile(); races = [{ id: 'k', name: 'Stadtlauf', date: d, dist: '10k', prio: 'B', goal: null }]; persistRaces(); runLog = []; persistRunLog(); showArea('start'); }, y);
-    for (const [i, v] of ['', '52', '10'].entries()) await page.fill(`#srestime [data-tpart="${i}"]`, v);
-    await page.click('[data-ressave="k"]');
-    await expect(page.locator('#toast')).toContainText('10 km im Umfang');
-    expect(await page.evaluate(() => runLog.map(r => [r.date, r.km]))).toEqual([[y, 10]]);
+  test('offene Einträge verschwinden nicht nach Tagen, nur eingetragen oder „nicht gelaufen“; mehrere sind eingeklappt', async ({ page }) => {
+    const d = n => page.evaluate(x => addDays(localDay(), x), n);
+    const wd = await page.evaluate(() => new Date(addDays(localDay(), -9) + 'T12:00:00').getDay());
+    // Longrun jede Woche am selben Wochentag, zuletzt vor 9 und 2 Tagen; das Rennen ist 40 Tage her; gemerkt ist ein Tag vor 12 Tagen
+    await page.evaluate(([w, r, from]) => { profile.week = Object.assign(profile.week, { group: null, quality: null, long: w, extras: [], runner: 'runner' }); persistProfile(); runLog = []; persistRunLog();
+      races = [{ id: 'alt', name: 'Herbstlauf', date: r, dist: '10k', prio: 'B', goal: null }]; persistRaces(); store(KEYS.runask, from); showArea('start'); }, [wd, await d(-40), await d(-12)]);
+    await expect(page.locator('#startresult .srowt b')).toHaveText('Wie lief Herbstlauf?');
+    await expect(page.locator('#startmore summary')).toContainText('2 weitere offen');
+    await expect(page.locator('#startrun-1')).toBeHidden(); // eingeklappt
+    await page.click('#startmore summary');
+    await expect(page.locator('#startmore .sres .srowt b')).toHaveText([/Longrun/, /Longrun/]);
+    // eintragen im eingeklappten Bereich: bleibt aufgeklappt, der Lauf zählt
+    await page.fill('#srunkm-1', '14');
+    await page.click('#startrun-1 [data-runsave]');
+    expect(await page.evaluate(() => runLog.map(r => r.km))).toEqual([14]);
+    await expect(page.locator('#startmore')).toHaveAttribute('open', '');
+    await expect(page.locator('#startmore .sres')).toHaveCount(1);
+    // nach dem Neuladen immer noch da (keine Frist)
+    await page.reload(); await page.evaluate(() => showArea('start'));
+    await expect(page.locator('#startresult .srowt b')).toHaveText('Wie lief Herbstlauf?');
+    await page.click('[data-resdns="alt"]');
+    await expect(page.locator('#startrun .srowt b')).toContainText('Longrun');
+    await page.click('[data-runskip]');
+    await expect(page.locator('#startcontent .sres')).toHaveCount(0);
+    expect(await page.evaluate(() => load(KEYS.runask, null))).toBe(await d(0));
+  });
+  test('mehrere offene Läufe auf einmal als „nicht gelaufen“ markieren', async ({ page }) => {
+    const wd = await page.evaluate(() => new Date(addDays(localDay(), -1) + 'T12:00:00').getDay());
+    await page.evaluate(w => { profile.week = Object.assign(profile.week, { group: null, quality: null, long: w, extras: [], runner: 'runner' }); persistProfile(); runLog = []; persistRunLog(); races = []; persistRaces(); store(KEYS.runask, addDays(localDay(), -20)); showArea('start'); }, wd);
+    await page.click('#startmore summary');
+    await page.click('[data-runskipall]');
+    await expect(page.locator('#startcontent .sres')).toHaveCount(0);
+    await expect(page.locator('#toast')).toContainText('3 Läufe nicht gelaufen');
   });
 });
 
