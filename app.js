@@ -2846,7 +2846,17 @@ $('syncfile').addEventListener('change', e => { const f = e.target.files[0]; e.t
 $('syncstatus').addEventListener('click', e => { if (e.target.id === 'syncforget') handleSet(null).then(renderSyncStatus); });
 window.addEventListener('pagehide', () => { clearTimeout(syncTimer); syncTrack(); });
 renderAll(); renderWaist(); renderWeight(); renderProfile(); renderStorageInfo(); renderRun(); renderSyncStatus(); renderNotesRows();
-if (CHANGELOG.length && notesOpt.auto !== false && notesOpt.seen !== noteStamp(CHANGELOG[0])) setTimeout(() => { if (!document.querySelector('dialog[open]')) openNotes(false); }, 300); renderMobility();
+// Startbildschirm: keine Ladeanzeige – weg, sobald die App bereit ist, aber mindestens SPLASH_MS ab Start, damit er nicht nur flackert. Antippen blendet sofort aus.
+const SPLASH_MS = 600, splashLeft = (() => {
+  const s = $('splash'); if (!s) return () => 0;
+  if (document.documentElement.classList.contains('nosplash')) { s.remove(); return () => 0; }
+  $('splashver').textContent = `Version ${APP_VERSION}` + (KEY_NS ? T(' · Testversion', ' · test version') : '');
+  const until = Math.max(performance.now(), SPLASH_MS), done = () => { if (!s.isConnected || s.classList.contains('out')) return; s.classList.add('out'); setTimeout(() => s.remove(), 260); };
+  s.addEventListener('click', done); setTimeout(done, until - performance.now());
+  return () => Math.max(0, until - performance.now());
+})();
+// Neuigkeiten erst nach dem Startbildschirm (ein Dialog läge sonst darüber)
+if (CHANGELOG.length && notesOpt.auto !== false && notesOpt.seen !== noteStamp(CHANGELOG[0])) setTimeout(() => { if (!document.querySelector('dialog[open]')) openNotes(false); }, splashLeft() + 300); renderMobility();
 // Beim Öffnen immer die Startseite – außer ein Training läuft (dann direkt zum Timer). Tests können das abschalten.
 if (sessionActive()) area = 'kraft'; else if (!window.__kbtNoStart) area = 'start';
 showArea(area, false);

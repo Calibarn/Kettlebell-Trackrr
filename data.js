@@ -675,6 +675,7 @@ const APP_VERSION = '1.1';
 const CHANGELOG = [
   { id: '2026-11-04', date: '2026-11-04', version: '1.1', title: 'Neuer Name Tagwerk, Startseite „Heute“ & neue Rennformate', items: [
     ['Neuer Name', 'Die App heißt jetzt Tagwerk – sie kann längst mehr als Kettlebell: Kraft, Laufen und Mobility, jeden Tag das, was dran ist. Deine Daten und die Sync-Datei bleiben, wie sie sind. Ein schon installiertes App-Icon behält auf dem iPhone den alten Namen. Wer es neu hinzufügen will, macht vorher unbedingt „Sync speichern“ oder ein Backup – beim Entfernen kann iOS die Daten der App löschen.', 'neu'],
+    ['Startbildschirm', 'Beim Öffnen zeigt die App kurz Icon, Namen und Version – nur so lange, bis sie bereit ist, und nicht bei laufendem Training. Antippen blendet ihn sofort aus.', 'neu'],
     ['Startseite', 'Beim Öffnen zeigt die App „Heute“: was heute dran ist (Kraft mit Start-Knopf, Läufe aus dem Plan, Lauf-Einstieg), die Woche auf einen Blick und je Bereich eine Kachel mit dem aktuellen Stand. Läuft gerade ein Training, geht es direkt zum Timer.', 'neu'],
     ['Plan je Krafttag', 'Je Krafttag lässt sich im Profil unter Trainingswoche ein fester Plan wählen, z. B. Mo Ganzkörper, Do Läufer. Wochenplanung, Startseite und Kalender zeigen ihn, „Starten“ auf der Startseite stellt ihn direkt ein. Standard bleibt „frei“: der zuletzt genutzte Plan.', 'neu'],
     ['Mobility', 'Bis zum Ende geführte Mobility-Routinen zählen jetzt für die Woche.', 'neu'],

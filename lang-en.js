@@ -1555,7 +1555,9 @@ const EN_TEXT = {
 "Es bleibt bei einer Qualitätseinheit pro Woche, und die Erholung nach dem ersten Rennen fällt nicht weg. Hat das frühere Rennen selbst nur einen gekürzten Block, bleibt der ihm – dann warnt der Plan, dass für das spätere kein Platz ist.": "It stays at one quality session per week, and the recovery after the first race is not dropped. If the earlier race itself only has a shortened block, that block stays its own – then the plan warns that there is no room for the later one.",
 "Zu dicht sind zwei A-Rennen, wenn das zweite in die Erholung nach dem ersten fällt oder das erste ins Tapering vor dem zweiten – etwa Halbmarathon und eine Woche später Marathon. Das zeigen Plan und Rennformular als Warnung: Eines davon als B-Rennen eintragen. Ein B-Rennen in der Erholung oder im Tapering läuft nur locker mit.": "Two A races are too close if the second falls into the recovery after the first or the first into the taper before the second – e.g. a half marathon and a marathon one week later. Plan and race form show this as a warning: enter one of them as a B race. A B race during recovery or taper just runs along easily.",
 "Dichte Rennen": "Races close together",
-"Liegen zwei A-Rennen nah beieinander, bereitet der Plan beide zusammen vor: Vorher gilt jede zweite Qualitätseinheit schon dem späteren Rennen, Longrun und Wochen-km richten sich nach dem längeren. Fällt ein A-Rennen in die Erholung nach einem anderen oder in dessen Tapering, warnen Plan und Rennformular – eines davon besser als B-Rennen. B-Rennen in der Erholung laufen nur locker mit.": "If two A races are close together, the plan prepares both together: before that every second quality session is already for the later race, long run and weekly km follow the longer one. If an A race falls into the recovery after another or into its taper, plan and race form warn – better make one of them a B race. B races during recovery just run along easily."
+"Liegen zwei A-Rennen nah beieinander, bereitet der Plan beide zusammen vor: Vorher gilt jede zweite Qualitätseinheit schon dem späteren Rennen, Longrun und Wochen-km richten sich nach dem längeren. Fällt ein A-Rennen in die Erholung nach einem anderen oder in dessen Tapering, warnen Plan und Rennformular – eines davon besser als B-Rennen. B-Rennen in der Erholung laufen nur locker mit.": "If two A races are close together, the plan prepares both together: before that every second quality session is already for the later race, long run and weekly km follow the longer one. If an A race falls into the recovery after another or into its taper, plan and race form warn – better make one of them a B race. B races during recovery just run along easily.",
+"Startbildschirm": "Splash screen",
+"Beim Öffnen zeigt die App kurz Icon, Namen und Version – nur so lange, bis sie bereit ist, und nicht bei laufendem Training. Antippen blendet ihn sofort aus.": "When opening, the app briefly shows its icon, name and version – only until it is ready, and not during a running workout. A tap hides it right away."
 };
 const EN_HTML = {
 "Heute": "Today",
@@ -1792,6 +1794,7 @@ const EN_HTML = {
 "Wie anstrengend war es?": "How hard was it?",
 "Anstrengung von 1 bis 10": "Effort from 1 to 10",
 "z. B. gut geschlafen, Knie gezwickt": "e.g. slept well, knee twinged",
-"z. B. iCloud Drive › Tagwerk": "e.g. iCloud Drive › Tagwerk"
+"z. B. iCloud Drive › Tagwerk": "e.g. iCloud Drive › Tagwerk",
+"Kraft · Laufen · Mobility": "Strength · Running · Mobility"
 };
 const EN_HTML_KEEP = ["Cooldown", "Mobility", "Sprache · Language", "iPhone", "Android", "Tabata", "Core", "<b>Updates</b>", "Tagwerk"];

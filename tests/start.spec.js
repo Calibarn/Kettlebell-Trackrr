@@ -79,3 +79,35 @@ test.describe('mit Startseite', () => {
     });
   });
 });
+
+test.describe('Startbildschirm', () => {
+  test.use({ splash: true });
+  test('Name, Icon und Version beim ersten Öffnen, danach weg; nicht beim Neuladen, nicht bei laufendem Training', async ({ page }) => {
+    // die Fixture hat die Seite schon geöffnet: erster Start der Sitzung
+    const splash = page.locator('#splash');
+    await expect(splash).toHaveCount(1);
+    await expect(splash.locator('b')).toHaveText('Tagwerk');
+    await expect(splash.locator('#splashver')).toHaveText(/^Version \d/);
+    await expect(splash).toHaveCount(0, { timeout: 3000 }); // ohne künstliche Ladezeit: kurz nach dem Start entfernt
+    // Neuladen in derselben Sitzung: kein Startbildschirm
+    await page.reload();
+    expect(await page.evaluate(() => [document.documentElement.classList.contains('nosplash'), !!document.getElementById('splash')])).toEqual([true, false]);
+    // neue Sitzung mit laufendem Training: direkt zum Timer, kein Startbildschirm
+    await page.evaluate(() => { sessionStorage.clear(); elapsed = 30; persistSession(); });
+    await page.reload();
+    expect(await page.evaluate(() => [document.documentElement.classList.contains('nosplash'), area])).toEqual([true, 'kraft']);
+    // Antippen blendet sofort aus
+    await page.evaluate(() => { resetState(); persistSession(); sessionStorage.clear(); });
+    await page.reload();
+    await page.locator('#splash').click();
+    await expect(page.locator('#splash')).toHaveCount(0, { timeout: 1000 });
+  });
+  test('Neuigkeiten nach einem Update erst, wenn der Startbildschirm weg ist', async ({ page }) => {
+    await page.evaluate(() => { localStorage.setItem(KEYS.notes, JSON.stringify({ seen: null, auto: true })); sessionStorage.clear(); });
+    await page.reload();
+    await expect(page.locator('#splash')).toHaveCount(1);
+    expect(await page.evaluate(() => !!document.querySelector('dialog#notes[open]'))).toBe(false);
+    await expect(page.locator('#splash')).toHaveCount(0, { timeout: 3000 });
+    await expect(page.locator('dialog#notes')).toBeVisible();
+  });
+});
