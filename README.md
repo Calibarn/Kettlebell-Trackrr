@@ -126,6 +126,8 @@ Safari spielt Web-Töne normalerweise nicht, wenn der Stummschalter an ist. Unte
 
 Automatische Tests mit Playwright (Chromium) prüfen Zirkel, Tabata, Core-EMOM, Sätze, Geräte-Auswahl, Ansagen, geführte Routinen, Import/Export, Update-Sicherheit, Saisonplan und Rennen, Profil, Content-Security-Policy und dass jede Übung Anleitung und Skizze hat. Sie laufen bei jedem Push über GitHub Actions (`.github/workflows/test.yml`).
 
+**Datenprüfung vor dem Release:** `node tools/upgrade-check.js [--base origin/main] [--head origin/dev] [--report bericht.md]` legt mit der Live-Version echte Daten an und prüft vier Wege: Update an Ort und Stelle (neue Version liest den Speicher der alten), Sicherung Live → Testversion, Sicherung Testversion → Testversion und Sync-Datei Live → Testversion. Exit-Code 0 = nichts verloren oder verändert.
+
 Lokal (Node 22 und Python 3 nötig):
 
 ```
