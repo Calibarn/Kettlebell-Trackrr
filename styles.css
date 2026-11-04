@@ -501,3 +501,4 @@ body.onstart .livepill{bottom:calc(env(safe-area-inset-bottom) + 16px)}
 .dayplan{display:flex;align-items:center;gap:8px;min-width:0}
 .dayplan span{flex:0 0 24px;font-size:15px;font-weight:600;color:var(--accent-ink)}
 .dayplan select{flex:1;min-width:0;height:40px;font-size:15px;padding:0 6px}
+.srowt .txt small.stip{display:block;overflow:visible;color:var(--label)}

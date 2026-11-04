@@ -1370,7 +1370,8 @@ function weekSchedule(x) {
   // Kraft und Laufen am selben Tag gehen parallel: Kraft nach dem Lauf, nach Qualität oder Longrun ohne schwere Beinübungen
   for (const it of out) if (it.kind === 'strength' && !it.skip) {
     const runs = out.filter(o => o !== it && !o.skip && o.d === it.d && RUN(o)); if (!runs.length) continue;
-    const tip = runs.some(HARD) ? T('am selben Tag wie ein harter Lauf: danach, ohne schwere Beinübungen', 'same day as a hard run: afterwards, no heavy leg exercises') : T('am selben Tag wie ein Lauf: danach oder mit ein paar Stunden Abstand', 'same day as a run: afterwards or a few hours apart');
+    it.sameDay = runs.some(HARD) ? 'hard' : 'easy'; it.base = it.detail;
+    const tip = it.sameDay === 'hard' ? T('am selben Tag wie ein harter Lauf: danach, ohne schwere Beinübungen', 'same day as a hard run: afterwards, no heavy leg exercises') : T('am selben Tag wie ein Lauf: danach oder mit ein paar Stunden Abstand', 'same day as a run: afterwards or a few hours apart');
     it.detail = it.detail ? `${it.detail} · ${tip}` : tip;
   }
   return out.sort((a, b) => dayIdx(a.d) - dayIdx(b.d));
@@ -1662,9 +1663,11 @@ function todayItems() {
     w.quality === wd && { kind: 'quality', title: T('Qualität', 'Quality'), detail: T('Intervall oder Tempo', 'Intervals or tempo') },
     w.long === wd && { kind: 'long', title: T('Longrun', 'Long run'), detail: hrize(T('locker, Zone 2', 'easy, Zone 2')) },
     w.group === wd && { kind: 'group', title: T('Laufgruppe', 'Running group'), detail: hrize(T('locker, Zone 2', 'easy, Zone 2')) },
-    w.strength.includes(wd) && { kind: 'strength', plan: dayPlan(wd), detail: [w.quality, w.long].includes(wd) ? T('am selben Tag wie ein harter Lauf: danach, ohne schwere Beinübungen', 'same day as a hard run: afterwards, no heavy leg exercises') : w.group === wd ? T('am selben Tag wie ein Lauf: danach oder mit ein paar Stunden Abstand', 'same day as a run: afterwards or a few hours apart') : '' },
+    w.strength.includes(wd) && { kind: 'strength', plan: dayPlan(wd), base: '', sameDay: [w.quality, w.long].includes(wd) ? 'hard' : w.group === wd ? 'easy' : null },
     w.extraDay === wd && { kind: 'extra', title: w.extraName || T('Weitere Einheit', 'Other session'), detail: '' }].filter(Boolean);
-  for (const it of items) out.push(it.kind === 'strength' ? Object.assign(kraft(it.plan || plan), { done: it.done, note: it.detail }) : Object.assign({}, it, { act: RUN(it) ? 'plan' : null }));
+  // Kraft am Lauftag: der Hinweis steht kurz in einer eigenen Zeile (im Wochenplan ausführlicher)
+  const tip = it => !it.sameDay ? '' : it.base && /Beinübungen|leg exercises/.test(it.base) ? T('Nach dem Lauf', 'After the run') : it.sameDay === 'hard' ? T('Nach dem Lauf, ohne schwere Beinübungen', 'After the run, no heavy leg exercises') : T('Nach dem Lauf oder mit ein paar Stunden Abstand', 'After the run or a few hours apart');
+  for (const it of items) out.push(it.kind === 'strength' ? Object.assign(kraft(it.plan || plan), { done: it.done, note: it.sameDay ? it.base : it.detail, tip: tip(it) }) : Object.assign({}, it, { act: RUN(it) ? 'plan' : null }));
   return out;
 }
 function renderStart() {
@@ -1672,7 +1675,7 @@ function renderStart() {
   $('startdate').textContent = new Intl.DateTimeFormat(LOCALE, { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date(today + 'T12:00:00'));
   const btn = it => it.done ? `<span class="sdone">✓ ${T('erledigt', 'done')}</span>` : it.act === 'kraft' || it.act === 'starter' ? `<button type="button" class="btn small primary sgo" data-startact="${it.act}"${it.plan ? ` data-startplan="${it.plan}"` : ''}>▶ ${T('Starten', 'Start')}</button>` : it.act ? `<button type="button" class="btn small sgo" data-startact="${it.act}">${T('Details', 'Details')}</button>` : '';
   const ico = it => startIcon(it.kind === 'strength' ? 'kraft' : it.kind === 'extra' ? 'mehr' : 'laufen');
-  const rows = items.length ? items.map(it => `<div class="srowt${it.done ? ' isdone' : ''}">${ico(it)}<span class="txt"><b>${esc(it.title)}</b>${it.detail || it.note ? `<small>${esc([it.detail, it.note].filter(Boolean).join(' · '))}</small>` : ''}</span>${btn(it)}</div>`).join('')
+  const rows = items.length ? items.map(it => `<div class="srowt${it.done ? ' isdone' : ''}">${ico(it)}<span class="txt"><b>${esc(it.title)}</b>${it.detail || it.note ? `<small>${esc([it.detail, it.note].filter(Boolean).join(' · '))}</small>` : ''}${it.tip ? `<small class="stip">${esc(it.tip)}</small>` : ''}</span>${btn(it)}</div>`).join('')
     : `<div class="srowt">${startIcon('mobility')}<span class="txt"><b>${T('Heute ist nichts geplant', 'Nothing planned today')}</b><small>${T('Ruhetag – oder eine kurze Mobility-Routine', 'Rest day – or a short mobility routine')}</small></span><button type="button" class="btn small sgo" data-go="mobility">Mobility</button></div>`;
   // Diese Woche: Kraft gegen die Krafttage im Profil, Laufen gegen den Plan bzw. den Schnitt der letzten 4 Wochen, Mobility als Anzahl
   const nK = saved.filter(e => e.date >= wk && e.date <= today).length, pK = profile.week.strength.length;

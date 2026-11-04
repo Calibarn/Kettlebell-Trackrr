@@ -46,6 +46,19 @@ test.describe('mit Startseite', () => {
     await expect(page.locator('#area-kraft')).toBeVisible();
   });
 
+  test('Kraft am Lauftag: Hinweis vollständig in eigener Zeile', async ({ page }) => {
+    await page.evaluate(() => {
+      const wd = new Date(localDay() + 'T12:00:00').getDay();
+      Object.assign(profile.week, { strength: [wd], group: wd, quality: null, long: null, extraDay: null, runner: 'runner' }); persistProfile();
+      showArea('start');
+    });
+    const tip = page.locator('#startcontent .srowt .stip');
+    await expect(tip).toHaveText('Nach dem Lauf oder mit ein paar Stunden Abstand');
+    expect(await tip.evaluate(el => el.scrollHeight <= el.clientHeight + 1)).toBe(true);
+    await page.evaluate(() => { const wd = new Date(localDay() + 'T12:00:00').getDay(); Object.assign(profile.week, { group: null, quality: wd }); persistProfile(); renderStart(); });
+    await expect(tip).toHaveText('Nach dem Lauf, ohne schwere Beinübungen');
+  });
+
   test('Lauf-Einstieg und Ruhetag', async ({ page }) => {
     await page.evaluate(() => { Object.assign(profile.week, { strength: [], quality: null, long: null, group: null, extraDay: null, runner: 'beginner' }); persistProfile(); showArea('start'); });
     await expect(page.locator('#startcontent .srowt')).toContainText('Lauf-Einstieg · Woche 1');
