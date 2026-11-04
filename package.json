@@ -1,7 +1,7 @@
 {
   "name": "kettlebell-trackrr",
   "private": true,
-  "description": "Automatische Tests für die KB-Tracker-Web-App (die App selbst braucht kein Node).",
+  "description": "Automatische Tests für die Tagwerk-Web-App (die App selbst braucht kein Node).",
   "scripts": {
     "test": "playwright test"
   },

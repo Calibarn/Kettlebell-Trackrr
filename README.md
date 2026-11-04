@@ -1,6 +1,6 @@
-# Kettlebell-Trackrr
+# Tagwerk
 
-Mein persönlicher Trainings-Begleiter als Web-App für iPhone und Android – Kraft mit Tracking, Laufen und Mobility als Anleitungen.
+Mein persönlicher Trainings-Begleiter als Web-App für iPhone und Android – Kraft mit Tracking, Laufen und Mobility, jeden Tag das, was dran ist. Bis Version 1.0 hieß die App „KB Tracker“; Repo, Adresse, Speicherschlüssel und der Name der Sync-Datei (`kb-tracker-sync.json`) bleiben bewusst gleich, damit installierte Apps, Daten und Sync weiterlaufen.
 
 ## Bereiche
 

@@ -1,4 +1,4 @@
-/* Englische Texte für KB Tracker. Schlüssel = deutscher Originaltext (siehe i18n.js). */
+/* Englische Texte für Tagwerk. Schlüssel = deutscher Originaltext (siehe i18n.js). */
 const EN_TEXT = {
 "Ganzkörper": "Full body",
 "Ganzkörper · Zirkel": "Full body · Circuit",
@@ -1546,7 +1546,10 @@ const EN_TEXT = {
 "Pace Race": "Pace Race",
 "Neu bei den Rennen: Wings for Life World Run mit Ziel in km. Die App rechnet aus dem Tempo des Catcher Cars, wann es dich dort einholt, und daraus deine Mindest-Pace – dazu, wie weit deine Form etwa reicht.": "New for races: Wings for Life World Run with a goal in km. From the Catcher Car’s speed the app calculates when it catches you there and from that your minimum pace – plus roughly how far your form takes you.",
 "Neu bei den Rennen: Pace Race mit Ziel-Level. Die App zeigt das Zeitlimit der Zielrunde und plant 1-km-Wiederholungen mit 60 Sek. Pause bis ins Level-Tempo ein.": "New for races: Pace Race with a goal level. The app shows the time limit of the goal lap and plans 1 km repeats with 60 sec breaks up to level pace.",
-"Ziel-Level eintragen: Level 12 heißt 12 km und die 12. Runde in höchstens 4:50 – das ist dein Level-Tempo. Alle 12 Runden mit Pausen dauern etwa 1:22 h. Geplant wird wie für eine eigene Distanz mit so vielen km; Qualität und Longrun bekommen im Aufbau, in der spezifischen Phase und im Tapering 1-km-Wiederholungen mit 60 Sek. Stehpause bis ins Level-Tempo. Wie beim Renntempo zählt deine Form: Ist das Level-Tempo schneller als dein aktuelles 5-km-Tempo, nimmt der Plan erst mal das 5-km-Tempo.": "Enter the goal level: level 12 means 12 km and lap 12 in at most 4:50 – that is your level pace. All 12 laps with breaks take about 1:22 h. The plan treats it like a custom distance of that many km; in the build-up, specific phase and taper, quality and long run get 1 km repeats with 60 sec standing rest up to level pace. As with race pace, your form counts: if level pace is faster than your current 5 km pace, the plan uses your 5 km pace for now."
+"Ziel-Level eintragen: Level 12 heißt 12 km und die 12. Runde in höchstens 4:50 – das ist dein Level-Tempo. Alle 12 Runden mit Pausen dauern etwa 1:22 h. Geplant wird wie für eine eigene Distanz mit so vielen km; Qualität und Longrun bekommen im Aufbau, in der spezifischen Phase und im Tapering 1-km-Wiederholungen mit 60 Sek. Stehpause bis ins Level-Tempo. Wie beim Renntempo zählt deine Form: Ist das Level-Tempo schneller als dein aktuelles 5-km-Tempo, nimmt der Plan erst mal das 5-km-Tempo.": "Enter the goal level: level 12 means 12 km and lap 12 in at most 4:50 – that is your level pace. All 12 laps with breaks take about 1:22 h. The plan treats it like a custom distance of that many km; in the build-up, specific phase and taper, quality and long run get 1 km repeats with 60 sec standing rest up to level pace. As with race pace, your form counts: if level pace is faster than your current 5 km pace, the plan uses your 5 km pace for now.",
+"Neuer Name Tagwerk, Startseite „Heute“ & neue Rennformate": "New name Tagwerk, home screen “Today” & new race formats",
+"Neuer Name": "New name",
+"Die App heißt jetzt Tagwerk – sie kann längst mehr als Kettlebell: Kraft, Laufen und Mobility, jeden Tag das, was dran ist. Deine Daten und die Sync-Datei bleiben, wie sie sind. Ein schon installiertes App-Icon behält auf dem iPhone den alten Namen. Wer es neu hinzufügen will, macht vorher unbedingt „Sync speichern“ oder ein Backup – beim Entfernen kann iOS die Daten der App löschen.": "The app is now called Tagwerk – it has long done more than kettlebells: strength, running and mobility, every day whatever is due. Your data and the sync file stay as they are. An app icon that is already installed keeps its old name on the iPhone. If you want to add it again, first tap “Save sync” or make a backup – when removing it, iOS may delete the app’s data."
 };
 const EN_HTML = {
 "Heute": "Today",
@@ -1743,7 +1746,6 @@ const EN_HTML = {
 "Sync-Datei festlegen": "Set sync file",
 "Einmal wählen, danach ohne Nachfrage (Chrome/Edge am Mac/PC)": "Choose once, then no more prompts (Chrome/Edge on Mac/PC)",
 "Speicherort auf diesem Gerät (zur Erinnerung)": "Storage location on this device (as a reminder)",
-"z. B. iCloud Drive › KB Tracker": "e.g. iCloud Drive › KB Tracker",
 "Web-Apps dürfen keinen Pfad selbst öffnen – nur Dateien, die du auswählst. Der Speicherort wird beim Laden und Speichern als Hinweis angezeigt.": "Web apps may not open a path themselves – only files you choose. The location is shown as a hint when loading and saving.",
 "<b>So funktioniert der Sync</b>": "<b>How sync works</b>",
 "Eine Datei <b>kb-tracker-sync.json</b> in einem Cloud-Ordner, den alle Geräte sehen: iCloud Drive, Google Drive, OneDrive oder Dropbox.": "One file <b>kb-tracker-sync.json</b> in a cloud folder that all devices can see: iCloud Drive, Google Drive, OneDrive or Dropbox.",
@@ -1783,6 +1785,7 @@ const EN_HTML = {
 "Später": "Later",
 "Wie anstrengend war es?": "How hard was it?",
 "Anstrengung von 1 bis 10": "Effort from 1 to 10",
-"z. B. gut geschlafen, Knie gezwickt": "e.g. slept well, knee twinged"
+"z. B. gut geschlafen, Knie gezwickt": "e.g. slept well, knee twinged",
+"z. B. iCloud Drive › Tagwerk": "e.g. iCloud Drive › Tagwerk"
 };
-const EN_HTML_KEEP = ["Cooldown", "Mobility", "Sprache · Language", "iPhone", "Android", "Tabata", "Core", "<b>Updates</b>"];
+const EN_HTML_KEEP = ["Cooldown", "Mobility", "Sprache · Language", "iPhone", "Android", "Tabata", "Core", "<b>Updates</b>", "Tagwerk"];

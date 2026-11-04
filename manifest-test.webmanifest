@@ -1,7 +1,7 @@
 {
-  "name": "KB Tracker – Testversion",
-  "short_name": "KB Test",
-  "description": "Testversion des KB Trackers mit eigenem Speicher – für neue Funktionen vor der Veröffentlichung.",
+  "name": "Tagwerk – Testversion",
+  "short_name": "Tagwerk Test",
+  "description": "Testversion von Tagwerk mit eigenem Speicher – für neue Funktionen vor der Veröffentlichung.",
   "lang": "de",
   "start_url": "./",
   "scope": "./",

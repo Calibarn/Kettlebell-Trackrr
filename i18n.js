@@ -1,4 +1,4 @@
-/* KB Tracker – Sprache (Deutsch/Englisch)
+/* Tagwerk – Sprache (Deutsch/Englisch)
    Automatisch: Gerätesprache Deutsch → Deutsch, alles andere → Englisch. Unter Mehr → Sprache fest einstellbar.
    Die Daten bleiben intern deutsch (Übungsnamen sind Schlüssel, Angaben wie „45 Sek. je Seite“ werden ausgewertet).
    Übersetzt wird nur, was angezeigt oder angesagt wird:
@@ -92,7 +92,7 @@ function localizeHtml(root = document.body) {
     else { const raw = u.node.nodeValue; u.node.nodeValue = raw.match(/^\s*/)[0] + v + raw.match(/\s*$/)[0]; }
   }
 }
-// Texte, die in beiden Sprachen gleich sind (KB Tracker, Mobility, Cooldown …)
+// Texte, die in beiden Sprachen gleich sind (Tagwerk, Mobility, Cooldown …)
 const EN_HTML_SAME = new Set(typeof EN_HTML_KEEP === 'object' ? EN_HTML_KEEP : []);
 
 localizeContent();

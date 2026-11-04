@@ -1,5 +1,5 @@
 'use strict';
-/* KB Tracker – Logik. Alle Daten bleiben in localStorage auf dem Gerät. */
+/* Tagwerk (bis 1.0: KB Tracker) – Logik. Alle Daten bleiben in localStorage auf dem Gerät. */
 
 const $ = id => document.getElementById(id);
 const KEYS = {
@@ -1929,7 +1929,7 @@ function syncPayload() {
 }
 // Abgleich: Rückgabe { changed, added, updated, removed }
 function syncMerge(remote) {
-  if (!isObj(remote) || remote.kind !== 'kb-tracker-sync' || !isObj(remote.colls)) throw Error(T('Das ist keine Sync-Datei des KB Trackers.', 'This is not a KB Tracker sync file.'));
+  if (!isObj(remote) || remote.kind !== 'kb-tracker-sync' || !isObj(remote.colls)) throw Error(T('Das ist keine Sync-Datei von Tagwerk.', 'This is not a Tagwerk sync file.'));
   syncTrack();
   const m = syncMeta, rdel = isObj(remote.del) ? remote.del : {}, res = { added: 0, updated: 0, removed: 0 };
   const okTs = t => typeof t === 'number' && Number.isFinite(t) && t >= 0;
@@ -1987,7 +1987,7 @@ async function handleReady(h, write) {
 }
 // Sync-Datei einmal festlegen (Chrome/Edge am Mac/PC): vorhandene Datei wählen oder neu anlegen
 async function syncPick() {
-  const types = [{ description: 'KB Tracker Sync', accept: { 'application/json': ['.json'] } }], prev = await handleGet();
+  const types = [{ description: 'Tagwerk Sync', accept: { 'application/json': ['.json'] } }], prev = await handleGet();
   try {
     let h;
     if (confirm(T('Gibt es die Sync-Datei schon (z. B. von einem anderen Gerät)?\n\nOK = vorhandene Datei auswählen\nAbbrechen = neue Datei anlegen', 'Does the sync file already exist (e.g. from another device)?\n\nOK = choose the existing file\nCancel = create a new file'))) [h] = await window.showOpenFilePicker(Object.assign({ types }, prev ? { startIn: prev } : {}));
@@ -2016,7 +2016,7 @@ async function syncSave() {
     }
     const file = new File([json], SYNC_FILE, { type: 'application/json' });
     if (navigator.canShare && navigator.canShare({ files: [file] }) && document.documentElement.dataset.os !== 'other') {
-      await navigator.share({ files: [file], title: 'KB Tracker Sync' }); syncDone(T(`Sync übergeben – ${syncPlaceText()} sichern und die alte Datei ersetzen.`, `Sync handed over – save it ${syncPlaceText()} and replace the old file.`)); return;
+      await navigator.share({ files: [file], title: 'Tagwerk Sync' }); syncDone(T(`Sync übergeben – ${syncPlaceText()} sichern und die alte Datei ersetzen.`, `Sync handed over – save it ${syncPlaceText()} and replace the old file.`)); return;
     }
   } catch (e) { if (e && e.name === 'AbortError') return; if (e && e.message) { toast(e.message); return; } }
   download(SYNC_FILE, json, 'application/json'); syncDone(T(`Sync-Datei heruntergeladen – ${syncPlaceText()} legen und die alte ersetzen.`, `Sync file downloaded – put it ${syncPlaceText()} and replace the old one.`));
@@ -2104,7 +2104,7 @@ function seenIndex() {
 }
 function renderNotesRows() {
   $('noteshint').textContent = CHANGELOG.length ? `${T('Stand', 'As of')} ${dateGerman(CHANGELOG[0].date)}: ${CHANGELOG[0].title}` : '';
-  $('appversion').textContent = `KB Tracker · Version ${APP_VERSION}` + (KEY_NS ? T(' · Testversion', ' · test version') : '');
+  $('appversion').textContent = `Tagwerk · Version ${APP_VERSION}` + (KEY_NS ? T(' · Testversion', ' · test version') : '');
   $('notesautoval').textContent = notesOpt.auto !== false ? T('An', 'On') : T('Aus', 'Off');
 }
 // Steht das Thema schon am Textanfang („Android: …“, „„Heute dabei“: …“), wird es nicht doppelt gezeigt.
@@ -2159,11 +2159,11 @@ function renderPreUpdate() {
 function markBackup() { store(KEYS.backup, localDay()); renderBackupBanner(); }
 // Sicherung als lokale Datei: Teilen-Menü (iPhone: „In Dateien sichern“), Dateidialog oder Download – nie ein Server
 async function exportBackup() {
-  const name = `kb-tracker-backup-${localDay()}.json`, json = backupJson();
+  const name = `tagwerk-backup-${localDay()}.json`, json = backupJson();
   try {
     const file = new File([json], name, { type: 'application/json' });
     if (navigator.canShare && navigator.canShare({ files: [file] }) && document.documentElement.dataset.os !== 'other') {
-      await navigator.share({ files: [file], title: 'KB Tracker Backup' }); markBackup(); toast(T('Sicherung übergeben.', 'Backup handed over.')); return;
+      await navigator.share({ files: [file], title: 'Tagwerk Backup' }); markBackup(); toast(T('Sicherung übergeben.', 'Backup handed over.')); return;
     }
     if (window.showSaveFilePicker) {
       const h = await window.showSaveFilePicker({ suggestedName: name, types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }] });
@@ -2255,11 +2255,11 @@ function exportWaistReminder() {
   const stamp = d => `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}T${String(d.getHours()).padStart(2, '0')}${String(d.getMinutes()).padStart(2, '0')}00`;
   const until = new Date(next); until.setMinutes(until.getMinutes() + 5);
   const utc = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z');
-  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//KB Tracker//Koerpermasse//DE', 'CALSCALE:GREGORIAN', 'BEGIN:VTIMEZONE', 'TZID:Europe/Berlin',
+  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Tagwerk//Koerpermasse//DE', 'CALSCALE:GREGORIAN', 'BEGIN:VTIMEZONE', 'TZID:Europe/Berlin',
     'BEGIN:DAYLIGHT', 'TZOFFSETFROM:+0100', 'TZOFFSETTO:+0200', 'TZNAME:CEST', 'DTSTART:19700329T020000', 'RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=-1SU', 'END:DAYLIGHT',
     'BEGIN:STANDARD', 'TZOFFSETFROM:+0200', 'TZOFFSETTO:+0100', 'TZNAME:CET', 'DTSTART:19701025T030000', 'RRULE:FREQ=YEARLY;BYMONTH=10;BYDAY=-1SU', 'END:STANDARD', 'END:VTIMEZONE',
     'BEGIN:VEVENT', 'UID:jan-bauchumfang-montag-0800@kb-tracker.local', 'DTSTAMP:' + utc, 'DTSTART;TZID=Europe/Berlin:' + stamp(next), 'DTEND;TZID=Europe/Berlin:' + stamp(until),
-    'RRULE:FREQ=WEEKLY;BYDAY=MO', 'SUMMARY:' + T('Körpermaße messen', 'Measure body'), 'DESCRIPTION:' + T('Morgens vor dem Frühstück wiegen\\, Bauchumfang auf Nabelhöhe messen und im KB Tracker unter Profil eintragen.', 'Weigh yourself before breakfast\\, measure the waist at navel height and enter it in KB Tracker under Profile.'),
+    'RRULE:FREQ=WEEKLY;BYDAY=MO', 'SUMMARY:' + T('Körpermaße messen', 'Measure body'), 'DESCRIPTION:' + T('Morgens vor dem Frühstück wiegen\\, Bauchumfang auf Nabelhöhe messen und in Tagwerk unter Profil eintragen.', 'Weigh yourself before breakfast\\, measure the waist at navel height and enter it in Tagwerk under Profile.'),
     'BEGIN:VALARM', 'ACTION:DISPLAY', 'TRIGGER:PT0M', 'DESCRIPTION:' + T('Körpermaße messen', 'Measure body'), 'END:VALARM', 'END:VEVENT', 'END:VCALENDAR'];
   download('koerpermasse-erinnerung.ics', lines.map(icsFold).join('\r\n') + '\r\n', 'text/calendar;charset=utf-8');
 }
@@ -2288,8 +2288,8 @@ function planIcs(S = seasonPlan()) {
     }
   }
   for (const r of races.filter(r => r.date >= today)) add(`kb-race-${r.id}`, r.date, addDays(r.date, 1), `🏁 ${r.name} (${raceLabel(r)})`,
-    [T(`${r.prio}-Rennen`, `${r.prio} race`), r.fmt ? goalInfo(r) : r.goal ? T(`Zielzeit ${hms(r.goal)} = ${paceText(r.goal, raceKm(r))}`, `Goal time ${hms(r.goal)} = ${paceText(r.goal, raceKm(r))}`) : '', T('Warm-up: KB Tracker → Laufen → Warm-up', 'Warm-up: KB Tracker → Running → Warm-up')].filter(Boolean).join('\n'));
-  return ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//KB Tracker//Laufplan//DE', 'CALSCALE:GREGORIAN', 'X-WR-CALNAME:' + T('Laufplan', 'Running plan'), ...ev, 'END:VCALENDAR'].map(icsFold).join('\r\n') + '\r\n';
+    [T(`${r.prio}-Rennen`, `${r.prio} race`), r.fmt ? goalInfo(r) : r.goal ? T(`Zielzeit ${hms(r.goal)} = ${paceText(r.goal, raceKm(r))}`, `Goal time ${hms(r.goal)} = ${paceText(r.goal, raceKm(r))}`) : '', T('Warm-up: Tagwerk → Laufen → Warm-up', 'Warm-up: Tagwerk → Running → Warm-up')].filter(Boolean).join('\n'));
+  return ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Tagwerk//Laufplan//DE', 'CALSCALE:GREGORIAN', 'X-WR-CALNAME:' + T('Laufplan', 'Running plan'), ...ev, 'END:VCALENDAR'].map(icsFold).join('\r\n') + '\r\n';
 }
 function exportPlanIcs() {
   const S = seasonPlan(); if (!S.weeks.length) { toast(T('Zuerst ein A-Rennen eintragen.', 'Enter an A race first.')); return; }
@@ -2808,4 +2808,4 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
   navigator.serviceWorker.addEventListener('controllerchange', () => { if (hadController) toast(T('App aktualisiert – deine Daten sind unverändert.', 'App updated – your data is unchanged.')); });
   navigator.serviceWorker.register('./sw.js').catch(() => { });
 }
-$('preupdate').addEventListener('click', () => { const b = load(PRE_UPDATE_KEY, null); if (isObj(b) && typeof b.json === 'string') download(`kb-tracker-sicherung-vor-update-${localDay(new Date(b.savedAt || Date.now()))}.json`, b.json, 'application/json'); });
+$('preupdate').addEventListener('click', () => { const b = load(PRE_UPDATE_KEY, null); if (isObj(b) && typeof b.json === 'string') download(`tagwerk-sicherung-vor-update-${localDay(new Date(b.savedAt || Date.now()))}.json`, b.json, 'application/json'); });

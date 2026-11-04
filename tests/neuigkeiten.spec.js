@@ -111,7 +111,20 @@ test('Versionsnummer unter Mehr und beim Neuigkeiten-Eintrag', async ({ page }) 
   await page.evaluate(() => showArea('mehr'));
   const v = await page.evaluate(() => APP_VERSION);
   expect(v).toMatch(/^\d+\.\d+$/);
-  await expect(page.locator('#appversion')).toHaveText(`KB Tracker · Version ${v}`);
+  await expect(page.locator('#appversion')).toHaveText(`Tagwerk · Version ${v}`);
   await page.click('#notesbtn');
   await expect(page.locator('#notes-body')).toContainText('Version ' + v);
+});
+
+test('Name Tagwerk: Titel, Manifest, Version – auch auf Englisch nicht übersetzt; Sync-Datei behält ihren Namen', async ({ page }) => {
+  expect(await page.title()).toBe('Tagwerk');
+  expect(await page.locator('meta[name="apple-mobile-web-app-title"]').getAttribute('content')).toBe('Tagwerk');
+  const m = await page.evaluate(() => fetch('manifest.webmanifest').then(r => r.json()));
+  expect([m.name, m.short_name]).toEqual(['Tagwerk', 'Tagwerk']);
+  expect(await page.evaluate(() => SYNC_FILE)).toBe('kb-tracker-sync.json');
+  await page.evaluate(() => { localStorage.setItem(LANG_KEY, '"en"'); });
+  await page.reload();
+  expect(await page.evaluate(() => EN)).toBe(true);
+  await expect(page.locator('#appversion')).toHaveText(/^Tagwerk · Version /);
+  expect(await page.evaluate(() => $('syncplace').getAttribute('placeholder'))).toBe('e.g. iCloud Drive › Tagwerk');
 });

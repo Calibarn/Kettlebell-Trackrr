@@ -1,7 +1,7 @@
 {
-  "name": "KB Trainings-Tracker",
-  "short_name": "KB Tracker",
-  "description": "Kettlebell-, Band- und Körpergewicht-Training mit Timer, Verlauf und Bauchumfang. Alle Daten bleiben auf dem Gerät.",
+  "name": "Tagwerk",
+  "short_name": "Tagwerk",
+  "description": "Kraft, Laufen und Mobility – jeden Tag, was dran ist: Kettlebell-, Band- und Körpergewicht-Training mit Timer, Laufplan mit Rennen und Tempos, Mobility-Routinen. Alle Daten bleiben auf dem Gerät.",
   "lang": "de",
   "start_url": "./",
   "scope": "./",
