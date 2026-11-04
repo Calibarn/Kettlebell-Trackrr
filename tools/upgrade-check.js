@@ -52,6 +52,13 @@ const COLL = {
   weights: { key: e => e.date, pick: e => ({ date: e.date, kg: e.kg }) },
   results: { key: e => e.id }
 };
+// Bewusste Umstellungen zwischen den Versionen: so muss der alte Wert in der neuen Version aussehen
+function migrated(k, v) {
+  if (k !== 'profile' || !v || !v.week || !('extraDay' in v.week)) return v;
+  const p = JSON.parse(JSON.stringify(v)), { extraDay, extraName } = p.week; delete p.week.extraDay; delete p.week.extraName;
+  p.week.extras = Number.isInteger(extraDay) ? [{ d: extraDay, type: 'other', name: extraName || '' }] : []; // bis 1.0 eine „weitere Einheit“, ab 1.1 eine Liste
+  return p;
+}
 function compare(phase, a, b, { importLike = false, settings = true, keys = null } = {}) {
   let n = 0;
   for (const [c, d] of Object.entries(COLL)) {
@@ -67,7 +74,7 @@ function compare(phase, a, b, { importLike = false, settings = true, keys = null
     }
   }
   for (const k of ['weekSkip', 'starter']) if (a[k] !== undefined) { const diff = subset(a[k], b[k], k); diff.forEach(t => fail(phase, t)); n++; }
-  if (settings && a.settings) for (const k of keys || ['choices', 'stages', 'profile', 'audio'].concat(importLike ? [] : ['gear'])) { if (a.settings[k] === undefined) continue; subset(a.settings[k], b.settings && b.settings[k], `settings.${k}`).forEach(t => fail(phase, t)); n++; }
+  if (settings && a.settings) for (const k of keys || ['choices', 'stages', 'profile', 'audio'].concat(importLike ? [] : ['gear'])) { if (a.settings[k] === undefined) continue; subset(migrated(k, a.settings[k]), b.settings && b.settings[k], `settings.${k}`).forEach(t => fail(phase, t)); n++; }
   return n;
 }
 const counts = d => Object.keys(COLL).map(c => `${c} ${(d[c] || []).length}`).join(', ');
@@ -115,7 +122,7 @@ const counts = d => Object.keys(COLL).map(c => `${c} ${(d[c] || []).length}`).jo
       { id: 'race-20', name: 'Lauf in die Tropen', date: d(-30), dist: 'hm', prio: 'B', goal: null, km: 20 }); persistRaces();
     results.push({ id: 'res-1', date: d(-30), km: 20, time: 6900, dist: null, name: 'Lauf in die Tropen', race: 'race-20' }, { id: 'res-2', date: '2026-09-06', km: 21.0975, time: 7302, dist: 'hm', name: 'BORSIG Halbmarathon' }); persistResults();
     weekSkip[weekStart(localDay())] = ['group']; store(KEYS.skip, weekSkip);
-    profile.hr.max = 184; profile.hr.rest = 60; profile.week.strength = [1, 4]; profile.week.track = true; persistProfile();
+    profile.hr.max = 184; profile.hr.rest = 60; profile.week.strength = [1, 4]; profile.week.track = true; profile.week.extraDay = 4; profile.week.extraName = 'Regeneration'; persistProfile();
     if (PLANS.wed) updateChoice(PLANS.wed.slots[0].id, { kg: 12 });
     gear.band = false; store(KEYS.gear, gear);
   });

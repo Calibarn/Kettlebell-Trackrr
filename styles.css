@@ -527,3 +527,6 @@ body.onstart .livepill{bottom:calc(env(safe-area-inset-bottom) + 16px)}
 .gearrow .needs b{color:var(--label);font-weight:600}
 .srowt .txt small.sneed{display:block;overflow:visible;white-space:normal}
 .srowt .txt small.sneed b{color:var(--label);font-weight:600}
+#wkextras .extrarow{margin:4px 0 12px;padding-bottom:10px!important;border-bottom:.5px solid var(--sep)}
+#wkextras .kitadd input{flex:1}
+.hrest{margin:10px 0 2px}.hrest>summary{cursor:pointer;color:var(--accent-ink);list-style:none}.hrest>summary::-webkit-details-marker{display:none}

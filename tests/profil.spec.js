@@ -42,10 +42,13 @@ test('Trainingswoche: Tage aus dem Profil im Plan und im Kalender, Hinweise bei 
   await page.selectOption('#wkgroup', '');
   await page.click('[data-strength="4"]');
   await page.click('[data-strength="1"]');
-  await page.selectOption('#wkextraday', '1');
-  await page.fill('#wkextraname', 'Blaze');
-  await page.dispatchEvent('#wkextraname', 'change');
-  expect(await page.evaluate(() => profile.week)).toEqual({ group: null, quality: 4, long: 0, strength: [6, 1], extraName: 'Blaze', extraDay: 1, track: false, runner: null, strengthFixed: [], strengthPlan: {} });
+  // weitere Einheit: Montag, „Anderes“ mit Namen
+  await page.click('#wkxadd');
+  await page.selectOption('[data-xday="0"]', '1');
+  await page.selectOption('[data-xtype="0"]', 'other');
+  await page.fill('[data-xname="0"]', 'Blaze');
+  await page.dispatchEvent('[data-xname="0"]', 'change');
+  expect(await page.evaluate(() => profile.week)).toEqual({ group: null, quality: 4, long: 0, strength: [6, 1], extras: [{ d: 1, type: 'other', name: 'Blaze' }], track: false, runner: null, strengthFixed: [], strengthPlan: {} });
   await expect(page.locator('#weekpanel .alert')).toHaveCount(0);
 
   await page.reload();
@@ -192,4 +195,55 @@ test('Körpergewicht bleibt nach dem Neuladen erhalten, beiseitegelegte Werte (F
   expect(await page.evaluate(() => Object.keys(localStorage).filter(k => k.includes('unlesbar')))).toEqual([]);
   await page.reload();
   expect(await page.evaluate(() => weights.length)).toBe(2);
+});
+
+test('Weitere Einheiten: mehrere, mit Art – lockerer Lauf, zweite Qualität, Anderes; Hinweise; alte Einzel-Einheit wird übernommen', async ({ page }) => {
+  // Übernahme aus der bisherigen einen „weiteren Einheit“
+  expect(await page.evaluate(() => normProfile({ week: { extraDay: 4, extraName: 'Regeneration' } }).week.extras)).toEqual([{ d: 4, type: 'other', name: 'Regeneration' }]);
+  const date = await page.evaluate(() => addDays(localDay(), 7 * 14));
+  await page.evaluate(d => { races = [{ id: 'h', name: 'HM', date: d, dist: 'hm', prio: 'A', goal: 7140 }]; persistRaces();
+    Object.assign(profile.week, { quality: 2, long: 0, group: 3, strength: [], extras: [{ d: 4, type: 'easy', name: 'Regeneration' }, { d: 5, type: 'quality', name: '' }, { d: 6, type: 'other', name: 'Radfahren' }] }); persistProfile(); }, date);
+  const sched = await page.evaluate(() => { const S = seasonPlan(localDay(), { L0: 14, W0: 30 }); const x = S.weeks.find(w => ['base', 'build'].includes(w.phase) && !w.cut && !w.test); return weekSchedule(x).map(i => [i.d, i.kind, i.title, i.key, RUN(i), HARD(i)]); });
+  expect(sched.find(i => i[0] === 4)).toEqual([4, 'easy', 'Regeneration', 'x0', true, false]);
+  expect(sched.find(i => i[0] === 5).slice(1, 6)).toEqual(['quality2', 'Qualität 2', 'x1', true, true]);
+  expect(sched.find(i => i[0] === 6)).toEqual([6, 'extra', 'Radfahren', 'x2', false, false]);
+  // zweite Qualität ist die jeweils andere Einheit der Woche
+  const pair = await page.evaluate(() => { const S = seasonPlan(localDay(), { L0: 14, W0: 30 }); const x = S.weeks.find(w => w.phase === 'build' && !w.cut && !w.test); return [weekKey(x), weekKey(x, true)]; });
+  expect(pair[0]).not.toEqual(pair[1]);
+  // Fr-Qualität: Do ist locker, Sa „Anderes“ → kein Hinweis; auf Montag direkt vor der Di-Qualität → Hinweis
+  expect(await page.evaluate(() => weekWarnings().some(t => /2\. Qualität/.test(t)))).toBe(false);
+  await page.evaluate(() => { profile.week.extras[1].d = 1; persistProfile(); }); // Mo direkt vor Di-Qualität
+  expect(await page.evaluate(() => weekWarnings().some(t => /2\. Qualität am Montag liegt direkt neben Qualität/.test(t)))).toBe(true);
+  // im Profil: hinzufügen und entfernen, höchstens 4
+  await openProfil(page); await page.evaluate(() => renderProfile()); await openSect(page, 'sect-week');
+  await expect(page.locator('#wkextras .extrarow')).toHaveCount(3);
+  await page.click('#wkxadd');
+  await expect(page.locator('#wkextras .extrarow')).toHaveCount(4);
+  await expect(page.locator('#wkxadd')).toHaveCount(0);
+  await page.click('[data-xdel="3"]');
+  await expect(page.locator('#wkextras .extrarow')).toHaveCount(3);
+  // Startseite fragt am Tag danach auch nach dem lockeren Lauf
+  const wd = await page.evaluate(() => new Date(addDays(localDay(), -1) + 'T12:00:00').getDay());
+  await page.evaluate(d => { races = []; persistRaces(); Object.assign(profile.week, { quality: null, long: null, group: null, extras: [{ d, type: 'easy', name: 'Regeneration' }], runner: 'runner' }); persistProfile(); runLog = []; persistRunLog(); showArea('start'); }, wd);
+  await expect(page.locator('#startrun b')).toHaveText('Gestern · Regeneration');
+});
+
+test('Max. HF schätzen: Tanaka und Nes statt 220 − Alter, übernehmen setzt nur die max. HF; manuell bleibt möglich', async ({ page }) => {
+  await openProfil(page); await openSect(page, 'sect-hr');
+  await page.evaluate(() => { document.getElementById('hrestimate').open = true; });
+  await page.click('#hrestbtn');
+  await expect(page.locator('#hrage')).toHaveAttribute('aria-invalid', 'true');
+  await page.fill('#hrage', '43');
+  await page.click('#hrestbtn');
+  await expect(page.locator('#hrestout')).toContainText('Tanaka · 178 bpm');
+  await expect(page.locator('#hrestout')).toContainText('Nes (HUNT) · 183 bpm');
+  await expect(page.locator('#hrestout')).toContainText('„220 − Alter“: 177 bpm');
+  await page.click('[data-hrset="183"]');
+  expect(await page.evaluate(() => profile.hr.max)).toBe(183);
+  await expect(page.locator('#hrmax')).toHaveValue('183');
+  // ein Testwert lässt sich weiter direkt eintragen
+  await page.fill('#hrmax', '186'); await page.dispatchEvent('#hrmax', 'change');
+  expect(await page.evaluate(() => profile.hr.max)).toBe(186);
+  // das Alter wird nicht gespeichert
+  expect(await page.evaluate(() => JSON.stringify(profile).includes('43'))).toBe(false);
 });

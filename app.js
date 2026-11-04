@@ -69,11 +69,16 @@ let stages = load(KEYS.stage, {}); if (!isObj(stages)) stages = {};
 const WD = EN ? ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] : ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'], WD_LONG = EN ? ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] : ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'], WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0];
 // Neu eingerichtet: keine Kettlebell und keine Bänder – was du besitzt, trägst du im Profil ein
 const PROFILE_DEFAULT = { hr: { max: null, rest: null, z: null }, kit: { kb: [], kbDefault: KB_DEFAULT, bands: [] },
-  week: { group: 3, quality: 2, long: 0, strength: [4, 6], extraName: '', extraDay: null } };
+  week: { group: 3, quality: 2, long: 0, strength: [4, 6], extras: [] } };
 const HR_PCT = [0.5, 0.6, 0.7, 0.8, 0.9]; // Karvonen: Anteil der Herzfrequenzreserve, ab dem Zone 1–5 beginnt
 const isWd = v => Number.isInteger(v) && v >= 0 && v <= 6;
 const okNum = (v, lo, hi) => typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi;
 const okZones = z => Array.isArray(z) && z.length === 5 && z.every((v, i) => okNum(v, 30, 230) && (i === 0 || v > z[i - 1]));
+const EXTRA_TYPES = ['easy', 'quality', 'other'];
+function normExtras(wk) {
+  const raw = Array.isArray(wk.extras) ? wk.extras : isWd(wk.extraDay) ? [{ d: wk.extraDay, type: 'other', name: wk.extraName }] : [];
+  return raw.filter(e => isObj(e) && isWd(e.d)).slice(0, 4).map(e => ({ d: e.d, type: EXTRA_TYPES.includes(e.type) ? e.type : 'other', name: typeof e.name === 'string' ? e.name.slice(0, 30) : '' }));
+}
 function normProfile(p) {
   p = isObj(p) ? p : {}; const d = PROFILE_DEFAULT;
   const hr = isObj(p.hr) ? p.hr : {}, kit = isObj(p.kit) ? p.kit : {}, wk = isObj(p.week) ? p.week : {};
@@ -88,7 +93,9 @@ function normProfile(p) {
         ? { from: kit.vacation.from, to: kit.vacation.to, gear: isObj(kit.vacation.gear) ? { kb: kit.vacation.gear.kb === true, band: kit.vacation.gear.band === true, bw: kit.vacation.gear.bw !== false } : { kb: false, band: false, bw: true } } : null },
     week: { group: wk.group === null ? null : isWd(wk.group) ? wk.group : d.week.group, quality: wk.quality === null ? null : isWd(wk.quality) ? wk.quality : d.week.quality, long: wk.long === null ? null : isWd(wk.long) ? wk.long : d.week.long,
       strength,
-      extraName: typeof wk.extraName === 'string' ? wk.extraName.slice(0, 30) : '', extraDay: isWd(wk.extraDay) ? wk.extraDay : null, track: wk.track === true, runner: wk.runner === 'beginner' || wk.runner === 'runner' ? wk.runner : null,
+      // Weitere Einheiten (bis 4): Tag, Art (easy = lockerer Lauf, quality = zweite Qualität, other = anderes wie Rad oder Kurs), Name; bis 1.0 ein Feld extraDay/extraName
+      extras: normExtras(wk),
+      track: wk.track === true, runner: wk.runner === 'beginner' || wk.runner === 'runner' ? wk.runner : null,
       strengthFixed: Array.isArray(wk.strengthFixed) ? [...new Set(wk.strengthFixed.filter(d => isWd(d) && strength.includes(d)))] : [],
       // fester Kraft-Plan je Krafttag (Wochentag → Plan); fehlt er, gilt der zuletzt genutzte Plan
       strengthPlan: isObj(wk.strengthPlan) ? Object.fromEntries(Object.entries(wk.strengthPlan).filter(([d, pk]) => strength.includes(Number(d)) && typeof pk === 'string' && PLANS[pk])) : {} }
@@ -884,6 +891,11 @@ function weekWarnings(w = profile.week) {
   if (w.group !== null && w.quality !== null && w.group === w.quality) out.push(T('Laufgruppe und Qualitätseinheit liegen am selben Tag – die Laufgruppe ist als lockerer Lauf gedacht.', 'Running group and quality session are on the same day – the running group is meant as an easy run.'));
   if (w.quality !== null && w.long !== null && next(w.quality) === w.long) out.push(T(`Qualität am ${WD_LONG[w.quality]} direkt vor dem Longrun: zwei harte Tage hintereinander. Besser mindestens einen Tag Abstand.`, `Quality on ${WD_LONG[w.quality]} right before the long run: two hard days in a row. Better leave at least one day in between.`));
   if (w.quality !== null && w.long !== null && next(w.long) === w.quality) out.push(T(`Qualität am ${WD_LONG[w.quality]} direkt nach dem Longrun – die Beine sind dann selten frisch.`, `Quality on ${WD_LONG[w.quality]} right after the long run – the legs are rarely fresh then.`));
+  // zweite Qualität: nicht direkt neben Qualität oder Longrun; zwei Läufe am selben Tag vermeiden
+  const hard = [[w.quality, T('Qualität', 'Quality')], [w.long, T('Longrun', 'Long run')]].concat(w.extras.filter(e => e.type === 'quality').map(e => [e.d, e.name || T('2. Qualität', '2nd quality')])).filter(([d]) => d !== null);
+  for (const e of w.extras.filter(e => e.type === 'quality')) for (const [d, n] of hard) if (d !== e.d && (next(d) === e.d || next(e.d) === d)) { out.push(T(`${e.name || '2. Qualität'} am ${WD_LONG[e.d]} liegt direkt neben ${n} (${WD_LONG[d]}) – zwei harte Tage hintereinander. Besser einen lockeren Tag dazwischen.`, `${e.name || '2nd quality'} on ${WD_LONG[e.d]} is right next to ${n} (${WD_LONG[d]}) – two hard days in a row. Better an easy day in between.`)); break; }
+  const runDays = [w.quality, w.long, w.group, ...w.extras.filter(e => e.type !== 'other').map(e => e.d)].filter(d => d !== null);
+  if (new Set(runDays).size < runDays.length) out.push(T('Zwei Läufe am selben Tag – gemeint ist meist ein Lauf. Sonst plant die App beide ein.', 'Two runs on the same day – usually one run is meant. Otherwise the app plans both.'));
   if (w.long !== null && w.strength.includes(w.long)) out.push(T('Kraft am Longrun-Tag: nur Oberkörper oder nach dem Lauf leicht.', 'Strength on long-run day: upper body only or light after the run.'));
   return out;
 }
@@ -899,9 +911,14 @@ function renderProfile() {
       <div class="field"><label for="wkquality">${T('Qualität (Intervall/Tempo)', 'Quality (intervals/tempo)')}</label>${wdSelect('wkquality', w.quality, T('keine', 'none'))}</div>
       <div class="field"><label for="wklong">${T('Longrun', 'Long run')}</label>${wdSelect('wklong', w.long, T('keine', 'none'))}</div>
       <div class="field"><label for="wkgroup">${T('Laufgruppe (locker)', 'Running group (easy)')}</label>${wdSelect('wkgroup', w.group, T('keine', 'none'))}</div>
-      <div class="field"><label for="wkextraday">${T('Weitere Einheit', 'Other session')}</label>${wdSelect('wkextraday', w.extraDay, T('keine', 'none'))}</div>
-      <div class="field wide"><label for="wkextraname">${T('Name der weiteren Einheit', 'Name of the other session')}</label><input id="wkextraname" type="text" maxlength="30" autocomplete="off" placeholder="${T('z. B. Kurs, Radfahren', 'e.g. class, cycling')}" value="${esc(w.extraName)}"></div>
     </div>
+    <p class="tiny">${T('Weitere Einheiten – z. B. ein zweiter lockerer Lauf, eine zweite Qualität oder Rad, Kurs, Regeneration', 'Other sessions – e.g. a second easy run, a second quality session or cycling, a class, recovery')}</p>
+    <div id="wkextras">${w.extras.map((e, i) => `<div class="raceform extrarow" style="padding:0">
+      <div class="field"><label for="wkxd${i}">${T('Tag', 'Day')}</label>${wdSelect('wkxd' + i, e.d, null).replace('<select ', `<select data-xday="${i}" `)}</div>
+      <div class="field"><label for="wkxt${i}">${T('Art', 'Type')}</label><select id="wkxt${i}" data-xtype="${i}">${[['easy', T('Lockerer Lauf', 'Easy run')], ['quality', T('Intervall/Tempo (2. Qualität)', 'Intervals/tempo (2nd quality)')], ['other', T('Anderes (Rad, Kurs …)', 'Other (cycling, class …)')]].map(([v, l]) => `<option value="${v}"${e.type === v ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select></div>
+      <div class="field wide"><label for="wkxn${i}">${T('Name (optional)', 'Name (optional)')}</label><div class="kitadd" style="margin:0"><input id="wkxn${i}" data-xname="${i}" type="text" maxlength="30" autocomplete="off" placeholder="${e.type === 'other' ? T('z. B. Radfahren, Blaze', 'e.g. cycling, class') : T('z. B. Regeneration', 'e.g. recovery run')}" value="${esc(e.name)}"><button type="button" class="btn small danger" data-xdel="${i}" aria-label="${T('Einheit entfernen', 'Remove session')}">${T('Entfernen', 'Remove')}</button></div></div>
+    </div>`).join('')}</div>
+    ${w.extras.length < 4 ? `<div class="chips"><button type="button" class="chip" id="wkxadd">＋ ${T('Weitere Einheit', 'Other session')}</button></div>` : ''}
     <p class="tiny">${T('Kraft-Tage', 'Strength days')}</p><div class="chips days" role="group" aria-label="${T('Kraft-Tage', 'Strength days')}">${WEEK_ORDER.map(d => `<button type="button" class="chip" data-strength="${d}" aria-pressed="${w.strength.includes(d)}">${WD[d]}</button>`).join('')}</div>
     ${w.strength.length ? `<p class="tiny">${T('Plan je Krafttag – „frei“ nimmt den zuletzt genutzten', 'Plan per strength day – “free” uses the last one you used')}</p><div class="dayplans">${WEEK_ORDER.filter(d => w.strength.includes(d)).map(d => `<label class="dayplan"><span>${WD[d]}</span><select data-wkplan="${d}" aria-label="${T(`Kraft-Plan am ${WD_LONG[d]}`, `Strength plan on ${WD_LONG[d]}`)}"><option value="">${T('frei', 'free')}</option>${PLAN_ORDER.filter(planOwned).map(pk => `<option value="${pk}"${w.strengthPlan[d] === pk ? ' selected' : ''}>${esc(tr(PLANS[pk].tab))}</option>`).join('')}</select></label>`).join('')}</div>` : ''}
     ${w.strength.length ? `<p class="tiny">${T('Feste Krafttage – beim Nachholen kommt dort kein Lauf dazu', 'Fixed strength days – no run is added there when catching up')}</p><div class="chips days" role="group" aria-label="${T('Feste Krafttage', 'Fixed strength days')}">${WEEK_ORDER.filter(d => w.strength.includes(d)).map(d => `<button type="button" class="chip" data-strengthfix="${d}" aria-pressed="${w.strengthFixed.includes(d)}">${WD[d]}</button>`).join('')}</div>` : ''}
@@ -913,6 +930,12 @@ function renderProfile() {
       <div class="field"><label for="hrrest">${T('Ruhe-HF', 'Resting HR')}</label><input id="hrrest" type="text" inputmode="numeric" autocomplete="off" placeholder="${T('z. B. 60', 'e.g. 60')}" value="${h.rest ?? ''}"></div>
       <div class="raceactions"><button type="button" class="btn small" id="hrcalc">${T('Zonen berechnen', 'Calculate zones')}</button></div>
     </div>
+    <details class="hrest" id="hrestimate"><summary class="tiny">${T('Kein Testwert? Maximale HF schätzen', 'No test value? Estimate max HR')}</summary>
+      <div class="raceform" style="padding:8px 0 0"><div class="field"><label for="hrage">${T('Alter', 'Age')}</label><input id="hrage" type="text" inputmode="numeric" autocomplete="off" placeholder="${T('z. B. 43', 'e.g. 43')}"></div>
+        <div class="raceactions"><button type="button" class="btn small" id="hrestbtn">${T('Schätzen', 'Estimate')}</button></div></div>
+      <div id="hrestout"></div>
+      <p class="tiny">${T('Am genauesten ist ein gemessener Wert: der höchste Puls am Ende eines harten Rennens über 5–10 km mit Endspurt, oder ein Feldtest – nach gutem Aufwärmen 3 × 3 Min. bergauf so hart wie möglich mit 2 Min. Pause, der höchste Wert im letzten Abschnitt. Formeln liegen bei Einzelnen oft ±10 Schläge daneben, „220 − Alter“ noch mehr. Maximal belasten nur, wenn es gesundheitlich passt – im Zweifel vorher ärztlich abklären.', 'Most accurate is a measured value: the highest heart rate at the end of a hard 5–10 km race with a finishing sprint, or a field test – after a good warm-up 3 × 3 min uphill as hard as possible with 2 min rest, the highest value in the last section. Formulas are often ±10 beats off for individuals, “220 − age” even more. Only go all-out if your health allows it – if in doubt, check with a doctor first.')}</p>
+    </details>
     <p class="tiny">${T('Berechnet nach Karvonen aus der Herzfrequenzreserve (Zone 1 ab 50 %, Zone 2 ab 60 %, Zone 3 ab 70 %, Zone 4 ab 80 %, Zone 5 ab 90 %). Hat deine Uhr andere Grenzen, trag sie unten direkt ein.', 'Calculated with Karvonen from the heart rate reserve (zone 1 from 50 %, zone 2 from 60 %, zone 3 from 70 %, zone 4 from 80 %, zone 5 from 90 %). If your watch uses other limits, enter them directly below.')}</p>
     <div class="zonegrid">${[1, 2, 3, 4, 5].map(n => `<label class="kmin"><span>${T(`Zone ${n} ab`, `Zone ${n} from`)}</span><input type="text" inputmode="numeric" autocomplete="off" data-zone="${n}" value="${h.z ? h.z[n - 1] : ''}" aria-label="${T(`Zone ${n} ab bpm`, `Zone ${n} from bpm`)}"></label>`).join('')}</div>
     ${h.z ? `<div class="zonelist">${[1, 2, 3, 4, 5].map(n => `<span class="ph-z${n}"><b>Zone ${n}</b>${zr(n)}</span>`).join('')}</div>` : `<p class="tiny">${T('Noch keine Zonen gespeichert.', 'No zones saved yet.')}</p>`}`;
@@ -944,9 +967,25 @@ function profileChanged(what) {
 function onProfileClick(e) {
   const t = e.target;
   const sf = t.closest('[data-strengthfix]'); if (sf) { const d = Number(sf.dataset.strengthfix), f = profile.week.strengthFixed; profile.week.strengthFixed = f.includes(d) ? f.filter(x => x !== d) : f.concat(d); persistProfile(); renderProfile(); renderRun(); return; }
+  const xd = t.closest('[data-xdel]'); if (xd) { profile.week.extras.splice(Number(xd.dataset.xdel), 1); persistProfile(); renderProfile(); renderRun(); return; }
+  if (t.id === 'wkxadd') { const used = [profile.week.quality, profile.week.long, profile.week.group, ...profile.week.extras.map(e => e.d)], d = WEEK_ORDER.find(x => !used.includes(x)); profile.week.extras.push({ d: d ?? 6, type: 'easy', name: '' }); persistProfile(); renderProfile(); renderRun(); return; }
   if (t.closest('[data-wktrack]')) { profile.week.track = !profile.week.track; persistProfile(); renderProfile(); renderRun(); return; }
   const sd = t.closest('[data-strength]');
   if (sd) { const d = Number(sd.dataset.strength), s = profile.week.strength; profile.week.strength = s.includes(d) ? s.filter(x => x !== d) : s.concat(d); profileChanged('week'); return; }
+  // Max. HF schätzen: Tanaka (2001, Metaanalyse) und Nes (2013, HUNT-Studie, trainierte Erwachsene) statt „220 − Alter“; das Alter wird nicht gespeichert
+  if (t.id === 'hrestbtn') {
+    const a = intNum($('hrage').value);
+    if (!okNum(a, 15, 99)) { $('hrage').setAttribute('aria-invalid', 'true'); toast(T('Bitte das Alter eingeben (15–99).', 'Please enter your age (15–99).')); return; }
+    $('hrage').removeAttribute('aria-invalid');
+    const tan = Math.round(208 - 0.7 * a), nes = Math.round(211 - 0.64 * a), old = 220 - a;
+    $('hrestout').innerHTML = `<div class="group" style="margin:8px 0"><div class="row"><span class="txt"><b>Tanaka · ${tan} bpm</b><small>208 − 0,7 × ${a}</small></span><button type="button" class="btn small" data-hrset="${tan}">${T('Übernehmen', 'Use')}</button></div>
+      <div class="row"><span class="txt"><b>Nes (HUNT) · ${nes} bpm</b><small>211 − 0,64 × ${a}${T(' · aus einer Studie mit trainierten Erwachsenen', ' · from a study with trained adults')}</small></span><button type="button" class="btn small" data-hrset="${nes}">${T('Übernehmen', 'Use')}</button></div>
+      <div class="row"><span class="txt"><small>${T(`Zum Vergleich „220 − Alter“: ${old} bpm – die ungenaueste Formel`, `For comparison “220 − age”: ${old} bpm – the least accurate formula`)}</small></span></div></div>`;
+    return;
+  }
+  const hs = t.closest('[data-hrset]');
+  // nur die max. HF setzen – eigene Zonen (z. B. von der Uhr) bleiben, bis „Zonen berechnen“ getippt wird
+  if (hs) { const v = Number(hs.dataset.hrset); profile.hr.max = v; profileChanged('hr'); toast(T(`Max. HF ${v} übernommen – jetzt ${profile.hr.rest ? '' : 'Ruhe-HF eintragen und '}„Zonen berechnen“ tippen.`, `Max HR ${v} applied – now ${profile.hr.rest ? '' : 'enter your resting HR and '}tap “Calculate zones”.`)); return; }
   if (t.id === 'hrcalc') {
     const max = intNum($('hrmax').value), rest = intNum($('hrrest').value);
     if (!okNum(max, 100, 230) || !okNum(rest, 30, 120) || rest >= max) { toast(T('Bitte maximale HF (100–230) und Ruhe-HF (30–120) eingeben.', 'Please enter max HR (100–230) and resting HR (30–120).')); return; }
@@ -972,8 +1011,10 @@ function onProfileClick(e) {
 }
 function onProfileChange(e) {
   const t = e.target, wk = profile.week, val = t.value === '' ? null : Number(t.value);
-  if (t.id === 'wkquality') wk.quality = val; else if (t.id === 'wklong') wk.long = val; else if (t.id === 'wkgroup') wk.group = val; else if (t.id === 'wkextraday') wk.extraDay = val;
-  else if (t.id === 'wkextraname') wk.extraName = t.value.trim().slice(0, 30);
+  if (t.id === 'wkquality') wk.quality = val; else if (t.id === 'wklong') wk.long = val; else if (t.id === 'wkgroup') wk.group = val;
+  else if (t.dataset.xday !== undefined) wk.extras[Number(t.dataset.xday)].d = val;
+  else if (t.dataset.xtype !== undefined) wk.extras[Number(t.dataset.xtype)].type = t.value;
+  else if (t.dataset.xname !== undefined) wk.extras[Number(t.dataset.xname)].name = t.value.trim().slice(0, 30);
   else if (t.id === 'wklevel') wk.runner = t.value === 'beginner' || t.value === 'runner' ? t.value : null;
   else if (t.dataset.wkplan !== undefined) { const d = t.dataset.wkplan; if (PLANS[t.value]) wk.strengthPlan[d] = t.value; else delete wk.strengthPlan[d]; }
   else if (t.id === 'kbdefault') { profile.kit.kbDefault = Number(t.value); profileChanged('kit'); return; }
@@ -1439,11 +1480,12 @@ function renderPaces() {
 }
 // Gemeinsamer Block: in geraden Kalenderwochen gilt die Qualitätseinheit dem späteren Rennen – nur, wenn es andere Einheiten hat
 const mixFor = x => x.with && planKey(x.with) !== planKey(x.target) && !(isoWeek(x.week) % 2) ? x.with : null;
-function weekKey(x) {
+function weekKey(x, alt = false) {
   const odd = isoWeek(x.week) % 2, mix = mixFor(x), r = mix || x.target;
   const t = SEASON.key[x.phase] || SEASON.key.basis, list = t[planKey(r)] || t[r.dist] || t.all;
   // im gemeinsamen Block: ungerade KW die erste Einheit fürs aktuelle Ziel, gerade KW die erste fürs spätere Rennen
-  const txt = mix ? list[0] : list[odd ? 0 : 1], tp = /^(Intervall|Intervals):/.test(txt) ? trainingPaces() : null;
+  // alt: zweite Qualität der Woche – die jeweils andere Einheit des Paars
+  const txt = mix ? list[alt ? 1 : 0] : list[(odd ? 0 : 1) ^ (alt ? 1 : 0)], tp = /^(Intervall|Intervals):/.test(txt) ? trainingPaces() : null;
   return (x.cut ? T('kürzer: ', 'shorter: ') : '') + withPace(txt, r) + (tp ? ` (≈ ${hms(tp.interval)} /km)` : '') + (x.phase === 'recover' ? easyPace() : '') + (mix ? T(` · für ${mix.name}`, ` · for ${mix.name}`) : '');
 }
 function weekLongNote(x) {
@@ -1459,18 +1501,25 @@ const strengthTitle = d => { const pk = dayPlan(d); return pk ? `${T('Kraft', 'S
 const dayIdx = d => WEEK_ORDER.indexOf(d);
 function weekSchedule(x) {
   const w = profile.week, out = [], rd = x.a ? dayIdx(new Date(x.a.date + 'T12:00:00').getDay()) : 9;
-  const add = (d, kind, title, detail) => out.push({ d, kind, title, detail, plan: kind === 'strength' ? dayPlan(d) : null });
+  const add = (d, kind, title, detail, extra = {}) => out.push(Object.assign({ d, kind, title, detail, plan: kind === 'strength' ? dayPlan(d) : null }, extra));
   const before = (d, gap = 1) => dayIdx(d) <= rd - gap;
   if (x.a) add(new Date(x.a.date + 'T12:00:00').getDay(), 'race', T(`Rennen: ${x.a.name}`, `Race: ${x.a.name}`), raceLabel(x.a) + goalLine(x.a));
   if (x.bRace) add(new Date(x.bRace.date + 'T12:00:00').getDay(), 'brace', T(`B-Rennen: ${x.bRace.name}`, `B race: ${x.bRace.name}`), raceLabel(x.bRace) + goalLine(x.bRace) + (x.bSpike || x.phase === 'recover' || x.phase === 'taper' ? T(' · locker, nicht auf Zeit', ' · easy, not for time') : ''));
-  if (w.quality !== null && (!x.a || before(w.quality, 2)) && !x.bRace) add(w.quality, 'quality', x.phase === 'recover' ? T('Locker laufen', 'Easy run') : x.test ? T('Testlauf 5 km', 'Time trial 5 km') : T('Qualität', 'Quality'), x.test ? T('nach 15 Min. Einlaufen 5 km so schnell, wie du gleichmäßig durchhalten kannst – danach unter Bestzeiten eintragen, dann passen die Tempos', 'after a 15 min warm-up run 5 km as fast as you can hold evenly – then enter it under Best times so the paces update') : weekKey(x));
+  if (w.quality !== null && (!x.a || before(w.quality, 2)) && !x.bRace) add(w.quality, 'quality', x.phase === 'recover' ? T('Locker laufen', 'Easy run') : x.test ? T('Testlauf 5 km', 'Time trial 5 km') : T('Qualität', 'Quality'), x.test ? T('nach 15 Min. Einlaufen 5 km so schnell, wie du gleichmäßig durchhalten kannst – danach unter Bestzeiten eintragen, dann passen die Tempos', 'after a 15 min warm-up run 5 km as fast as you can hold evenly – then enter it under Best times so the paces update') : weekKey(x), { easy: x.phase === 'recover' });
   if (w.group !== null && (!x.a || before(w.group))) add(w.group, 'group', T('Laufgruppe', 'Running group'), hrize(x.a ? T('ganz locker, Zone 2', 'very easy, Zone 2') : T('locker, Zone 2', 'easy, Zone 2')) + easyPace());
   if (!x.a && !x.bLong && w.long !== null) { const lv = kmRound(x.long); add(w.long, 'long', x.noLong ? T('Locker oder frei', 'Easy or rest') : lv ? T(`Longrun ca. ${lv} km`, `Long run approx. ${lv} km`) : T('Longrun', 'Long run'), weekLongNote(x)); }
   for (const d of w.strength) if (!x.a || before(d, 2)) add(d, 'strength', strengthTitle(d), x.a ? T('leicht, keine schweren Beinübungen', 'light, no heavy leg exercises') : x.phase === 'taper' ? T('ohne schwere Beinübungen', 'without heavy leg exercises') : x.phase === 'recover' ? T('leicht', 'light') : '');
-  if (w.extraDay !== null && (!x.a || before(w.extraDay))) add(w.extraDay, 'extra', w.extraName || T('Weitere Einheit', 'Other session'), '');
+  // Weitere Einheiten: lockerer Lauf, zweite Qualität (die andere Einheit der Woche; in Erholung, Tapering und B-Rennwoche locker) oder anderes
+  w.extras.forEach((e, i) => {
+    const key = 'x' + i, easyRun = () => add(e.d, 'easy', e.name || T('Lockerer Lauf', 'Easy run'), hrize(T('locker, Zone 2', 'easy, Zone 2')) + easyPace(), { key });
+    if (x.a && !before(e.d, e.type === 'quality' ? 2 : 1)) return;
+    if (e.type === 'easy') easyRun();
+    else if (e.type === 'quality') { if (['recover', 'taper'].includes(x.phase) || x.bRace || x.test) add(e.d, 'quality2', e.name || T('Lockerer Lauf', 'Easy run'), hrize(T('locker statt Tempo, Zone 2', 'easy instead of speed, Zone 2')) + easyPace(), { key, easy: true }); else add(e.d, 'quality2', e.name || T('Qualität 2', 'Quality 2'), weekKey(x, true), { key }); }
+    else add(e.d, 'extra', e.name || T('Weitere Einheit', 'Other session'), '', { key });
+  });
   const skip = weekSkip[x.week] || [], wp = curWeekPlan(x.week);
   for (const it of out) {
-    it.key = it.kind === 'strength' ? 'strength-' + it.d : it.kind; it.skip = skip.includes(it.key);
+    it.key = it.key || (it.kind === 'strength' ? 'strength-' + it.d : it.kind); it.skip = skip.includes(it.key);
     if (wp) {
       it.done = wp.done.includes(it.key); if (isWd(wp.moved[it.key])) { it.from = it.d; it.d = wp.moved[it.key]; }
     }
@@ -1500,8 +1549,8 @@ const storeWeekPlan = () => store(KEYS.weekplan, weekPlan);
 // bevorzugt ein Tag ohne andere Einheit, sonst ein Tag ohne weiteren Lauf.
 // Kraft und Laufen gehen parallel: Ein Lauf darf auf einen Krafttag rücken (die Kraft bleibt, außer an festen Krafttagen kommt dort kein Lauf dazu),
 // verpasste Kraft auf einen freien Tag oder zu einem lockeren Lauf – nicht zu Qualität, Longrun oder Rennen.
-const HARD = it => ['quality', 'long', 'race', 'brace'].includes(it.kind) && !(it.kind === 'quality' && /Locker|Easy/.test(it.title));
-const RUN = it => ['quality', 'long', 'group', 'race', 'brace'].includes(it.kind);
+const HARD = it => ['quality', 'quality2', 'long', 'race', 'brace'].includes(it.kind) && !(['quality', 'quality2'].includes(it.kind) && it.easy);
+const RUN = it => ['quality', 'quality2', 'long', 'group', 'easy', 'race', 'brace'].includes(it.kind);
 // Feste Krafttage (Profil): beim Nachholen kommt dort kein Lauf dazu
 const fixedStrength = o => o.kind === 'strength' && profile.week.strengthFixed.includes(o.from !== undefined ? o.from : o.d);
 function catchUpDay(it, items) {
@@ -1859,7 +1908,8 @@ function todayItems() {
     w.long === wd && { kind: 'long', title: T('Longrun', 'Long run'), detail: hrize(T('locker, Zone 2', 'easy, Zone 2')) },
     w.group === wd && { kind: 'group', title: T('Laufgruppe', 'Running group'), detail: hrize(T('locker, Zone 2', 'easy, Zone 2')) },
     w.strength.includes(wd) && { kind: 'strength', plan: dayPlan(wd), base: '', sameDay: [w.quality, w.long].includes(wd) ? 'hard' : w.group === wd ? 'easy' : null },
-    w.extraDay === wd && { kind: 'extra', title: w.extraName || T('Weitere Einheit', 'Other session'), detail: '' }].filter(Boolean);
+    ...w.extras.filter(e => e.d === wd).map(e => e.type === 'easy' ? { kind: 'easy', title: e.name || T('Lockerer Lauf', 'Easy run'), detail: hrize(T('locker, Zone 2', 'easy, Zone 2')) }
+      : e.type === 'quality' ? { kind: 'quality2', title: e.name || T('Qualität 2', 'Quality 2'), detail: T('Intervall oder Tempo', 'Intervals or tempo') } : { kind: 'extra', title: e.name || T('Weitere Einheit', 'Other session'), detail: '' })].filter(Boolean);
   // Kraft am Lauftag: der Hinweis steht kurz in einer eigenen Zeile (im Wochenplan ausführlicher)
   const tip = it => !it.sameDay ? '' : it.base && /Beinübungen|leg exercises/.test(it.base) ? T('Nach dem Lauf', 'After the run') : it.sameDay === 'hard' ? T('Nach dem Lauf, ohne schwere Beinübungen', 'After the run, no heavy leg exercises') : T('Nach dem Lauf oder mit ein paar Stunden Abstand', 'After the run or a few hours apart');
   for (const it of items) out.push(it.kind === 'strength' ? Object.assign(kraft(it.plan || plan), { done: it.done, note: it.sameDay ? it.base : it.detail, tip: tip(it) }) : Object.assign({}, it, { act: RUN(it) ? 'plan' : null }));
@@ -1910,13 +1960,14 @@ function saveStartResult(id) {
 function logRaceRun(date, km) { if (runLog.some(x => x.date === date) || !(km >= 0.5)) return '.'; addRun(date, km); return T(` – ${kmText(km)} km im Umfang.`, ` – ${kmText(km)} km in volume.`); }
 /* Startseite: ab dem Tag nach einem geplanten Lauf nach den km fragen (bis 7 Tage zurück), damit die Wochen-km stimmen.
    Erledigt, sobald an dem Tag ein Lauf eingetragen ist, die Woche eine eigene Wochensumme hat oder die Einheit „entfällt“. */
-const RUN_ASK_DAYS = 7, RUN_KINDS = ['quality', 'long', 'group'];
+const RUN_ASK_DAYS = 7, RUN_KINDS = ['quality', 'quality2', 'long', 'group', 'easy'];
 function plannedRunsOn(day, cache = {}) {
   const w = profile.week, wd = new Date(day + 'T12:00:00').getDay(), wk = weekStart(day), skip = weekSkip[wk] || [];
   if (!(wk in cache)) { const S = seasonPlan(wk === weekStart(localDay()) ? localDay() : wk); cache[wk] = S.weeks[0] && S.weeks[0].week === wk ? weekSchedule(S.weeks[0]) : null; }
   const items = cache[wk] ? cache[wk].filter(o => o.d === wd && RUN_KINDS.includes(o.kind))
     : [w.quality === wd && { kind: 'quality', key: 'quality', title: T('Qualität', 'Quality'), detail: '' }, w.long === wd && { kind: 'long', key: 'long', title: T('Longrun', 'Long run'), detail: '' },
-      w.group === wd && { kind: 'group', key: 'group', title: T('Laufgruppe', 'Running group'), detail: '' }].filter(Boolean);
+      w.group === wd && { kind: 'group', key: 'group', title: T('Laufgruppe', 'Running group'), detail: '' },
+      ...w.extras.map((e, i) => ({ e, i })).filter(({ e }) => e.d === wd && e.type !== 'other').map(({ e, i }) => ({ kind: e.type === 'easy' ? 'easy' : 'quality2', key: 'x' + i, title: e.name || (e.type === 'easy' ? T('Lockerer Lauf', 'Easy run') : T('Qualität 2', 'Quality 2')), detail: '' }))].filter(Boolean);
   return items.filter(o => !o.skip && !skip.includes(o.key));
 }
 function pendingRun() {
@@ -2497,7 +2548,7 @@ function planIcs(S = seasonPlan()) {
     for (const it of sched) {
       const day = addDays(x.week, dayIdx(it.d));
       if (it.kind === 'race' || it.kind === 'brace' || it.skip || day < today) continue;
-      add(`kb-${it.kind}-${day}`, day, addDays(day, 1), it.kind === 'quality' && x.phase !== 'recover' && !x.test ? T(`Qualität: ${it.detail}`, `Quality: ${it.detail}`) : it.title, it.detail, true);
+      add(`kb-${/^x[1-9]/.test(it.key) ? it.kind + '-' + it.key : it.kind}-${day}`, day, addDays(day, 1), (it.kind === 'quality' || it.kind === 'quality2') && !it.easy && !x.test ? T(`Qualität: ${it.detail}`, `Quality: ${it.detail}`) : it.title, it.detail, true);
     }
   }
   for (const r of races.filter(r => r.date >= today)) add(`kb-race-${r.id}`, r.date, addDays(r.date, 1), `🏁 ${r.name} (${raceLabel(r)})`,
