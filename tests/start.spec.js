@@ -175,3 +175,66 @@ test('Startseite: beim Kraft-Eintrag steht, was du bereitlegen solltest', async 
   await page.evaluate(() => { profile.kit.vacation = { from: localDay(), to: addDays(localDay(), 3), gear: { kb: false, band: false, bw: true } }; persistProfile(); renderStart(); });
   await expect(row.locator('.sneed')).not.toContainText('Kettlebell');
 });
+
+test.describe('Lauf nachtragen', () => {
+  const yWd = page => page.evaluate(() => new Date(addDays(localDay(), -1) + 'T12:00:00').getDay());
+  test('am Tag nach dem geplanten Lauf fragt die Startseite nach den km und trägt sie in den Umfang ein', async ({ page }) => {
+    const wd = await yWd(page);
+    await page.evaluate(d => { profile.week = Object.assign(profile.week, { group: d, quality: null, long: null, runner: 'runner' }); persistProfile(); runLog = []; persistRunLog(); showArea('start'); }, wd);
+    await expect(page.locator('#startrun b')).toHaveText('Gestern · Laufgruppe');
+    await page.click('[data-runsave]');
+    await expect(page.locator('#srunkm')).toHaveAttribute('aria-invalid', 'true');
+    await page.fill('#srunkm', '8,5');
+    await page.click('[data-runsave]');
+    await expect(page.locator('#startrun')).toHaveCount(0);
+    expect(await page.evaluate(() => runLog.map(r => [r.date, r.km]))).toEqual([[await page.evaluate(() => addDays(localDay(), -1)), 8.5]]);
+    await expect(page.locator('#toast')).toContainText('8,5 km am');
+  });
+  test('„Nicht gelaufen“ markiert die Einheit als entfallen; eine Wochensumme oder der Lauf-Einstieg fragen nicht', async ({ page }) => {
+    const wd = await yWd(page);
+    await page.evaluate(d => { profile.week = Object.assign(profile.week, { group: null, quality: null, long: d, runner: 'runner' }); persistProfile(); runLog = []; persistRunLog(); showArea('start'); }, wd);
+    await expect(page.locator('#startrun b')).toHaveText('Gestern · Longrun');
+    await page.click('[data-runskip]');
+    await expect(page.locator('#startrun')).toHaveCount(0);
+    expect(await page.evaluate(() => weekSkip[weekStart(addDays(localDay(), -1))])).toContain('long');
+    // Wochensumme statt einzelner Läufe: keine Frage
+    await page.evaluate(() => { const w = weekStart(addDays(localDay(), -1)); weekSkip[w] = []; store(KEYS.skip, weekSkip); setWeekKm(w, 'km', 30); renderStart(); });
+    await expect(page.locator('#startrun')).toHaveCount(0);
+    // Lauf-Einstieg: keine Frage
+    await page.evaluate(() => { runWeeks = []; persistRunWeeks(); profile.week.runner = 'beginner'; persistProfile(); renderStart(); });
+    await expect(page.locator('#startrun')).toHaveCount(0);
+  });
+  test('Rennergebnis trägt die km auch in den Umfang ein, außer am Tag ist schon ein Lauf', async ({ page }) => {
+    const y = await page.evaluate(() => addDays(localDay(), -1));
+    await page.evaluate(d => { profile.week = Object.assign(profile.week, { group: null, quality: null, long: null, runner: 'runner' }); persistProfile(); races = [{ id: 'k', name: 'Stadtlauf', date: d, dist: '10k', prio: 'B', goal: null }]; persistRaces(); runLog = []; persistRunLog(); showArea('start'); }, y);
+    for (const [i, v] of ['', '52', '10'].entries()) await page.fill(`#srestime [data-tpart="${i}"]`, v);
+    await page.click('[data-ressave="k"]');
+    await expect(page.locator('#toast')).toContainText('10 km im Umfang');
+    expect(await page.evaluate(() => runLog.map(r => [r.date, r.km]))).toEqual([[y, 10]]);
+  });
+});
+
+test('Bestzeiten: eigene Reiter für Wings for Life (weiteste Strecke) und Pace Race (bestes Level)', async ({ page }) => {
+  await page.evaluate(() => {
+    races = [{ id: 'w', name: 'Wings for Life', date: '2026-05-10', dist: 'hm', prio: 'A', goal: null, km: 20, fmt: 'wfl' }, { id: 'w2', name: 'Wings for Life', date: '2027-05-09', dist: 'hm', prio: 'A', goal: null, km: 20, fmt: 'wfl' },
+      { id: 'p', name: 'Pace Race Berlin', date: '2026-06-13', dist: '10k', prio: 'A', goal: null, km: 12, fmt: 'pace', level: 11.753 }];
+    persistRaces();
+    results = [{ id: 'r1', date: '2026-05-10', km: 17.2, time: Math.round(carTime(17.2)), dist: null, name: 'Wings for Life', race: 'w' }, { id: 'r2', date: '2027-05-09', km: 18.4, time: Math.round(carTime(18.4)), dist: null, name: 'Wings for Life', race: 'w2' },
+      { id: 'r3', date: '2026-09-06', km: 21.0975, time: 7300, dist: 'hm', name: 'HM' }];
+    persistResults(); bestView.group = 'hm'; showArea('laufen');
+  });
+  await page.click('[data-runtab="plan"]'); await page.click('[data-runsub="bestzeiten"]');
+  // keine eigenen Reiter „17,2 km“ / „18,4 km“
+  await expect(page.locator('#bestgroups [data-bestgroup]')).toHaveText(['Halbmarathon', 'Wings for Life', 'Pace Race']);
+  await page.click('[data-bestgroup="wfl"]');
+  await expect(page.locator('#bestcard .longnext b')).toHaveText('18,4 km');
+  await expect(page.locator('#bestkmfield')).toBeHidden(); // Formular nicht mit „NaN“ vorbelegt
+  await expect(page.locator('#bestcard')).toContainText('+1,2 km');
+  await expect(page.locator('#bestlist .row')).toHaveCount(2);
+  await page.click('[data-bestgroup="pace"]');
+  await expect(page.locator('#bestcard .longnext b')).toHaveText('Level 11,753');
+  await page.click('#bestlist [data-leveldel="p"]');
+  expect(await page.evaluate(() => races.find(r => r.id === 'p').level)).toBeUndefined();
+  // Wings for Life zählt weiter für die Tempos
+  expect(await page.evaluate(() => fitnessRef('2027-05-20').r.id)).toBe('r2');
+});
