@@ -184,3 +184,10 @@ test('Umfang zeigt Rennen aus dem Ergebnis ohne Löschen; Ergebnis speichern mel
   await expect(page.locator('#runlist .racerun [data-rundel]')).toHaveCount(0);
   await expect(page.locator('#runlist [data-rundel]')).toHaveCount(1);
 });
+
+test('Zeit, Ø-Puls und Art des Laufs bleiben beim Import einer Sicherung erhalten, Ungültiges fällt weg', async ({ page }) => {
+  await page.setInputFiles('#importfile', { name: 'b.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({ version: 3, entries: [],
+    runLog: [{ id: 'r1', date: '2026-10-20', km: 12, sec: 4300, hr: 141, kind: 'long' }, { id: 'r2', date: '2026-10-22', km: 6, sec: 5, hr: 999, kind: 'quatsch' }] })) });
+  await expect.poll(() => page.evaluate(() => runLog.length)).toBe(2);
+  expect(await page.evaluate(() => runLog.map(r => JSON.stringify(r)))).toEqual(['{"id":"r1","date":"2026-10-20","km":12,"sec":4300,"hr":141,"kind":"long"}', '{"id":"r2","date":"2026-10-22","km":6}']);
+});

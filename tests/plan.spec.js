@@ -290,6 +290,18 @@ test('B-Rennen zählt in die Woche: ersetzt Qualität bzw. Longrun, Warnung bei 
   await expect(page.locator('#planratio')).toContainText('% deiner Wochen-km');
 });
 
+test('B-Rennen im Plan: kurzes Rennen ist die Tempoeinheit, ab HM der Longrun – mit Hinweis, wie man es läuft', async ({ page }) => {
+  await setRaces(page, [
+    { id: 'a', name: 'London', date: '2027-04-25', dist: 'marathon', prio: 'A', goal: null },
+    { id: 'z', name: 'Zehner', date: '2027-01-17', dist: '10k', prio: 'B', goal: null },
+    { id: 'h', name: 'Test-HM', date: '2027-03-14', dist: 'hm', prio: 'B', goal: null }
+  ]);
+  const r = await page.evaluate(() => { const S = seasonPlan('2026-11-04', { L0: 22, W0: 50 }); const d = id => { const x = S.weeks.find(w => w.bRace && w.bRace.id === id); return x && [x.phase, weekSchedule(x).find(i => i.kind === 'brace').detail, weekSchedule(x).some(i => i.kind === 'quality')]; }; return { z: d('z'), h: d('h') }; });
+  expect(r.z[1]).toContain('ersetzt die Qualität: deine Tempoeinheit der Woche – voll laufen');
+  expect(r.z[2]).toBe(false);
+  expect(r.h[1]).toContain('ersetzt Qualität und Longrun – als Formtest voll laufen oder im Renntempo für London');
+});
+
 test('Bestzeiten: Ergebnisse je Distanz, neue Bestzeit erkennen, Verlauf, Prognose, aus Rennen übernehmen', async ({ page }) => {
   await setRaces(page, [{ id: 'past', name: 'Lauf in den Tropen', date: '2026-10-11', dist: 'hm', prio: 'B', goal: null, km: 20 }]);
   await openPlan(page, 'bestzeiten');

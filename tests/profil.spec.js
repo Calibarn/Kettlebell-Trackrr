@@ -225,10 +225,10 @@ test('Weitere Einheiten: mehrere, mit Art – lockerer Lauf, zweite Qualität, A
   // Startseite fragt am Tag danach auch nach dem lockeren Lauf
   const wd = await page.evaluate(() => new Date(addDays(localDay(), -1) + 'T12:00:00').getDay());
   await page.evaluate(d => { races = []; persistRaces(); Object.assign(profile.week, { quality: null, long: null, group: null, extras: [{ d, type: 'easy', name: 'Regeneration' }], runner: 'runner' }); persistProfile(); runLog = []; persistRunLog(); showArea('start'); }, wd);
-  await expect(page.locator('#startrun b')).toHaveText('Gestern · Regeneration');
+  await expect(page.locator('#startrun .srowt b')).toHaveText('Gestern · Regeneration');
   // Art „Regenerationslauf“: zählt als lockerer Lauf, eigener Name und Hinweis
   await page.evaluate(d => { profile.week.extras = [{ d, type: 'recovery', name: '' }]; persistProfile(); renderStart(); }, wd);
-  await expect(page.locator('#startrun b')).toHaveText('Gestern · Regenerationslauf');
+  await expect(page.locator('#startrun .srowt b')).toHaveText('Gestern · Regenerationslauf');
   const rec = await page.evaluate(d => { races = [{ id: 'h', name: 'HM', date: d, dist: 'hm', prio: 'A', goal: 7140 }]; const S = seasonPlan(localDay(), { L0: 14, W0: 30 }); const x = S.weeks.find(w => w.phase === 'base'), it = weekSchedule(x).find(i => i.key === 'x0'); races = []; return it && [it.kind, it.title, it.detail, RUN(it), HARD(it)]; }, date);
   expect(rec).toEqual(['easy', 'Regenerationslauf', 'sehr locker, 20–40 Min., Zone 1', true, false]);
   await openProfil(page); await page.evaluate(() => renderProfile()); await openSect(page, 'sect-week');

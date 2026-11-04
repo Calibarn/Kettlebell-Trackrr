@@ -180,7 +180,7 @@ test.describe('Lauf nachtragen', () => {
   test('am Tag nach dem geplanten Lauf fragt die Startseite nach den km und trägt sie in den Umfang ein', async ({ page }) => {
     const wd = await yWd(page);
     await page.evaluate(d => { profile.week = Object.assign(profile.week, { group: d, quality: null, long: null, runner: 'runner' }); persistProfile(); runLog = []; persistRunLog(); showArea('start'); }, wd);
-    await expect(page.locator('#startrun b')).toHaveText('Gestern · Laufgruppe');
+    await expect(page.locator('#startrun .srowt b')).toHaveText('Gestern · Laufgruppe');
     await page.click('[data-runsave]');
     await expect(page.locator('#srunkm')).toHaveAttribute('aria-invalid', 'true');
     await page.fill('#srunkm', '8,5');
@@ -192,7 +192,7 @@ test.describe('Lauf nachtragen', () => {
   test('„Nicht gelaufen“ markiert die Einheit als entfallen; eine Wochensumme oder der Lauf-Einstieg fragen nicht', async ({ page }) => {
     const wd = await yWd(page);
     await page.evaluate(d => { profile.week = Object.assign(profile.week, { group: null, quality: null, long: d, runner: 'runner' }); persistProfile(); runLog = []; persistRunLog(); showArea('start'); }, wd);
-    await expect(page.locator('#startrun b')).toHaveText('Gestern · Longrun');
+    await expect(page.locator('#startrun .srowt b')).toHaveText('Gestern · Longrun');
     await page.click('[data-runskip]');
     await expect(page.locator('#startrun')).toHaveCount(0);
     expect(await page.evaluate(() => weekSkip[weekStart(addDays(localDay(), -1))])).toContain('long');
@@ -228,6 +228,42 @@ test.describe('Lauf nachtragen', () => {
     await page.click('[data-runskip]');
     await expect(page.locator('#startcontent .sres')).toHaveCount(0);
     expect(await page.evaluate(() => load(KEYS.runask, null))).toBe(await d(0));
+  });
+  test('Zeit und Ø-Puls optional: Auswertung gegen Zone 2 und lockeres Tempo, bei Intervallen ohne Wertung', async ({ page }) => {
+    const wd = await page.evaluate(() => new Date(addDays(localDay(), -1) + 'T12:00:00').getDay());
+    const setup = kind => page.evaluate(([w, k]) => { profile.week = Object.assign(profile.week, { group: null, quality: k === 'q' ? w : null, long: k === 'l' ? w : null, extras: [], runner: 'runner' });
+      profile.hr = Object.assign({}, profile.hr, { max: 185, rest: 55, z: hrZonesFrom(185, 55) }); persistProfile(); // Zone 2: 133–145
+      results = [{ id: 'r', date: addDays(localDay(), -40), km: 10, time: 3000, dist: '10k' }]; persistResults(); // locker 6:00–6:30 /km
+      races = []; persistRaces(); runLog = []; persistRunLog(); localStorage.removeItem(KEYS.runask); startFeedback = null; showArea('start'); }, [wd, kind]);
+    const fill = async (km, t, hr) => { await page.fill('#srunkm', km); for (const [i, v] of t.entries()) await page.fill(`#sruntime [data-tpart="${i}"]`, v); await page.fill('#srunhr', hr); await page.click('[data-runsave]'); };
+    await setup('l');
+    // ungültiger Puls wird markiert, nichts gespeichert
+    await fill('14', ['1', '24', '00'], '30');
+    await expect(page.locator('#srunhr')).toHaveAttribute('aria-invalid', 'true');
+    expect(await page.evaluate(() => runLog.length)).toBe(0);
+    await fill('14', ['1', '24', '00'], '138');
+    await expect(page.locator('#startfb')).toContainText('14\u00a0km · 1:24:00 · 6:00\u00a0/km · Ø\u00a0138\u00a0bpm');
+    await expect(page.locator('#startfb .sfbtext')).toHaveText('✓ Super – alles im empfohlenen Bereich.');
+    await expect(page.locator('#startfb svg.chk')).toHaveCount(2);
+    expect(await page.evaluate(() => { const r = runLog[0]; return [r.km, r.sec, r.hr, r.kind]; })).toEqual([14, 5040, 138, 'long']);
+    await page.click('[data-fbclose]');
+    await expect(page.locator('#startfb')).toHaveCount(0);
+    // in der Liste unter Umfang
+    await page.evaluate(() => { showArea('laufen'); }); await page.click('[data-runtab="umfang"]');
+    await expect(page.locator('#runlist')).toContainText('1:24:00 · 6:00\u00a0/km · Ø\u00a0138\u00a0bpm · ✓ im Bereich');
+    // Puls zu hoch bei passendem Tempo
+    await setup('l');
+    await fill('10', ['1', '02', '00'], '152');
+    await expect(page.locator('#startfb .sfbtext')).toContainText('Das Tempo passte, der Puls lag trotzdem über Zone 2');
+    // ohne Zeit und Puls: keine Auswertung
+    await setup('l');
+    await page.fill('#srunkm', '8'); await page.click('[data-runsave]');
+    await expect(page.locator('#startfb')).toHaveCount(0);
+    // Intervall: Werte ja, Wertung nein
+    await setup('q');
+    await fill('9', ['', '50', '00'], '160');
+    await expect(page.locator('#startfb .sfbtext')).toHaveText('Bei Intervall- und Tempoeinheiten sagt der Durchschnitt wenig – entscheidend sind die schnellen Abschnitte.');
+    await expect(page.locator('#startfb svg.chk')).toHaveCount(0);
   });
   test('mehrere offene Läufe auf einmal als „nicht gelaufen“ markieren', async ({ page }) => {
     const wd = await page.evaluate(() => new Date(addDays(localDay(), -1) + 'T12:00:00').getDay());

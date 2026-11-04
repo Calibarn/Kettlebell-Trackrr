@@ -47,7 +47,7 @@ const COLL = {
   entries: { key: e => e.id },
   waist: { key: e => e.date, pick: e => ({ date: e.date, cm: e.cm, note: e.note || '' }) },
   runWeeks: { key: e => e.week, pick: e => ({ week: e.week, km: e.km ?? null, long: e.long ?? null }) },
-  runLog: { key: e => e.id, pick: e => ({ id: e.id, date: e.date, km: e.km }) },
+  runLog: { key: e => e.id, pick: e => ({ id: e.id, date: e.date, km: e.km, sec: e.sec, hr: e.hr, kind: e.kind }) }, // Zeit, Puls, Art ab 1.1
   races: { key: e => e.id },
   weights: { key: e => e.date, pick: e => ({ date: e.date, kg: e.kg }) },
   results: { key: e => e.id }
@@ -166,6 +166,9 @@ const counts = d => Object.keys(COLL).map(c => `${c} ${(d[c] || []).length}`).jo
 
   // ---------- 3. Sicherung Testversion → Testversion ----------
   note('## 3. Sicherung Testversion → Testversion');
+  // Felder, die es erst in der Testversion gibt, mit durch den Rück-Import schicken (Lauf mit Zeit, Puls und Art)
+  await page.evaluate(() => { if (typeof runExtra === 'function') addRun(addDays(localDay(), -2), 9.5, { sec: 3300, hr: 141, kind: 'easy' }); });
+  const I2 = await snapshot(page);
   const backupDev = await download(page, () => exportBackup());
   await ctxB.close();
   const ctxC = await newCtx(); page = await open(ctxC, '/dev/index.html');
@@ -173,7 +176,7 @@ const counts = d => Object.keys(COLL).map(c => `${c} ${(d[c] || []).length}`).jo
   await page.reload(); await page.waitForFunction(() => typeof backupJson === 'function');
   const R = await snapshot(page);
   note(`Testversion nach Rück-Import: ${counts(R)}`);
-  n = compare('Test → Test', I, R, { importLike: true });
+  n = compare('Test → Test', I2, R, { importLike: true });
   if (page.errs.length) fail('Test → Test', 'Fehler in der Konsole: ' + page.errs.join(' | '));
   note(`${n} Einträge/Einstellungen verglichen\n`);
   await ctxC.close();
