@@ -1143,7 +1143,8 @@ const validRace = e => isObj(e) && typeof e.id === 'string' && typeof e.name ===
   && Object.prototype.hasOwnProperty.call(SEASON.dist, e.dist) && (e.prio === 'A' || e.prio === 'B')
   && (e.goal === null || e.goal === undefined || (Number.isInteger(e.goal) && e.goal >= 60 && e.goal <= 86400))
   && (e.km === null || e.km === undefined || okNum(e.km, 1, 100))
-  && (e.fmt === undefined || (e.fmt === 'wfl' && okNum(e.km, 1, 100)) || (e.fmt === 'pace' && Number.isInteger(e.km) && e.km >= 1 && e.km <= PACE_RACE.levels));
+  && (e.fmt === undefined || (e.fmt === 'wfl' && okNum(e.km, 1, 100)) || (e.fmt === 'pace' && Number.isInteger(e.km) && e.km >= 1 && e.km <= PACE_RACE.levels))
+  && (e.dns === undefined || e.dns === true) && (e.level === undefined || (e.fmt === 'pace' && okNum(e.level, 0, PACE_RACE.levels)));
 // Eigene Distanz (z. B. 20 km): geplant wird nach der nächstliegenden Kategorie, angezeigt und gerechnet mit den echten km
 const distForKm = km => km <= 7.5 ? '5k' : km <= 15 ? '10k' : km <= 30 ? 'hm' : 'marathon';
 const raceKm = r => r.km || SEASON.dist[r.dist].km;
@@ -1559,6 +1560,8 @@ function renderPlanSeason(S) {
   <p class="footer">${T('Am besten in einen eigenen Kalender „Laufplan“ importieren. Bei einem späteren Export diesen Kalender leeren und neu importieren – der Plan rechnet jede Woche mit deinem echten Umfang neu.', 'Best import into a separate “Running plan” calendar. For a later export empty this calendar and import again – the plan recalculates every week with your real volume.')}</p>`;
 }
 let raceEdit = null;
+// Vergangene Rennen: Ergebnis, Level oder „nicht gelaufen“ statt nur „vorbei“
+const pastText = r => { const x = raceResult(r); return r.dns ? T(' · nicht gelaufen', ' · not run') : r.level !== undefined ? T(` · geschafft: Level ${levelText(r.level)}`, ` · reached: level ${levelText(r.level)}`) : x ? T(` · gelaufen: ${r.fmt === 'wfl' ? kmText(x.km) + ' km in ' : ''}${hms(x.time)}`, ` · ran: ${r.fmt === 'wfl' ? kmText(x.km) + ' km in ' : ''}${hms(x.time)}`) : T(' · vorbei', ' · past'); };
 const raceKmLabel = sel => sel === 'wfl' ? T('Ziel in km', 'Goal in km') : sel === 'pace' ? T(`Ziel-Level (1–${PACE_RACE.levels})`, `Goal level (1–${PACE_RACE.levels})`) : T('Distanz in km', 'Distance in km');
 const fmtVal = (fmt, s) => { const v = kmNum(s); return v === null || Number.isNaN(v) ? null : v; };
 // Erholung und Tapering: Liegt ein Rennen in der Erholung nach einem A-Rennen oder dieses im Tapering davor, ist es zu dicht dran
@@ -1600,7 +1603,7 @@ function renderRaces() {
   const today = localDay(), e = races.find(r => r.id === raceEdit) || null;
   const opt = (v, l, cur) => `<option value="${v}"${v === cur ? ' selected' : ''}>${esc(l)}</option>`;
   const cur = e ? e.fmt || (e.km ? 'custom' : e.dist) : 'hm', fmt = cur === 'wfl' || cur === 'pace' ? cur : null;
-  const list = races.length ? races.map(r => `<button type="button" class="row${r.date < today ? ' past' : ''}" data-raceedit="${esc(r.id)}"><span class="dur">${dateGerman(r.date)}</span><span class="txt"><b>${esc(r.name)} <span class="prio prio-${r.prio}">${r.prio}</span></b><small>${esc(raceLabel(r))}${r.km ? T(` (geplant wie ${esc(SEASON.dist[r.dist].label)})`, ` (planned like ${esc(SEASON.dist[r.dist].label)})`) : ''}${esc(goalLine(r))}${r.date < today ? T(' · vorbei', ' · past') : r.prio === 'A' ? '<br>' + esc(peakText(r)) : ''}</small></span><span class="chev"></span></button>`).join('')
+  const list = races.length ? races.map(r => `<button type="button" class="row${r.date < today ? ' past' : ''}" data-raceedit="${esc(r.id)}"><span class="dur">${dateGerman(r.date)}</span><span class="txt"><b>${esc(r.name)} <span class="prio prio-${r.prio}">${r.prio}</span></b><small>${esc(raceLabel(r))}${r.km ? T(` (geplant wie ${esc(SEASON.dist[r.dist].label)})`, ` (planned like ${esc(SEASON.dist[r.dist].label)})`) : ''}${esc(goalLine(r))}${r.date < today ? esc(pastText(r)) : r.prio === 'A' ? '<br>' + esc(peakText(r)) : ''}</small></span><span class="chev"></span></button>`).join('')
     : `<div class="row"><span class="txt"><small>${T('Noch keine Rennen eingetragen.', 'No races entered yet.')}</small></span></div>`;
   return `<div class="intro">${esc(SEASON.intro)}</div>
     <div class="header">${e ? T('Rennen bearbeiten', 'Edit race') : T('Rennen eintragen', 'Add race')}</div><div class="group"><div class="raceform">
@@ -1741,9 +1744,13 @@ function saveBestFromForm() {
   const r = { id: uid(), date, km, time, dist: sel === 'custom' ? null : sel };
   if (name) r.name = name;
   const from = $('bestfrom') && $('bestfrom').value; if (from) r.race = from;
-  const g = resultGroup(r), before = results.filter(x => resultGroup(x) === g), wasPb = before.length && before.every(x => time < x.time);
-  results.push(r); persistResults(); bestView.group = g; store(KEYS.bestview, bestView); renderRun();
-  toast(wasPb ? T(`🏆 Neue Bestzeit über ${groupLabel(g)}: ${hms(time)} (−${hms(Math.min(...before.map(x => x.time)) - time)})`, `🏆 New best time over ${groupLabel(g)}: ${hms(time)} (−${hms(Math.min(...before.map(x => x.time)) - time)})`) : T(`✓ ${hms(time)} über ${groupLabel(g)} gespeichert.`, `✓ ${hms(time)} over ${groupLabel(g)} saved.`));
+  storeResult(r); renderRun();
+}
+// Ergebnis speichern (Bestzeiten oder Startseite): neue Bestzeit erkennen, Ansicht auf die Distanz stellen
+function storeResult(r) {
+  const g = resultGroup(r), before = results.filter(x => resultGroup(x) === g), wasPb = before.length && before.every(x => r.time < x.time);
+  results.push(r); persistResults(); bestView.group = g; store(KEYS.bestview, bestView);
+  toast(wasPb ? T(`🏆 Neue Bestzeit über ${groupLabel(g)}: ${hms(r.time)} (−${hms(Math.min(...before.map(x => x.time)) - r.time)})`, `🏆 New best time over ${groupLabel(g)}: ${hms(r.time)} (−${hms(Math.min(...before.map(x => x.time)) - r.time)})`) : T(`✓ ${hms(r.time)} über ${groupLabel(g)} gespeichert.`, `✓ ${hms(r.time)} over ${groupLabel(g)} saved.`));
 }
 function bestPrefill(id) {
   const r = races.find(x => x.id === id); if (!r) return;
@@ -1791,6 +1798,46 @@ function todayItems() {
   for (const it of items) out.push(it.kind === 'strength' ? Object.assign(kraft(it.plan || plan), { done: it.done, note: it.sameDay ? it.base : it.detail, tip: tip(it) }) : Object.assign({}, it, { act: RUN(it) ? 'plan' : null }));
   return out;
 }
+/* Startseite: nach einem Rennen nach dem Ergebnis fragen – ab dem Tag danach, bis 3 Wochen –, damit es nicht vergessen wird.
+   Normal: Zeit → Bestzeiten. Wings for Life: geschaffte km, die Zeit ist die des Catcher Cars. Pace Race: Level – nur beim Rennen,
+   nicht unter Bestzeiten (Pausen). „Nicht gelaufen“ merkt sich das Rennen, dann fragt die App nicht mehr. */
+const RESULT_ASK_DAYS = 21;
+const raceResult = r => results.find(e => e.race === r.id) || (r.fmt ? null : results.find(e => e.date === r.date && Math.abs((e.km || 0) - raceKm(r)) < 0.5)) || null;
+const raceAnswered = r => !!r.dns || (r.fmt === 'pace' ? r.level !== undefined : !!raceResult(r));
+const levelText = v => new Intl.NumberFormat(LOCALE, { maximumFractionDigits: 3 }).format(v);
+function pendingResult() {
+  const today = localDay(), from = addDays(today, -RESULT_ASK_DAYS);
+  return races.filter(r => r.date < today && r.date >= from && !raceAnswered(r)).sort((a, b) => a.date.localeCompare(b.date))[0] || null;
+}
+function resultCard(r) {
+  const field = r.fmt === 'wfl' ? `<label for="sreskm">${T('Geschafft bis km', 'Reached km')}</label><input id="sreskm" type="text" inputmode="decimal" autocomplete="off" placeholder="${T('z. B. 18,4', 'e.g. 18.4')}"><small class="tiny" id="sresinfo">${T('Die Zeit rechnet die App aus dem Catcher Car.', 'The app takes the time from the Catcher Car.')}</small>`
+    : r.fmt === 'pace' ? `<label for="sreslevel">${T('Geschafftes Level', 'Level reached')}</label><input id="sreslevel" type="text" inputmode="decimal" autocomplete="off" placeholder="${T('z. B. 11,753', 'e.g. 11.753')}">`
+    : `<label>${T('Deine Zeit', 'Your time')}</label>${timeFields('srestime', null, T('Zeit', 'Time'))}`;
+  return `<div class="scard" id="startresult"><p class="skicker">${T('Ergebnis eintragen', 'Enter result')}</p>
+    <div class="srowt">${startIcon('laufen')}<span class="txt"><b>${T(`Wie lief ${esc(r.name)}?`, `How did ${esc(r.name)} go?`)}</b><small>${esc(dateGerman(r.date) + ' · ' + raceLabel(r))}</small></span></div>
+    <div class="sresin">${field}</div>
+    <div class="sresact"><button type="button" class="btn small" data-resdns="${esc(r.id)}">${T('Nicht gelaufen', 'Did not run')}</button><button type="button" class="btn small primary" data-ressave="${esc(r.id)}">${T('Speichern', 'Save')}</button></div></div>`;
+}
+function saveStartResult(id) {
+  const r = races.find(x => x.id === id); if (!r) return;
+  if (r.fmt === 'pace') {
+    const t = String($('sreslevel').value).trim().replace(',', '.'), v = t === '' ? NaN : Number(t);
+    if (!(Number.isFinite(v) && v > 0 && v <= PACE_RACE.levels)) { $('sreslevel').setAttribute('aria-invalid', 'true'); toast(T(`Bitte das Level eintragen (bis ${PACE_RACE.levels}), z. B. 11,753.`, `Please enter the level (up to ${PACE_RACE.levels}), e.g. 11.753.`)); return; }
+    r.level = Math.round(v * 1000) / 1000; persistRaces(); renderStart();
+    toast(T(`✓ ${r.name}: Level ${levelText(r.level)} gespeichert.`, `✓ ${r.name}: level ${levelText(r.level)} saved.`)); return;
+  }
+  let km = raceKm(r), time;
+  if (r.fmt === 'wfl') {
+    km = kmNum($('sreskm').value);
+    if (km === null || Number.isNaN(km) || km < 1 || km > 100) { $('sreskm').setAttribute('aria-invalid', 'true'); toast(T('Bitte die geschafften km eintragen, z. B. 18,4.', 'Please enter the km you reached, e.g. 18.4.')); return; }
+    time = Math.round(carTime(km));
+  } else {
+    time = readTime('srestime');
+    if (time === null || Number.isNaN(time)) { markTime('srestime', true); toast(T('Bitte die Zeit eintragen (Minuten und Sekunden höchstens 59).', 'Please enter the time (minutes and seconds at most 59).')); return; }
+  }
+  storeResult({ id: uid(), date: r.date, km, time, dist: r.km || r.fmt ? null : r.dist, name: r.name, race: r.id });
+  renderStart();
+}
 function renderStart() {
   const today = localDay(), wk = weekStart(today), items = todayItems();
   $('startdate').textContent = new Intl.DateTimeFormat(LOCALE, { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date(today + 'T12:00:00'));
@@ -1818,12 +1865,19 @@ function renderStart() {
   const pTxt = lastW ? T(`Gewicht ${kgOne(lastW.kg)} kg`, `Weight ${kgOne(lastW.kg)} kg`) : T('Woche, Geräte, Maße', 'Week, equipment, measurements');
   const bTxt = `Version ${APP_VERSION} · ` + (lastB ? T(`Sicherung ${daysAgo(lastB)}`, `backup ${daysAgo(lastB)}`) : T('noch keine Sicherung', 'no backup yet'));
   const tile = (k, name, sub, wide) => `<button type="button" class="stile${wide ? ' wide' : ''}" data-go="${k}"><span class="sthead">${startIcon(k)}<b>${name}</b></span><small>${esc(sub)}</small></button>`;
-  $('startcontent').innerHTML = `<div class="scard"><p class="skicker">${T('Heute dran', 'On today')}</p>${rows}</div>
+  const pend = pendingResult();
+  $('startcontent').innerHTML = `${pend ? resultCard(pend) : ''}<div class="scard"><p class="skicker">${T('Heute dran', 'On today')}</p>${rows}</div>
     <div class="scard"><p class="skicker">${T('Diese Woche', 'This week')}</p><div class="sweek">${week.map(([l, v, b]) => `<div><small>${esc(l)}</small><b>${esc(v)}</b>${b}</div>`).join('')}</div></div>
     <div class="stiles">${tile('kraft', T('Kraft', 'Strength'), kTxt)}${tile('laufen', T('Laufen', 'Running'), rTxt)}${tile('mobility', 'Mobility', mTxt)}${tile('profil', T('Profil', 'Profile'), pTxt)}${tile('mehr', T('Mehr', 'More'), bTxt, true)}</div>`;
 }
+$('startcontent').addEventListener('input', e => {
+  const t = e.target; tpartJump(t); t.removeAttribute('aria-invalid'); if (t.closest && t.closest('.timein')) markTime(t.closest('.timein').id, false);
+  if (t.id === 'sreskm') { const km = kmNum(t.value); $('sresinfo').textContent = km >= 1 && km <= 100 ? T(`Catcher Car bei km ${kmText(km)} nach ${hms(carTime(km))} – das wird deine Zeit.`, `Catcher Car at km ${kmText(km)} after ${hms(carTime(km))} – that will be your time.`) : T('Die Zeit rechnet die App aus dem Catcher Car.', 'The app takes the time from the Catcher Car.'); }
+});
 $('startcontent').addEventListener('click', e => {
   const g = e.target.closest('[data-go]'); if (g) { showArea(g.dataset.go); return; }
+  const rs = e.target.closest('[data-ressave]'); if (rs) { saveStartResult(rs.dataset.ressave); return; }
+  const rd = e.target.closest('[data-resdns]'); if (rd) { const r = races.find(x => x.id === rd.dataset.resdns); if (r) { r.dns = true; persistRaces(); renderStart(); toast(T(`Notiert: ${r.name} nicht gelaufen.`, `Noted: ${r.name} not run.`)); } return; }
   const a = e.target.closest('[data-startact]'); if (!a) return;
   const k = a.dataset.startact;
   if (k === 'kraft') { if (!sessionActive() && a.dataset.startplan && a.dataset.startplan !== plan) setPlan(a.dataset.startplan); showArea('kraft'); if (!sessionActive()) $('btnMain').click(); return; }
@@ -2259,7 +2313,7 @@ function importBackup(file) {
       for (const e of rl) if (!runIds.has(e.id)) { runLog.push({ id: e.id, date: e.date, km: e.km }); runIds.add(e.id); addedL++; }
       runLog.sort((a, b) => a.date.localeCompare(b.date));
       const raceIds = new Set(races.map(e => e.id)); let addedC = 0;
-      for (const e of rc) if (!raceIds.has(e.id)) { races.push(Object.assign({ id: e.id, name: e.name, date: e.date, dist: e.dist, prio: e.prio, goal: e.goal ?? null, km: e.km ?? null }, e.fmt ? { fmt: e.fmt } : {})); raceIds.add(e.id); addedC++; }
+      for (const e of rc) if (!raceIds.has(e.id)) { races.push(Object.assign({ id: e.id, name: e.name, date: e.date, dist: e.dist, prio: e.prio, goal: e.goal ?? null, km: e.km ?? null }, ...['fmt', 'dns', 'level'].filter(k => e[k] !== undefined).map(k => ({ [k]: e[k] })))); raceIds.add(e.id); addedC++; }
       const wdays = new Set(weights.map(e => e.date)); let addedG = 0;
       for (const e of wg) if (!wdays.has(e.date)) { weights.push({ date: e.date, kg: e.kg }); wdays.add(e.date); addedG++; }
       persistEntries(); persistWaist(); if (addedR) persistRunWeeks(); if (addedL) persistRunLog(); if (addedC) persistRaces(); if (addedG) persistWeight();
@@ -2713,6 +2767,8 @@ guide.addEventListener('close', () => { if (guideOrigin && document.contains(gui
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { tick(); routineTick(); if (running || (rt && rt.running)) keepAwake(true); renderWeek(); } else persistSession(); });
 window.addEventListener('pagehide', persistSession);
 
+// nach zwei Ziffern ins nächste Zeitfeld springen
+function tpartJump(t) { if (t.dataset && t.dataset.tpart && t.value.length === 2 && t.dataset.tpart !== '2') { const n = t.closest('.timein').querySelector(`[data-tpart="${Number(t.dataset.tpart) + 1}"]`); if (n) { n.focus(); n.select(); } } }
 $('tabbar').addEventListener('click', e => { const b = e.target.closest('[data-area]'); if (b) showArea(b.dataset.area); });
 $('livepill').addEventListener('click', () => showArea('kraft'));
 $('runtabs').addEventListener('click', e => { const b = e.target.closest('[data-runtab]'); if (!b) return; runView.tab = b.dataset.runtab; store(KEYS.run, runView); renderRun(); });
@@ -2722,8 +2778,7 @@ $('mobsub').addEventListener('click', e => { const b = e.target.closest('[data-m
 // Laufwochen: bei jeder Eingabe speichern und nur Ergebnis und Diagramm neu zeichnen (Fokus bleibt im Feld)
 $('runcontent').addEventListener('input', e => {
   const t = e.target;
-  // nach zwei Ziffern ins nächste Zeitfeld springen
-  if (t.dataset && t.dataset.tpart && t.value.length === 2 && t.dataset.tpart !== '2') { const n = t.closest('.timein').querySelector(`[data-tpart="${Number(t.dataset.tpart) + 1}"]`); if (n) { n.focus(); n.select(); } }
+  tpartJump(t);
   if (t.id === 'bestdist') { $('bestkmfield').classList.toggle('hide', t.value !== 'custom'); return; }
   if (t.id === 'bestfrom') { bestPrefill(t.value); return; }
   if (t.id === 'racedist') { syncRaceForm(true); return; }

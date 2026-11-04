@@ -111,3 +111,57 @@ test.describe('Startbildschirm', () => {
     await expect(page.locator('dialog#notes')).toBeVisible();
   });
 });
+
+test.describe('Ergebnis nach dem Rennen', () => {
+  const setRaces = (page, list) => page.evaluate(l => { races = l.map(r => Object.assign({}, r)); persistRaces(); showArea('start'); }, list);
+  const day = (page, n) => page.evaluate(d => addDays(localDay(), d), n);
+  test('ab dem Tag danach fragt die Startseite nach der Zeit und speichert sie als Ergebnis', async ({ page }) => {
+    await setRaces(page, [{ id: 'heute', name: 'Heutiger Lauf', date: await day(page, 0), dist: '10k', prio: 'B', goal: null },
+      { id: 'alt', name: 'Alter Lauf', date: await day(page, -30), dist: '10k', prio: 'B', goal: null }]);
+    await expect(page.locator('#startresult')).toHaveCount(0); // am Renntag selbst noch nicht, nach 3 Wochen nicht mehr
+    await setRaces(page, [{ id: 'hm', name: 'Berliner HM', date: await day(page, -1), dist: 'hm', prio: 'A', goal: 7140 }]);
+    await expect(page.locator('#startresult')).toContainText('Wie lief Berliner HM?');
+    await page.click('[data-ressave="hm"]');
+    await expect(page.locator('#srestime [data-tpart="0"]')).toHaveAttribute('aria-invalid', 'true');
+    for (const [i, v] of ['1', '58', '12'].entries()) await page.fill(`#srestime [data-tpart="${i}"]`, v);
+    await page.click('[data-ressave="hm"]');
+    await expect(page.locator('#startresult')).toHaveCount(0);
+    await expect(page.locator('#toast')).toContainText('1:58:12 über Halbmarathon gespeichert');
+    expect(await page.evaluate(() => results.map(r => [r.race, r.dist, r.km, r.time, r.name]))).toEqual([['hm', 'hm', 21.0975, 7092, 'Berliner HM']]);
+    // Tempos kommen jetzt aus dem Ergebnis, die Rennliste zeigt es
+    expect(await page.evaluate(() => trainingPaces().ref.r.race)).toBe('hm');
+    await page.evaluate(() => { showArea('laufen'); }); await page.click('[data-runtab="plan"]'); await page.click('[data-runsub="rennen"]');
+    await expect(page.locator('#racelist')).toContainText('gelaufen: 1:58:12');
+  });
+
+  test('Wings for Life: geschaffte km, Zeit vom Catcher Car; Pace Race: Level beim Rennen; nicht gelaufen', async ({ page }) => {
+    await setRaces(page, [{ id: 'w', name: 'Wings for Life', date: await day(page, -2), dist: 'hm', prio: 'A', goal: null, km: 20, fmt: 'wfl' },
+      { id: 'p', name: 'Pace Race', date: await day(page, -1), dist: '10k', prio: 'A', goal: null, km: 12, fmt: 'pace' },
+      { id: 'x', name: 'Stadtlauf', date: await day(page, -1), dist: '10k', prio: 'B', goal: null }]);
+    // das älteste zuerst
+    await expect(page.locator('#startresult b')).toHaveText('Wie lief Wings for Life?');
+    await page.fill('#sreskm', '18,4');
+    await expect(page.locator('#sresinfo')).toContainText('Catcher Car bei km 18,4 nach 1:44:38');
+    await page.click('[data-ressave="w"]');
+    expect(await page.evaluate(() => results.map(r => [r.race, r.dist, r.km, r.time]))).toEqual([['w', null, 18.4, 6278]]);
+    await expect(page.locator('#startresult b')).toHaveText(/Wie lief (Pace Race|Stadtlauf)\?/);
+    const next = await page.locator('[data-ressave]').getAttribute('data-ressave');
+    if (next === 'x') { await page.click('[data-resdns="x"]'); }
+    await expect(page.locator('#startresult b')).toHaveText('Wie lief Pace Race?');
+    await page.fill('#sreslevel', '30');
+    await page.click('[data-ressave="p"]');
+    await expect(page.locator('#sreslevel')).toHaveAttribute('aria-invalid', 'true');
+    await page.fill('#sreslevel', '11,753');
+    await page.click('[data-ressave="p"]');
+    if (next !== 'x') await page.click('[data-resdns="x"]');
+    await expect(page.locator('#startresult')).toHaveCount(0);
+    expect(await page.evaluate(() => [races.find(r => r.id === 'p').level, races.find(r => r.id === 'x').dns, results.length])).toEqual([11.753, true, 1]);
+    // bleibt nach dem Neuladen gültig, Rennliste zeigt Level und „nicht gelaufen“
+    await page.reload();
+    expect(await page.evaluate(() => [races.find(r => r.id === 'p').level, races.find(r => r.id === 'x').dns])).toEqual([11.753, true]);
+    await page.evaluate(() => { showArea('laufen'); }); await page.click('[data-runtab="plan"]'); await page.click('[data-runsub="rennen"]');
+    await expect(page.locator('#racelist')).toContainText('geschafft: Level 11,753');
+    await expect(page.locator('#racelist')).toContainText('nicht gelaufen');
+    await expect(page.locator('#racelist')).toContainText('gelaufen: 18,4 km in 1:44:38');
+  });
+});

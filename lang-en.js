@@ -1557,7 +1557,9 @@ const EN_TEXT = {
 "Dichte Rennen": "Races close together",
 "Liegen zwei A-Rennen nah beieinander, bereitet der Plan beide zusammen vor: Vorher gilt jede zweite Qualitätseinheit schon dem späteren Rennen, Longrun und Wochen-km richten sich nach dem längeren. Fällt ein A-Rennen in die Erholung nach einem anderen oder in dessen Tapering, warnen Plan und Rennformular – eines davon besser als B-Rennen. B-Rennen in der Erholung laufen nur locker mit.": "If two A races are close together, the plan prepares both together: before that every second quality session is already for the later race, long run and weekly km follow the longer one. If an A race falls into the recovery after another or into its taper, plan and race form warn – better make one of them a B race. B races during recovery just run along easily.",
 "Startbildschirm": "Splash screen",
-"Beim Öffnen zeigt die App kurz Icon, Namen und Version – nur so lange, bis sie bereit ist, und nicht bei laufendem Training. Antippen blendet ihn sofort aus.": "When opening, the app briefly shows its icon, name and version – only until it is ready, and not during a running workout. A tap hides it right away."
+"Beim Öffnen zeigt die App kurz Icon, Namen und Version – nur so lange, bis sie bereit ist, und nicht bei laufendem Training. Antippen blendet ihn sofort aus.": "When opening, the app briefly shows its icon, name and version – only until it is ready, and not during a running workout. A tap hides it right away.",
+"Ergebnis nach dem Rennen": "Result after the race",
+"Ab dem Tag nach einem Rennen fragt die Startseite nach deiner Zeit und speichert sie als Ergebnis – die Trainingstempos passen sich danach an. Bei Wings for Life trägst du die geschafften km ein (die Zeit kommt vom Catcher Car), beim Pace Race das Level. „Nicht gelaufen“ beendet die Frage.": "From the day after a race the home screen asks for your time and saves it as a result – the training paces adjust afterwards. For Wings for Life you enter the km you reached (the time comes from the Catcher Car), for the Pace Race the level. “Did not run” ends the question."
 };
 const EN_HTML = {
 "Heute": "Today",
