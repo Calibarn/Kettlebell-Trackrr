@@ -108,3 +108,17 @@ test('Kalenderwoche nach ISO 8601', async ({ page }) => {
   const r = await page.evaluate(() => [isoWeek('2026-01-01'), isoWeek('2026-12-31'), isoWeek('2027-01-04'), weekStart('2026-11-01'), isoWeek('2026-10-31')]);
   expect(r).toEqual([1, 53, 1, '2026-10-26', 44]);
 });
+
+test.describe('Sicherung auf Android', () => {
+  test.use({ userAgent: 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Mobile Safari/537.36',
+    initScripts: ['window.__shared = 0; navigator.canShare = () => true; navigator.share = async () => { window.__shared++; };'] });
+  test('lädt direkt herunter statt über das Teilen-Menü', async ({ page }) => {
+    await page.evaluate(() => showArea('mehr'));
+    await openSect(page, 'sect-data');
+    await expect(page.locator('#savefilehint')).toHaveText('Landet im Ordner „Downloads“');
+    const dl = page.waitForEvent('download');
+    await page.click('#savefile');
+    expect((await dl).suggestedFilename()).toMatch(/^tagwerk-backup-\d{4}-\d{2}-\d{2}\.json$/);
+    expect(await page.evaluate(() => window.__shared)).toBe(0);
+  });
+});

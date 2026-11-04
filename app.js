@@ -2533,12 +2533,13 @@ function renderPreUpdate() {
   if (isObj(b) && b.savedAt) $('preupdatehint').textContent = T('Automatisch angelegt am ', 'Created automatically on ') + dateGerman(localDay(new Date(b.savedAt)));
 }
 function markBackup() { store(KEYS.backup, localDay()); renderBackupBanner(); }
-// Sicherung als lokale Datei: Teilen-Menü (iPhone: „In Dateien sichern“), Dateidialog oder Download – nie ein Server
+// Sicherung als lokale Datei: Teilen-Menü (iPhone: „In Dateien sichern“), Dateidialog oder Download – nie ein Server.
+// Android lädt direkt herunter (Ordner „Downloads“): im Teilen-Menü fehlt dort je nach Gerät ein „Auf dem Gerät speichern“.
 async function exportBackup() {
   const name = `tagwerk-backup-${localDay()}.json`, json = backupJson();
   try {
     const file = new File([json], name, { type: 'application/json' });
-    if (navigator.canShare && navigator.canShare({ files: [file] }) && document.documentElement.dataset.os !== 'other') {
+    if (navigator.canShare && navigator.canShare({ files: [file] }) && document.documentElement.dataset.os === 'ios') {
       await navigator.share({ files: [file], title: 'Tagwerk Backup' }); markBackup(); toast(T('Sicherung übergeben.', 'Backup handed over.')); return;
     }
     if (window.showSaveFilePicker) {
@@ -3189,6 +3190,7 @@ if (CHANGELOG.length && notesOpt.auto !== false && notesOpt.seen !== noteStamp(C
 if (sessionActive()) area = 'kraft'; else if (!window.__kbtNoStart) area = 'start';
 showArea(area, false);
 if (/iPad|iPhone|iPod/.test(navigator.userAgent) || document.documentElement.dataset.os === 'ios') $('savefilehint').textContent = T('Öffnet „Teilen“ → „In Dateien sichern“', 'Opens “Share” → “Save to Files”');
+else if (document.documentElement.dataset.os === 'android') $('savefilehint').textContent = T('Landet im Ordner „Downloads“', 'Goes to the “Downloads” folder');
 if (restored) { toast(running ? T('Laufendes Training wiederhergestellt.', 'Running workout restored.') : T('Unterbrochenes Training wiederhergestellt.', 'Interrupted workout restored.')); if (running) keepAwake(true); }
 setInterval(() => { tick(); routineTick(); }, 200);
 try { navigator.storage?.persist?.().then(renderStorageInfo).catch(() => { }); } catch (e) { }
