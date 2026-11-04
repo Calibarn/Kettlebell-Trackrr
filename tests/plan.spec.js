@@ -147,7 +147,7 @@ test('Renntempo-Rechner: Pace und Zwischenzeiten', async ({ page }) => {
   await expect(page.locator('#pcout .longnext b')).toHaveText('5:00 /km');
   await fillTime(page, 'pctime', '0', '25', '99');
   await expect(page.locator('#pctime [data-tpart="2"]')).toHaveAttribute('aria-invalid', 'true');
-  await expect(page.locator('#runcontent details')).toHaveCount(9);
+  await expect(page.locator('#runcontent details')).toHaveCount(10);
 });
 
 test('Zielzeit bestimmt Ziel-Longrun und Wochenspitze, Tempo steht bei den Tempo-Einheiten', async ({ page }) => {

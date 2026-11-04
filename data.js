@@ -322,6 +322,14 @@ const RUN_GUIDE = {
     drills: [['2 × 20 m', 'Fußgelenksarbeit', 'Fuß und Wade'], ['2 × 20 m', 'Skippings', 'Frequenz'], ['2 × 20 m', 'Kniehebelauf', 'Kniehub und Haltung'], ['2 × 20 m', 'Anfersen', 'Rückschwung'], ['2 × 20–30 m', 'Hopserlauf', 'Sprungkraft'], ['2 × 20 m', 'Seitgalopp', 'seitliche Hüfte'], ['2 × 20 m', 'Überkreuzlauf', 'Hüftbeweglichkeit'], ['3–4 ×', 'Steigerungsläufe', 'zum Abschluss']]
   }
 };
+/* Rennformate ohne feste Distanz (Laufen → Plan → Rennen). Ziel ist die Strecke bzw. das Level, daraus rechnet die App.
+   Wings for Life World Run: Das Catcher Car startet 30 Min. nach den Läufern mit 14 km/h und wird alle 30 Min. schneller,
+   ab 4:30 h bleibt es bei 34 km/h (Regeln seit 2019, Stufen ab 3:00 h seit 2021).
+   Pace Race: Runden über 1.000 m mit Zeitlimit; Level 1–5 fest, danach je Runde 10 Sek. schneller bis Level 28 (2:10).
+   Die nächste Runde startet 60 Sek. nach dem Zeitlimit der vorigen. */
+const WFL = { head: 1800, every: 1800, kmh: [14, 15, 16, 17, 18, 22, 26, 30, 34] };
+const PACE_RACE = { cut: [480, 420, 390, 375, 360], step: 10, rest: 60, levels: 28 };
+
 /* Laufen → Plan: Vorbereitung auf A-Rennen. B-Rennen laufen im Plan mit, ohne eigenen Block.
    phases: Wochen je Phase, die Rennwoche zählt zum Tapering. longPeak/weekPeak: Ziel-Longrun bzw. Wochen-km am Ende der
    spezifischen Phase für Hobbyläufer mit 3–4 Läufen pro Woche. taper/recover: Anteil der Spitzenwerte je Woche
@@ -364,15 +372,17 @@ const SEASON = {
       '5k': ['6 × 800 m im 5-km-Tempo, 2 Min. Trabpause', '3 × 8 Min. Schwelle, 2 Min. Trabpause'],
       '10k': ['5 × 1 km im 10-km-Tempo, 90 Sek. Trabpause', '3 × 10 Min. Schwelle, 2 Min. Trabpause'],
       hm: ['3 × 10 Min. Schwelle, 2 Min. Trabpause', '2 × 15 Min. Schwelle, 3 Min. Trabpause'],
-      marathon: ['3 × 10 Min. Schwelle, 2 Min. Trabpause', '2 × 15 Min. Schwelle, 3 Min. Trabpause']
+      marathon: ['3 × 10 Min. Schwelle, 2 Min. Trabpause', '2 × 15 Min. Schwelle, 3 Min. Trabpause'],
+      pace: ['6 × 1 km steigernd bis ins Level-Tempo, 60 Sek. Stehpause', '3 × 10 Min. Schwelle, 2 Min. Trabpause']
     },
     spec: {
       '5k': ['5 × 1 km im 5-km-Tempo, 2 Min. Trabpause', '12 × 400 m etwas schneller als 5-km-Tempo'],
       '10k': ['3 × 3 km im 10-km-Tempo, 3 Min. Trabpause', '6 × 1,5 km im 10-km-Tempo, 90 Sek. Trabpause'],
       hm: ['2 × 5 km im HM-Tempo, 3 Min. Trabpause', '3 × 3 km im HM-Tempo, 2 Min. Trabpause'],
-      marathon: ['2 × 15 Min. Schwelle', '8 km im Marathontempo nach 3 km Einlaufen']
+      marathon: ['2 × 15 Min. Schwelle', '8 km im Marathontempo nach 3 km Einlaufen'],
+      pace: ['Probe: 8–10 × 1 km, jeder etwas schneller, die letzten 3 im Level-Tempo, 60 Sek. Stehpause', '5 × 1 km im Level-Tempo, 60 Sek. Stehpause']
     },
-    taper: { all: ['3–4 × 1 km im Renntempo, sonst locker', '3–4 × 1 km im Renntempo, sonst locker'] },
+    taper: { all: ['3–4 × 1 km im Renntempo, sonst locker', '3–4 × 1 km im Renntempo, sonst locker'], pace: ['3–4 × 1 km im Level-Tempo, 60 Sek. Stehpause, sonst locker', '3–4 × 1 km im Level-Tempo, 60 Sek. Stehpause, sonst locker'] },
     recover: { all: ['keine – nur locker', 'keine – nur locker'] }
   },
   // Hinweis zum Longrun je Phase
@@ -380,7 +390,7 @@ const SEASON = {
     basis: 'locker in Zone 2',
     base: 'komplett locker in Zone 2',
     build: 'locker, die letzten 10 Min. zügig',
-    spec: { '5k': 'locker, mit 4 × 1 Min. zügig am Ende', '10k': 'locker, die letzten 3 km im 10-km-Tempo', hm: 'die letzten 5–8 km im HM-Tempo, Verpflegung wie im Rennen', marathon: '2 × 6–8 km im Marathontempo, Gels wie im Rennen' },
+    spec: { '5k': 'locker, mit 4 × 1 Min. zügig am Ende', '10k': 'locker, die letzten 3 km im 10-km-Tempo', hm: 'die letzten 5–8 km im HM-Tempo, Verpflegung wie im Rennen', marathon: '2 × 6–8 km im Marathontempo, Gels wie im Rennen', pace: 'locker, am Ende 3 × 1 km steigernd bis ins Level-Tempo, 60 Sek. Stehpause' },
     taper: 'kürzer und locker',
     recover: 'locker, höchstens 60–75 Min.'
   },
@@ -421,6 +431,14 @@ const SEASON_GUIDE = [
     'Einen Testlauf gibt es erst, wenn 5 km machbar sind: in der laufenden Woche, wenn dein längster Lauf der letzten 30 Tage mindestens 5 km war, später, wenn der geplante Longrun der Woche so lang ist. Im Lauf-Einstieg nie.',
     'Die Tempos sind Richtwerte. Bei Hitze, Wind, Hügeln oder müden Beinen gilt das Gefühl bzw. die Herzfrequenz-Zone, nicht die Uhr.',
     'Herzfrequenz-Zonen (Karvonen): Ruhe-HF + Anteil × (max. HF − Ruhe-HF), Zone 1 ab 50 %, Zone 2 ab 60 %, Zone 3 ab 70 %, Zone 4 ab 80 %, Zone 5 ab 90 %. Beispiel: max. 184, Ruhe 60 → Zone 2 ab 60 + 0,6 × 124 = 134 bpm.'
+  ] },
+  { title: 'Wings for Life & Pace Race', sub: 'Rennen ohne feste Distanz', items: [
+    'Wings for Life World Run: Es gibt keine Ziellinie. 30 Minuten nach dem Start fährt das Catcher Car los, mit 14 km/h, und wird alle 30 Minuten schneller: 15, 16, 17, 18, dann 22, 26, 30 und ab 4:30 h 34 km/h. Es ist bei km 7 nach 1:00 h, km 14,5 nach 1:30, km 22,5 nach 2:00, km 31 nach 2:30, km 40 nach 3:00, km 51 nach 3:30, km 64 nach 4:00 und km 79 nach 4:30 h.',
+    'Ziel in km eintragen: Die App rechnet, wann das Catcher Car diesen Kilometer erreicht – das ist deine Zielzeit, daraus die Pace, die du im Schnitt mindestens laufen musst. Beispiel 10 km: 7 km bis 1:00 h, die letzten 3 km mit 15 km/h dauern 12 Min. → 1:12:00 = 7:12 /km. Beispiel 20 km: 1:50:38 = 5:32 /km. Gleichmäßig laufen – das Auto wird erst spät richtig schnell.',
+    'Wie weit deine Form reicht: die Strecke, auf der deine Riegel-Prognose genau so lang dauert wie das Catcher Car bis dorthin. Beispiel 10 km in 55:00 → etwa 18 km. Über Marathonlänge eher zu optimistisch.',
+    'Pace Race: Runden über 1.000 m, jede mit Zeitlimit – Level 1 8:00 Min., Level 2 7:00, Level 3 6:30, Level 4 6:15, Level 5 6:00, danach jede Runde 10 Sek. schneller bis Level 28 mit 2:10. Die nächste Runde startet 60 Sek. nach dem Zeitlimit: Wer schneller läuft, hat mehr Pause. Dein Level ist die Zahl der geschafften Runden.',
+    'Ziel-Level eintragen: Level 12 heißt 12 km und die 12. Runde in höchstens 4:50 – das ist dein Level-Tempo. Alle 12 Runden mit Pausen dauern etwa 1:22 h. Geplant wird wie für eine eigene Distanz mit so vielen km; Qualität und Longrun bekommen im Aufbau, in der spezifischen Phase und im Tapering 1-km-Wiederholungen mit 60 Sek. Stehpause bis ins Level-Tempo. Wie beim Renntempo zählt deine Form: Ist das Level-Tempo schneller als dein aktuelles 5-km-Tempo, nimmt der Plan erst mal das 5-km-Tempo.',
+    'Welches Level deine Form hergibt, schätzt die App grob: das letzte Level, dessen Zeitlimit nicht schneller ist als dein 5-km-Renntempo – nach vielen Runden ist selten mehr drin. Beispiel 10 km in 55:00 → 5-km-Tempo 5:17 → etwa Level 9. Ein Pace-Race-Ergebnis gehört wegen der Pausen nicht unter Bestzeiten – es würde die Trainingstempos verfälschen.'
   ] },
   { title: 'Tempo & Pacing', sub: 'gleichmäßig statt schnell los', items: [
     'Gleichmäßig laufen oder die zweite Hälfte leicht schneller. Jede Sekunde, die du auf den ersten Kilometern zu schnell bist, zahlst du hinten doppelt.',
@@ -656,6 +674,8 @@ const CHANGELOG = [
     ['Startseite', 'Beim Öffnen zeigt die App „Heute“: was heute dran ist (Kraft mit Start-Knopf, Läufe aus dem Plan, Lauf-Einstieg), die Woche auf einen Blick und je Bereich eine Kachel mit dem aktuellen Stand. Läuft gerade ein Training, geht es direkt zum Timer.', 'neu'],
     ['Plan je Krafttag', 'Je Krafttag lässt sich im Profil unter Trainingswoche ein fester Plan wählen, z. B. Mo Ganzkörper, Do Läufer. Wochenplanung, Startseite und Kalender zeigen ihn, „Starten“ auf der Startseite stellt ihn direkt ein. Standard bleibt „frei“: der zuletzt genutzte Plan.', 'neu'],
     ['Mobility', 'Bis zum Ende geführte Mobility-Routinen zählen jetzt für die Woche.', 'neu'],
+    ['Wings for Life', 'Neu bei den Rennen: Wings for Life World Run mit Ziel in km. Die App rechnet aus dem Tempo des Catcher Cars, wann es dich dort einholt, und daraus deine Mindest-Pace – dazu, wie weit deine Form etwa reicht.', 'neu'],
+    ['Pace Race', 'Neu bei den Rennen: Pace Race mit Ziel-Level. Die App zeigt das Zeitlimit der Zielrunde und plant 1-km-Wiederholungen mit 60 Sek. Pause bis ins Level-Tempo ein.', 'neu'],
     ['Navigation', 'Die untere Leiste hat jetzt „Start“ statt „Mehr“ – Mehr erreichst du über die Kachel auf der Startseite. Auf der Startseite selbst gibt es keine Leiste.', 'ux']
   ] },
   { id: '2026-11-03', aka: ['2026-11-03b', '2026-11-03c'], date: '2026-11-03', version: '1.0', title: 'Lauf-Einstieg, Trainingstempos, Testläufe, Abhaken, Stufen & Fehlerbehebungen', items: [

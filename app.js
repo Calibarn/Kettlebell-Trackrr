@@ -1142,11 +1142,32 @@ function addRunFromForm() {
 const validRace = e => isObj(e) && typeof e.id === 'string' && typeof e.name === 'string' && e.name.length <= 60 && isDay(e.date)
   && Object.prototype.hasOwnProperty.call(SEASON.dist, e.dist) && (e.prio === 'A' || e.prio === 'B')
   && (e.goal === null || e.goal === undefined || (Number.isInteger(e.goal) && e.goal >= 60 && e.goal <= 86400))
-  && (e.km === null || e.km === undefined || okNum(e.km, 1, 100));
+  && (e.km === null || e.km === undefined || okNum(e.km, 1, 100))
+  && (e.fmt === undefined || (e.fmt === 'wfl' && okNum(e.km, 1, 100)) || (e.fmt === 'pace' && Number.isInteger(e.km) && e.km >= 1 && e.km <= PACE_RACE.levels));
 // Eigene Distanz (z. B. 20 km): geplant wird nach der nächstliegenden Kategorie, angezeigt und gerechnet mit den echten km
 const distForKm = km => km <= 7.5 ? '5k' : km <= 15 ? '10k' : km <= 30 ? 'hm' : 'marathon';
 const raceKm = r => r.km || SEASON.dist[r.dist].km;
-const raceLabel = r => r.km ? kmText(r.km) + ' km' : SEASON.dist[r.dist].label;
+/* Rennformate ohne feste Distanz: km ist das Ziel (Wings for Life: Strecke, Pace Race: Level = Runden à 1 km).
+   Die Zielzeit wird daraus gerechnet, nicht gespeichert. */
+// Wings for Life: Sekunden ab Start, bis das Catcher Car bei km d ist
+function carTime(d) {
+  let t = WFL.head, pos = 0;
+  for (let i = 0; ; i++) {
+    const v = WFL.kmh[Math.min(i, WFL.kmh.length - 1)], seg = i < WFL.kmh.length - 1 ? v * WFL.every / 3600 : Infinity;
+    if (pos + seg >= d) return t + (d - pos) / v * 3600;
+    pos += seg; t += WFL.every;
+  }
+}
+// Pace Race: Zeitlimit von Level n in Sekunden je 1.000 m, und die Zeit bis zum Ende von Runde n (Zeitlimits plus 60 Sek. Pause)
+const paceCut = n => n <= PACE_RACE.cut.length ? PACE_RACE.cut[n - 1] : PACE_RACE.cut.at(-1) - PACE_RACE.step * (n - PACE_RACE.cut.length);
+const paceTotal = n => { let t = 0; for (let i = 1; i <= n; i++) t += paceCut(i); return t + PACE_RACE.rest * (n - 1); };
+// Zielzeit für Plan-Stufe und Notlösung beim Renntempo. Pace Race: das 5-km-Tempo, das zum Level-Tempo passt (grobe Schätzung), per Riegel auf n km
+const raceGoal = r => r.fmt === 'wfl' ? Math.round(carTime(r.km)) : r.fmt === 'pace' ? Math.round(riegel(5 * paceCut(r.km), 5, r.km)) : r.goal;
+const raceLabel = r => r.fmt === 'wfl' ? T(`Wings for Life, Ziel ${kmText(r.km)} km`, `Wings for Life, goal ${kmText(r.km)} km`)
+  : r.fmt === 'pace' ? T(`Pace Race, Ziel Level ${r.km}`, `Pace Race, goal level ${r.km}`)
+  : r.km ? kmText(r.km) + ' km' : SEASON.dist[r.dist].label;
+// Plan-Einheiten: Pace Race hat eigene (1-km-Wiederholungen), sonst die der Distanz
+const planKey = r => r.fmt === 'pace' ? 'pace' : r.dist;
 const racesLoaded = loadList(KEYS.races, validRace);
 let races = racesLoaded.ok; const racesKeep = racesLoaded.keep;
 const sortRaces = () => races.sort((a, b) => a.date.localeCompare(b.date) || a.prio.localeCompare(b.prio));
@@ -1171,9 +1192,9 @@ const hms = s => { s = Math.round(s); const h = Math.floor(s / 3600), m = Math.f
 const paceText = (sec, km) => hms(sec / km) + ' /km';
 // Ziel-Longrun und Wochenspitze: aus der Zielzeit, sonst die Standardwerte der Distanz
 function peaks(r) {
-  const d = SEASON.dist[r.dist];
-  if (!r.goal) return { long: d.longPeak, week: d.weekPeak, fromGoal: false };
-  const g = r.km ? r.goal * Math.pow(d.km / r.km, 1.06) : r.goal; // Riegel: Zeit auf die Kategorie-Distanz umrechnen
+  const d = SEASON.dist[r.dist], goal = raceGoal(r);
+  if (!goal) return { long: d.longPeak, week: d.weekPeak, fromGoal: false };
+  const g = r.km ? goal * Math.pow(d.km / r.km, 1.06) : goal; // Riegel: Zeit auf die Kategorie-Distanz umrechnen
   const l = SEASON.levels[r.dist].find(x => g <= x.upTo);
   return { long: l.long, week: l.week, fromGoal: true };
 }
@@ -1309,7 +1330,21 @@ function trainingPaces(today) {
 }
 const paceRange = ([a, b]) => `${hms(a)}–${hms(b)} /km`;
 // Renntempo aus der aktuellen Form; nur ohne jedes Ergebnis als Notlösung aus der Zielzeit
-const racePace = r => { const tp = trainingPaces(); return tp ? riegel(tp.ref.t10, 10, raceKm(r)) / raceKm(r) : r.goal ? r.goal / raceKm(r) : null; };
+// Pace Race: das Level-Tempo (Zeitlimit der Zielrunde), aber nie schneller als das aktuelle 5-km-Tempo – wie sonst: Tempo aus der Form
+const racePace = r => {
+  const tp = trainingPaces(), g = raceGoal(r);
+  if (r.fmt === 'pace') return tp ? Math.max(paceCut(r.km), riegel(tp.ref.t10, 10, 5) / 5) : paceCut(r.km);
+  return tp ? riegel(tp.ref.t10, 10, raceKm(r)) / raceKm(r) : g ? g / raceKm(r) : null;
+};
+// Wie weit bzw. bis zu welchem Level die aktuelle Form etwa reicht (null ohne Ergebnis)
+function formReach(fmt) {
+  const tp = trainingPaces(); if (!tp) return null;
+  if (fmt === 'pace') { const p5 = riegel(tp.ref.t10, 10, 5) / 5; let n = 0; while (n < PACE_RACE.levels && paceCut(n + 1) >= p5) n++; return { level: n, p5, ref: tp.ref }; }
+  // Strecke, auf der die Riegel-Prognose so lang dauert wie das Catcher Car bis dorthin (Halbierung, vorne ist man schneller als das Auto)
+  let lo = 0.5, hi = 150;
+  for (let i = 0; i < 40; i++) { const m = (lo + hi) / 2; if (riegel(tp.ref.t10, 10, m) <= carTime(m)) lo = m; else hi = m; }
+  return { km: lo, ref: tp.ref };
+}
 // Bei Tempo-Abschnitten das Renntempo dahinterschreiben, bei Schwelle den Schwellenbereich aus der Bestzeit
 const withPace = (txt, r) => {
   const p = /tempo|pace/i.test(txt) ? racePace(r) : null, tp = /Schwelle|threshold/i.test(txt) ? trainingPaces() : null;
@@ -1319,7 +1354,7 @@ const withPace = (txt, r) => {
 const easyPace = () => { const tp = trainingPaces(); return tp ? ` · ${paceRange(tp.easy)}` : ''; };
 // Rennen der letzten 3 Wochen ohne eingetragenes Ergebnis: daran erinnern, damit die Tempos aktuell werden
 function missingResultHint() {
-  const today = localDay(), r = races.filter(x => x.date <= today && x.date >= addDays(today, -21) && !results.some(e => e.race === x.id || (e.date === x.date && Math.abs((e.km || 0) - raceKm(x)) < 0.5))).at(-1);
+  const today = localDay(), r = races.filter(x => x.date <= today && x.date >= addDays(today, -21) && x.fmt !== 'pace' && !results.some(e => e.race === x.id || (e.date === x.date && Math.abs((e.km || 0) - raceKm(x)) < 0.5))).at(-1);
   return r ? `<div class="alert">${T(`Wie lief <b>${esc(r.name)}</b>? Ergebnis unter <b>Bestzeiten</b> eintragen („Aus deinen Rennen übernehmen“) – dann passen die Tempos.`, `How did <b>${esc(r.name)}</b> go? Enter the result under <b>Best times</b> (“Take from your races”) – then the paces fit.`)}</div>` : '';
 }
 function renderPaces() {
@@ -1334,7 +1369,7 @@ function renderPaces() {
     <p class="footer">${T(`Aus deinem Ergebnis ${esc(groupLabel(resultGroup(r)))} in ${hms(r.time)} am ${dateGerman(r.date)}, mit Riegel umgerechnet. Es zählt das neueste Ergebnis, solange es höchstens 3 % langsamer ist als dein bestes der letzten 12 Monate – so werden die Tempos mit jedem Testlauf oder Rennen aktuell, nicht aus der Zielzeit. Richtwerte – bei Hitze, Wind, Hügeln oder müden Beinen langsamer.`, `From your result ${esc(groupLabel(resultGroup(r)))} in ${hms(r.time)} on ${dateGerman(r.date)}, converted with Riegel. Your newest result counts as long as it is at most 3 % slower than your best of the last 12 months – so the paces follow every time trial or race, not the goal time. Guidelines – slower in heat, wind, hills or with tired legs.`)}</p>`)}</div>`;
 }
 function weekKey(x) {
-  const t = SEASON.key[x.phase] || SEASON.key.basis, list = t[x.target.dist] || t.all, odd = isoWeek(x.week) % 2;
+  const t = SEASON.key[x.phase] || SEASON.key.basis, list = t[planKey(x.target)] || t[x.target.dist] || t.all, odd = isoWeek(x.week) % 2;
   const txt = list[odd ? 0 : 1], tp = /^(Intervall|Intervals):/.test(txt) ? trainingPaces() : null;
   return (x.cut ? T('kürzer: ', 'shorter: ') : '') + withPace(txt, x.target) + (tp ? ` (≈ ${hms(tp.interval)} /km)` : '') + (x.phase === 'recover' ? easyPace() : '');
 }
@@ -1342,7 +1377,7 @@ function weekLongNote(x) {
   if (x.a) return T('kein Longrun – Rennwoche', 'no long run – race week');
   if (x.bLong) return T(`${x.bRace.name} ersetzt den Longrun`, `${x.bRace.name} replaces the long run`);
   if (x.noLong) return T('kein Longrun', 'no long run');
-  const t = SEASON.long[x.phase]; return hrize(withPace(typeof t === 'string' ? t : t[x.target.dist], x.target)) + easyPace();
+  const t = SEASON.long[x.phase]; return hrize(withPace(typeof t === 'string' ? t : t[planKey(x.target)] || t[x.target.dist], x.target)) + easyPace();
 }
 // Fester Kraft-Plan eines Wochentags (nur, wenn die Geräte dafür eingetragen sind), sonst null
 const dayPlan = d => { const pk = profile.week.strengthPlan[d]; return pk && PLANS[pk] && planOwned(pk) ? pk : null; };
@@ -1423,9 +1458,27 @@ function toggleSkip(week, key) {
 }
 const peakText = r => { const p = peaks(r); return T(`Longrun bis ${p.long} km, Woche bis ${p.week} km${p.fromGoal ? '' : ' (Standard)'}`, `long run up to ${p.long} km, week up to ${p.week} km${p.fromGoal ? '' : ' (default)'}`); };
 const kmRound = v => v === null || v === undefined ? null : Math.round(v);
-function goalLine(r) {
-  if (!r.goal) return '';
-  return T(` · Ziel ${hms(r.goal)} = ${paceText(r.goal, raceKm(r))}`, ` · goal ${hms(r.goal)} = ${paceText(r.goal, raceKm(r))}`);
+// Ziel in Worten; bei Wings for Life und Pace Race aus dem Ziel gerechnet
+function goalInfo(r) {
+  if (r.fmt === 'wfl') { const t = carTime(r.km); return T(`Catcher Car bei km ${kmText(r.km)} nach ${hms(t)} → mind. ${paceText(t, r.km)}`, `Catcher Car at km ${kmText(r.km)} after ${hms(t)} → at least ${paceText(t, r.km)}`); }
+  if (r.fmt === 'pace') return T(`Runde ${r.km} in höchstens ${hms(paceCut(r.km))} Min.`, `lap ${r.km} in at most ${hms(paceCut(r.km))} min`);
+  return r.goal ? T(`Ziel ${hms(r.goal)} = ${paceText(r.goal, raceKm(r))}`, `goal ${hms(r.goal)} = ${paceText(r.goal, raceKm(r))}`) : '';
+}
+function goalLine(r) { const g = goalInfo(r); return g ? ' · ' + g : ''; }
+const hoursText = s => { const m = Math.round(s / 60); return m >= 60 ? `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')} h` : T(`${m} Min.`, `${m} min`); };
+// Rechnung im Formular, sobald Format und Ziel stehen
+function raceFmtInfo(fmt, v) {
+  if (fmt === 'wfl') {
+    if (!(v >= 1 && v <= 100)) return T('Ziel in km eintragen (1–100) – die App rechnet, wann dich das Catcher Car dort einholt.', 'Enter the goal in km (1–100) – the app calculates when the Catcher Car catches you there.');
+    const t = carTime(v), f = formReach('wfl');
+    return T(`Das Catcher Car ist bei km ${kmText(v)} nach <b>${hms(t)}</b> – du brauchst im Schnitt mindestens <b>${paceText(t, v)}</b>.`, `The Catcher Car reaches km ${kmText(v)} after <b>${hms(t)}</b> – you need at least <b>${paceText(t, v)}</b> on average.`)
+      + (f ? T(` Deine Form (${esc(groupLabel(resultGroup(f.ref.r)))} in ${hms(f.ref.r.time)}) reicht für etwa <b>${kmText(Math.floor(f.km * 2) / 2)} km</b>.`, ` Your form (${esc(groupLabel(resultGroup(f.ref.r)))} in ${hms(f.ref.r.time)}) is good for about <b>${kmText(Math.floor(f.km * 2) / 2)} km</b>.`) : '');
+  }
+  if (!(Number.isInteger(v) && v >= 1 && v <= PACE_RACE.levels)) return T(`Ziel-Level eintragen (1–${PACE_RACE.levels}) – Level 1 hat 8:00 Min. für 1.000 m, Level ${PACE_RACE.levels} nur noch ${hms(paceCut(PACE_RACE.levels))}.`, `Enter the goal level (1–${PACE_RACE.levels}) – level 1 allows 8:00 min for 1,000 m, level ${PACE_RACE.levels} only ${hms(paceCut(PACE_RACE.levels))}.`);
+  const f = formReach('pace');
+  return T(`Level ${v} = ${v} km, die ${v}. Runde in höchstens <b>${hms(paceCut(v))}</b>, mit Pausen etwa ${hoursText(paceTotal(v))}.`, `Level ${v} = ${v} km, lap ${v} in at most <b>${hms(paceCut(v))}</b>, with breaks about ${hoursText(paceTotal(v))}.`)
+    + (f ? (f.level ? T(` Deine Form (5-km-Tempo ${hms(f.p5)}) reicht grob für <b>Level ${f.level}</b>`, ` Your form (5 km pace ${hms(f.p5)}) is roughly good for <b>level ${f.level}</b>`) : T(` Mit deiner Form (5-km-Tempo ${hms(f.p5)}) ist schon Level 1 knapp`, ` With your form (5 km pace ${hms(f.p5)}) even level 1 is tight`))
+      + (paceCut(v) < f.p5 ? T(` – die Wiederholungen im Plan laufen erst mal in ${hms(f.p5)} /km.`, ` – the repeats in the plan start at ${hms(f.p5)} /km.`) : '.') : '');
 }
 // Zeilen der Wochenplanung; mit „Abhaken & nachholen“ zusätzlich Haken, Nachholen-Vorschlag und Rückgängig
 function schedRows(x) {
@@ -1452,7 +1505,7 @@ function renderPlanWeek(S) {
     <div class="phasebadge ph-${phaseKey(x)}">${esc(pl)}</div>
     <p class="loadstatus">${wk === 0 ? T(`Rennwoche: <b>${esc(nxt.name)}</b> am ${dayLabel(nxt.date)}`, `Race week: <b>${esc(nxt.name)}</b> on ${dayLabel(nxt.date)}`) : T(`Noch ${wk} ${wk === 1 ? 'Woche' : 'Wochen'} bis <b>${esc(nxt.name)}</b> (${esc(raceLabel(nxt))}, ${dateGerman(nxt.date)})`, `${wk} ${wk === 1 ? 'week' : 'weeks'} to <b>${esc(nxt.name)}</b> (${esc(raceLabel(nxt))}, ${dateGerman(nxt.date)})`)}${esc(goalLine(nxt))}</p>
     <p class="tiny" style="margin-top:2px">${esc(pt)}</p>
-    <p class="tiny" style="margin-top:2px" id="planpeaks">${T(`Ziel für ${esc(nxt.name)}: `, `Target for ${esc(nxt.name)}: `)}${esc(peakText(nxt))}${nxt.goal ? T(` – aus der Zielzeit ${hms(nxt.goal)}`, ` – from the goal time ${hms(nxt.goal)}`) : T(' – Zielzeit eintragen für passende Werte', ' – enter a goal time for matching values')}.</p>
+    <p class="tiny" style="margin-top:2px" id="planpeaks">${T(`Ziel für ${esc(nxt.name)}: `, `Target for ${esc(nxt.name)}: `)}${esc(peakText(nxt))}${nxt.fmt === 'wfl' ? T(` – aus dem Ziel ${kmText(nxt.km)} km`, ` – from the goal of ${kmText(nxt.km)} km`) : nxt.fmt === 'pace' ? T(` – aus dem Ziel Level ${nxt.km}`, ` – from the goal level ${nxt.km}`) : nxt.goal ? T(` – aus der Zielzeit ${hms(nxt.goal)}`, ` – from the goal time ${hms(nxt.goal)}`) : T(' – Zielzeit eintragen für passende Werte', ' – enter a goal time for matching values')}.</p>
     <div class="metrics two">
       <div class="metric"><span>${T('Longrun', 'Long run')}</span><b>${x.a || x.noLong || x.bLong ? '–' : longVal === null ? '?' : T('ca. ', 'approx. ') + longVal + ' km'}</b><small>${esc(weekLongNote(x))}</small></div>
       <div class="metric"><span>${T('Woche', 'Week')}</span><b>${kmVal === null ? '?' : T('ca. ', 'approx. ') + kmVal + ' km'}</b><small>${x.cut ? T('Entlastungswoche', 'deload week') : x.phase === 'taper' ? T('reduziert', 'reduced') : T('höchstens +10 %', 'at most +10 %')}</small></div>
@@ -1480,19 +1533,32 @@ function renderPlanSeason(S) {
   <p class="footer">${T('Am besten in einen eigenen Kalender „Laufplan“ importieren. Bei einem späteren Export diesen Kalender leeren und neu importieren – der Plan rechnet jede Woche mit deinem echten Umfang neu.', 'Best import into a separate “Running plan” calendar. For a later export empty this calendar and import again – the plan recalculates every week with your real volume.')}</p>`;
 }
 let raceEdit = null;
+const raceKmLabel = sel => sel === 'wfl' ? T('Ziel in km', 'Goal in km') : sel === 'pace' ? T(`Ziel-Level (1–${PACE_RACE.levels})`, `Goal level (1–${PACE_RACE.levels})`) : T('Distanz in km', 'Distance in km');
+const fmtVal = (fmt, s) => { const v = kmNum(s); return v === null || Number.isNaN(v) ? null : v; };
+// Formular an die Auswahl anpassen: Feld für km bzw. Level, Zielzeit nur bei fester Distanz, Rechnung bei Wings for Life und Pace Race
+function syncRaceForm(focus) {
+  const sel = $('racedist').value, fmt = sel === 'wfl' || sel === 'pace' ? sel : null, showKm = sel === 'custom' || !!fmt, km = $('racekm');
+  $('racekmfield').classList.toggle('hide', !showKm); $('racekmlabel').textContent = raceKmLabel(sel);
+  km.inputMode = sel === 'pace' ? 'numeric' : 'decimal'; km.placeholder = sel === 'pace' ? T('z. B. 12', 'e.g. 12') : T('z. B. 20', 'e.g. 20');
+  $('racegoalfield').classList.toggle('hide', !!fmt);
+  const info = $('racefmtinfo'); info.classList.toggle('hide', !fmt); info.innerHTML = fmt ? raceFmtInfo(fmt, fmtVal(fmt, km.value)) : '';
+  if (focus && showKm) km.focus();
+}
 function renderRaces() {
   const today = localDay(), e = races.find(r => r.id === raceEdit) || null;
   const opt = (v, l, cur) => `<option value="${v}"${v === cur ? ' selected' : ''}>${esc(l)}</option>`;
+  const cur = e ? e.fmt || (e.km ? 'custom' : e.dist) : 'hm', fmt = cur === 'wfl' || cur === 'pace' ? cur : null;
   const list = races.length ? races.map(r => `<button type="button" class="row${r.date < today ? ' past' : ''}" data-raceedit="${esc(r.id)}"><span class="dur">${dateGerman(r.date)}</span><span class="txt"><b>${esc(r.name)} <span class="prio prio-${r.prio}">${r.prio}</span></b><small>${esc(raceLabel(r))}${r.km ? T(` (geplant wie ${esc(SEASON.dist[r.dist].label)})`, ` (planned like ${esc(SEASON.dist[r.dist].label)})`) : ''}${esc(goalLine(r))}${r.date < today ? T(' · vorbei', ' · past') : r.prio === 'A' ? '<br>' + esc(peakText(r)) : ''}</small></span><span class="chev"></span></button>`).join('')
     : `<div class="row"><span class="txt"><small>${T('Noch keine Rennen eingetragen.', 'No races entered yet.')}</small></span></div>`;
   return `<div class="intro">${esc(SEASON.intro)}</div>
     <div class="header">${e ? T('Rennen bearbeiten', 'Edit race') : T('Rennen eintragen', 'Add race')}</div><div class="group"><div class="raceform">
       <div class="field wide"><label for="racename">${T('Name', 'Name')}</label><input id="racename" type="text" maxlength="60" autocomplete="off" placeholder="${T('z. B. Berliner Halbmarathon', 'e.g. Berlin Half Marathon')}" value="${e ? esc(e.name) : ''}"></div>
       <div class="field"><label for="racedate">${T('Datum', 'Date')}</label><input id="racedate" type="date" value="${e ? e.date : ''}"></div>
-      <div class="field"><label for="racedist">${T('Distanz', 'Distance')}</label><select id="racedist">${Object.entries(SEASON.dist).map(([k, d]) => opt(k, d.label, e ? (e.km ? 'custom' : e.dist) : 'hm')).join('')}${opt('custom', T('Andere Distanz', 'Other distance'), e && e.km ? 'custom' : '')}</select></div>
-      <div class="field${e && e.km ? '' : ' hide'}" id="racekmfield"><label for="racekm">${T('Distanz in km', 'Distance in km')}</label><input id="racekm" type="text" inputmode="decimal" autocomplete="off" placeholder="${T('z. B. 20', 'e.g. 20')}" value="${e && e.km ? esc(kmText(e.km)) : ''}"></div>
+      <div class="field"><label for="racedist">${T('Distanz', 'Distance')}</label><select id="racedist">${Object.entries(SEASON.dist).map(([k, d]) => opt(k, d.label, cur)).join('')}${opt('custom', T('Andere Distanz', 'Other distance'), cur)}${opt('wfl', 'Wings for Life World Run', cur)}${opt('pace', 'Pace Race', cur)}</select></div>
+      <div class="field${e && e.km ? '' : ' hide'}" id="racekmfield"><label for="racekm" id="racekmlabel">${raceKmLabel(cur)}</label><input id="racekm" type="text" inputmode="${cur === 'pace' ? 'numeric' : 'decimal'}" autocomplete="off" placeholder="${cur === 'pace' ? T('z. B. 12', 'e.g. 12') : T('z. B. 20', 'e.g. 20')}" value="${e && e.km ? esc(kmText(e.km)) : ''}"></div>
       <div class="field"><label for="raceprio">${T('Priorität', 'Priority')}</label><select id="raceprio">${opt('A', T('A-Rennen', 'A race'), e ? e.prio : 'A')}${opt('B', T('B-Rennen', 'B race'), e ? e.prio : 'A')}</select></div>
-      <div class="field wide"><label>${T('Zielzeit (optional)', 'Goal time (optional)')}</label>${timeFields('racegoal', e && e.goal, T('Zielzeit', 'Goal time'))}</div>
+      <p class="tiny racefmtinfo${fmt ? '' : ' hide'}" id="racefmtinfo">${fmt ? raceFmtInfo(fmt, fmtVal(fmt, e && e.km ? kmText(e.km) : '')) : ''}</p>
+      <div class="field wide${fmt ? ' hide' : ''}" id="racegoalfield"><label>${T('Zielzeit (optional)', 'Goal time (optional)')}</label>${timeFields('racegoal', e && !e.fmt && e.goal, T('Zielzeit', 'Goal time'))}</div>
       <div class="raceactions">${e ? `<button type="button" class="btn small danger" id="racedel">${T('Löschen', 'Delete')}</button><button type="button" class="btn small" id="racecancel">${T('Abbrechen', 'Cancel')}</button>` : ''}<button type="button" class="btn small primary" id="racesave">${e ? T('Speichern', 'Save') : T('Hinzufügen', 'Add')}</button></div>
     </div></div>
     <p class="footer">${T('A-Rennen bekommen einen eigenen Vorbereitungsblock, B-Rennen laufen als harte Einheit mit. Antippen zum Bearbeiten.', 'A races get their own preparation block, B races run along as a hard session. Tap to edit.')}</p>
@@ -1501,13 +1567,15 @@ function renderRaces() {
 function saveRaceFromForm() {
   const name = $('racename').value.trim(), date = $('racedate').value, sel = $('racedist').value, prio = $('raceprio').value, goal = readTime('racegoal');
   for (const id of ['racename', 'racedate', 'racekm']) $(id).removeAttribute('aria-invalid'); markTime('racegoal', false);
-  const km = sel === 'custom' ? kmNum($('racekm').value) : null;
-  if (sel === 'custom' && (km === null || Number.isNaN(km) || km < 1 || km > 100)) { $('racekm').setAttribute('aria-invalid', 'true'); toast(T('Bitte die Distanz in km eingeben (1–100).', 'Please enter the distance in km (1–100).')); return; }
-  const dist = sel === 'custom' ? distForKm(km) : sel;
+  const fmt = sel === 'wfl' || sel === 'pace' ? sel : null, km = sel === 'custom' || fmt ? kmNum($('racekm').value) : null;
+  if (sel === 'pace' && !(Number.isInteger(km) && km >= 1 && km <= PACE_RACE.levels)) { $('racekm').setAttribute('aria-invalid', 'true'); toast(T(`Bitte das Ziel-Level eingeben (1–${PACE_RACE.levels}).`, `Please enter the goal level (1–${PACE_RACE.levels}).`)); return; }
+  if ((sel === 'custom' || sel === 'wfl') && (km === null || Number.isNaN(km) || km < 1 || km > 100)) { $('racekm').setAttribute('aria-invalid', 'true'); toast(sel === 'wfl' ? T('Bitte das Ziel in km eingeben (1–100).', 'Please enter the goal in km (1–100).') : T('Bitte die Distanz in km eingeben (1–100).', 'Please enter the distance in km (1–100).')); return; }
+  const dist = sel === 'custom' || fmt ? distForKm(km) : sel;
   if (!name) { $('racename').setAttribute('aria-invalid', 'true'); toast(T('Bitte einen Namen eingeben.', 'Please enter a name.')); return; }
   if (!isDay(date)) { $('racedate').setAttribute('aria-invalid', 'true'); toast(T('Bitte ein Datum wählen.', 'Please choose a date.')); return; }
-  if (Number.isNaN(goal)) { markTime('racegoal', true); toast(T('Zielzeit prüfen: Minuten und Sekunden höchstens 59, z. B. 1 : 59 : 00.', 'Check the goal time: minutes and seconds at most 59, e.g. 1 : 59 : 00.')); return; }
-  const r = { id: raceEdit || uid(), name: name.slice(0, 60), date, dist, prio, goal, km };
+  if (!fmt && Number.isNaN(goal)) { markTime('racegoal', true); toast(T('Zielzeit prüfen: Minuten und Sekunden höchstens 59, z. B. 1 : 59 : 00.', 'Check the goal time: minutes and seconds at most 59, e.g. 1 : 59 : 00.')); return; }
+  const r = { id: raceEdit || uid(), name: name.slice(0, 60), date, dist, prio, goal: fmt ? null : goal, km };
+  if (fmt) r.fmt = fmt;
   races = races.filter(x => x.id !== r.id).concat(r); persistRaces();
   toast(raceEdit ? T('✓ Rennen gespeichert.', '✓ Race saved.') : T(`✓ ${name} eingetragen.`, `✓ ${name} added.`)); raceEdit = null; renderRun();
 }
@@ -1575,7 +1643,7 @@ function bestChart(list) {
 }
 function renderBests() {
   const today = localDay(), gs = bestGroups(), g = gs.includes(bestView.group) ? bestView.group : gs[0];
-  const past = races.filter(r => r.date <= today && !results.some(x => x.race === r.id)).slice(-12).reverse();
+  const past = races.filter(r => r.date <= today && r.fmt !== 'pace' && !results.some(x => x.race === r.id)).slice(-12).reverse(); // Pace Race: Pausen verfälschen die Tempos
   const opt = (v, t, sel) => `<option value="${v}"${v === sel ? ' selected' : ''}>${esc(t)}</option>`;
   let html = `<div class="header">${T('Ergebnis eintragen', 'Add result')}</div><div class="group"><div class="raceform">
       ${past.length ? `<div class="field wide"><label for="bestfrom">${T('Aus deinen Rennen übernehmen', 'Take from your races')}</label><select id="bestfrom"><option value="">${T('– auswählen –', '– choose –')}</option>${past.map(r => `<option value="${esc(r.id)}">${esc(dateGerman(r.date) + ' · ' + r.name + ' (' + raceLabel(r) + ')')}</option>`).join('')}</select></div>` : ''}
@@ -2138,7 +2206,7 @@ function importBackup(file) {
       for (const e of rl) if (!runIds.has(e.id)) { runLog.push({ id: e.id, date: e.date, km: e.km }); runIds.add(e.id); addedL++; }
       runLog.sort((a, b) => a.date.localeCompare(b.date));
       const raceIds = new Set(races.map(e => e.id)); let addedC = 0;
-      for (const e of rc) if (!raceIds.has(e.id)) { races.push({ id: e.id, name: e.name, date: e.date, dist: e.dist, prio: e.prio, goal: e.goal ?? null, km: e.km ?? null }); raceIds.add(e.id); addedC++; }
+      for (const e of rc) if (!raceIds.has(e.id)) { races.push(Object.assign({ id: e.id, name: e.name, date: e.date, dist: e.dist, prio: e.prio, goal: e.goal ?? null, km: e.km ?? null }, e.fmt ? { fmt: e.fmt } : {})); raceIds.add(e.id); addedC++; }
       const wdays = new Set(weights.map(e => e.date)); let addedG = 0;
       for (const e of wg) if (!wdays.has(e.date)) { weights.push({ date: e.date, kg: e.kg }); wdays.add(e.date); addedG++; }
       persistEntries(); persistWaist(); if (addedR) persistRunWeeks(); if (addedL) persistRunLog(); if (addedC) persistRaces(); if (addedG) persistWeight();
@@ -2220,7 +2288,7 @@ function planIcs(S = seasonPlan()) {
     }
   }
   for (const r of races.filter(r => r.date >= today)) add(`kb-race-${r.id}`, r.date, addDays(r.date, 1), `🏁 ${r.name} (${raceLabel(r)})`,
-    [T(`${r.prio}-Rennen`, `${r.prio} race`), r.goal ? T(`Zielzeit ${hms(r.goal)} = ${paceText(r.goal, raceKm(r))}`, `Goal time ${hms(r.goal)} = ${paceText(r.goal, raceKm(r))}`) : '', T('Warm-up: KB Tracker → Laufen → Warm-up', 'Warm-up: KB Tracker → Running → Warm-up')].filter(Boolean).join('\n'));
+    [T(`${r.prio}-Rennen`, `${r.prio} race`), r.fmt ? goalInfo(r) : r.goal ? T(`Zielzeit ${hms(r.goal)} = ${paceText(r.goal, raceKm(r))}`, `Goal time ${hms(r.goal)} = ${paceText(r.goal, raceKm(r))}`) : '', T('Warm-up: KB Tracker → Laufen → Warm-up', 'Warm-up: KB Tracker → Running → Warm-up')].filter(Boolean).join('\n'));
   return ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//KB Tracker//Laufplan//DE', 'CALSCALE:GREGORIAN', 'X-WR-CALNAME:' + T('Laufplan', 'Running plan'), ...ev, 'END:VCALENDAR'].map(icsFold).join('\r\n') + '\r\n';
 }
 function exportPlanIcs() {
@@ -2605,7 +2673,8 @@ $('runcontent').addEventListener('input', e => {
   if (t.dataset && t.dataset.tpart && t.value.length === 2 && t.dataset.tpart !== '2') { const n = t.closest('.timein').querySelector(`[data-tpart="${Number(t.dataset.tpart) + 1}"]`); if (n) { n.focus(); n.select(); } }
   if (t.id === 'bestdist') { $('bestkmfield').classList.toggle('hide', t.value !== 'custom'); return; }
   if (t.id === 'bestfrom') { bestPrefill(t.value); return; }
-  if (t.id === 'racedist') { $('racekmfield').classList.toggle('hide', t.value !== 'custom'); if (t.value === 'custom') $('racekm').focus(); return; }
+  if (t.id === 'racedist') { syncRaceForm(true); return; }
+  if (t.id === 'racekm') { syncRaceForm(false); return; }
   if (t.closest && t.closest('#pctime') || t.id === 'pcdist' || t.id === 'pckm') { renderPace(); return; }
   if (!t.dataset || !t.dataset.wk) return;
   const v = kmNum(t.value), bad = Number.isNaN(v);
