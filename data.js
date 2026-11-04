@@ -396,6 +396,7 @@ const SEASON = {
   },
   bRace: 'B-Rennen: 2–3 lockere Tage davor, das Rennen ersetzt die Qualitätseinheit (ab Halbmarathon auch den Longrun). Danach 2–4 Tage locker.',
   bInTaper: 'Fällt ins Tapering vor dem A-Rennen: nur locker mitlaufen, nicht auf Zeit.',
+  bInRecover: 'Fällt in die Erholung nach dem A-Rennen: nur locker mitlaufen, nicht auf Zeit – zwei harte Rennen so kurz hintereinander kosten mehr, als sie bringen.',
   // Erholung nach dem A-Rennen (Faustregeln, je härter das Rennen, desto länger)
   recoverNote: { '5k': 'Nach 5 km: etwa 2–3 Tage aktive Erholung – gehen, locker radeln oder kurz und ruhig laufen.', '10k': 'Nach 10 km: etwa 4–6 Tage locker bewegen, danach den Umfang langsam wieder steigern.', hm: 'Nach dem Halbmarathon: etwa 10–14 Tage ausreichend Ruhe und nur leichtes Training, kein Tempo.', marathon: 'Nach dem Marathon: etwa 3–4 Wochen – Erholung zuerst, dann schrittweise zurück zu Umfang und Tempo.' },
   intro: 'Trag deine A-Rennen mit Datum und Distanz ein – dafür baut der Plan je einen Block aus Grundlage, Aufbau, spezifischer Phase und Tapering. B-Rennen laufen ohne eigenen Block mit. Longrun und Wochen-km rechnet der Plan aus deinem Umfang: höchstens 10 % mehr pro Woche, jede 4. Woche Entlastung.',
@@ -411,7 +412,9 @@ const SEASON_GUIDE = [
   ] },
   { title: 'Wie der Plan rechnet', sub: 'Phasen, Entlastung, Grenzen', items: [
     'Rückwärts ab jedem A-Rennen: Tapering (5/10 km 1 Woche, HM 2, Marathon 3), davor die spezifische Phase, Aufbau und Grundlage.',
-    'Liegen zwei A-Rennen zu dicht beieinander, wird der zweite Block vorne gekürzt – zuerst die Grundlage. Unter der Mindestdauer warnt der Plan.',
+    'Liegen zwei A-Rennen dicht beieinander, wird der zweite Block vorne gekürzt – zuerst die Grundlage. Wird er kürzer als die Mindestdauer (5/10 km 6 Wochen, HM 8, Marathon 12), bereitet der Plan beide zusammen vor: In den Wochen davor gilt jede zweite Qualitätseinheit schon dem späteren Rennen (⇄ im Saisonplan), Longrun und Wochen-km richten sich nach dem längeren Rennen. Sind beide von derselben Art (z. B. Halbmarathon und Wings for Life über 20 km), zählt die Vorbereitung einfach für beide.',
+    'Es bleibt bei einer Qualitätseinheit pro Woche, und die Erholung nach dem ersten Rennen fällt nicht weg. Hat das frühere Rennen selbst nur einen gekürzten Block, bleibt der ihm – dann warnt der Plan, dass für das spätere kein Platz ist.',
+    'Zu dicht sind zwei A-Rennen, wenn das zweite in die Erholung nach dem ersten fällt oder das erste ins Tapering vor dem zweiten – etwa Halbmarathon und eine Woche später Marathon. Das zeigen Plan und Rennformular als Warnung: Eines davon als B-Rennen eintragen. Ein B-Rennen in der Erholung oder im Tapering läuft nur locker mit.',
     'Nach jedem A-Rennen folgt Erholung (5/10 km 1 Woche, HM 2, Marathon 3), danach Basis bis zum nächsten Block.',
     'Longrun und Wochen-km wachsen höchstens 10 % pro Woche, ausgehend von deinem Umfang. Nach drei Aufbauwochen folgt eine Entlastungswoche.',
     'Ziel-Longrun und Wochenspitze richten sich nach der Zielzeit: Marathon unter 3:30 → 32 km und 70 km/Woche, unter 4:00 → 32 und 62, unter 4:45 → 30 und 55, sonst 28 und 45. Halbmarathon unter 1:40 → 22 und 60, unter 1:55 → 21 und 52, unter 2:15 → 20 und 45, sonst 18 und 35. 10 km unter 42 Min. → 18 und 50, unter 50 → 16 und 40, unter 60 → 14 und 32, sonst 12 und 25. 5 km unter 21 Min. → 15 und 45, unter 25 → 14 und 35, unter 30 → 12 und 28, sonst 10 und 20.',
@@ -677,6 +680,7 @@ const CHANGELOG = [
     ['Mobility', 'Bis zum Ende geführte Mobility-Routinen zählen jetzt für die Woche.', 'neu'],
     ['Wings for Life', 'Neu bei den Rennen: Wings for Life World Run mit Ziel in km. Die App rechnet aus dem Tempo des Catcher Cars, wann es dich dort einholt, und daraus deine Mindest-Pace – dazu, wie weit deine Form etwa reicht.', 'neu'],
     ['Pace Race', 'Neu bei den Rennen: Pace Race mit Ziel-Level. Die App zeigt das Zeitlimit der Zielrunde und plant 1-km-Wiederholungen mit 60 Sek. Pause bis ins Level-Tempo ein.', 'neu'],
+    ['Dichte Rennen', 'Liegen zwei A-Rennen nah beieinander, bereitet der Plan beide zusammen vor: Vorher gilt jede zweite Qualitätseinheit schon dem späteren Rennen, Longrun und Wochen-km richten sich nach dem längeren. Fällt ein A-Rennen in die Erholung nach einem anderen oder in dessen Tapering, warnen Plan und Rennformular – eines davon besser als B-Rennen. B-Rennen in der Erholung laufen nur locker mit.', 'neu'],
     ['Navigation', 'Die untere Leiste hat jetzt „Start“ statt „Mehr“ – Mehr erreichst du über die Kachel auf der Startseite. Auf der Startseite selbst gibt es keine Leiste.', 'ux']
   ] },
   { id: '2026-11-03', aka: ['2026-11-03b', '2026-11-03c'], date: '2026-11-03', version: '1.0', title: 'Lauf-Einstieg, Trainingstempos, Testläufe, Abhaken, Stufen & Fehlerbehebungen', items: [

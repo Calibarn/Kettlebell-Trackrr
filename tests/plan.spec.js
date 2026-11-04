@@ -60,10 +60,15 @@ test('Saison: zu dichte A-Rennen und zu wenig Zeit werden gewarnt', async ({ pag
     { id: 'x1', name: 'HM eins', date: '2027-03-07', dist: 'hm', prio: 'A', goal: null },
     { id: 'x2', name: 'Marathon zwei', date: '2027-05-02', dist: 'marathon', prio: 'A', goal: null }
   ]);
+  // 8 Wochen Abstand: machbar, aber nur 6 Wochen eigener Block → gemeinsamer Block (Hinweis statt Warnung, Details in dichte-rennen.spec.js)
   const { warn, weeks } = await plan(page, '2026-11-04', { L0: 10, W0: 20 });
-  expect(warn.join(' ')).toContain('Marathon zwei: nur 6 Wochen nach der Erholung von HM eins');
-  expect(warn.join(' ')).toContain('Longrun von etwa');
+  const note = await page.evaluate(() => seasonPlan('2026-11-04', { L0: 10, W0: 20 }).note);
+  expect(note.join(' ')).toContain('Marathon zwei kommt 8 Wochen nach HM eins: Der Plan bereitet beide zusammen vor');
+  expect(warn).toEqual([]);
   expect(weeks.find(x => x.week === '2027-04-26').phase).toBe('taper');
+  // Longrun-Ziel nicht erreichbar
+  await setRaces(page, [{ id: 'x4', name: 'Bald Marathon', date: '2027-02-21', dist: 'marathon', prio: 'A', goal: null }]);
+  expect((await plan(page, '2026-11-04', { L0: 8, W0: 15 })).warn.join(' ')).toContain('Longrun von etwa');
 
   await setRaces(page, [{ id: 'x3', name: 'Kurzfristig', date: '2026-11-22', dist: '10k', prio: 'A', goal: null }]);
   expect((await plan(page, '2026-11-04')).warn.join(' ')).toContain('Kurzfristig: nur noch 3 Wochen');

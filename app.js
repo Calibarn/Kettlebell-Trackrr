@@ -1191,6 +1191,8 @@ const markTime = (id, bad) => { for (const i of $(id).querySelectorAll('[data-tp
 const hms = s => { s = Math.round(s); const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60; return (h ? h + ':' + String(m).padStart(2, '0') : String(m)) + ':' + String(x).padStart(2, '0'); };
 const paceText = (sec, km) => hms(sec / km) + ' /km';
 // Ziel-Longrun und Wochenspitze: aus der Zielzeit, sonst die Standardwerte der Distanz
+// Im gemeinsamen Block zählt das jeweils höhere Ziel beider Rennen
+const bothPeaks = x => { const a = peaks(x.target); if (!x.with) return a; const b = peaks(x.with); return { long: Math.max(a.long, b.long), week: Math.max(a.week, b.week), fromGoal: a.fromGoal || b.fromGoal }; };
 function peaks(r) {
   const d = SEASON.dist[r.dist], goal = raceGoal(r);
   if (!goal) return { long: d.longPeak, week: d.weekPeak, fromGoal: false };
@@ -1206,8 +1208,8 @@ function seasonPlan(today = localDay(), opt = {}) {
   const start = weekStart(today), D = k => SEASON.dist[k];
   const A = races.filter(r => r.prio === 'A');
   const prev = A.filter(r => weekStart(r.date) < start).at(-1) || null, next = A.filter(r => weekStart(r.date) >= start);
-  const warn = [];
-  if (!next.length) return { weeks: [], warn, races: next };
+  const warn = [], note = [], mix = [];
+  if (!next.length) return { weeks: [], warn, note, races: next };
   const end = weekStart(next.at(-1).date), n = weeksBetween(start, end) + 1;
   const weeks = Array.from({ length: n }, (_, i) => ({ week: addDays(start, 7 * i), phase: 'basis', target: null, b: [], a: null }));
   const idx = w => weeksBetween(start, w);
@@ -1220,9 +1222,12 @@ function seasonPlan(today = localDay(), opt = {}) {
     let from = addDays(rw, -7 * (total - 1));
     if (earliest && from < earliest) from = earliest > rw ? rw : earliest;
     const avail = weeksBetween(from, rw) + 1;
-    if (earliest && avail < total) warn.push(avail < d.minWeeks
-      ? T(`${r.name}: nur ${avail} ${avail === 1 ? 'Woche' : 'Wochen'} nach der Erholung von ${last.name} – empfohlen sind mindestens ${d.minWeeks}. Eines der beiden besser als B-Rennen laufen.`, `${r.name}: only ${avail} ${avail === 1 ? 'week' : 'weeks'} after recovering from ${last.name} – at least ${d.minWeeks} are recommended. Better run one of the two as a B race.`)
-      : T(`${r.name}: Block auf ${avail} statt ${total} Wochen gekürzt, weil ${last.name} davor liegt – die Grundlage fällt kürzer aus.`, `${r.name}: block shortened to ${avail} instead of ${total} weeks because ${last.name} comes before it – the foundation is shorter.`));
+    // Zwei A-Rennen zu dicht: das zweite liegt in der Erholung des ersten oder das erste im Tapering des zweiten
+    const gap = last ? weeksBetween(weekStart(last.date), rw) : null;
+    if (last && (gap <= D(last.dist).recover.length || gap < ph.taper)) warn.push(T(`${r.name} liegt nur ${gap} ${gap === 1 ? 'Woche' : 'Wochen'} nach ${last.name} – zwei A-Rennen so dicht sind zu viel: Erholung und Tapering überschneiden sich. Eines davon als B-Rennen eintragen, das läuft dann locker mit.`, `${r.name} is only ${gap} ${gap === 1 ? 'week' : 'weeks'} after ${last.name} – two A races this close are too much: recovery and taper overlap. Enter one of them as a B race, it then runs along easily.`));
+    // Nah beieinander, aber machbar: gemeinsamer Block – vorher wechseln sich die Qualitätseinheiten für beide ab
+    else if (earliest && avail < d.minWeeks) mix.push({ r, last, gap, avail });
+    else if (earliest && avail < total) warn.push(T(`${r.name}: Block auf ${avail} statt ${total} Wochen gekürzt, weil ${last.name} davor liegt – die Grundlage fällt kürzer aus.`, `${r.name}: block shortened to ${avail} instead of ${total} weeks because ${last.name} comes before it – the foundation is shorter.`));
     const fromStart = weeksBetween(start, rw) + 1;
     if (!earliest && fromStart < d.minWeeks) warn.push(T(`${r.name}: nur noch ${fromStart} ${fromStart === 1 ? 'Woche' : 'Wochen'} – für ${raceLabel(r)} sind mindestens ${d.minWeeks} sinnvoll. Ziel eher locker angehen.`, `${r.name}: only ${fromStart} ${fromStart === 1 ? 'week' : 'weeks'} left – for ${raceLabel(r)} at least ${d.minWeeks} make sense. Approach the goal rather easily.`));
     // rückwärts ab der Rennwoche: Tapering, spezifisch, Aufbau, Grundlage
@@ -1236,6 +1241,20 @@ function seasonPlan(today = localDay(), opt = {}) {
   }
   // Basis-Wochen: Ziel ist das nächste A-Rennen
   for (const x of weeks) if (!x.target) x.target = next.find(r => weekStart(r.date) >= x.week) || next.at(-1);
+  // Gemeinsamer Block: Wochen im eigentlichen Vorbereitungsfenster des späteren Rennens, die noch dem früheren gehören
+  // (Grundlage, Aufbau, spezifisch – nicht Tapering oder Erholung), bereiten das spätere mit vor
+  // Nicht in Wochen eines Rennens, das selbst nur einen gekürzten Block hat – dessen wenige Wochen gehören ihm
+  const mixed = new Set(mix.map(m => m.r));
+  for (const { r } of mix) {
+    const ph = D(r.dist).phases, rw = weekStart(r.date), from = addDays(rw, -7 * (ph.base + ph.build + ph.spec + ph.taper - 1));
+    for (const x of weeks) if (!x.with && x.week >= from && x.week < rw && x.target !== r && !mixed.has(x.target) && ['base', 'build', 'spec'].includes(x.phase)) x.with = r;
+  }
+  for (const { r, last, gap, avail } of mix) {
+    const wk = n => n === 1 ? T('1 Woche', '1 week') : T(`${n} Wochen`, `${n} weeks`), n = weeks.filter(x => x.with === r && mixFor(x)).length;
+    if (planKey(r) === planKey(last)) note.push(T(`${r.name} kommt ${gap} Wochen nach ${last.name}: Die Vorbereitung auf ${last.name} zählt auch für ${r.name}. Danach Erholung und ${wk(avail)} gezielt für ${r.name}.`, `${r.name} comes ${gap} weeks after ${last.name}: the preparation for ${last.name} also counts for ${r.name}. Then recovery and ${wk(avail)} targeted at ${r.name}.`));
+    else if (n) note.push(T(`${r.name} kommt ${gap} Wochen nach ${last.name}: Der Plan bereitet beide zusammen vor. Vorher gilt jede zweite Qualitätseinheit schon ${r.name} (${n} × ⇄ im Saisonplan), Longrun und Wochen-km richten sich nach dem längeren Rennen. Nach der Erholung bleiben ${wk(avail)} gezielt für ${r.name}.`, `${r.name} comes ${gap} weeks after ${last.name}: the plan prepares both together. Before that every second quality session is already for ${r.name} (${n} × ⇄ in the season plan), long run and weekly km follow the longer race. After recovery ${wk(avail)} remain targeted at ${r.name}.`));
+    else warn.push(T(`${r.name} kommt ${gap} Wochen nach ${last.name}: Nach der Erholung bleiben nur ${wk(avail)} für ${r.name}, davor ist kein Platz für eigene Einheiten. Besser eines der Rennen als B-Rennen eintragen – dann bekommt das andere einen richtigen Block.`, `${r.name} comes ${gap} weeks after ${last.name}: after recovery only ${wk(avail)} remain for ${r.name}, before that there is no room for its own sessions. Better enter one of the races as a B race – then the other gets a proper block.`));
+  }
   for (const r of races.filter(x => x.prio === 'B')) { const i = idx(weekStart(r.date)); if (i >= 0 && i < n) weeks[i].b.push(r); }
 
   // Vorwärts: Longrun (L) und Wochen-km (W) mit höchstens +10 % pro Woche und Entlastung nach drei Aufbauwochen
@@ -1255,7 +1274,7 @@ function seasonPlan(today = localDay(), opt = {}) {
       const f = d.taper[x.k];
       x.long = L === null || !f.long ? null : peakL * f.long; x.km = W === null ? null : peakW * f.wk; streak = 0; return;
     }
-    const pk = peaks(x.target), share = SEASON.cap[p], capL = Math.max(8, pk.long * share), capW = Math.max(15, pk.week * share);
+    const pk = bothPeaks(x), share = SEASON.cap[p], capL = Math.max(8, pk.long * share), capW = Math.max(15, pk.week * share);
     if (streak >= SEASON.cutEvery && nextPh !== 'taper') {
       x.cut = true; streak = 0;
       x.long = L === null ? null : L * SEASON.cutLong; x.km = W === null ? null : W * SEASON.cutWeek; return;
@@ -1278,11 +1297,14 @@ function seasonPlan(today = localDay(), opt = {}) {
   // Machbarkeit: erreicht der Longrun vor dem Tapering das Ziel?
   for (const r of next) {
     const pk = peaks(r), i0 = weeks.findIndex(x => x.target === r && x.phase === 'taper');
-    const pre = weeks.slice(0, i0 < 0 ? 0 : i0).filter(x => x.target === r && x.long !== null && x.long !== undefined).at(-1);
+    // Rennen dicht nach einem anderen: dessen Block und das Rennen selbst zählen mit – die Ausdauer ist ja schon da
+    const m = mix.find(c => c.r === r), mine = x => x.target === r || x.with === r || (m && x.target === m.last);
+    const longs = weeks.slice(0, i0 < 0 ? 0 : i0).filter(x => mine(x) && x.long !== null && x.long !== undefined).map(x => x.long);
+    const pre = longs.length ? { long: Math.max(...longs, m ? raceKm(m.last) : 0) } : null;
     if (pre && pre.long < pk.long * 0.9) warn.push(T(`${r.name}: Mit +10 % pro Woche schaffst du bis zum Tapering einen Longrun von etwa ${Math.round(pre.long)} km – das Ziel sind ${pk.long} km. Mehr Vorlauf einplanen oder das Ziel locker angehen.`, `${r.name}: with +10 % per week you reach a long run of about ${Math.round(pre.long)} km by the taper – the target is ${pk.long} km. Plan more lead time or approach the goal easily.`));
   }
   markTests(weeks, today);
-  return { weeks, warn, races: next, hasData: L !== null || W !== null, start };
+  return { weeks, warn, note, races: next, hasData: L !== null || W !== null, start };
 }
 const phaseKey = x => x.cut ? 'cut' : x.phase;
 /* Aufklappbare Bereiche (Akkordeon): je Gruppe (data-acc) ist höchstens einer offen; welcher, merkt sich das Gerät.
@@ -1368,10 +1390,14 @@ function renderPaces() {
   return `${stale}<div class="group sectgroup">${sectHtml('runplan', 'sect-paces', '⏱', 'var(--accent)', T('Trainingstempos', 'Training paces'), sum, `<div id="planpaces">${rows.map(([n, v, d]) => `<div class="row"><span class="txt"><b>${esc(n)}</b><small>${esc(d)}</small></span><span class="val">${esc(v)}</span></div>`).join('')}</div>
     <p class="footer">${T(`Aus deinem Ergebnis ${esc(groupLabel(resultGroup(r)))} in ${hms(r.time)} am ${dateGerman(r.date)}, mit Riegel umgerechnet. Es zählt das neueste Ergebnis, solange es höchstens 3 % langsamer ist als dein bestes der letzten 12 Monate – so werden die Tempos mit jedem Testlauf oder Rennen aktuell, nicht aus der Zielzeit. Richtwerte – bei Hitze, Wind, Hügeln oder müden Beinen langsamer.`, `From your result ${esc(groupLabel(resultGroup(r)))} in ${hms(r.time)} on ${dateGerman(r.date)}, converted with Riegel. Your newest result counts as long as it is at most 3 % slower than your best of the last 12 months – so the paces follow every time trial or race, not the goal time. Guidelines – slower in heat, wind, hills or with tired legs.`)}</p>`)}</div>`;
 }
+// Gemeinsamer Block: in geraden Kalenderwochen gilt die Qualitätseinheit dem späteren Rennen – nur, wenn es andere Einheiten hat
+const mixFor = x => x.with && planKey(x.with) !== planKey(x.target) && !(isoWeek(x.week) % 2) ? x.with : null;
 function weekKey(x) {
-  const t = SEASON.key[x.phase] || SEASON.key.basis, list = t[planKey(x.target)] || t[x.target.dist] || t.all, odd = isoWeek(x.week) % 2;
-  const txt = list[odd ? 0 : 1], tp = /^(Intervall|Intervals):/.test(txt) ? trainingPaces() : null;
-  return (x.cut ? T('kürzer: ', 'shorter: ') : '') + withPace(txt, x.target) + (tp ? ` (≈ ${hms(tp.interval)} /km)` : '') + (x.phase === 'recover' ? easyPace() : '');
+  const odd = isoWeek(x.week) % 2, mix = mixFor(x), r = mix || x.target;
+  const t = SEASON.key[x.phase] || SEASON.key.basis, list = t[planKey(r)] || t[r.dist] || t.all;
+  // im gemeinsamen Block: ungerade KW die erste Einheit fürs aktuelle Ziel, gerade KW die erste fürs spätere Rennen
+  const txt = mix ? list[0] : list[odd ? 0 : 1], tp = /^(Intervall|Intervals):/.test(txt) ? trainingPaces() : null;
+  return (x.cut ? T('kürzer: ', 'shorter: ') : '') + withPace(txt, r) + (tp ? ` (≈ ${hms(tp.interval)} /km)` : '') + (x.phase === 'recover' ? easyPace() : '') + (mix ? T(` · für ${mix.name}`, ` · for ${mix.name}`) : '');
 }
 function weekLongNote(x) {
   if (x.a) return T('kein Longrun – Rennwoche', 'no long run – race week');
@@ -1389,7 +1415,7 @@ function weekSchedule(x) {
   const add = (d, kind, title, detail) => out.push({ d, kind, title, detail, plan: kind === 'strength' ? dayPlan(d) : null });
   const before = (d, gap = 1) => dayIdx(d) <= rd - gap;
   if (x.a) add(new Date(x.a.date + 'T12:00:00').getDay(), 'race', T(`Rennen: ${x.a.name}`, `Race: ${x.a.name}`), raceLabel(x.a) + goalLine(x.a));
-  if (x.bRace) add(new Date(x.bRace.date + 'T12:00:00').getDay(), 'brace', T(`B-Rennen: ${x.bRace.name}`, `B race: ${x.bRace.name}`), raceLabel(x.bRace) + goalLine(x.bRace) + (x.bSpike ? T(' · locker, nicht auf Zeit', ' · easy, not for time') : ''));
+  if (x.bRace) add(new Date(x.bRace.date + 'T12:00:00').getDay(), 'brace', T(`B-Rennen: ${x.bRace.name}`, `B race: ${x.bRace.name}`), raceLabel(x.bRace) + goalLine(x.bRace) + (x.bSpike || x.phase === 'recover' || x.phase === 'taper' ? T(' · locker, nicht auf Zeit', ' · easy, not for time') : ''));
   if (w.quality !== null && (!x.a || before(w.quality, 2)) && !x.bRace) add(w.quality, 'quality', x.phase === 'recover' ? T('Locker laufen', 'Easy run') : x.test ? T('Testlauf 5 km', 'Time trial 5 km') : T('Qualität', 'Quality'), x.test ? T('nach 15 Min. Einlaufen 5 km so schnell, wie du gleichmäßig durchhalten kannst – danach unter Bestzeiten eintragen, dann passen die Tempos', 'after a 15 min warm-up run 5 km as fast as you can hold evenly – then enter it under Best times so the paces update') : weekKey(x));
   if (w.group !== null && (!x.a || before(w.group))) add(w.group, 'group', T('Laufgruppe', 'Running group'), hrize(x.a ? T('ganz locker, Zone 2', 'very easy, Zone 2') : T('locker, Zone 2', 'easy, Zone 2')) + easyPace());
   if (!x.a && !x.bLong && w.long !== null) { const lv = kmRound(x.long); add(w.long, 'long', x.noLong ? T('Locker oder frei', 'Easy or rest') : lv ? T(`Longrun ca. ${lv} km`, `Long run approx. ${lv} km`) : T('Longrun', 'Long run'), weekLongNote(x)); }
@@ -1500,7 +1526,7 @@ function renderPlanWeek(S) {
   const kmVal = kmRound(x.km);
   // Rennwoche und Erholungswochen: wie lange die Erholung nach dieser Distanz etwa dauert
   const rec = x.a || (x.phase === 'recover' ? x.target : null), recNote = rec && SEASON.recoverNote[rec.dist] ? `<div class="alert">${esc(SEASON.recoverNote[rec.dist])}</div>` : '';
-  const bs = x.b.map(b => `<div class="alert"><b>${esc(b.name)}</b> (${esc(raceLabel(b))}, ${dayLabel(b.date)}): ${esc(x.phase === 'taper' ? SEASON.bInTaper : SEASON.bRace)}</div>`).join('');
+  const bs = x.b.map(b => `<div class="alert"><b>${esc(b.name)}</b> (${esc(raceLabel(b))}, ${dayLabel(b.date)}): ${esc(x.phase === 'taper' ? SEASON.bInTaper : x.phase === 'recover' ? SEASON.bInRecover : SEASON.bRace)}</div>`).join('');
   return `<div class="header">${T('Diese Woche · KW ', 'This week · wk ')}${isoWeek(x.week)}</div><div class="group"><div class="panel" style="border:0;padding-top:12px" id="planweek">
     <div class="phasebadge ph-${phaseKey(x)}">${esc(pl)}</div>
     <p class="loadstatus">${wk === 0 ? T(`Rennwoche: <b>${esc(nxt.name)}</b> am ${dayLabel(nxt.date)}`, `Race week: <b>${esc(nxt.name)}</b> on ${dayLabel(nxt.date)}`) : T(`Noch ${wk} ${wk === 1 ? 'Woche' : 'Wochen'} bis <b>${esc(nxt.name)}</b> (${esc(raceLabel(nxt))}, ${dateGerman(nxt.date)})`, `${wk} ${wk === 1 ? 'week' : 'weeks'} to <b>${esc(nxt.name)}</b> (${esc(raceLabel(nxt))}, ${dateGerman(nxt.date)})`)}${esc(goalLine(nxt))}</p>
@@ -1521,7 +1547,7 @@ function renderPlanWeek(S) {
 function renderPlanSeason(S) {
   const SHOW = 8, row = (x, i) => {
     const [pl] = SEASON.phase[phaseKey(x)], lv = kmRound(x.long), kv = kmRound(x.km);
-    const marks = (x.a ? [`🏁 ${esc(x.a.name)} · A`] : []).concat(x.b.map(b => `${esc(b.name)} · B`), x.test ? [`⏱ ${T('Testlauf', 'Time trial')}`] : []).join(' · ');
+    const marks = (x.a ? [`🏁 ${esc(x.a.name)} · A`] : []).concat(x.b.map(b => `${esc(b.name)} · B`), x.test ? [`⏱ ${T('Testlauf', 'Time trial')}`] : [], mixFor(x) ? [`⇄ ${esc(x.with.name)}`] : []).join(' · ');
     const nums = [x.a ? T('Rennen', 'Race') : x.bLong ? T(`Rennen ${raceLabel(x.bRace)} statt Longrun`, `race ${raceLabel(x.bRace)} instead of long run`) : x.noLong ? T('kein Longrun', 'no long run') : lv === null || lv === undefined ? '' : T(`Longrun ${lv} km`, `long run ${lv} km`), kv === null || kv === undefined ? '' : T(`Woche ${kv} km`, `week ${kv} km`)].filter(Boolean).join(' · ');
     return `<div class="row planweek${i === 0 ? ' now' : ''}${x.a ? ' race' : ''}"><span class="dur">${T('KW', 'Wk')} ${isoWeek(x.week)}<small>${dateShort(x.week)}</small></span><span class="txt"><b><span class="phasedot ph-${phaseKey(x)}"></span>${esc(pl)}${marks ? ` · ${marks}` : ''}</b>${nums ? `<small>${nums}</small>` : ''}</span></div>`;
   };
@@ -1535,6 +1561,30 @@ function renderPlanSeason(S) {
 let raceEdit = null;
 const raceKmLabel = sel => sel === 'wfl' ? T('Ziel in km', 'Goal in km') : sel === 'pace' ? T(`Ziel-Level (1–${PACE_RACE.levels})`, `Goal level (1–${PACE_RACE.levels})`) : T('Distanz in km', 'Distance in km');
 const fmtVal = (fmt, s) => { const v = kmNum(s); return v === null || Number.isNaN(v) ? null : v; };
+// Erholung und Tapering: Liegt ein Rennen in der Erholung nach einem A-Rennen oder dieses im Tapering davor, ist es zu dicht dran
+function raceClash(c) {
+  if (!isDay(c.date) || !SEASON.dist[c.dist]) return null;
+  const cw = weekStart(c.date);
+  for (const o of races) {
+    if (o.id === c.id || o.prio !== 'A' || !SEASON.dist[o.dist]) continue;
+    const ow = weekStart(o.date), gap = weeksBetween(ow, cw), rec = SEASON.dist[o.dist].recover.length, tap = SEASON.dist[c.dist].phases.taper;
+    if (gap >= 0 && gap <= rec) return { o, kind: 'recover', n: rec };
+    const g2 = -gap, tapO = SEASON.dist[o.dist].phases.taper, recC = SEASON.dist[c.dist].recover.length;
+    if (c.prio === 'A' && gap > 0 && gap < tap) return { o, kind: 'taper', n: tap }; // das andere liegt im Tapering dieses Rennens
+    if (g2 > 0 && g2 < tapO) return { o, kind: 'before', n: tapO }; // dieses Rennen liegt im Tapering des anderen
+    if (c.prio === 'A' && g2 > 0 && g2 <= recC) return { o, kind: 'after', n: recC }; // das andere liegt in der Erholung nach diesem
+  }
+  return null;
+}
+function raceClashText(c, k) {
+  const wk = n => n === 1 ? T('1 Woche', '1 week') : T(`${n} Wochen`, `${n} weeks`), on = `${k.o.name} (${dateGerman(k.o.date)})`;
+  const why = k.kind === 'recover' ? T(`Es fällt in die Erholung nach ${on}, die dauert etwa ${wk(k.n)}.`, `It falls into the recovery after ${on}, which takes about ${wk(k.n)}.`)
+    : k.kind === 'after' ? T(`${on} fällt in die Erholung danach, die dauert etwa ${wk(k.n)}.`, `${on} falls into the recovery afterwards, which takes about ${wk(k.n)}.`)
+    : k.kind === 'before' ? T(`Es fällt ins Tapering vor ${on} (${wk(k.n)}).`, `It falls into the taper before ${on} (${wk(k.n)}).`)
+    : T(`${on} fällt ins Tapering davor (${wk(k.n)}).`, `${on} falls into the taper before it (${wk(k.n)}).`);
+  return c.prio === 'A' ? T(`Zu dicht für zwei A-Rennen: ${why} Eines davon besser als B-Rennen eintragen.`, `Too close for two A races: ${why} Better enter one of them as a B race.`)
+    : T(`${why} Als B-Rennen nur locker mitlaufen, nicht auf Zeit.`, `${why} As a B race just run along easily, not for time.`);
+}
 // Formular an die Auswahl anpassen: Feld für km bzw. Level, Zielzeit nur bei fester Distanz, Rechnung bei Wings for Life und Pace Race
 function syncRaceForm(focus) {
   const sel = $('racedist').value, fmt = sel === 'wfl' || sel === 'pace' ? sel : null, showKm = sel === 'custom' || !!fmt, km = $('racekm');
@@ -1542,6 +1592,8 @@ function syncRaceForm(focus) {
   km.inputMode = sel === 'pace' ? 'numeric' : 'decimal'; km.placeholder = sel === 'pace' ? T('z. B. 12', 'e.g. 12') : T('z. B. 20', 'e.g. 20');
   $('racegoalfield').classList.toggle('hide', !!fmt);
   const info = $('racefmtinfo'); info.classList.toggle('hide', !fmt); info.innerHTML = fmt ? raceFmtInfo(fmt, fmtVal(fmt, km.value)) : '';
+  const kv = fmtVal(fmt, km.value), c = { id: raceEdit, date: $('racedate').value, prio: $('raceprio').value, dist: sel === 'custom' || fmt ? (kv >= 1 ? distForKm(kv) : null) : sel };
+  const k = raceClash(c), w = $('racewarn'); w.classList.toggle('hide', !k); w.textContent = k ? raceClashText(c, k) : '';
   if (focus && showKm) km.focus();
 }
 function renderRaces() {
@@ -1558,6 +1610,7 @@ function renderRaces() {
       <div class="field${e && e.km ? '' : ' hide'}" id="racekmfield"><label for="racekm" id="racekmlabel">${raceKmLabel(cur)}</label><input id="racekm" type="text" inputmode="${cur === 'pace' ? 'numeric' : 'decimal'}" autocomplete="off" placeholder="${cur === 'pace' ? T('z. B. 12', 'e.g. 12') : T('z. B. 20', 'e.g. 20')}" value="${e && e.km ? esc(kmText(e.km)) : ''}"></div>
       <div class="field"><label for="raceprio">${T('Priorität', 'Priority')}</label><select id="raceprio">${opt('A', T('A-Rennen', 'A race'), e ? e.prio : 'A')}${opt('B', T('B-Rennen', 'B race'), e ? e.prio : 'A')}</select></div>
       <p class="tiny racefmtinfo${fmt ? '' : ' hide'}" id="racefmtinfo">${fmt ? raceFmtInfo(fmt, fmtVal(fmt, e && e.km ? kmText(e.km) : '')) : ''}</p>
+      <p class="alert due racewarn hide" id="racewarn"></p>
       <div class="field wide${fmt ? ' hide' : ''}" id="racegoalfield"><label>${T('Zielzeit (optional)', 'Goal time (optional)')}</label>${timeFields('racegoal', e && !e.fmt && e.goal, T('Zielzeit', 'Goal time'))}</div>
       <div class="raceactions">${e ? `<button type="button" class="btn small danger" id="racedel">${T('Löschen', 'Delete')}</button><button type="button" class="btn small" id="racecancel">${T('Abbrechen', 'Cancel')}</button>` : ''}<button type="button" class="btn small primary" id="racesave">${e ? T('Speichern', 'Save') : T('Hinzufügen', 'Add')}</button></div>
     </div></div>
@@ -1855,7 +1908,7 @@ function renderPlan() {
   const sub = $('runsub');
   sub.classList.remove('hide');
   sub.innerHTML = [['woche', T('Übersicht', 'Overview')], ['rennen', T('Rennen', 'Races')], ['bestzeiten', T('Bestzeiten', 'Best times')], ['wissen', T('Wissen', 'Knowledge')]].map(([k, l]) => `<button role="tab" type="button" data-runsub="${k}" aria-selected="${runView.plan === k}">${l}</button>`).join('');
-  if (runView.plan === 'rennen') { $('runcontent').innerHTML = renderRaces(); return; }
+  if (runView.plan === 'rennen') { $('runcontent').innerHTML = renderRaces(); if (raceEdit) syncRaceForm(false); return; }
   if (runView.plan === 'bestzeiten') { $('runcontent').innerHTML = renderBests(); return; }
   if (runView.plan === 'wissen') { $('runcontent').innerHTML = renderPlanGuide(); renderPace(); return; }
   if (runnerLevel() === 'beginner') { $('runcontent').innerHTML = renderStarter(); return; }
@@ -1871,7 +1924,7 @@ function renderPlan() {
     $('runcontent').insertAdjacentHTML('beforeend', renderPaces());
     return;
   }
-  $('runcontent').innerHTML = ask + (S.warn.length ? S.warn.map(w => `<div class="alert due">${esc(w)}</div>`).join('') : '') + renderPlanWeek(S) + renderPaces() + renderPlanSeason(S) + `<p class="footer">${esc(SEASON.note)}</p>`;
+  $('runcontent').innerHTML = ask + (S.warn.length ? S.warn.map(w => `<div class="alert due">${esc(w)}</div>`).join('') : '') + (S.note.length ? S.note.map(w => `<div class="alert planmix">${esc(w)}</div>`).join('') : '') + renderPlanWeek(S) + renderPaces() + renderPlanSeason(S) + `<p class="footer">${esc(SEASON.note)}</p>`;
 }
 
 /* ---------- Sync zwischen Geräten über eine Datei (iCloud Drive, Google Drive, OneDrive, Dropbox …) ----------
@@ -2674,7 +2727,7 @@ $('runcontent').addEventListener('input', e => {
   if (t.id === 'bestdist') { $('bestkmfield').classList.toggle('hide', t.value !== 'custom'); return; }
   if (t.id === 'bestfrom') { bestPrefill(t.value); return; }
   if (t.id === 'racedist') { syncRaceForm(true); return; }
-  if (t.id === 'racekm') { syncRaceForm(false); return; }
+  if (t.id === 'racekm' || t.id === 'racedate' || t.id === 'raceprio') { syncRaceForm(false); return; }
   if (t.closest && t.closest('#pctime') || t.id === 'pcdist' || t.id === 'pckm') { renderPace(); return; }
   if (!t.dataset || !t.dataset.wk) return;
   const v = kmNum(t.value), bad = Number.isNaN(v);
