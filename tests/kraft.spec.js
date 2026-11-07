@@ -10,10 +10,10 @@ test('Geräte-Auswahl: ein Gerät → nur dieses Gerät, nichts gewählt → Kö
     const out = {};
     for (const g of ['kb', 'band', 'bw']) {
       gear = { kb: g === 'kb', band: g === 'band', bw: g === 'bw' };
-      out[g] = PLAN_ORDER.filter(pk => !PLANS[pk].kbOnly).flatMap(pk => exList(pk).map(x => x.g));
+      out[g] = PLAN_ORDER.filter(pk => !PLANS[pk].kbOnly && !PLANS[pk].vacationOnly).flatMap(pk => exList(pk).map(x => x.g));
     }
     gear = { kb: false, band: false, bw: false }; ensureGear();
-    out.none = PLAN_ORDER.filter(pk => !PLANS[pk].kbOnly).flatMap(pk => exList(pk).map(x => x.g));
+    out.none = PLAN_ORDER.filter(pk => !PLANS[pk].kbOnly && !PLANS[pk].vacationOnly).flatMap(pk => exList(pk).map(x => x.g));
     return out;
   });
   for (const g of ['kb', 'band', 'bw']) expect(new Set(result[g])).toEqual(new Set([g]));

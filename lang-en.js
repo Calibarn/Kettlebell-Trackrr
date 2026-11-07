@@ -1595,7 +1595,23 @@ const EN_TEXT = {
 "Reihenfolge nach Position": "Order by position",
 "Die Kraftübungen kommen jetzt nach Position: erst alles im Stehen, dann Knien oder Sitzen, zum Schluss alles im Liegen – kein ständiges Hinlegen und Aufstehen mehr. Innerhalb einer Position bleibt die geplante Reihenfolge. Der Vergleich mit früheren Einheiten bleibt erhalten. Gilt für alle Zirkel, Tabata und EMOM, nicht für den Läufer-Plan mit Sätzen.": "Strength exercises now follow position: everything standing first, then kneeling or sitting, finally everything lying – no more constant lying down and getting up. Within a position the planned order stays. Comparison with earlier sessions is kept. Applies to all circuits, Tabata and EMOM, not to the runner plan with sets.",
 "Anleitung im Training": "Guide during the workout",
-"Öffnest du während des Trainings die Anleitung, zeigt sie immer die aktuelle Übung – auch wenn Aufwärmen, Cooldown, Halteübungen oder Intervalle von selbst weiterschalten. Unten gibt es „Erledigt – nächste Übung“ bzw. „Nächste Übung“, du musst die Anleitung also nicht erst schließen.": "If you open the guide during a workout it always shows the current exercise – even when warm-up, cooldown, holds or intervals move on by themselves. At the bottom there is “Done – next exercise” or “Next exercise”, so you no longer have to close the guide first."
+"Öffnest du während des Trainings die Anleitung, zeigt sie immer die aktuelle Übung – auch wenn Aufwärmen, Cooldown, Halteübungen oder Intervalle von selbst weiterschalten. Unten gibt es „Erledigt – nächste Übung“ bzw. „Nächste Übung“, du musst die Anleitung also nicht erst schließen.": "If you open the guide during a workout it always shows the current exercise – even when warm-up, cooldown, holds or intervals move on by themselves. At the bottom there is “Done – next exercise” or “Next exercise”, so you no longer have to close the guide first.",
+"Hotel": "Hotel",
+"Hotel · Körpergewicht": "Hotel · body weight",
+"Für unterwegs: nur Körpergewicht, ohne Sprünge – leise genug fürs Hotelzimmer. Es reichen etwa 2 × 2 m, Bett oder Stuhl helfen als Erhöhung und zum Festhalten. Gut 25 Minuten mit Aufwärmen und Cooldown.": "For travelling: body weight only, no jumps – quiet enough for a hotel room. About 2 × 2 m is enough, a bed or chair helps as a raised surface and for balance. A good 25 minutes with warm-up and cooldown.",
+"langsam runter, Fersen am Boden": "slowly down, heels on the floor",
+"mit einer Hand an Stuhl oder Wand festhalten": "hold on to a chair or wall with one hand",
+"Hände auf Bettkante oder Stuhl an der Wand": "hands on the edge of the bed or a chair against the wall",
+"Stuhllehne zum Festhalten": "chair back to hold on to",
+"Hände auf einem stabilen Stuhl": "hands on a sturdy chair",
+"ruhig, ohne zu hüpfen": "calmly, without hopping",
+"auf Handtuch oder Teppich": "on a towel or carpet",
+"unterer Rücken bleibt am Boden": "lower back stays on the floor",
+"Knie dürfen am Boden bleiben": "knees may stay on the floor",
+"Hotel-Plan im Urlaub": "Hotel plan on holiday",
+"Während des Urlaubs gibt es unter Kraft den Reiter „Hotel“: nur Körpergewicht, ohne Sprünge, etwa 2 × 2 m Platz, Bett oder Stuhl als Hilfe, gut 25 Minuten. Krafttage im Urlaub schlagen auf der Startseite automatisch diesen Plan vor.": "During your holiday there is a “Hotel” tab under Strength: body weight only, no jumps, about 2 × 2 m of space, bed or chair as a help, a good 25 minutes. Strength days on holiday automatically suggest this plan on the home screen.",
+"Gym/Kurs als Krafttag": "Gym/class as a strength day",
+"Unter Profil → Trainingswoche kannst du für einen Krafttag „Gym/Kurs“ wählen und den Namen eintragen, z. B. Blaze. Auf der Startseite hakst du ihn ab, er zählt in der Woche als Kraft-Einheit und steht im Plan und im Kalender.": "Under Profile → Training week you can choose “Gym/class” for a strength day and enter its name, e.g. Blaze. You check it off on the home screen, it counts as a strength session for the week and shows up in the plan and calendar."
 };
 const EN_HTML = {
 "Kraft · Laufen · Mobility": "Strength · Running · Mobility",

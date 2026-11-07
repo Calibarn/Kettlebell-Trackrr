@@ -1,5 +1,5 @@
 // Startseite „Heute“: beim Öffnen, ohne untere Leiste; Kacheln führen in die Bereiche, in den Bereichen „Start“ statt „Mehr“.
-const { test, expect } = require('./fixtures');
+const { test, expect, openSect } = require('./fixtures');
 
 test.describe('mit Startseite', () => {
   test.use({ start: true });
@@ -171,9 +171,33 @@ test('Startseite: beim Kraft-Eintrag steht, was du bereitlegen solltest', async 
   const row = page.locator('#startcontent .srowt', { hasText: 'Kraft · Ganzkörper' });
   await expect(row.locator('.sneed')).toContainText('Du brauchst: Kettlebell 12 kg');
   await expect(row.locator('.sneed')).toContainText('Matte');
-  // im Urlaub nur, was ohne Geräte gebraucht wird
+  // im Urlaub: Hotel-Plan statt Ganzkörper, nur was ohne Geräte gebraucht wird
   await page.evaluate(() => { profile.kit.vacation = { from: localDay(), to: addDays(localDay(), 3), gear: { kb: false, band: false, bw: true } }; persistProfile(); renderStart(); });
-  await expect(row.locator('.sneed')).not.toContainText('Kettlebell');
+  const hotel = page.locator('#startcontent .srowt', { hasText: 'Kraft · Hotel' });
+  await expect(hotel.locator('.sneed')).toContainText('Matte');
+  await expect(hotel.locator('.sneed')).not.toContainText('Kettlebell');
+});
+
+test('Hotel-Plan nur im Urlaub als Reiter; Gym/Kurs als Krafttag mit Namen, abhaken zählt als Kraft', async ({ page }) => {
+  await page.evaluate(() => showArea('kraft'));
+  await expect(page.locator('#tabs button', { hasText: 'Hotel' })).toHaveCount(0);
+  await page.evaluate(() => { profile.kit.vacation = { from: localDay(), to: addDays(localDay(), 7), gear: { kb: false, band: false, bw: true } }; persistProfile(); renderAll(); showArea('kraft'); });
+  await expect(page.locator('#tabs button').first()).toHaveText('Hotel');
+  const r = await page.evaluate(() => { const ex = exList('hotel'); return { n: ex.length, g: [...new Set(ex.map(x => x.g))], secs: phaseSecs('hotel', 0) + phaseSecs('hotel', 1) + phaseSecs('hotel', 2) }; });
+  expect(r).toEqual({ n: 10, g: ['bw'], secs: 28 * 60 });
+  // Gym/Kurs
+  await page.evaluate(() => { profile.kit.vacation = null; const d = new Date(localDay() + 'T12:00:00').getDay(); profile.week.strength = [d]; profile.week.strengthPlan = {}; persistProfile(); renderProfile(); showArea('profil'); });
+  await openSect(page, 'sect-week');
+  const d = await page.evaluate(() => new Date(localDay() + 'T12:00:00').getDay());
+  await page.selectOption(`[data-wkplan="${d}"]`, 'gym');
+  await page.fill(`[data-wkgym="${d}"]`, 'Blaze'); await page.dispatchEvent(`[data-wkgym="${d}"]`, 'change');
+  expect(await page.evaluate(() => [profile.week.strengthPlan, profile.week.gymNames])).toEqual([{ [d]: 'gym' }, { [d]: 'Blaze' }]);
+  await page.evaluate(() => showArea('start'));
+  const row = page.locator('#startcontent .srowt', { hasText: 'Kurs · Blaze' });
+  await row.locator('[data-gymdone]').click();
+  await expect(row.locator('.sdone')).toBeVisible();
+  await expect(page.locator('#startcontent .sweek')).toContainText('1 von 1');
+  expect(await page.evaluate(() => getGymLog().map(e => e.n))).toEqual(['Blaze']);
 });
 
 test.describe('Lauf nachtragen', () => {

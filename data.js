@@ -79,6 +79,25 @@ PLANS.office = {
   warmup: [['0:30', 'Marschieren auf der Stelle'], ['0:30', 'Schulter- und Armkreisen'], ['0:45', 'Katze-Kuh'], ['0:45', 'Hüftbeuge ohne Gewicht'], ['0:30', 'Kniebeugen ohne Gewicht'], ['0:30 × 2', 'Beinpendel seitlich']],
   cooldown: [['0:45 × 2', 'Hüftbeuger-Dehnung'], ['0:30 × 2', 'Brustdehnung am Türrahmen'], ['1:30', 'Kindhaltung']]
 };
+// Urlaub/Hotel: nur Körpergewicht, ohne Sprünge (leise), ca. 2 × 2 m Platz, Bett oder Stuhl als Hilfe – nur während des Urlaubs als Reiter
+PLANS.hotel = {
+  tab: 'Hotel', label: 'Hotel · Körpergewicht', short: 'Hotel', mode: 'circuit', durations: [4, 20, 4], vacationOnly: true,
+  intro: 'Für unterwegs: nur Körpergewicht, ohne Sprünge – leise genug fürs Hotelzimmer. Es reichen etwa 2 × 2 m, Bett oder Stuhl helfen als Erhöhung und zum Festhalten. Gut 25 Minuten mit Aufwärmen und Cooldown.',
+  slots: [
+    { id: 'squat', v: { bw: ['Kniebeugen', '12–15', 'langsam runter, Fersen am Boden'] } },
+    { id: 'split', v: { bw: ['Split Squat', '8–10 je Seite', 'mit einer Hand an Stuhl oder Wand festhalten'] } },
+    { id: 'push', v: { bw: ['Liegestütze erhöht', '8–12', 'Hände auf Bettkante oder Stuhl an der Wand'] } },
+    { id: 'balance', v: { bw: ['Standwaage', '6 je Seite', 'Stuhllehne zum Festhalten'] } },
+    { id: 'pike', v: { bw: ['Pike-Liegestütze erhöht', '6–8', 'Hände auf einem stabilen Stuhl'] } },
+    { id: 'crunch', v: { bw: ['Stehende Knie-Ellenbogen-Crunches', '10 je Seite', 'ruhig, ohne zu hüpfen'] } },
+    { id: 'birddog', v: { bw: ['Bird Dog', '8 je Seite', 'auf Handtuch oder Teppich'] } },
+    { id: 'bridge', v: { bw: ['Hüftheben', '15', 'oben 2 Sek. halten'] } },
+    { id: 'deadbug', v: { bw: ['Dead Bug', '8 je Seite', 'unterer Rücken bleibt am Boden'] } },
+    { id: 'side', v: { bw: ['Seitstütz', '20–30 Sek. je Seite', 'Knie dürfen am Boden bleiben'] } }
+  ],
+  warmup: [['0:30', 'Marschieren auf der Stelle'], ['0:30', 'Schulter- und Armkreisen'], ['0:45', 'Katze-Kuh'], ['0:45', 'Hüftbeuge ohne Gewicht'], ['0:30', 'Kniebeugen ohne Gewicht'], ['0:30 × 2', 'Beinpendel seitlich']],
+  cooldown: [['0:45 × 2', 'Hüftbeuger-Dehnung'], ['0:30 × 2', 'Brustdehnung am Türrahmen'], ['1:30', 'Kindhaltung']]
+};
 PLANS.tabata = {
   tab: 'Tabata', label: 'Tabata · Ganzkörper', short: 'Tabata', mode: 'tabata', durations: [4, 0, 4],
   intro: 'Fünf Ganzkörper-Übungen mit Kettlebell, Band oder Körpergewicht, je 20 Sek. Vollgas und 10 Sek. Pause. Läuft komplett automatisch mit Ton bei jedem Wechsel – nichts antippen, einfach mitmachen. Runden und Pause sind einstellbar.',
@@ -123,7 +142,7 @@ const EMOM_PLAN_TEXT = 'EMOM heißt „Every Minute On the Minute“: Zu Beginn 
 // Tabata als Zirkel: Übung 1 20″, 10″ Pause, Übung 2 … – das Ganze 3 × (je Übung 3 × 20″), zwischen den Runden eine längere Pause
 const TABATA_DEFAULT = { rounds: 3, blockRest: 60 }, TABATA_ROUNDS = [3, 4, 5], TABATA_RESTS = [60, 90];
 const TABATA_TEXT = 'Tabata als Zirkel: 20 Sekunden so viele saubere Wiederholungen wie möglich, 10 Sekunden Pause, dann die nächste Übung. Nach der letzten Übung folgt eine längere Pause und die nächste Runde – standardmäßig 3 Runden. Die App sagt jeden Wechsel per Ton an, 3-2-1 vorher.';
-const PLAN_ORDER = ['wed', 'tabata', 'amrap', 'run', 'sun', 'core', 'office'];
+const PLAN_ORDER = ['hotel', 'wed', 'tabata', 'amrap', 'run', 'sun', 'core', 'office'];
 
 /* Zuordnung alter Einträge (vor Version 3) zu den Übungsplätzen des Ganzkörper-Zirkels,
    damit bisherige Bestwerte vergleichbar bleiben. */
@@ -691,6 +710,8 @@ const CHANGELOG = [
     ['Weitere Einheiten', 'Im Profil unter Trainingswoche gibt es jetzt bis zu vier weitere Einheiten, jede mit Tag und Art: lockerer Lauf, Regenerationslauf (sehr locker, 20–40 Min., Zone 1), zweite Qualität (die jeweils andere Einheit der Woche, in Erholung und Tapering locker) oder Anderes wie Rad oder Kurs. Läufe zählen beim Nachholen und Nachtragen mit; der Plan warnt bei zwei harten Tagen hintereinander. Die bisherige weitere Einheit wird übernommen.', 'neu'],
     ['Maximale HF', 'Unter Profil → Herzfrequenz lässt sich die maximale HF schätzen, wenn es noch keinen Testwert gibt: nach Tanaka und Nes statt „220 − Alter“. Ein gemessener Wert bleibt direkt eintragbar und ist immer genauer.', 'neu'],
     ['Lauf nachtragen', 'Ab dem Tag nach einem geplanten Lauf (Qualität, Laufgruppe, Longrun) fragt die Startseite nach den gelaufenen km, damit die Wochen-km stimmen. Die Frage bleibt, bis du die km einträgst oder „Nicht gelaufen“ wählst (die Einheit „entfällt“). Sind mehrere offen, steht der älteste Eintrag oben, die übrigen sind eingeklappt.', 'neu'],
+    ['Hotel-Plan im Urlaub', 'Während des Urlaubs gibt es unter Kraft den Reiter „Hotel“: nur Körpergewicht, ohne Sprünge, etwa 2 × 2 m Platz, Bett oder Stuhl als Hilfe, gut 25 Minuten. Krafttage im Urlaub schlagen auf der Startseite automatisch diesen Plan vor.', 'neu'],
+    ['Gym/Kurs als Krafttag', 'Unter Profil → Trainingswoche kannst du für einen Krafttag „Gym/Kurs“ wählen und den Namen eintragen, z. B. Blaze. Auf der Startseite hakst du ihn ab, er zählt in der Woche als Kraft-Einheit und steht im Plan und im Kalender.', 'neu'],
     ['Reihenfolge nach Position', 'Die Kraftübungen kommen jetzt nach Position: erst alles im Stehen, dann Knien oder Sitzen, zum Schluss alles im Liegen – kein ständiges Hinlegen und Aufstehen mehr. Innerhalb einer Position bleibt die geplante Reihenfolge. Der Vergleich mit früheren Einheiten bleibt erhalten. Gilt für alle Zirkel, Tabata und EMOM, nicht für den Läufer-Plan mit Sätzen.', 'neu'],
     ['Anleitung im Training', 'Öffnest du während des Trainings die Anleitung, zeigt sie immer die aktuelle Übung – auch wenn Aufwärmen, Cooldown, Halteübungen oder Intervalle von selbst weiterschalten. Unten gibt es „Erledigt – nächste Übung“ bzw. „Nächste Übung“, du musst die Anleitung also nicht erst schließen.', 'neu'],
     ['Tabata als Zirkel', 'Tabata läuft jetzt als Zirkel: Übung 1 20 Sek., 10 Sek. Pause, Übung 2 und so weiter – nach der letzten Übung eine Rundenpause, standardmäßig 3 Runden. Die Ansage nennt in jeder Pause die nächste Übung. Ältere Tabata-Einheiten zählen nicht mehr in den Vergleich, weil der Ablauf ein anderer ist.', 'neu'],
