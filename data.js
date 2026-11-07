@@ -1,12 +1,12 @@
 'use strict';
 /* Trainingsdaten: Pläne, Übungsplätze mit Geräte-Varianten, Anleitungen.
-   Gerät: kb = Kettlebell, band = Widerstandsband, bw = eigenes Körpergewicht.
+   Gerät: kb = Kettlebell, db = Kurzhanteln (siehe DB_VARIANTS), band = Widerstandsband, bw = eigenes Körpergewicht.
    Jeder Übungsplatz hat eine bw-Variante, damit der Plan auch ganz ohne Geräte funktioniert. */
 
-const GEAR_LABEL = { kb: 'Kettlebell', band: 'Band', bw: 'Körpergewicht' };
+const GEAR_LABEL = { kb: 'Kettlebell', db: 'Kurzhanteln', band: 'Band', bw: 'Körpergewicht' };
 const BANDS = ['10', '20', '30', '10+20', '10+30', '20+30'];
 const bandLabel = b => 'Band ' + String(b).replace('+', ' + ') + ' kg';
-const KB_DEFAULT = 12;
+const KB_DEFAULT = 12, DB_DEFAULT = 8;
 
 // Variante: [Name, Ziel, Hinweis]
 const PLANS = {
@@ -695,6 +695,99 @@ const BEST = {
 };
 for (const [pk, m] of Object.entries(BEST)) for (const sl of PLANS[pk].slots) if (m[sl.id]) { sl.order = m[sl.id][0]; sl.why = m[sl.id][1]; }
 
+/* Kurzhanteln (db): je Übungsplatz eine Hantel-Variante. Rangfolge: direkt vor der Kettlebell – Hanteln lassen sich frei führen
+   und fein steigern, zwei Hanteln belasten beide Seiten gleich. Ausnahmen: Swing und Halo gehen mit dem Kettlebell-Griff besser
+   (Hantel danach), Seitheben ist mit Kurzhanteln die klassische Übung (Hantel zuerst). */
+const DB_VARIANTS = {
+  wed: {
+    swing: ['Kurzhantel-Swing', '10', 'Hantel am oberen Ende, Hüfte kraftvoll strecken, nur bis Brusthöhe'],
+    hips: ['Holzhacker mit Kurzhantel', '8 je Seite', 'Hantel an beiden Enden, diagonal nach oben'],
+    halo: ['Halo mit Kurzhantel', '10 je Richtung', 'Hantel senkrecht, Kopf ruhig, Rippen unten'],
+    squat: ['Goblet-Kniebeugen mit Kurzhantel', '10', 'Hantel senkrecht vor der Brust'],
+    lunge: ['Ausfallschritte mit Kurzhanteln', '10 je Seite', 'Rückwärts, Hanteln seitlich am Körper'],
+    march: ['Suitcase March mit Kurzhantel', '20 Sek. je Seite', 'Hantel einseitig, aufrecht marschieren'],
+    row: ['Einarmiges Rudern mit Kurzhantel', '10 je Seite', 'Freie Hand abstützen'],
+    press: ['Floor Press mit Kurzhanteln', '10', 'Rückenlage, beide Arme zugleich'],
+    tri: ['Trizeps über Kopf mit Kurzhantel', '10', 'Eine Hantel, beide Hände am oberen Ende'],
+    curl: ['Bizepscurls mit Kurzhanteln', '10', 'Ellenbogen am Körper'],
+    balance: ['Einbeiniges Kreuzheben mit Kurzhantel', '6–10 je Seite', 'Hantel in der Hand gegenüber dem Standbein'],
+    crunch: ['Dead Bug mit Kurzhantel', '8 je Seite', 'Hantel über der Brust halten']
+  },
+  run: {
+    split: ['Split Squat mit Kurzhanteln', '8–15 je Seite', 'Hanteln seitlich am Körper'],
+    row: ['Einarmiges Rudern mit Kurzhantel', '8–15 je Seite', 'Freie Hand abstützen'],
+    press: ['Floor Press mit Kurzhanteln', '8–15', 'Rückenlage, beide Arme zugleich'],
+    calf: ['Einbeiniges Wadenheben mit Kurzhantel', '8–15 je Seite', 'Bei Mittelfuß-Beschwerden erst ohne Gewicht'],
+    sldl: ['Einbeiniges Kreuzheben mit Kurzhantel', '6–10 je Seite', 'Erst ohne Gewicht testen'],
+    march: ['Suitcase March mit Kurzhantel', '20–30 Sek. je Seite', 'Hantel einseitig'],
+    swing: ['Kurzhantel-Swing', '10–15 pro Minute', 'Nur saubere Wiederholungen']
+  },
+  sun: {
+    press: ['Floor Press mit Kurzhanteln', '10', 'Rückenlage, beide Arme zugleich'],
+    pushup: ['Squeeze Press mit Kurzhanteln', '10–12', 'Hanteln aneinander drücken'],
+    shoulder: ['Schulterdrücken mit Kurzhanteln', '8–10', 'Beide Arme, Bauch fest'],
+    lateral: ['Seitheben mit Kurzhanteln', '10–12', 'Leichte Hanteln, nur bis Schulterhöhe'],
+    pull: ['Einarmiges Rudern mit Kurzhantel', '10 je Seite', 'Freie Hand abstützen'],
+    pullover: ['Pullover mit Kurzhantel', '10–12', 'Rückenlage, Rippen unten'],
+    curl: ['Bizepscurls mit Kurzhanteln', '10', 'Ellenbogen am Körper'],
+    tri: ['Trizeps über Kopf mit Kurzhantel', '10', 'Eine Hantel, beide Hände am oberen Ende'],
+    deadbug: ['Dead Bug mit Kurzhantel', '8 je Seite', 'Hantel über der Brust halten'],
+    hold: ['Suitcase Hold mit Kurzhantel', '20–30 Sek. je Seite', 'Hantel ruhig halten']
+  },
+  office: {
+    hinge: ['Rumänisches Kreuzheben mit Kurzhanteln', '10', 'Hanteln nah an den Beinen, Rücken lang'],
+    upper: ['Einarmiges Rudern mit Kurzhantel', '10 je Seite', 'Freie Hand abstützen'],
+    squat: ['Goblet-Kniebeugen mit Kurzhantel', '10', 'Hantel senkrecht vor der Brust'],
+    angel: ['Pullover mit Kurzhantel', '10', 'Rückenlage, öffnet Brust und Brustwirbelsäule'],
+    birddog: ['Dead Bug mit Kurzhantel', '8 je Seite', 'Hantel über der Brust halten'],
+    clam: ['Seitlicher Ausfallschritt mit Kurzhantel', '8 je Seite', 'Hantel senkrecht vor der Brust'],
+    tspine: ['Halo mit Kurzhantel', '8 je Richtung', 'Schultern und oberer Rücken']
+  },
+  tabata: {
+    swing: ['Kurzhantel-Swing', '20 Sek. je Runde', 'Kraft aus der Hüfte, nur bis Brusthöhe'],
+    goblet: ['Goblet-Kniebeugen mit Kurzhantel', '20 Sek. je Runde', 'Hantel vor der Brust, tief und kontrolliert'],
+    row2: ['Vorgebeugtes Rudern mit Kurzhanteln', '20 Sek. je Runde', 'Rücken lang, Hanteln zum Bauch'],
+    press2: ['Schulterdrücken mit Kurzhanteln', '20 Sek. je Runde', 'Beide Arme, Bauch fest'],
+    twist: ['Holzhacker mit Kurzhantel', '20 Sek. je Runde', 'Seite jede Runde wechseln']
+  }
+};
+const DB_AFTER_KB = ['Kurzhantel-Swing', 'Halo mit Kurzhantel'], DB_FIRST = ['Seitheben mit Kurzhanteln'];
+// Begründung, wenn die Hantel-Variante automatisch gewählt ist (die Texte in BEST beschreiben die Kettlebell)
+const DB_WHY = 'Kurzhanteln lassen sich frei führen und fein steigern – hier die wirksamste Variante mit deinen Geräten.';
+for (const [pk, m] of Object.entries(DB_VARIANTS)) for (const sl of PLANS[pk].slots) if (m[sl.id]) {
+  sl.v.db = m[sl.id];
+  const o = (sl.order || ['kb', 'band', 'bw']).filter(g => g !== 'db'), name = m[sl.id][0], i = o.indexOf('kb');
+  if (DB_FIRST.includes(name) || i < 0) o.unshift('db'); else o.splice(DB_AFTER_KB.includes(name) ? i + 1 : i, 0, 'db');
+  sl.order = o;
+}
+// Anleitung aus der Kettlebell-Anleitung: nur geänderte Schritte (Index) bzw. effect/cue angeben, der Rest bleibt gleich
+const dbGuide = (src, ch) => { const g = GUIDES[src]; return { steps: g.steps.map((s, i) => ch[i] !== undefined ? ch[i] : s), effect: ch.effect || g.effect, cue: ch.cue || g.cue }; };
+Object.assign(GUIDES, {
+  'Kurzhantel-Swing': dbGuide('Kettlebell-Swing', { 0: 'Eine Kurzhantel senkrecht am oberen Ende mit beiden Händen greifen, Füße etwas breiter als hüftbreit. Hüfte nach hinten schieben, Hantel zwischen die Beine führen.', 1: 'Hüfte kraftvoll strecken, sodass die Hantel bis etwa Brusthöhe schwingt. Die Arme führen nur.', 2: 'Hantel zurückpendeln lassen und erneut in der Hüfte beugen.', cue: 'Hantel fest greifen, nur bis Brusthöhe. Nicht aus den Schultern heben, kein Hohlkreuz am oberen Punkt.' }),
+  'Holzhacker mit Kurzhantel': dbGuide('Holzhacker mit Kettlebell', { 0: 'Etwas breiter als hüftbreit stehen, Hantel mit beiden Händen an den Enden neben dem rechten Knie, leicht in die Knie gehen.', 1: 'Hantel mit fast gestreckten Armen diagonal nach links oben über die Schulter führen. Hüfte und Oberkörper drehen mit, der rechte Fuß dreht auf dem Ballen mit.', cue: 'Die Drehung kommt aus Hüfte und Brustwirbelsäule, nicht aus dem unteren Rücken. Langsam abbremsen statt reißen, Hantel fest greifen.' }),
+  'Halo mit Kurzhantel': dbGuide('Halo um den Kopf', { 0: 'Kurzhantel senkrecht am oberen Ende mit beiden Händen vor der Brust halten.', cue: 'Kopf ruhig halten, Rippen nicht nach vorne schieben. Leichte Hantel wählen und fest greifen.' }),
+  'Goblet-Kniebeugen mit Kurzhantel': dbGuide('Kniebeugen (Goblet)', { 0: 'Kurzhantel senkrecht am oberen Ende mit beiden Händen vor der Brust halten, Füße etwa schulterbreit.' }),
+  'Ausfallschritte mit Kurzhanteln': dbGuide('Ausfallschritte', { 0: 'Aufrecht stehen, je eine Kurzhantel seitlich am Körper, Arme hängen locker.', cue: 'Vorderer Fuß bleibt ganz am Boden, Schultern unten. Erst mit leichten Hanteln sicher werden.' }),
+  'Suitcase March mit Kurzhantel': dbGuide('Suitcase March', { 0: 'Kurzhantel mit einer Hand wie einen Koffer neben dem Körper halten.' }),
+  'Einarmiges Rudern mit Kurzhantel': dbGuide('Einarmiges Rudern', { 1: 'Hantel Richtung Hüfte ziehen, Ellenbogen nah am Körper.' }),
+  'Floor Press mit Kurzhanteln': dbGuide('Floor Press', { 0: 'Rückenlage, Knie angestellt. Je eine Kurzhantel in jeder Hand über der Brust, Handgelenke gerade.', 1: 'Oberarme etwa 30–45 Grad vom Körper, beide Hanteln senkrecht nach oben drücken.', 2: 'Absenken, bis die Oberarme sanft am Boden aufliegen.', cue: 'Niemals über Gesicht oder Kopf führen. Zum Hinlegen und Aufsetzen die Hanteln nah an der Brust halten.' }),
+  'Trizeps über Kopf mit Kurzhantel': dbGuide('Trizeps über Kopf', { 0: 'Eine Kurzhantel senkrecht mit beiden Händen am oberen Ende sicher über dem Kopf halten.' }),
+  'Bizepscurls mit Kurzhanteln': dbGuide('Bizepscurls', { 0: 'Aufrecht stehen, je eine Kurzhantel in jeder Hand, Handflächen nach vorne.', 1: 'Ellenbogen beugen und die Hanteln nach oben führen – beide zugleich oder abwechselnd.' }),
+  'Einbeiniges Kreuzheben mit Kurzhantel': dbGuide('Einbeiniges Kreuzheben', { 0: 'Auf einem leicht gebeugten Bein stehen, Kurzhantel in der Hand gegenüber dem Standbein.', 1: 'Hüfte nach hinten schieben: Oberkörper nach vorne, freies Bein lang nach hinten, Hantel Richtung Boden.' }),
+  'Dead Bug mit Kurzhantel': dbGuide('Dead Bug mit Kettlebell', { 0: 'Rückenlage, Kurzhantel mit beiden Händen an den Enden und gestreckten Armen über der Brust halten, Knie 90 Grad über der Hüfte.', 2: 'Zurück, Bein wechseln – die Hantel bleibt ruhig über der Brust.', cue: 'Hantel sicher greifen und nie über das Gesicht kippen lassen. Unterer Rücken bleibt am Boden.' }),
+  'Split Squat mit Kurzhanteln': dbGuide('Split Squat', { 0: 'Großer Schritt: ein Fuß vorne, einer hinten auf dem Fußballen. Je eine Kurzhantel seitlich am Körper.' }),
+  'Einbeiniges Wadenheben mit Kurzhantel': dbGuide('Einbeiniges Wadenheben', { 0: 'Auf einem Bein stehen, mit einer Hand an der Wand abstützen. Kurzhantel in der anderen Hand.' }),
+  'Squeeze Press mit Kurzhanteln': dbGuide('Squeeze Press am Boden', { 0: 'Rückenlage, Knie angestellt. Zwei Kurzhanteln über der Brust aneinanderlegen, Handflächen zueinander.', 1: 'Die Hanteln fest gegeneinander drücken und unter diesem Druck senkrecht nach oben drücken.', cue: 'Handgelenke gerade, Hanteln nie über das Gesicht führen. Den Druck der Hände während der ganzen Bewegung halten.' }),
+  'Schulterdrücken mit Kurzhanteln': dbGuide('Schulterdrücken', { 0: 'Je eine Kurzhantel auf Schulterhöhe halten, Handgelenke gerade, Bauch und Gesäß anspannen.', 1: 'Beide Hanteln senkrecht über die Schultern drücken, bis die Arme gestreckt sind.', 2: 'Kontrolliert zurück auf Schulterhöhe.', cue: 'Nicht ins Hohlkreuz ausweichen. Sind 8 saubere Wiederholungen nicht möglich, leichtere Hanteln wählen.' }),
+  'Seitheben mit Kurzhanteln': dbGuide('Seitheben mit Band', { 0: 'Aufrecht stehen, je eine leichte Kurzhantel seitlich neben den Oberschenkeln.' }),
+  'Pullover mit Kurzhantel': dbGuide('Kettlebell-Pullover', { 0: 'Rückenlage, Knie angestellt. Kurzhantel senkrecht am oberen Ende mit beiden Händen über der Brust halten.', cue: 'Hantel sicher greifen, Rippen unten lassen. Bewegungsumfang langsam steigern.' }),
+  'Suitcase Hold mit Kurzhantel': dbGuide('Suitcase Hold', { 0: 'Kurzhantel einseitig neben dem Körper halten und stabil stehen.', cue: 'Nicht zur Hantel oder von ihr weg lehnen; Schultern nicht hochziehen.' }),
+  'Rumänisches Kreuzheben mit Kurzhanteln': dbGuide('Kettlebell-Kreuzheben', { 0: 'Aufrecht stehen, Füße hüftbreit, je eine Kurzhantel vor den Oberschenkeln.', 1: 'Hüfte nach hinten schieben, Knie leicht beugen, Rücken lang – die Hanteln gleiten an den Beinen entlang bis etwa unter die Knie.', 2: 'Füße in den Boden drücken und aufrichten, oben Gesäß anspannen.', cue: 'Rücken bleibt lang, kein Rundrücken. Die Hanteln bleiben nah an den Beinen.' }),
+  'Seitlicher Ausfallschritt mit Kurzhantel': dbGuide('Seitlicher Ausfallschritt mit Kettlebell', { 0: 'Breiter Stand, Kurzhantel senkrecht vor der Brust, Füße leicht nach außen.' }),
+  'Vorgebeugtes Rudern mit Kurzhanteln': dbGuide('Vorgebeugtes Rudern beidarmig', { 0: 'Je eine Kurzhantel in jeder Hand, Füße hüftbreit.', 2: 'Beide Hanteln zum Bauch ziehen, Ellenbogen nach hinten, Schulterblätter zusammen. Kontrolliert absenken.' })
+});
+PREP.mat.push('Dead Bug mit Kurzhantel', 'Floor Press mit Kurzhanteln', 'Pullover mit Kurzhantel', 'Squeeze Press mit Kurzhanteln');
+
 /* Neuigkeiten („Patch Notes“): neueste zuerst. Neuer Eintrag = neue id; die App zeigt ihn beim nächsten Start einmal an.
    Der älteste (letzte) Eintrag ist der Grundstand mit allen Funktionen; Neulinge sehen ihn plus die 3 neuesten Updates. */
 /* Versionsnummer der App, angezeigt unter Mehr. Jede Veröffentlichung (mittwochs 00:00 aus dev nach main) ist eine neue
@@ -711,6 +804,7 @@ const CHANGELOG = [
     ['Maximale HF', 'Unter Profil → Herzfrequenz lässt sich die maximale HF schätzen, wenn es noch keinen Testwert gibt: nach Tanaka und Nes statt „220 − Alter“. Ein gemessener Wert bleibt direkt eintragbar und ist immer genauer.', 'neu'],
     ['Lauf nachtragen', 'Ab dem Tag nach einem geplanten Lauf (Qualität, Laufgruppe, Longrun) fragt die Startseite nach den gelaufenen km, damit die Wochen-km stimmen. Die Frage bleibt, bis du die km einträgst oder „Nicht gelaufen“ wählst (die Einheit „entfällt“). Sind mehrere offen, steht der älteste Eintrag oben, die übrigen sind eingeklappt.', 'neu'],
     ['Was machst du?', 'Unter Profil → Trainingswoche (und in der Einrichtung) wählst du, was du machst: Kraft, Laufen, Mobility. Abgewähltes verschwindet aus der Leiste, der Startseite und dem Profil – ohne Laufen z. B. auch Herzfrequenz und Lauftage.', 'neu'],
+    ['Kurzhanteln', 'Neben Kettlebell und Bändern kannst du im Profil (und in der Einrichtung) Kurzhanteln mit ihren Gewichten eintragen. Jede Kraftübung hat eine Hantel-Variante mit Anleitung und Skizze; die App nimmt wie bisher je Übung die wirksamste Variante deiner Geräte – Swing und Halo bleiben mit Kettlebell, Seitheben geht zuerst mit Hanteln. Das Gewicht je Hantel stellst du je Übung oder für alle Hantel-Übungen eines Plans ein.', 'neu'],
     ['Mobility planen', 'Mobility-Tage legst du im Profil fest, mit Routine je Tag (sonst die zuletzt genutzte). Am Tag steht sie unter „Heute dran“ mit „Starten“ und zählt in der Woche.', 'neu'],
     ['Weniger Tippen', 'Beim Nachtragen speichert „✓ 12 km · wie geplant“ (bzw. „wie letztes Mal“) mit einem Tipp. Die Bewertung nach dem Training speichert mit einem Tipp auf die Zahl. Ein Tag in der Wochenleiste zeigt, was geplant war, und hat „Eintragen“. In der Anleitung wischst du zur nächsten Übung.', 'neu'],
     ['Einrichtung', 'Beim ersten Start fragt die App kurz nach Laufen, Lauftagen, Krafttagen, Geräten, Puls und dem nächsten Rennen – je eine Antwort mit einem Tipp, alles überspringbar. Neu starten kannst du die Fragen jederzeit oben im Profil.', 'neu'],

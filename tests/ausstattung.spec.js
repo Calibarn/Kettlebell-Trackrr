@@ -55,3 +55,54 @@ test('AMRAP: 20 Minuten Zirkel mit einer Kettlebell, Runden + Übungen werden ge
   expect([e.plan, e.total]).toEqual(['amrap', 7]);
   expect(await page.evaluate(() => resultText(saved.at(-1)))).toBe('1 Runden + 2 Übungen');
 });
+
+test.describe('Kurzhanteln', () => {
+  test.use({ kit: false });
+
+  test('im Profil eintragen → Chip, Hantel-Varianten mit eigenem Gewicht je Übung, Skizze und „Du brauchst“', async ({ page }) => {
+    await page.evaluate(() => showArea('profil'));
+    await openSect(page, 'sect-kit');
+    await page.fill('#dbnew', '8'); await page.click('#dbadd');
+    await page.fill('#dbnew', '4'); await page.click('#dbadd');
+    expect(await page.evaluate(() => [profile.kit.db, profile.kit.dbDefault])).toEqual([[4, 8], 8]);
+    await expect(page.locator('#sum-kit')).toHaveText('Kurzhanteln 4 · 8 kg');
+    await page.evaluate(() => { showArea('kraft'); setPlan('sun'); });
+    await expect(page.locator('#gearbar [data-gear]')).toHaveCount(2);
+    await expect(page.locator('#gearbar [data-gear="db"]')).toHaveAttribute('aria-pressed', 'true');
+    const ex = await page.evaluate(() => exList().map(x => [x.name, x.gearText]));
+    expect(ex).toContainEqual(['Seitheben mit Kurzhanteln', 'Kurzhantel 8 kg']);
+    expect(ex).toContainEqual(['Schulterdrücken mit Kurzhanteln', 'Kurzhantel 8 kg']);
+    // Liegestütze bleiben vor der Hantel (Körpergewicht ist dort die stärkste Variante)
+    expect(ex).toContainEqual(['Liegestütze erhöht', 'Körpergewicht']);
+    // Gewicht je Übung: Seitheben mit 4 kg, eigener Schlüssel (dbkg) neben dem Kettlebell-Gewicht
+    await page.evaluate(() => { document.querySelector('#fold-settings').open = true; });
+    await page.selectOption('[data-dbkg="lateral"]', '4');
+    expect(await page.evaluate(() => { const x = exList().find(e => e.slot.id === 'lateral'); return [x.gearText, x.cfg, choices['sun.lateral']]; })).toEqual(['Kurzhantel 4 kg', 'db:4', { dbkg: 4 }]);
+    await expect(page.locator('#gearbar .needs')).toContainText('Kurzhanteln 4 + 8 kg');
+    // Anleitung mit Hantel-Skizze (Stange + zwei Scheiben)
+    await page.evaluate(() => openExerciseGuide(exList().findIndex(e => e.slot.id === 'lateral')));
+    await expect(page.locator('#guide-title')).toHaveText('Seitheben mit Kurzhanteln');
+    expect(await page.locator('#guide-body svg rect.fkb').count()).toBeGreaterThanOrEqual(4);
+    // Kurzhanteln aus: zurück zu Band/Körpergewicht
+    await page.evaluate(() => guide.close());
+    await page.click('[data-gear="db"]');
+    expect(await page.evaluate(() => exList().some(x => x.g === 'db'))).toBe(false);
+  });
+
+  test('mit Kettlebell und Kurzhanteln: Swing bleibt Kettlebell, Rudern und Drücken mit Hanteln; Einrichtung fragt nach Hanteln', async ({ page }) => {
+    await page.evaluate(() => { profile.kit.kb = [12]; profile.kit.db = [6, 10]; persistProfile(); setPlan('wed'); renderAll(); });
+    const g = await page.evaluate(() => Object.fromEntries(exList().map(x => [x.slot.id, x.g])));
+    expect([g.swing, g.halo, g.row, g.curl, g.squat]).toEqual(['kb', 'kb', 'db', 'db', 'db']);
+    // „Alle Kurzhantel-Übungen“ setzt das Gewicht je Hantel für den Plan
+    await page.evaluate(() => { document.querySelector('#fold-settings').open = true; });
+    await page.selectOption('#alldbkg', '10'); await page.click('#alldbkgbtn');
+    expect(await page.evaluate(() => [...new Set(exList().filter(x => x.g === 'db').map(x => x.kg))])).toEqual([10]);
+    // Einrichtung: Kurzhanteln wählen → eigene Frage nach den Gewichten
+    await page.evaluate(() => { profile.modules = { kraft: true, laufen: false, mobility: false }; persistProfile(); openSetup(); setupStep = 'kit'; setupAns = {}; renderSetup(); });
+    await page.click('[data-setmulti="kit"][data-v="db"]');
+    await page.click('[data-setnext]');
+    await expect(page.locator('.setq')).toHaveText('Welche Kurzhanteln hast du?');
+    await page.click('[data-setmulti="db"][data-v="5"]');
+    expect(await page.evaluate(() => [profile.kit.kb, profile.kit.db])).toEqual([[], [5, 6, 10]]);
+  });
+});

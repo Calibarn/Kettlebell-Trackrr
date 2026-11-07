@@ -8,7 +8,10 @@ async function openMob(page, tab, sub) {
 
 test('jede Kraftübung hat für jede Geräte-Auswahl eine Anleitung mit Skizze', async ({ page }) => {
   const problems = await page.evaluate(() => {
-    const out = [], combos = [{ kb: true, band: true, bw: true }, { kb: true, band: false, bw: false }, { kb: false, band: true, bw: false }, { kb: false, band: false, bw: true }, { kb: true, band: false, bw: true }];
+    // mit Kurzhanteln im Profil; dazu der Split Squat als Bulgarian (eigene Skizze je Gerät)
+    profile.kit.db = [8]; stages['run.split'] = 'Bulgarian Split Squat';
+    const out = [], combos = [{ kb: true, band: true, bw: true }, { kb: true, band: false, bw: false }, { kb: false, band: true, bw: false }, { kb: false, band: false, bw: true }, { kb: true, band: false, bw: true },
+      { kb: false, db: true, band: false, bw: false }, { kb: true, db: true, band: true, bw: true }];
     for (const pk of PLAN_ORDER) for (const g of combos) {
       gear = g; plan = pk; runReps = emptyReps(pk); renderAll();
       exList().forEach((x, i) => {

@@ -55,22 +55,22 @@ test('Geräte je Plan: Auswahl gilt nur für diesen Plan, wird gemerkt und abgeg
   await page.click('[data-gear="band"]');
   await expect(page.locator('#toast')).toContainText('Ganzkörper: Bänder aus');
   let p = await plans();
-  expect(p.wed).toEqual({ kb: true, band: false, bw: true });
+  expect(p.wed).toEqual({ kb: true, db: true, band: false, bw: true });
   // anderer Plan: unverändert (bisherige Auswahl dieses Geräts)
-  expect(p.run).toEqual({ kb: true, band: true, bw: true });
+  expect(p.run).toEqual({ kb: true, db: true, band: true, bw: true });
   // Läufer nur mit Band
   await page.evaluate(() => setPlan('run'));
   await page.click('[data-gear="kb"]'); await page.click('[data-gear="bw"]');
-  expect((await plans()).run).toEqual({ kb: false, band: true, bw: false });
+  expect((await plans()).run).toEqual({ kb: false, db: true, band: true, bw: false });
   expect(await page.evaluate(() => exList('run').every(x => ['band', 'bw'].includes(x.g)))).toBe(true);
   await page.reload();
   p = await plans();
-  expect([p.wed, p.run]).toEqual([{ kb: true, band: false, bw: true }, { kb: false, band: true, bw: false }]);
+  expect([p.wed, p.run]).toEqual([{ kb: true, db: true, band: false, bw: true }, { kb: false, db: true, band: true, bw: false }]);
   // steckt in den Übungs-Einstellungen → wird mit den anderen Geräten abgeglichen
-  expect(await page.evaluate(() => [JSON.parse(localStorage.getItem(KEYS.choice))['run.gear'], SYNC_SETTINGS.choices === KEYS.choice])).toEqual([{ kb: false, band: true, bw: false }, true]);
+  expect(await page.evaluate(() => [JSON.parse(localStorage.getItem(KEYS.choice))['run.gear'], SYNC_SETTINGS.choices === KEYS.choice])).toEqual([{ kb: false, db: true, band: true, bw: false }, true]);
   // alles aus → Körpergewicht
   await page.click('[data-gear="band"]');
-  expect((await plans()).run).toEqual({ kb: false, band: false, bw: true });
+  expect((await plans()).run).toEqual({ kb: false, db: true, band: false, bw: true });
 });
 
 test('Zirkel: abhaken, Zeitübung, zurücknehmen, Wiederherstellen, Speichern mit Bewertung', async ({ page }) => {
@@ -326,7 +326,7 @@ test('Urlaub von–bis: alle Pläne nur Körpergewicht, AMRAP/Core weg, dazugesc
   await page.fill('#vacfrom', await day(-1));
   await page.fill('#vacto', await day(5));
   await expect(page.locator('#toast')).toContainText('nur Körpergewicht');
-  expect(await page.evaluate(() => [!!vacation(), planGear('wed'), planGear('run'), planOwned('core'), plan])).toEqual([true, { kb: false, band: false, bw: true }, { kb: false, band: false, bw: true }, false, 'wed']);
+  expect(await page.evaluate(() => [!!vacation(), planGear('wed'), planGear('run'), planOwned('core'), plan])).toEqual([true, { kb: false, db: false, band: false, bw: true }, { kb: false, db: false, band: false, bw: true }, false, 'wed']);
   await expect(page.locator('#sum-kit')).toContainText('Urlaub');
   await page.evaluate(() => showArea('kraft'));
   await expect(page.locator('#gearbar .lbl').first()).toContainText('Urlaub bis');
@@ -335,10 +335,10 @@ test('Urlaub von–bis: alle Pläne nur Körpergewicht, AMRAP/Core weg, dazugesc
   // Bänder dazuschalten: gilt nur für den Urlaub, die Ganzkörper-Auswahl bleibt
   await page.click('[data-gear="band"]');
   await expect(page.locator('#toast')).toContainText('Urlaub: Bänder an');
-  expect(await page.evaluate(() => [planGear('run').band, choices['wed.gear'], profile.kit.vacation.gear])).toEqual([true, { kb: true, band: false, bw: true }, { kb: false, band: true, bw: true }]);
+  expect(await page.evaluate(() => [planGear('run').band, choices['wed.gear'], profile.kit.vacation.gear])).toEqual([true, { kb: true, db: false, band: false, bw: true }, { kb: false, db: false, band: true, bw: true }]);
   // nach dem Urlaub: wieder je Plan
   await page.evaluate(() => { profile.kit.vacation.to = addDays(localDay(), -1); persistProfile(); renderAll(); });
-  expect(await page.evaluate(() => [vacation(), planGear('wed'), planOwned('core')])).toEqual([null, { kb: true, band: false, bw: true }, true]);
+  expect(await page.evaluate(() => [vacation(), planGear('wed'), planOwned('core')])).toEqual([null, { kb: true, db: false, band: false, bw: true }, true]);
   // falsche Reihenfolge wird markiert, Löschen entfernt den Urlaub
   await page.evaluate(() => showArea('profil'));
   await page.evaluate(() => { document.getElementById('sect-kit').open = true; });

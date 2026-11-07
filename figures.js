@@ -227,7 +227,43 @@ FIG['Lunge to Press-out'] = { a: fr(P(LG_B, { e1: [104, 128], w1: [116, 112], e2
 FIG['Pullover mit Rotation'] = { a: fr(P(FS, { e1: [84, 94], w1: [98, 82], e2: [116, 94], w2: [102, 82] }), [{ arrow: 'M70 80 Q100 98 130 80' }, KB(100, 74)]), b: fr(P(FS, { e1: [86, 38], w1: [94, 22], e2: [114, 38], w2: [106, 22] }), [KB(100, 14)]), la: 'vor der Brust drehen', lb: 'über den Kopf führen' };
 FIG['Cross-Body Lunge'] = { a: fr(SS, [KB(96, 124)]), b: fr(P(LG_B, { e1: [108, 122], w1: [126, 146], e2: [92, 126], w2: [96, 150] }), [{ arrow: 'M100 130 Q118 150 130 158' }, KB(130, 160)]), la: 'Kugel einarmig, aufrecht', lb: 'Schritt zurück, Kugel quer vorbei' };
 FIG['Locker laufen'] = { a: FIG['Einlaufen'].a, b: FIG['Einlaufen'].b, la: 'locker traben', lb: 'Gesprächstempo' };
-function getFigure(name, gear) { const f = FIG[name]; return typeof f === 'function' ? f(gear) : f || null; }
+
+/* Kurzhanteln: eine Hantel = die Kettlebell-Skizze mit Hantel statt Kugel (Beschriftung „Kugel“ → „Hantel“);
+   zwei Hanteln = je eine Hantel an beiden Handgelenken. */
+const DBW = (x, y) => ({ db: [x, y] });
+const dbLabel = s => s && s.replace(/Kugel/g, 'Hantel');
+const dbSwap = (f, over) => {
+  const part = p => p && fr(p.P, p.props.map(q => q.kb ? DBW(...q.kb) : q));
+  return Object.assign({ a: part(f.a), b: part(f.b), la: dbLabel(f.la), lb: dbLabel(f.lb) }, over);
+};
+const dbTwo = Q => [DBW(Q.w1[0], Q.w1[1] + 6), DBW(Q.w2[0], Q.w2[1] + 6)];
+const fr2 = Q => fr(Q, dbTwo(Q));
+Object.assign(FIG, {
+  'Kurzhantel-Swing': dbSwap(FIG['Kettlebell-Swing']),
+  'Holzhacker mit Kurzhantel': dbSwap(FIG['Holzhacker mit Kettlebell']),
+  'Halo mit Kurzhantel': dbSwap(FIG['Halo um den Kopf']),
+  'Goblet-Kniebeugen mit Kurzhantel': dbSwap(FIG['Kniebeugen (Goblet)']),
+  'Ausfallschritte mit Kurzhanteln': { a: fr2(SS), b: fr2(P(LG_B, { e1: [100, 120], w1: [101, 145], e2: [96, 120], w2: [97, 145] })), la: 'Hanteln seitlich am Körper', lb: 'Schritt zurück, Knie beugen' },
+  'Suitcase March mit Kurzhantel': dbSwap(FIG['Suitcase March']),
+  'Einarmiges Rudern mit Kurzhantel': dbSwap(FIG['Einarmiges Rudern']),
+  'Floor Press mit Kurzhanteln': { a: fr(P(LB, { e1: [70, 185], w1: [72, 162], e2: [66, 184], w2: [68, 162] }), [DBW(72, 154)]), b: fr(P(LB, { e1: [50, 150], w1: [52, 122], e2: [46, 151], w2: [48, 123] }), [DBW(52, 114)]), la: 'Oberarme am Boden', lb: 'senkrecht drücken' },
+  'Trizeps über Kopf mit Kurzhantel': dbSwap(FIG['Trizeps über Kopf']),
+  'Bizepscurls mit Kurzhanteln': { a: fr2(P(SS, { e1: [102, 86], w1: [104, 111], e2: [98, 86], w2: [100, 111] })), b: fr(P(SS, { e1: [102, 86], w1: [124, 70], e2: [98, 86], w2: [120, 70] }), [DBW(126, 64), DBW(122, 64)]), la: 'Arme lang', lb: 'Ellenbogen beugen' },
+  'Einbeiniges Kreuzheben mit Kurzhantel': dbSwap(FIG['Einbeiniges Kreuzheben']),
+  'Dead Bug mit Kurzhantel': dbSwap(FIG['Dead Bug mit Kettlebell']),
+  'Split Squat mit Kurzhanteln': { a: fr2(P(SP_A, { e1: [99, 86], w1: [100, 111], e2: [95, 86], w2: [96, 111] })), b: fr2(P(SP_B, { e1: [99, 120], w1: [100, 145], e2: [95, 120], w2: [96, 145] })), la: 'Schrittstellung', lb: 'hinteres Knie absenken' },
+  'Einbeiniges Wadenheben mit Kurzhantel': dbSwap(FIG['Einbeiniges Wadenheben']('kb')),
+  'Squeeze Press mit Kurzhanteln': dbSwap(FIG['Squeeze Press am Boden'], { la: 'Hanteln aneinander drücken' }),
+  'Schulterdrücken mit Kurzhanteln': { a: fr(P(FS, { e1: [78, 96], w1: [82, 72], e2: [122, 96], w2: [118, 72] }), [DBW(82, 66), DBW(118, 66)]), b: fr(P(FS, { e1: [84, 36], w1: [86, 10], e2: [116, 36], w2: [114, 10] }), [DBW(86, 4), DBW(114, 4)]), la: 'Hanteln auf Schulterhöhe', lb: 'senkrecht über Kopf' },
+  'Seitheben mit Kurzhanteln': { a: fr2(FS), b: fr(P(FS, { e1: [66, 70], w1: [42, 74], e2: [134, 70], w2: [158, 74] }), [DBW(42, 74), DBW(158, 74)]), la: 'Arme unten', lb: 'seitlich bis Schulterhöhe' },
+  'Pullover mit Kurzhantel': dbSwap(FIG['Kettlebell-Pullover']),
+  'Suitcase Hold mit Kurzhantel': dbSwap(FIG['Suitcase Hold']),
+  'Rumänisches Kreuzheben mit Kurzhanteln': { a: fr2(SS), b: fr2({ h: [136, 92], n: [120, 100], p: [74, 132], k1: [104, 152], f1: [98, 188], t1: [112, 189], k2: [100, 154], f2: [94, 188], t2: [108, 189], e1: [118, 130], w1: [116, 156], e2: [114, 130], w2: [112, 156] }), la: 'Hanteln vor den Oberschenkeln', lb: 'Hüfte zurück, Rücken lang' },
+  'Seitlicher Ausfallschritt mit Kurzhantel': dbSwap(FIG['Seitlicher Ausfallschritt mit Kettlebell']),
+  'Vorgebeugtes Rudern mit Kurzhanteln': { a: fr2(P(BR, { e1: [128, 110], w1: [126, 136], e2: [124, 110], w2: [122, 136] })), b: fr2(P(BR, { e1: [108, 84], w1: [114, 108], e2: [104, 86], w2: [110, 110] })), la: 'vorgebeugt, Arme lang', lb: 'Hanteln zum Bauch ziehen' }
+});
+// Übungen mit Gerät-abhängiger Skizze (z. B. Bulgarian Split Squat in der Hantel-Variante): Kettlebell-Skizze mit Hantel
+function getFigure(name, gear) { const f = FIG[name]; return typeof f === 'function' ? (gear === 'db' ? dbSwap(f('kb')) : f(gear)) : f || null; }
 
 function figLine(a, b, cls, w) { return `<path class="${cls}" d="M${a[0]} ${a[1]}L${b[0]} ${b[1]}" stroke-width="${w || 8}" stroke-linecap="round" fill="none"/>`; }
 function figPerson(Q) {
@@ -252,6 +288,7 @@ function figProps(props, behind, mk) {
       return '';
     }
     if (p.kb) { const [x, y] = p.kb; return `<circle class="fkb" cx="${x}" cy="${y}" r="10"/><path class="fkbh" d="M${x - 7} ${y - 6}q7 -14 14 0" fill="none" stroke-width="3.5"/>`; }
+    if (p.db) { const [x, y] = p.db; return `<path class="fkbh" d="M${x - 8} ${y}H${x + 8}" stroke-width="3.5"/><rect class="fkb" x="${x - 12}" y="${y - 7}" width="6" height="14" rx="2"/><rect class="fkb" x="${x + 6}" y="${y - 7}" width="6" height="14" rx="2"/>`; }
     if (p.band) return `<polyline class="fband" points="${p.band.map(q => q.join(',')).join(' ')}" fill="none" stroke-width="3" stroke-linejoin="round"/>`;
     if (p.towel) return `<polyline class="ftowel" points="${p.towel.map(q => q.join(',')).join(' ')}" fill="none" stroke-width="5" stroke-linejoin="round"/>`;
     if (p.loop) { const [cx, cy, rx, ry] = p.loop; return `<ellipse class="farrow" cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="none" stroke-width="2.5" stroke-dasharray="6 5"/>`; }
