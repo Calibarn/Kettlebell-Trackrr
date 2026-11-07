@@ -19,3 +19,17 @@ test('Testversion speichert getrennt von der echten App', async ({ page }) => {
   await page.goto('/index.html');
   expect(await page.evaluate(() => [KEY_NS, saved.length, document.documentElement.classList.contains('testbuild')])).toEqual(['', 0, false]);
 });
+
+test('Werkseinstellung der Testversion löscht nur ihre eigene IndexedDB, nicht die der echten App', async ({ page }) => {
+  await page.route('**/dev/**', async route => {
+    const url = new URL(route.request().url()); url.pathname = url.pathname.replace('/dev/', '/');
+    const res = await route.fetch({ url: url.toString() }); await route.fulfill({ response: res });
+  });
+  const mk = name => page.evaluate(n => new Promise(r => { const q = indexedDB.open(n, 1); q.onupgradeneeded = () => q.result.createObjectStore('kv'); q.onsuccess = () => { q.result.close(); r(); }; }), name);
+  await page.goto('/dev/index.html');
+  await mk('kb-tracker'); await mk('kb-tracker-test');
+  page.removeAllListeners('dialog'); page.on('dialog', d => d.type() === 'prompt' ? d.accept('LÖSCHEN') : d.message().includes('Backup') ? d.dismiss() : d.accept());
+  await Promise.all([page.waitForEvent('load'), page.evaluate(() => { factoryReset(); })]);
+  await page.waitForTimeout(300);
+  expect(await page.evaluate(async () => (await indexedDB.databases()).map(d => d.name).sort())).toEqual(['kb-tracker']);
+});

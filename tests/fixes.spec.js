@@ -31,6 +31,9 @@ test('Kalender-Export: Testlauf heißt „Testlauf 5 km“, nicht „Qualität: 
 });
 
 test('Testlauf: ein vergangenes Rennen ohne Ergebnis zählt nicht als neuer Wert, Hinweis auf das Ergebnis', async ({ page }) => {
+  // fester Tag (Mittwoch): sonst fällt das Rennen von vor 5 Tagen je nach Wochentag in die laufende Woche
+  await page.clock.setFixedTime(new Date('2026-11-04T10:00:00+01:00'));
+  await page.reload();
   await page.evaluate(() => {
     races = [{ id: 'p', name: 'Stadtlauf', date: addDays(localDay(), -5), dist: '10k', prio: 'B', goal: null, km: null },
       { id: 'h', name: 'HM', date: addDays(localDay(), 7 * 20), dist: 'hm', prio: 'A', goal: null, km: null }]; persistRaces();

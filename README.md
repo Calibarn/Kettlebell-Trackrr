@@ -95,7 +95,7 @@ Orientiert sich an Apples Gestaltungsrichtlinien: große Titel, gruppierte Liste
 
 ## Einrichtung
 
-1. Repository → **Settings → Pages** → „Deploy from a branch“, Branch **main**, Ordner **/ (root)**.
+1. Repository → **Settings → Pages** → Quelle **„GitHub Actions“** (veröffentlicht wird über `.github/workflows/deploy.yml`: main als Live-Version, dev unter `/dev/`).
 2. Nach ein bis zwei Minuten `https://calibarn.github.io/Kettlebell-Trackrr/` öffnen.
 3. **iPhone:** in Safari „Teilen“ → „Zum Home-Bildschirm“. **Android:** in Chrome Menü → „App installieren“ bzw. „Zum Startbildschirm hinzufügen“.
 4. Danach nur noch über das App-Symbol öffnen. Browser und installierte App haben getrennte Speicher; die installierte App ist zuverlässiger vor dem automatischen Löschen geschützt.
@@ -124,7 +124,7 @@ Safari spielt Web-Töne normalerweise nicht, wenn der Stummschalter an ist. Unte
 
 ## Tests
 
-Automatische Tests mit Playwright (Chromium) prüfen Zirkel, Tabata, Core-EMOM, Sätze, Geräte-Auswahl, Ansagen, geführte Routinen, Import/Export, Update-Sicherheit, Saisonplan und Rennen, Profil, Content-Security-Policy und dass jede Übung Anleitung und Skizze hat. Sie laufen bei jedem Push über GitHub Actions (`.github/workflows/test.yml`).
+Automatische Tests mit Playwright (Chromium) prüfen Zirkel, Tabata, Core-EMOM, Sätze, Geräte-Auswahl, Ansagen, geführte Routinen, Import/Export, Update-Sicherheit, Saisonplan und Rennen, Profil, Content-Security-Policy und dass jede Übung Anleitung und Skizze hat. Sie laufen bei jedem Push über GitHub Actions (`.github/workflows/test.yml`). Auf dev, hotfix und in Pull Requests läuft zusätzlich die Datenprüfung (`tools/upgrade-check.js`, Live → Test, Sicherungen, Sync); die Testversion wird nur veröffentlicht, wenn beides grün ist. Der Bericht liegt als Artefakt „upgrade-bericht“ am Lauf. Nicht abgedeckt sind Safari/WebKit und echtes Teilen/Herunterladen auf iPhone und Android – das bleibt ein Handtest vor dem Release.
 
 **Datenprüfung vor dem Release:** `node tools/upgrade-check.js [--base origin/main] [--head origin/dev] [--report bericht.md]` legt mit der Live-Version echte Daten an und prüft vier Wege: Update an Ort und Stelle (neue Version liest den Speicher der alten), Sicherung Live → Testversion, Sicherung Testversion → Testversion und Sync-Datei Live → Testversion. Exit-Code 0 = nichts verloren oder verändert.
 

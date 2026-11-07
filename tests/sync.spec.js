@@ -98,3 +98,15 @@ test('Sync: falsche Datei wird abgelehnt, Speicherort wird je Gerät gemerkt', a
   expect(JSON.stringify(JSON.parse(file))).not.toContain('iCloud Drive'); // Speicherort bleibt auf dem Gerät
   await expect(page.locator('#toast')).toContainText('in „iCloud Drive › KB Tracker“');
 });
+
+test('Sync: geht die Uhr eines Geräts vor, gewinnt eine spätere Änderung auf dem anderen Gerät trotzdem', async ({ browser }) => {
+  const a = await device(browser), b = await device(browser);
+  await b.evaluate(() => { const n = Date.now; Date.now = () => n() + 86400000; }); // Gerät B: Uhr einen Tag vor
+  await b.evaluate(() => { profile.week.quality = 3; persistProfile(); });
+  await load(a, await save(b));
+  expect(await a.evaluate(() => profile.week.quality)).toBe(3);
+  await a.evaluate(() => { profile.week.quality = 5; persistProfile(); }); // später, aber mit richtiger Uhr
+  await load(b, await save(a));
+  expect(await b.evaluate(() => profile.week.quality)).toBe(5);
+  await a.context().close(); await b.context().close();
+});

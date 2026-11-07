@@ -28,7 +28,8 @@ function store(k, v) { if (wiping) return false; try { localStorage.setItem(k, J
 const isObj = v => !!v && typeof v === 'object' && !Array.isArray(v);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const uid = () => (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2));
-const isDay = d => typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d);
+// Nur echte Kalendertage (kein 2026-02-31): Rundlauf über Date
+const isDay = d => { if (typeof d !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(d)) return false; const t = new Date(d + 'T12:00:00Z'); return !Number.isNaN(t.getTime()) && t.toISOString().slice(0, 10) === d; };
 function localDay(d = new Date()) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
 function dateGerman(day) { const [y, m, d] = String(day).split('-'); return EN ? `${d}/${m}/${y}` : `${d}.${m}.${y}`; }
 // Tag und Monat ohne Jahr: 02.11. bzw. 02/11
@@ -2279,7 +2280,8 @@ const syncSaveMeta = () => rawSet(SYNC_META, syncMeta);
 // Beim allerersten Lauf bekommen vorhandene Daten den Zeitstempel 0, damit sie fremde, neuere Änderungen nicht überstimmen.
 function syncTrack() {
   if (wiping) return false;
-  const m = syncMeta, now = Date.now(), first = !m.init; let changed = false;
+  // Zeitstempel nie kleiner als der größte bekannte: geht die Uhr eines anderen Geräts vor, gewinnt eine spätere Änderung hier trotzdem
+  const m = syncMeta, now = Math.max(Date.now(), ...Object.values(m.mod).concat(Object.values(m.del)).filter(Number.isFinite).map(t => t + 1)), first = !m.init; let changed = false;
   const mark = (k, h) => { if (m.h[k] === h) return; m.h[k] = h; m.mod[k] = first ? 0 : now; delete m.del[k]; if (!first) changed = true; };
   for (const [c, d] of Object.entries(SYNC_COLLS)) {
     const arr = rawGet(d.key), seen = new Set();
@@ -2346,9 +2348,11 @@ function syncMerge(remote) {
 }
 // Datei-Zugriff: Chrome/Edge am Mac/PC merken sich die Datei (z. B. im Google-Drive-Ordner), sonst Teilen bzw. Dateiauswahl
 const canHandle = () => !!(window.showSaveFilePicker && window.showOpenFilePicker && window.indexedDB);
+// IndexedDB für den gemerkten Sync-Datei-Griff: Testversion und echte App getrennt (auch beim Zurücksetzen)
+const IDB_NAME = KEY_NS ? 'kb-tracker-test' : 'kb-tracker';
 function idb(mode, fn) {
   return new Promise((ok, fail) => {
-    const rq = indexedDB.open(KEY_NS ? 'kb-tracker-test' : 'kb-tracker', 1);
+    const rq = indexedDB.open(IDB_NAME, 1);
     rq.onupgradeneeded = () => rq.result.createObjectStore('kv');
     rq.onerror = () => fail(rq.error);
     rq.onsuccess = () => { const tx = rq.result.transaction('kv', mode), st = tx.objectStore('kv'), r = fn(st); tx.oncomplete = () => ok(r && r.result); tx.onerror = () => fail(tx.error); };
@@ -2452,7 +2456,7 @@ async function factoryReset() {
   wiping = true; clearTimeout(syncTimer);
   try { for (const k of Object.keys(localStorage)) if (APP_KEY(k)) localStorage.removeItem(k); } catch (e) { }
   try { sessionStorage.removeItem(SYNC_MSG); } catch (e) { }
-  try { indexedDB.deleteDatabase('kb-tracker'); } catch (e) { }
+  try { indexedDB.deleteDatabase(IDB_NAME); } catch (e) { }
   try { sessionStorage.setItem(SYNC_MSG, T('Auf Werkseinstellung zurückgesetzt – alle Daten auf diesem Gerät wurden gelöscht.', 'Factory reset done – all data on this device was deleted.')); } catch (e) { }
   location.reload();
 }
@@ -2547,8 +2551,10 @@ async function exportBackup() {
       const w = await h.createWritable(); await w.write(json); await w.close(); markBackup(); toast(T('In Datei gesichert.', 'Saved to file.')); return;
     }
   } catch (e) { if (e && e.name === 'AbortError') return; }
-  download(name, json, 'application/json'); markBackup(); toast(T('Sicherung heruntergeladen.', 'Backup downloaded.'));
+  download(name, json, 'application/json'); markBackup(); toast(T('Download gestartet – die Sicherung liegt gleich im Ordner „Downloads“.', 'Download started – the backup will be in your “Downloads” folder.'));
 }
+// Felder, die diese Version nicht kennt (z. B. aus einer neueren Sicherung), beim Import mitnehmen
+const extraKeys = (e, known) => Object.fromEntries(Object.entries(e).filter(([k]) => !known.includes(k) && !['__proto__', 'constructor', 'prototype'].includes(k)));
 function importBackup(file) {
   const r = new FileReader();
   r.onload = () => {
@@ -2577,24 +2583,24 @@ function importBackup(file) {
       for (const e of wl) if (!days.has(e.date)) { waist.push(e); days.add(e.date); addedW++; }
       // Laufwochen: vorhandene Wochen behalten, fehlende ergänzen
       const have = new Set(runWeeks.map(e => e.week)); let addedR = 0;
-      for (const e of rw) if (!have.has(e.week)) { runWeeks.push({ week: e.week, km: e.km ?? null, long: e.long ?? null }); have.add(e.week); addedR++; }
+      for (const e of rw) if (!have.has(e.week)) { runWeeks.push(Object.assign(extraKeys(e, ['week', 'km', 'long']), { week: e.week, km: e.km ?? null, long: e.long ?? null })); have.add(e.week); addedR++; }
       runWeeks.sort((a, b) => a.week.localeCompare(b.week));
       const runIds = new Set(runLog.map(e => e.id)); let addedL = 0;
-      for (const e of rl) if (!runIds.has(e.id)) { runLog.push(Object.assign({ id: e.id, date: e.date, km: e.km }, runExtra(e))); runIds.add(e.id); addedL++; }
+      for (const e of rl) if (!runIds.has(e.id)) { runLog.push(Object.assign(extraKeys(e, ['id', 'date', 'km', 'sec', 'hr', 'kind']), { id: e.id, date: e.date, km: e.km }, runExtra(e))); runIds.add(e.id); addedL++; }
       runLog.sort((a, b) => a.date.localeCompare(b.date));
       const raceIds = new Set(races.map(e => e.id)); let addedC = 0;
-      for (const e of rc) if (!raceIds.has(e.id)) { races.push(Object.assign({ id: e.id, name: e.name, date: e.date, dist: e.dist, prio: e.prio, goal: e.goal ?? null, km: e.km ?? null }, ...['fmt', 'dns', 'level'].filter(k => e[k] !== undefined).map(k => ({ [k]: e[k] })))); raceIds.add(e.id); addedC++; }
+      for (const e of rc) if (!raceIds.has(e.id)) { races.push(Object.assign(extraKeys(e, ['id', 'name', 'date', 'dist', 'prio', 'goal', 'km', 'fmt', 'dns', 'level']), { id: e.id, name: e.name, date: e.date, dist: e.dist, prio: e.prio, goal: e.goal ?? null, km: e.km ?? null }, ...['fmt', 'dns', 'level'].filter(k => e[k] !== undefined).map(k => ({ [k]: e[k] })))); raceIds.add(e.id); addedC++; }
       const wdays = new Set(weights.map(e => e.date)); let addedG = 0;
-      for (const e of wg) if (!wdays.has(e.date)) { weights.push({ date: e.date, kg: e.kg }); wdays.add(e.date); addedG++; }
+      for (const e of wg) if (!wdays.has(e.date)) { weights.push(Object.assign(extraKeys(e, ['date', 'kg']), { date: e.date, kg: e.kg })); wdays.add(e.date); addedG++; }
       persistEntries(); persistWaist(); if (addedR) persistRunWeeks(); if (addedL) persistRunLog(); if (addedC) persistRaces(); if (addedG) persistWeight();
       const resIds = new Set(results.map(e => e.id)); let addedS = 0;
-      for (const e of rs) if (!resIds.has(e.id)) { const o = { id: e.id, date: e.date, km: e.km, time: e.time, dist: e.dist ?? null }; if (e.name) o.name = e.name; if (typeof e.race === 'string') o.race = e.race; results.push(o); resIds.add(e.id); addedS++; }
+      for (const e of rs) if (!resIds.has(e.id)) { const o = Object.assign(extraKeys(e, ['id', 'date', 'km', 'time', 'dist', 'name', 'race']), { id: e.id, date: e.date, km: e.km, time: e.time, dist: e.dist ?? null }); if (e.name) o.name = e.name; if (typeof e.race === 'string') o.race = e.race; results.push(o); resIds.add(e.id); addedS++; }
       if (addedS) persistResults();
       if (settings && confirm(T('Das Backup enthält auch Einstellungen (Geräte, Varianten, Gewichte). Übernehmen?', 'The backup also contains settings (equipment, variants, weights). Apply them?'))) {
         if (isObj(settings.gear)) { gear = { kb: settings.gear.kb !== false, band: settings.gear.band !== false, bw: settings.gear.bw !== false }; ensureGear(); store(KEYS.gear, gear); }
         if (isObj(settings.choices)) { choices = settings.choices; store(KEYS.choice, choices); }
         if (isObj(settings.stages)) { stages = settings.stages; store(KEYS.stage, stages); }
-        if (isObj(settings.profile)) { profile = normProfile(settings.profile); persistProfile(); }
+        if (isObj(settings.profile)) { Object.assign(profileExtra, extraKeys(settings.profile, ['hr', 'kit', 'week'])); profile = normProfile(settings.profile); persistProfile(); }
         if (isObj(settings.audio)) { audioOpt = { voice: settings.audio.voice !== false, loud: settings.audio.loud === true }; store(KEYS.audio, audioOpt); applyAudioSession(); }
         if (!sessionActive()) runReps = emptyReps(plan);
       }

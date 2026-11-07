@@ -122,3 +122,22 @@ test.describe('Sicherung auf Android', () => {
     expect(await page.evaluate(() => window.__shared)).toBe(0);
   });
 });
+
+test('Kalendertage: unmögliche Daten werden abgelehnt, auch beim Import', async ({ page }) => {
+  expect(await page.evaluate(() => ['2026-02-31', '2026-13-01', '2026-02-29', '2028-02-29', '2026-12-31', '2026-1-05'].map(isDay))).toEqual([false, false, false, true, true, false]);
+  await importJson(page, { version: 3, entries: [], runLog: [{ id: 'a', date: '2026-02-31', km: 5 }, { id: 'b', date: '2026-03-01', km: 6 }] });
+  await expect.poll(() => page.evaluate(() => runLog.map(r => r.id))).toEqual(['b']);
+});
+
+test('Import behält Felder, die diese Version nicht kennt (Sicherung aus einer neueren Version)', async ({ page }) => {
+  page.removeAllListeners('dialog'); page.on('dialog', d => d.accept());
+  await importJson(page, { version: 3, entries: [],
+    runLog: [{ id: 'r', date: '2026-10-20', km: 8, neu: 'x' }],
+    races: [{ id: 'c', name: 'HM', date: '2027-04-04', dist: 'hm', prio: 'A', goal: null, km: null, zukunft: { a: 1 } }],
+    results: [{ id: 's', date: '2026-09-01', km: 10, time: 3000, dist: '10k', quelle: 'uhr' }],
+    weights: [{ date: '2026-10-01', kg: 118, fett: 30 }],
+    settings: { profile: { hr: { max: 185 }, neuesFeld: [1, 2], __proto__: { boese: true } } } });
+  await expect.poll(() => page.evaluate(() => runLog.length)).toBe(1);
+  const r = await page.evaluate(() => [runLog[0].neu, races[0].zukunft, results[0].quelle, weights[0].fett, JSON.parse(localStorage.getItem(KEYS.profile)).neuesFeld, ({}).boese]);
+  expect(r).toEqual(['x', { a: 1 }, 'uhr', 30, [1, 2], undefined]);
+});

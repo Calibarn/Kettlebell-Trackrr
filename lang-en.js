@@ -1581,7 +1581,10 @@ const EN_TEXT = {
 "Bei jedem B-Rennen steht, was es in der Woche ersetzt und wie du es läufst: Es ersetzt die Qualität, ab Halbmarathon oder Longrun-Länge auch den Longrun. Ein deutlich kürzeres Rennen (z. B. 10 km im Marathonblock) läufst du als Tempoeinheit voll, sonst ist es ein Formtest. In Erholung und Tapering: locker, nicht auf Zeit.": "Every B race now says what it replaces that week and how to run it: it replaces the quality session, from half marathon or long-run length also the long run. A much shorter race (e.g. 10 km in a marathon block) you race as your speed session, otherwise it is a fitness test. During recovery and taper: easy, not for time.",
 "Sicherung auf Android": "Backup on Android",
 "Auf Android lädt „In Datei sichern“ die Sicherung jetzt direkt in den Ordner „Downloads“ – im Teilen-Menü fehlt dort je nach Gerät eine Möglichkeit, auf dem Gerät zu speichern.": "On Android “Save to file” now downloads the backup straight to the “Downloads” folder – depending on the device, the share menu there has no option to save on the device.",
-"Landet im Ordner „Downloads“": "Goes to the “Downloads” folder"
+"Landet im Ordner „Downloads“": "Goes to the “Downloads” folder",
+"Datensicherheit": "Data safety",
+"Aus einem Code-Review: Zurücksetzen der Testversion lässt die echte App in Ruhe, die App räumt nur ihre eigenen Offline-Daten auf, der Sync kommt mit einer falsch gehenden Uhr zurecht, eine Sicherung aus einer neueren Version verliert beim Import nichts, und unmögliche Daten wie der 31.02. werden abgelehnt.": "From a code review: resetting the test version leaves the real app alone, the app only cleans up its own offline data, sync copes with a device clock that is off, a backup from a newer version loses nothing on import, and impossible dates like 31 Feb are rejected.",
+"Download gestartet – die Sicherung liegt gleich im Ordner „Downloads“.": "Download started – the backup will be in your “Downloads” folder."
 };
 const EN_HTML = {
 "Kraft · Laufen · Mobility": "Strength · Running · Mobility",

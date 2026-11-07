@@ -30,10 +30,34 @@ jobs:
           path: playwright-report/
           retention-days: 7
 
-  # Testversion: nach grünen Tests auf dev die Seite neu veröffentlichen (main bleibt, dev kommt unter /dev/).
+  # Datenprüfung: Live (main) → Test (dieser Stand), Sicherungen hin und zurück, Sync – keine Nutzerdaten dürfen verloren gehen.
+  # Auf main selbst gibt es nichts zu vergleichen.
+  upgrade-check:
+    if: github.ref != 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: node tools/upgrade-check.js --base origin/main --head HEAD --report upgrade-bericht.md
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: upgrade-bericht
+          path: upgrade-bericht.md
+          retention-days: 30
+
+  # Testversion: nach grünen Tests und grüner Datenprüfung auf dev die Seite neu veröffentlichen (main bleibt, dev kommt unter /dev/).
   # Der Pages-Workflow läuft auf main, weil nur main auf GitHub Pages veröffentlichen darf.
   deploy-test:
-    needs: test
+    needs: [test, upgrade-check]
     if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
     runs-on: ubuntu-latest
     permissions:
