@@ -120,8 +120,9 @@ PLANS.core = {
 };
 const EMOM_DEFAULT = { rounds: 5 }, EMOM_ROUNDS = [4, 5, 6];
 const EMOM_PLAN_TEXT = 'EMOM heißt „Every Minute On the Minute“: Zu Beginn jeder Minute die angegebenen Wiederholungen, im Rest der Minute Pause. Dann folgt die nächste Übung. Die App sagt jeden Minutenwechsel per Ton und Ansage an, 3-2-1 vorher. Brauchst du mehr als etwa 45 Sekunden, nimm eine Wiederholung weniger.';
-const TABATA_DEFAULT = { rounds: 6, blockRest: 90 }, TABATA_ROUNDS = [6, 8], TABATA_RESTS = [60, 90];
-const TABATA_TEXT = 'Tabata: 20 Sekunden so viele saubere Wiederholungen wie möglich, 10 Sekunden Pause, dann die nächste Runde derselben Übung. Nach allen Runden folgt eine längere Pause und die nächste Übung. Die App sagt jeden Wechsel per Ton an, 3-2-1 vorher.';
+// Tabata als Zirkel: Übung 1 20″, 10″ Pause, Übung 2 … – das Ganze 3 × (je Übung 3 × 20″), zwischen den Runden eine längere Pause
+const TABATA_DEFAULT = { rounds: 3, blockRest: 60 }, TABATA_ROUNDS = [3, 4, 5], TABATA_RESTS = [60, 90];
+const TABATA_TEXT = 'Tabata als Zirkel: 20 Sekunden so viele saubere Wiederholungen wie möglich, 10 Sekunden Pause, dann die nächste Übung. Nach der letzten Übung folgt eine längere Pause und die nächste Runde – standardmäßig 3 Runden. Die App sagt jeden Wechsel per Ton an, 3-2-1 vorher.';
 const PLAN_ORDER = ['wed', 'tabata', 'amrap', 'run', 'sun', 'core', 'office'];
 
 /* Zuordnung alter Einträge (vor Version 3) zu den Übungsplätzen des Ganzkörper-Zirkels,
