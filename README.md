@@ -124,6 +124,10 @@ Safari spielt Web-Töne normalerweise nicht, wenn der Stummschalter an ist. Unte
 
 ## Tests
 
+### Englische Texte
+
+Alle englischen Texte stehen in `lang-en.js` (Schlüssel = deutscher Originaltext). Neue oder geänderte Texte: eine JSON-Datei `{ "text": { "Deutsch": "English" }, "html": { … }, "remove": [ … ] }` anlegen und `node tools/i18n.js set datei.json` aufrufen – `text` für Texte aus `data.js`/`app.js`, `html` für Texte aus `index.html`. Was noch fehlt, melden die Englisch-Tests (`tests/englisch.spec.js`). Texte direkt im Code mit `T('Deutsch', 'English')` brauchen keinen Eintrag.
+
 Automatische Tests mit Playwright (Chromium) prüfen Zirkel, Tabata, Core-EMOM, Sätze, Geräte-Auswahl, Ansagen, geführte Routinen, Import/Export, Update-Sicherheit, Saisonplan und Rennen, Profil, Content-Security-Policy und dass jede Übung Anleitung und Skizze hat. Sie laufen bei jedem Push über GitHub Actions (`.github/workflows/test.yml`). Auf dev, hotfix und in Pull Requests läuft zusätzlich die Datenprüfung (`tools/upgrade-check.js`, Live → Test, Sicherungen, Sync); die Testversion wird nur veröffentlicht, wenn beides grün ist. Der Bericht liegt als Artefakt „upgrade-bericht“ am Lauf. Nicht abgedeckt sind Safari/WebKit und echtes Teilen/Herunterladen auf iPhone und Android – das bleibt ein Handtest vor dem Release.
 
 **Datenprüfung vor dem Release:** `node tools/upgrade-check.js [--base origin/main] [--head origin/dev] [--report bericht.md]` legt mit der Live-Version echte Daten an und prüft vier Wege: Update an Ort und Stelle (neue Version liest den Speicher der alten), Sicherung Live → Testversion, Sicherung Testversion → Testversion und Sync-Datei Live → Testversion. Exit-Code 0 = nichts verloren oder verändert.

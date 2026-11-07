@@ -386,3 +386,16 @@ test.describe('Jahresziel', () => {
     await expect(page.locator('#yeargoal')).toHaveValue('1200');
   });
 });
+
+test.describe('Wochenleiste', () => {
+  test.use({ start: true });
+  test('Mo–So: trainiert, geplant, verpasst, frei; heute markiert', async ({ page }) => {
+    await page.clock.setFixedTime(new Date('2026-11-04T10:00:00+01:00')); // Mittwoch
+    await page.reload();
+    await page.evaluate(() => { races = []; persistRaces(); profile.week = Object.assign(profile.week, { quality: 2, long: 0, group: null, strength: [1, 5], extras: [], runner: 'runner' }); persistProfile();
+      runLog = [{ id: 'r', date: '2026-11-03', km: 9 }]; persistRunLog(); showArea('start'); });
+    const days = page.locator('.sstrip .sday');
+    await expect(days).toHaveCount(7);
+    expect(await days.evaluateAll(l => l.map(x => x.className.replace('sday ', '')))).toEqual(['miss', 'done', 'rest today', 'rest', 'plan', 'rest', 'plan']);
+  });
+});

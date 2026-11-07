@@ -1615,7 +1615,11 @@ const EN_TEXT = {
 "Jahresziel": "Year goal",
 "Auf der Startseite legst du fest, wie viele km du im Jahr laufen willst, und siehst den Fortschritt mit dem Soll bis heute und einer Hochrechnung. Der Vorschlag kommt aus dem Vorjahr – bei Lücken aus den eingetragenen Wochen hochgerechnet – plus 5 %; plant der Saisonplan für deine Rennen mehr, gilt dieser Wert.": "On the home screen you set how many km you want to run this year and see your progress with the target to date and a projection. The suggestion comes from last year – projected from the logged weeks if there are gaps – plus 5 %; if the season plan for your races plans more, that value applies.",
 "Sync-Ort in der Erinnerung": "Sync location in the reminder",
-"Nach dem ersten Sync fragt die App, wo du die Datei abgelegt hast. Die Sicherungs-Erinnerung nennt dann diesen Ort und speichert direkt die Sync-Datei.": "After the first sync the app asks where you put the file. The backup reminder then names that location and saves the sync file right away."
+"Nach dem ersten Sync fragt die App, wo du die Datei abgelegt hast. Die Sicherungs-Erinnerung nennt dann diesen Ort und speichert direkt die Sync-Datei.": "After the first sync the app asks where you put the file. The backup reminder then names that location and saves the sync file right away.",
+"Wochenleiste": "Week strip",
+"Rückgängig statt Rückfrage": "Undo instead of asking",
+"Unter „Diese Woche“ auf der Startseite zeigt eine Leiste Montag bis Sonntag: gefüllter Punkt = trainiert, Ring = geplant, grauer Ring = geplant, aber nichts eingetragen. Heute ist hervorgehoben.": "Under “This week” on the home screen a strip shows Monday to Sunday: filled dot = trained, ring = planned, grey ring = planned but nothing logged. Today is highlighted.",
+"Läufe, Rennen, Ergebnisse, Messungen und Trainingseinträge löschst du jetzt ohne Rückfrage – dafür steht ein paar Sekunden „Rückgängig“ im Hinweis.": "Runs, races, results, measurements and workout entries are now deleted without asking – instead “Undo” shows in the notice for a few seconds."
 };
 const EN_HTML = {
 "Kraft · Laufen · Mobility": "Strength · Running · Mobility",

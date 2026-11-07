@@ -563,7 +563,14 @@ function renderPlanHint() {
 
 /* ---------- Darstellung ---------- */
 let toastTimer = null;
-function toast(t) { const el = $('toast'); el.textContent = t; el.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), 3200); }
+function toast(t) { const el = $('toast'); el.textContent = t; el.classList.remove('act'); undoFn = null; el.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), 3200); }
+// Löschen ohne Rückfrage, dafür ein paar Sekunden „Rückgängig“ im Hinweis (wie in Mail-Apps)
+let undoFn = null;
+function toastUndo(t, undo) {
+  const el = $('toast'); el.innerHTML = `<span>${esc(t)}</span><button type="button" class="tundo" id="toastundo">${T('Rückgängig', 'Undo')}</button>`;
+  el.classList.add('show', 'act'); undoFn = undo; clearTimeout(toastTimer); toastTimer = setTimeout(() => { el.classList.remove('show', 'act'); undoFn = null; }, 6000);
+}
+$('toast').addEventListener('click', e => { if (e.target.id !== 'toastundo' || !undoFn) return; const f = undoFn; undoFn = null; f(); toast(T('Wiederhergestellt.', 'Restored.')); });
 
 function renderTabs() {
   const t = $('tabs');
@@ -1034,7 +1041,8 @@ function onProfileClick(e) {
   const bd = t.closest('[data-banddel]'); if (bd) { profile.kit.bands = profile.kit.bands.filter(v => v !== Number(bd.dataset.banddel)); profileChanged('kit'); return; }
   const ms = t.closest('[data-measure]'); if (ms && ms.dataset.measure) { measureView = ms.dataset.measure; renderMeasures(); return; }
   const md = t.closest('[data-measure-delete]');
-  if (md && confirm(T(`Messung vom ${dateGerman(md.dataset.measureDelete)} löschen (Gewicht und Bauchumfang)?`, `Delete the measurement of ${dateGerman(md.dataset.measureDelete)} (weight and waist)?`))) { const d = md.dataset.measureDelete; weights = weights.filter(x => x.date !== d); waist = waist.filter(x => x.date !== d); persistWeight(); persistWaist(); renderMeasures(); toast(T('Gelöscht.', 'Deleted.')); }
+  if (md) { const d = md.dataset.measureDelete, ow = weights.filter(x => x.date === d), oa = waist.filter(x => x.date === d); weights = weights.filter(x => x.date !== d); waist = waist.filter(x => x.date !== d); persistWeight(); persistWaist(); renderMeasures();
+    toastUndo(T(`Messung vom ${dateGerman(d)} gelöscht.`, `Measurement of ${dateGerman(d)} deleted.`), () => { weights = weights.concat(ow); waist = waist.concat(oa).sort((a, b) => a.date.localeCompare(b.date)); persistWeight(); persistWaist(); renderMeasures(); }); return; }
 }
 function onProfileChange(e) {
   const t = e.target, wk = profile.week, val = t.value === '' ? null : Number(t.value);
@@ -2030,6 +2038,17 @@ function yearSuggest(y) {
   if (plan !== null && (up === null || plan > up)) return { km: r50(plan), why: T('aus dem Saisonplan für deine Rennen', 'from the season plan for your races') };
   return { km: r50(up), why: prev.weeks < 50 ? T(`Vorjahr ${kmText(prev.km)} km, hochgerechnet aus ${prev.weeks} Wochen, + 5 %`, `last year ${kmText(prev.km)} km, projected from ${prev.weeks} weeks, + 5 %`) : T(`Vorjahr ${kmText(prev.km)} km + 5 %`, `last year ${kmText(prev.km)} km + 5 %`) };
 }
+/* Wochenleiste Mo–So: Punkt gefüllt = trainiert (Lauf, Kraft, Kurs, Mobility), Ring = geplant, gedämpft = geplant und vorbei ohne Eintrag */
+function weekStrip() {
+  const today = localDay(), wk = weekStart(today), w = profile.week, x = runnerLevel() === 'beginner' ? null : seasonPlan().weeks[0];
+  const items = x ? weekSchedule(x).filter(o => !o.skip) : null, mob = getMobLog();
+  const planned = wd => items ? items.some(o => o.d === wd) : w.strength.includes(wd) || [w.quality, w.long, w.group].includes(wd) || w.extras.some(e => e.d === wd);
+  return `<div class="sstrip" role="list" aria-label="${T('Woche', 'Week')}">${[0, 1, 2, 3, 4, 5, 6].map(i => {
+    const d = addDays(wk, i), wd = new Date(d + 'T12:00:00').getDay(), done = d <= today && (ranOn(d) || saved.some(e => e.date === d) || gymDone(d) || mob.some(e => e.d === d)), pl = planned(wd);
+    const cls = done ? 'done' : pl ? (d < today ? 'miss' : 'plan') : 'rest', st = done ? T('trainiert', 'trained') : pl ? (d < today ? T('geplant, nichts eingetragen', 'planned, nothing logged') : T('geplant', 'planned')) : T('frei', 'rest');
+    return `<span class="sday ${cls}${d === today ? ' today' : ''}" role="listitem" aria-label="${esc(`${WD_LONG[wd]} ${dateGerman(d)}: ${st}`)}"><small>${WD[wd]}</small><b>${Number(d.slice(8))}</b><i></i></span>`;
+  }).join('')}</div>`;
+}
 let yearEdit = false;
 function yearCard() {
   if (runnerLevel() === 'beginner') return '';
@@ -2213,7 +2232,7 @@ function renderStart() {
   const tile = (k, name, sub, wide) => `<button type="button" class="stile${wide ? ' wide' : ''}" data-go="${k}"><span class="sthead">${startIcon(k)}<b>${name}</b></span><small>${esc(sub)}</small></button>`;
   const lt = logToday && items.find(it => it.key === logToday && RUN(it));
   $('startcontent').innerHTML = `${startFeedback ? feedbackCard(startFeedback) : ''}${lt ? runCard({ day: today, item: lt }, 90) : ''}${pendingHtml()}<div class="scard"><p class="skicker">${T('Heute dran', 'On today')}</p>${rows}</div>
-    <div class="scard"><p class="skicker">${T('Diese Woche', 'This week')}</p><div class="sweek">${week.map(([l, v, b]) => `<div><small>${esc(l)}</small><b>${esc(v)}</b>${b}</div>`).join('')}</div></div>${yearCard()}
+    <div class="scard"><p class="skicker">${T('Diese Woche', 'This week')}</p>${weekStrip()}<div class="sweek">${week.map(([l, v, b]) => `<div><small>${esc(l)}</small><b>${esc(v)}</b>${b}</div>`).join('')}</div></div>${yearCard()}
     <div class="stiles">${tile('kraft', T('Kraft', 'Strength'), kTxt)}${tile('laufen', T('Laufen', 'Running'), rTxt)}${tile('mobility', 'Mobility', mTxt)}${tile('profil', T('Profil', 'Profile'), pTxt)}${tile('mehr', T('Mehr', 'More'), bTxt, true)}</div>`;
 }
 $('startcontent').addEventListener('input', e => {
@@ -3157,7 +3176,9 @@ $('settings').addEventListener('click', e => {
   for (const sl of PLANS[plan].slots) if (sl.v.kb) updateChoice(sl.id, { kg: v });
   renderAll(); toast(T(`Alle Kettlebell-Übungen: ${kgText(v)} kg.`, `All kettlebell exercises: ${kgText(v)} kg.`));
 });
-$('history').addEventListener('click', e => { const rb = e.target.closest('[data-rate]'); if (rb) { openRate(rb.dataset.rate); return; } const b = e.target.closest('[data-delete]'); if (!b || !confirm(T('Diesen Trainingseintrag wirklich löschen?', 'Really delete this workout entry?'))) return; saved = saved.filter(x => String(x.id) !== b.dataset.delete); persistEntries(); renderHistory(); renderStats(); renderWeek(); if (isSets()) renderList(); });
+$('history').addEventListener('click', e => { const rb = e.target.closest('[data-rate]'); if (rb) { openRate(rb.dataset.rate); return; } const b = e.target.closest('[data-delete]'); if (!b) return; const old = saved.find(x => String(x.id) === b.dataset.delete); if (!old) return;
+  const redraw = () => { persistEntries(); renderHistory(); renderStats(); renderWeek(); if (isSets()) renderList(); };
+  saved = saved.filter(x => x !== old); redraw(); toastUndo(T('Trainingseintrag gelöscht.', 'Workout entry deleted.'), () => { saved.push(old); redraw(); }); });
 $('manualdate').value = localDay();
 $('manual').addEventListener('submit', e => {
   e.preventDefault(); const date = $('manualdate').value; if (!date) { alert(T('Bitte ein Datum wählen.', 'Please choose a date.')); return; }
@@ -3226,8 +3247,8 @@ $('runcontent').addEventListener('click', e => {
   if (e.target.closest('#icsremind')) { icsRemind.on = !icsRemind.on; store(KEYS.icsremind, icsRemind); renderRun(); toast(icsRemind.on ? T(`Erinnerung um ${icsRemind.time} – gilt für den nächsten Export.`, `Reminder at ${icsRemind.time} – applies to the next export.`) : T('Erinnerung aus – gilt für den nächsten Export.', 'Reminder off – applies to the next export.')); return; }
   if (e.target.closest('#bestsave')) { saveBestFromForm(); return; }
   const bg = e.target.closest('[data-bestgroup]'); if (bg) { bestView.group = bg.dataset.bestgroup; store(KEYS.bestview, bestView); renderRun(); return; }
-  const ld = e.target.closest('[data-leveldel]'); if (ld) { const r = races.find(x => x.id === ld.dataset.leveldel); if (r && confirm(T('Dieses Ergebnis löschen?', 'Delete this result?'))) { delete r.level; persistRaces(); renderRun(); toast(T('Ergebnis gelöscht.', 'Result deleted.')); } return; }
-  const bd = e.target.closest('[data-bestdel]'); if (bd) { if (confirm(T('Dieses Ergebnis löschen?', 'Delete this result?'))) { results = results.filter(r => r.id !== bd.dataset.bestdel); persistResults(); renderRun(); toast(T('Ergebnis gelöscht.', 'Result deleted.')); } return; }
+  const ld = e.target.closest('[data-leveldel]'); if (ld) { const r = races.find(x => x.id === ld.dataset.leveldel); if (r && r.level !== undefined) { const v = r.level; delete r.level; persistRaces(); renderRun(); toastUndo(T('Ergebnis gelöscht.', 'Result deleted.'), () => { r.level = v; persistRaces(); renderRun(); }); } return; }
+  const bd = e.target.closest('[data-bestdel]'); if (bd) { const old = results.find(r => r.id === bd.dataset.bestdel); if (old) { results = results.filter(r => r !== old); persistResults(); renderRun(); toastUndo(T('Ergebnis gelöscht.', 'Result deleted.'), () => { results.push(old); persistResults(); renderRun(); }); } return; }
   const sk = e.target.closest('[data-skip]'); if (sk) { toggleSkip(sk.dataset.week, sk.dataset.skip); renderRun(); return; }
   const dn = e.target.closest('[data-done]'), wp = curWeekPlan(weekStart(localDay()));
   if (dn && wp) { const k = dn.dataset.done; wp.done = wp.done.includes(k) ? wp.done.filter(x => x !== k) : wp.done.concat(k); storeWeekPlan(); renderRun(); return; }
@@ -3245,10 +3266,11 @@ $('runcontent').addEventListener('click', e => {
     storeWeekPlan(); renderRun(); return;
   }
   if (e.target.closest('#racecancel')) { raceEdit = null; renderRun(); return; }
-  if (e.target.closest('#racedel')) { if (raceEdit && confirm(T('Dieses Rennen löschen?', 'Delete this race?'))) { races = races.filter(r => r.id !== raceEdit); persistRaces(); raceEdit = null; renderRun(); toast(T('Rennen gelöscht.', 'Race deleted.')); } return; }
+  if (e.target.closest('#racedel')) { const old = raceEdit && races.find(r => r.id === raceEdit); if (old) { races = races.filter(r => r !== old); persistRaces(); raceEdit = null; renderRun(); toastUndo(T('Rennen gelöscht.', 'Race deleted.'), () => { races.push(old); persistRaces(); renderRun(); }); } return; }
   const re = e.target.closest('[data-raceedit]'); if (re) { raceEdit = re.dataset.raceedit; renderRun(); $('racename').focus(); window.scrollTo({ top: 0 }); return; }
   const d = e.target.closest('[data-rundel]');
-  if (d && confirm(T('Diesen Lauf löschen?', 'Delete this run?'))) { deleteRun(d.dataset.rundel); renderWeekRows(); renderLoad(); toast(T('Lauf gelöscht.', 'Run deleted.')); }
+  if (d) { const old = runLog.find(r => r.id === d.dataset.rundel); if (!old) return; deleteRun(old.id); renderWeekRows(); renderLoad();
+    toastUndo(T('Lauf gelöscht.', 'Run deleted.'), () => { runLog.push(old); runLog.sort((a, b) => a.date.localeCompare(b.date)); persistRunLog(); renderWeekRows(); renderLoad(); }); }
 });
 $('runcontent').addEventListener('keydown', e => { if (e.target.id === 'runkm' && e.key === 'Enter') { e.preventDefault(); addRunFromForm(); } if ((e.target.id === 'racename' || e.target.closest('#racegoal')) && e.key === 'Enter') { e.preventDefault(); saveRaceFromForm(); } });
 function onStarter(a) {

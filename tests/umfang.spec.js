@@ -191,3 +191,16 @@ test('Zeit, Ø-Puls und Art des Laufs bleiben beim Import einer Sicherung erhalt
   await expect.poll(() => page.evaluate(() => runLog.length)).toBe(2);
   expect(await page.evaluate(() => runLog.map(r => JSON.stringify(r)))).toEqual(['{"id":"r1","date":"2026-10-20","km":12,"sec":4300,"hr":141,"kind":"long"}', '{"id":"r2","date":"2026-10-22","km":6}']);
 });
+
+test('Lauf löschen ohne Rückfrage, „Rückgängig“ im Hinweis holt ihn zurück', async ({ page }) => {
+  page.removeAllListeners('dialog'); const dialogs = []; page.on('dialog', d => { dialogs.push(d.type()); d.dismiss(); });
+  await page.evaluate(() => { runLog = [{ id: 'a', date: addDays(localDay(), -2), km: 8, hr: 140 }]; persistRunLog(); });
+  await openUmfang(page);
+  await page.click('[data-rundel="a"]');
+  expect(await page.evaluate(() => runLog.length)).toBe(0);
+  await expect(page.locator('#toast')).toContainText('Lauf gelöscht.');
+  await page.click('#toastundo');
+  expect(await page.evaluate(() => runLog.map(r => [r.id, r.km, r.hr]))).toEqual([['a', 8, 140]]);
+  await expect(page.locator('#toast')).toContainText('Wiederhergestellt');
+  expect(dialogs).toEqual([]);
+});
