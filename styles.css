@@ -535,6 +535,15 @@ body.onstart .livepill{bottom:calc(env(safe-area-inset-bottom) + 16px)}
 .sfb .sresact{display:flex;justify-content:flex-end;padding-bottom:12px}
 .chkok{color:var(--accent-ink)}
 .chkwarn{color:var(--orange)}
+/* Startseite: zwei Knöpfe übereinander (Details, Eintragen); Kicker mit „vor N Tagen“ */
+.sbtns{display:flex;flex-direction:column;gap:6px;align-items:stretch}
+.skicker .sago{color:var(--orange);font-weight:700}
+/* Umfang: Lauf eintragen – zweite Zeile mit Zeit, Puls, Art */
+.runadd2{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 16px 12px}
+.runadd2>span{display:flex;flex-direction:column;gap:6px;min-width:0}
+.runadd2 .ra-time{grid-column:1/-1}
+.runadd2 label{font-size:13px;color:var(--label2)}
+#runfb .scard{margin:0 12px 12px}
 /* weitere offene Einträge, eingeklappt */
 .smore>summary.scard{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;margin-top:10px;font-size:15px;font-weight:600;color:var(--accent-ink)}
 .smore>summary .chev::after{content:"›";color:var(--label3);font-size:22px;line-height:1}

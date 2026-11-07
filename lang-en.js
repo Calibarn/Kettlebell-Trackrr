@@ -1584,7 +1584,11 @@ const EN_TEXT = {
 "Landet im Ordner „Downloads“": "Goes to the “Downloads” folder",
 "Datensicherheit": "Data safety",
 "Aus einem Code-Review: Zurücksetzen der Testversion lässt die echte App in Ruhe, die App räumt nur ihre eigenen Offline-Daten auf, der Sync kommt mit einer falsch gehenden Uhr zurecht, eine Sicherung aus einer neueren Version verliert beim Import nichts, und unmögliche Daten wie der 31.02. werden abgelehnt.": "From a code review: resetting the test version leaves the real app alone, the app only cleans up its own offline data, sync copes with a device clock that is off, a backup from a newer version loses nothing on import, and impossible dates like 31 Feb are rejected.",
-"Download gestartet – die Sicherung liegt gleich im Ordner „Downloads“.": "Download started – the backup will be in your “Downloads” folder."
+"Download gestartet – die Sicherung liegt gleich im Ordner „Downloads“.": "Download started – the backup will be in your “Downloads” folder.",
+"Lauf heute eintragen": "Log today’s run",
+"Unter „Heute dran“ trägst du den Lauf des Tages direkt ein – mit Zeit und Ø-Puls, wenn du magst. Offene Läufe und Rennen von früher stehen jetzt mit dem neuesten zuerst da, und oben auf jeder Karte steht, für welchen Tag sie fragt („gestern“, „vor 3 Tagen“).": "Under “On today” you log the day’s run right away – with time and average heart rate if you like. Open runs and races from earlier now show the newest first, and each card says which day it asks about (“yesterday”, “3 days ago”).",
+"Zeit und Puls im Umfang": "Time and HR in volume",
+"Auch unter Laufen → Umfang → Lauf eintragen gibt es jetzt Zeit, Ø-Puls und die Art des Laufs (sonst nach Plan) – mit derselben Auswertung wie auf der Startseite.": "Under Running → Volume → Add a run there are now time, average heart rate and the type of run (otherwise from the plan) – with the same review as on the home screen."
 };
 const EN_HTML = {
 "Kraft · Laufen · Mobility": "Strength · Running · Mobility",

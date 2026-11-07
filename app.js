@@ -1153,7 +1153,10 @@ function renderUmfang() {
   const today = localDay(), cur = weekStart(today);
   return `<div class="intro">${esc(tr(LOAD_INTRO))}</div>
     <div class="header">${T('Nächster langer Lauf', 'Next long run')}</div><div class="group"><div class="panel" style="border:0;padding-top:12px" id="longresult"></div></div>
-    <div class="header">${T('Lauf eintragen', 'Add a run')}</div><div class="group"><div class="runadd"><input type="date" id="rundate" value="${today}" max="${today}" aria-label="${T('Datum des Laufs', 'Date of the run')}"><input type="text" inputmode="decimal" autocomplete="off" id="runkm" placeholder="km" aria-label="${T('Kilometer des Laufs', 'Kilometres of the run')}"><button type="button" class="btn small primary" id="runaddbtn">${T('Hinzufügen', 'Add')}</button></div><div id="runlist"></div></div>
+    <div class="header">${T('Lauf eintragen', 'Add a run')}</div><div class="group"><div class="runadd"><input type="date" id="rundate" value="${today}" max="${today}" aria-label="${T('Datum des Laufs', 'Date of the run')}"><input type="text" inputmode="decimal" autocomplete="off" id="runkm" placeholder="km" aria-label="${T('Kilometer des Laufs', 'Kilometres of the run')}"><button type="button" class="btn small primary" id="runaddbtn">${T('Hinzufügen', 'Add')}</button></div>
+      <div class="runadd2"><span class="ra-time"><label>${T('Zeit (optional)', 'Time (optional)')}</label>${timeFields('runtime', null, T('Zeit', 'Time'))}</span><span><label for="runhr">${T('Ø Puls', 'Avg HR')}</label><input type="text" inputmode="numeric" maxlength="3" autocomplete="off" id="runhr" placeholder="${T('optional', 'optional')}"></span>
+      <span><label for="runkind">${T('Art', 'Type')}</label><select id="runkind">${[['', T('nach Plan', 'from plan')], ['easy', T('Locker', 'Easy')], ['recovery', T('Regeneration', 'Recovery')], ['long', T('Longrun', 'Long run')], ['group', T('Laufgruppe', 'Running group')], ['quality', T('Intervall/Tempo', 'Intervals/tempo')]].map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select></span></div>
+      <div id="runfb"></div><div id="runlist"></div></div>
     <div class="group sectgroup">${sectHtml('umfang', 'sect-csv', '⇅', 'var(--accent)', T('Läufe aus CSV', 'Runs from CSV'), T('Import aus Uhr oder Tabelle, Vorlage zum Ausfüllen', 'import from a watch or spreadsheet, template to fill in'), `
       <button type="button" class="row" id="runcsvbtn"><span class="icon" style="background:var(--accent)">⇧</span><span class="txt"><b>${T('Läufe aus CSV importieren', 'Import runs from CSV')}</b><small>${T('Spalten Datum und km, z. B. aus Strava oder deiner Uhr', 'Columns date and km, e.g. from Strava or your watch')}</small></span><span class="chev"></span></button>
       <button type="button" class="row" id="runcsvtpl"><span class="icon" style="background:var(--blue)">⇩</span><span class="txt"><b>${T('CSV-Vorlage herunterladen', 'Download CSV template')}</b><small>${T('Zum Ausfüllen in Numbers, Excel oder Google Tabellen', 'To fill in with Numbers, Excel or Google Sheets')}</small></span><span class="chev"></span></button>
@@ -1180,6 +1183,7 @@ function renderLoad() {
     : `<p class="loadstatus">${T('Trag Läufe mit Datum ein (oder bei den Wochensummen den längsten Lauf) – dann steht hier, wie lang dein nächster langer Lauf höchstens sein sollte.', 'Enter runs with a date (or the longest run in the weekly totals) – then this shows the maximum length of your next long run.')}</p>`;
   const recent = allRuns().filter(r => r.date >= addDays(today, -30) && r.date <= today).reverse();
   // Rennen aus dem Ergebnis: ohne Löschen – ein eingetragener Lauf am selben Tag ersetzt es
+  if ($('runfb')) $('runfb').innerHTML = runFeedback ? feedbackCard(runFeedback) : '';
   $('runlist').innerHTML = recent.length ? recent.map(r => { const sp = runSpike(r); return `<div class="row${r.race ? ' racerun' : ''}"><span class="dur">${dayLabel(r.date)}</span><span class="txt"><b>${kmText(r.km)} km</b>${r.race ? `<small>🏁 ${esc(r.name || T('Rennen', 'Race'))} · ${T('aus dem Ergebnis', 'from the result')}</small>` : ''}${r.sec || r.hr ? (() => { const v = runVerdict(runCheck(r)); return `<small>${esc(runStats(r).split(' · ').slice(1).join(' · '))}${v.short ? ` · <span class="${v.ok ? 'chkok' : 'chkwarn'}">${esc(v.short)}</span>` : ''}</small>`; })() : ''}${sp ? `<small class="spike">${T(`+${sp} % gegenüber dem längsten der 30 Tage davor`, `+${sp} % over the longest of the 30 days before`)}</small>` : ''}</span>${r.race ? '' : `<button type="button" class="btn small danger" data-rundel="${esc(r.id)}" aria-label="${T(`Lauf vom ${dateGerman(r.date)} löschen`, `Delete run of ${dateGerman(r.date)}`)}">${T('Löschen', 'Delete')}</button>`}</div>`; }).join('')
       + (recent.some(r => r.race) ? `<p class="footer">${T('Rennen zählen automatisch an Tagen ohne eingetragenen Lauf – trägst du für den Tag einen Lauf ein (z. B. mit den km deiner Uhr), zählt nur der.', 'Races count automatically on days without an entered run – if you enter a run for that day (e.g. with your watch’s km), only that one counts.')}</p>` : '')
     : `<div class="row"><span class="txt"><small>${T('Noch keine einzelnen Läufe in den letzten 30 Tagen.', 'No single runs in the last 30 days yet.')}</small></span></div>`;
@@ -1245,11 +1249,26 @@ function importRunCsv(file) {
   r.onerror = () => toast(T('Die Datei konnte nicht gelesen werden.', 'The file could not be read.'));
   r.readAsText(file);
 }
+// Zeit und Ø-Puls lesen (beides optional); NaN = ungültig, null = leer
+function readRunExtras(timeId, hrId) {
+  const sec = readTime(timeId), hrT = String($(hrId).value).trim(), hr = hrT === '' ? null : /^\d{2,3}$/.test(hrT) ? Number(hrT) : NaN;
+  if (Number.isNaN(sec)) { markTime(timeId, true); toast(T('Bitte die Zeit prüfen (Minuten und Sekunden höchstens 59) – oder leer lassen.', 'Please check the time (minutes and seconds at most 59) – or leave it empty.')); return null; }
+  if (hr !== null && !(hr >= 40 && hr <= 230)) { $(hrId).setAttribute('aria-invalid', 'true'); toast(T('Bitte den Ø-Puls zwischen 40 und 230 eintragen – oder leer lassen.', 'Please enter an average HR between 40 and 230 – or leave it empty.')); return null; }
+  return { sec: sec || undefined, hr: hr || undefined };
+}
+const RUN_KIND_LABEL = () => ({ easy: T('Lockerer Lauf', 'Easy run'), recovery: T('Regenerationslauf', 'Recovery run'), long: T('Longrun', 'Long run'), group: T('Laufgruppe', 'Running group'), quality: T('Intervall/Tempo', 'Intervals/tempo') });
+let runFeedback = null;
 function addRunFromForm() {
   const d = $('rundate').value, today = localDay(), km = kmNum($('runkm').value);
   if (!isDay(d) || d > today) { toast(T('Bitte ein Datum bis heute wählen.', 'Please choose a date up to today.')); return; }
   if (km === null || Number.isNaN(km) || km <= 0 || km > 300) { $('runkm').setAttribute('aria-invalid', 'true'); toast(T('Bitte die Kilometer des Laufs eingeben.', 'Please enter the kilometres of the run.')); return; }
-  addRun(d, km); $('runkm').value = ''; $('runkm').removeAttribute('aria-invalid');
+  const ex = readRunExtras('runtime', 'runhr'); if (!ex) return;
+  // Art: gewählt, sonst die geplante Einheit des Tages, sonst locker
+  const planned = plannedRunsOn(d)[0], kind = $('runkind').value || (planned ? runKindOf(planned) : 'easy');
+  const run = addRun(d, km, Object.assign(ex, { kind }));
+  if (planned) { const wp = curWeekPlan(weekStart(d)); if (wp && !wp.done.includes(planned.key)) { wp.done.push(planned.key); storeWeekPlan(); } }
+  runFeedback = run.sec || run.hr ? { id: run.id, title: `${dayLabel(d)} · ${planned && !$('runkind').value ? planned.title : RUN_KIND_LABEL()[kind]}`, box: 'runfb' } : null;
+  $('runkm').value = ''; $('runhr').value = ''; document.querySelectorAll('#runtime input').forEach(i => { i.value = ''; }); $('runkm').removeAttribute('aria-invalid');
   renderWeekRows(); renderLoad(); toast(T(`✓ ${kmText(km)} km am ${dayLabel(d)} gespeichert.`, `✓ ${kmText(km)} km saved for ${dayLabel(d)}.`));
 }
 
@@ -1947,14 +1966,16 @@ function todayItems() {
   }
   const S = seasonPlan(), x = S.weeks[0];
   const items = x ? weekSchedule(x).filter(o => o.d === wd && !o.skip) : [
-    w.quality === wd && { kind: 'quality', title: T('Qualität', 'Quality'), detail: T('Intervall oder Tempo', 'Intervals or tempo') },
-    w.long === wd && { kind: 'long', title: T('Longrun', 'Long run'), detail: hrize(T('locker, Zone 2', 'easy, Zone 2')) },
-    w.group === wd && { kind: 'group', title: T('Laufgruppe', 'Running group'), detail: hrize(T('locker, Zone 2', 'easy, Zone 2')) },
+    w.quality === wd && { kind: 'quality', key: 'quality', title: T('Qualität', 'Quality'), detail: T('Intervall oder Tempo', 'Intervals or tempo') },
+    w.long === wd && { kind: 'long', key: 'long', title: T('Longrun', 'Long run'), detail: hrize(T('locker, Zone 2', 'easy, Zone 2')) },
+    w.group === wd && { kind: 'group', key: 'group', title: T('Laufgruppe', 'Running group'), detail: hrize(T('locker, Zone 2', 'easy, Zone 2')) },
     w.strength.includes(wd) && { kind: 'strength', plan: dayPlan(wd), base: '', sameDay: [w.quality, w.long].includes(wd) ? 'hard' : w.group === wd ? 'easy' : null },
-    ...w.extras.filter(e => e.d === wd).map(e => ({ kind: extraKind(e), title: extraTitle(e), detail: e.type === 'easy' ? hrize(T('locker, Zone 2', 'easy, Zone 2')) : e.type === 'recovery' ? recoveryDetail() : e.type === 'quality' ? T('Intervall oder Tempo', 'Intervals or tempo') : '' }))].filter(Boolean);
+    ...w.extras.map((e, i) => ({ e, i })).filter(({ e }) => e.d === wd).map(({ e, i }) => ({ kind: extraKind(e), key: 'x' + i, recovery: e.type === 'recovery', title: extraTitle(e), detail: e.type === 'easy' ? hrize(T('locker, Zone 2', 'easy, Zone 2')) : e.type === 'recovery' ? recoveryDetail() : e.type === 'quality' ? T('Intervall oder Tempo', 'Intervals or tempo') : '' }))].filter(Boolean);
   // Kraft am Lauftag: der Hinweis steht kurz in einer eigenen Zeile (im Wochenplan ausführlicher)
   const tip = it => !it.sameDay ? '' : it.base && /Beinübungen|leg exercises/.test(it.base) ? T('Nach dem Lauf', 'After the run') : it.sameDay === 'hard' ? T('Nach dem Lauf, ohne schwere Beinübungen', 'After the run, no heavy leg exercises') : T('Nach dem Lauf oder mit ein paar Stunden Abstand', 'After the run or a few hours apart');
-  for (const it of items) out.push(it.kind === 'strength' ? Object.assign(kraft(it.plan || plan), { done: it.done, note: it.sameDay ? it.base : it.detail, tip: tip(it) }) : Object.assign({}, it, { act: RUN(it) ? 'plan' : null }));
+  // ein heute eingetragener Lauf hakt den geplanten Lauf ab (auch ohne Saisonplan)
+  const ranToday = ranOn(today);
+  for (const it of items) out.push(it.kind === 'strength' ? Object.assign(kraft(it.plan || plan), { done: it.done, note: it.sameDay ? it.base : it.detail, tip: tip(it) }) : Object.assign({}, it, { act: RUN(it) ? 'plan' : null, done: it.done || (RUN(it) && ranToday) }));
   return out;
 }
 /* Startseite: nach einem A- oder B-Rennen nach dem Ergebnis fragen – ab dem Tag danach, bis es eingetragen ist –, damit es nicht vergessen wird.
@@ -1974,7 +1995,7 @@ function resultCard(r, i = 0) {
   const field = r.fmt === 'wfl' ? `<label for="sreskm${s}">${T('Geschafft bis km', 'Reached km')}</label><input id="sreskm${s}" data-wflkm="${s}" type="text" inputmode="decimal" autocomplete="off" placeholder="${T('z. B. 18,4', 'e.g. 18.4')}"><small class="tiny" id="sresinfo${s}">${T('Die Zeit rechnet die App aus dem Catcher Car.', 'The app takes the time from the Catcher Car.')}</small>`
     : r.fmt === 'pace' ? `<label for="sreslevel${s}">${T('Geschafftes Level', 'Level reached')}</label><input id="sreslevel${s}" type="text" inputmode="decimal" autocomplete="off" placeholder="${T('z. B. 11,753', 'e.g. 11.753')}">`
     : `<label>${T('Deine Zeit', 'Your time')}</label>${timeFields('srestime' + s, null, T('Zeit', 'Time'))}`;
-  return `<div class="scard sres" id="startresult${s}"><p class="skicker">${T('Ergebnis eintragen', 'Enter result')}</p>
+  return `<div class="scard sres" id="startresult${s}"><p class="skicker">${T('Ergebnis eintragen', 'Enter result')} · <b class="sago">${agoText(r.date)}</b></p>
     <div class="srowt">${startIcon('laufen')}<span class="txt"><b>${T(`Wie lief ${esc(r.name)}?`, `How did ${esc(r.name)} go?`)}</b><small>${esc(dateGerman(r.date) + ' · ' + raceLabel(r))}</small></span></div>
     <div class="sresin">${field}</div>
     <div class="sresact"><button type="button" class="btn small" data-resdns="${esc(r.id)}">${T('Nicht gelaufen', 'Did not run')}</button><button type="button" class="btn small primary" data-ressave="${esc(r.id)}" data-i="${i}">${T('Speichern', 'Save')}</button></div></div>`;
@@ -2028,14 +2049,16 @@ function pendingRuns() {
 }
 // Art der geplanten Einheit für die Auswertung: locker (Zone 2), Regeneration (Zone 1), Longrun, Laufgruppe oder Qualität (ohne Wertung)
 const runKindOf = it => it.recovery ? 'recovery' : it.kind === 'quality' || it.kind === 'quality2' ? (it.easy ? 'easy' : 'quality') : it.kind;
+// „heute“, „gestern“, „vor 3 Tagen“ – damit klar ist, für welchen Tag die Karte fragt
+const agoText = d => { const n = Math.round((new Date(localDay() + 'T12:00:00') - new Date(d + 'T12:00:00')) / 864e5); return n <= 0 ? T('heute', 'today') : n === 1 ? T('gestern', 'yesterday') : T(`vor ${n} Tagen`, `${n} days ago`); };
 function runCard(p, i = 0) {
-  const it = p.item, s = sfx(i), when = p.day === addDays(localDay(), -1) ? T('Gestern', 'Yesterday') : dayLabel(p.day), ref = `${p.day}|${it.key}`;
-  return `<div class="scard sres" id="startrun${s}"><p class="skicker">${T('Lauf nachtragen', 'Log run')}</p>
+  const it = p.item, s = sfx(i), today = p.day === localDay(), when = dayLabel(p.day), ref = `${p.day}|${it.key}`;
+  return `<div class="scard sres" id="startrun${s}"><p class="skicker">${today ? T('Lauf eintragen · heute', 'Log run · today') : `${T('Lauf nachtragen', 'Log run')} · <b class="sago">${agoText(p.day)}</b>`}</p>
     <div class="srowt">${startIcon('laufen')}<span class="txt"><b>${esc(`${when} · ${it.title}`)}</b>${it.detail ? `<small>${esc(it.detail)}</small>` : ''}</span></div>
     <div class="sresin"><div class="sres2"><span><label for="srunkm${s}">${T('Gelaufen (km)', 'Ran (km)')}</label><input id="srunkm${s}" type="text" inputmode="decimal" autocomplete="off" placeholder="${T('z. B. 8,5', 'e.g. 8.5')}"></span>
       <span><label for="srunhr${s}">${T('Ø Puls (optional)', 'Avg HR (optional)')}</label><input id="srunhr${s}" type="text" inputmode="numeric" autocomplete="off" maxlength="3" placeholder="${T('z. B. 142', 'e.g. 142')}"></span></div>
       <label>${T('Zeit (optional)', 'Time (optional)')}</label>${timeFields('sruntime' + s, null, T('Zeit', 'Time'))}</div>
-    <div class="sresact"><button type="button" class="btn small" data-runskip="${esc(ref)}">${T('Nicht gelaufen', 'Did not run')}</button><button type="button" class="btn small primary" data-runsave="${esc(ref)}" data-i="${i}" data-kind="${runKindOf(it)}" data-title="${esc(`${when} · ${it.title}`)}">${T('Speichern', 'Save')}</button></div></div>`;
+    <div class="sresact">${today ? `<button type="button" class="btn small" data-logcancel>${T('Abbrechen', 'Cancel')}</button>` : `<button type="button" class="btn small" data-runskip="${esc(ref)}">${T('Nicht gelaufen', 'Did not run')}</button>`}<button type="button" class="btn small primary" data-runsave="${esc(ref)}" data-i="${i}" data-kind="${runKindOf(it)}" data-title="${esc(`${when} · ${it.title}`)}">${T('Speichern', 'Save')}</button></div></div>`;
 }
 /* Auswertung eines Laufs gegen den Zielbereich der Einheit: lockere Läufe nach Puls (Zone 2, Regeneration Zone 1) und Tempo.
    Langsamer bzw. niedriger ist bei lockeren Läufen kein Fehler. Intervall/Tempo: keine Wertung – der Schnitt mischt schnelle Abschnitte, Pausen und Ein-/Auslaufen. */
@@ -2075,7 +2098,7 @@ let startFeedback = null;
 function feedbackCard(f) {
   const r = runLog.find(x => x.id === f.id); if (!r) return '';
   const c = runCheck(r), v = runVerdict(c), bpm = t => `${Math.round(t)}`, zn = `Zone ${c.zone}`;
-  return `<div class="scard sfb" id="startfb"><p class="skicker">${T('Auswertung', 'Review')}</p>
+  return `<div class="scard sfb" id="${f.box ? f.box + 'card' : 'startfb'}"><p class="skicker">${T('Auswertung', 'Review')}</p>
     <div class="srowt">${startIcon('laufen')}<span class="txt"><b>${esc(f.title)}</b><small>${esc(runStats(r))}</small></span></div>
     ${c.p ? `<div class="chkrow"><span>${T('Tempo', 'Pace')} <small>${T('locker', 'easy')}</small></span>${checkBar(c.pace, c.p.lo, c.p.hi, t => hms(Math.round(t)), true, 'Tempo')}</div>` : ''}
     ${c.h ? `<div class="chkrow"><span>${T('Puls', 'HR')} <small>${zn}</small></span>${checkBar(c.hr, c.h.lo, c.h.hi, bpm, false, 'Puls')}</div>` : ''}
@@ -2084,9 +2107,10 @@ function feedbackCard(f) {
 }
 /* Offene Einträge: Rennen zuerst, dann Läufe, jeweils das älteste zuerst. Der erste steht offen da, weitere sind eingeklappt
    (bleiben nach dem Speichern aufgeklappt, wenn sie es waren). */
-let startMoreOpen = false;
+let startMoreOpen = false, logToday = null;
 function pendingHtml() {
-  const list = pendingResults().map(r => ({ r })).concat(pendingRuns()), card = (p, i) => p.r ? resultCard(p.r, i) : runCard(p, i);
+  // neueste zuerst; am selben Tag das Rennen vor dem Lauf
+  const list = pendingResults().map(r => ({ r, day: r.date })).concat(pendingRuns()).sort((a, b) => b.day.localeCompare(a.day) || (b.r ? 1 : 0) - (a.r ? 1 : 0)), card = (p, i) => p.r ? resultCard(p.r, i) : runCard(p, i);
   if (!list.length) return '';
   const runs = list.filter(p => !p.r).length;
   return card(list[0], 0) + (list.length > 1 ? `<details class="smore" id="startmore"${startMoreOpen ? ' open' : ''}><summary class="scard"><span>${T(`${list.length - 1} weitere offen`, `${list.length - 1} more open`)}</span><span class="chev"></span></summary>
@@ -2095,7 +2119,8 @@ function pendingHtml() {
 function renderStart() {
   const today = localDay(), wk = weekStart(today), items = todayItems();
   $('startdate').textContent = new Intl.DateTimeFormat(LOCALE, { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date(today + 'T12:00:00'));
-  const btn = it => it.done ? `<span class="sdone">✓ ${T('erledigt', 'done')}</span>` : it.act === 'kraft' || it.act === 'starter' ? `<button type="button" class="btn small primary sgo" data-startact="${it.act}"${it.plan ? ` data-startplan="${it.plan}"` : ''}>▶ ${T('Starten', 'Start')}</button>` : it.act ? `<button type="button" class="btn small sgo" data-startact="${it.act}">${T('Details', 'Details')}</button>` : '';
+  const logBtn = it => RUN(it) && it.key && !ranOn(today) ? `<button type="button" class="btn small primary sgo" data-logtoday="${esc(it.key)}">${T('Eintragen', 'Log')}</button>` : '';
+  const btn = it => it.done ? `<span class="sdone">✓ ${T('erledigt', 'done')}</span>` : it.act === 'kraft' || it.act === 'starter' ? `<button type="button" class="btn small primary sgo" data-startact="${it.act}"${it.plan ? ` data-startplan="${it.plan}"` : ''}>▶ ${T('Starten', 'Start')}</button>` : it.act ? `<span class="sbtns"><button type="button" class="btn small sgo" data-startact="${it.act}">${T('Details', 'Details')}</button>${logBtn(it)}</span>` : '';
   const ico = it => startIcon(it.kind === 'strength' ? 'kraft' : it.kind === 'extra' ? 'mehr' : 'laufen');
   const rows = items.length ? items.map(it => `<div class="srowt${it.done ? ' isdone' : ''}">${ico(it)}<span class="txt"><b>${esc(it.title)}</b>${it.detail || it.note ? `<small>${esc([it.detail, it.note].filter(Boolean).join(' · '))}</small>` : ''}${it.need && it.need.length && !it.done ? `<small class="sneed"><b>${T('Du brauchst', 'You need')}:</b> ${esc(it.need.join(' · '))}</small>` : ''}${it.tip ? `<small class="stip">${esc(it.tip)}</small>` : ''}</span>${btn(it)}</div>`).join('')
     : `<div class="srowt">${startIcon('mobility')}<span class="txt"><b>${T('Heute ist nichts geplant', 'Nothing planned today')}</b><small>${T('Ruhetag – oder eine kurze Mobility-Routine', 'Rest day – or a short mobility routine')}</small></span><button type="button" class="btn small sgo" data-go="mobility">Mobility</button></div>`;
@@ -2119,7 +2144,8 @@ function renderStart() {
   const pTxt = lastW ? T(`Gewicht ${kgOne(lastW.kg)} kg`, `Weight ${kgOne(lastW.kg)} kg`) : T('Woche, Geräte, Maße', 'Week, equipment, measurements');
   const bTxt = `Version ${APP_VERSION} · ` + (lastB ? T(`Sicherung ${daysAgo(lastB)}`, `backup ${daysAgo(lastB)}`) : T('noch keine Sicherung', 'no backup yet'));
   const tile = (k, name, sub, wide) => `<button type="button" class="stile${wide ? ' wide' : ''}" data-go="${k}"><span class="sthead">${startIcon(k)}<b>${name}</b></span><small>${esc(sub)}</small></button>`;
-  $('startcontent').innerHTML = `${startFeedback ? feedbackCard(startFeedback) : ''}${pendingHtml()}<div class="scard"><p class="skicker">${T('Heute dran', 'On today')}</p>${rows}</div>
+  const lt = logToday && items.find(it => it.key === logToday && RUN(it));
+  $('startcontent').innerHTML = `${startFeedback ? feedbackCard(startFeedback) : ''}${lt ? runCard({ day: today, item: lt }, 90) : ''}${pendingHtml()}<div class="scard"><p class="skicker">${T('Heute dran', 'On today')}</p>${rows}</div>
     <div class="scard"><p class="skicker">${T('Diese Woche', 'This week')}</p><div class="sweek">${week.map(([l, v, b]) => `<div><small>${esc(l)}</small><b>${esc(v)}</b>${b}</div>`).join('')}</div></div>
     <div class="stiles">${tile('kraft', T('Kraft', 'Strength'), kTxt)}${tile('laufen', T('Laufen', 'Running'), rTxt)}${tile('mobility', 'Mobility', mTxt)}${tile('profil', T('Profil', 'Profile'), pTxt)}${tile('mehr', T('Mehr', 'More'), bTxt, true)}</div>`;
 }
@@ -2131,6 +2157,8 @@ $('startcontent').addEventListener('toggle', e => { if (e.target.id === 'startmo
 $('startcontent').addEventListener('click', e => {
   const g = e.target.closest('[data-go]'); if (g) { showArea(g.dataset.go); return; }
   if (e.target.closest('[data-fbclose]')) { startFeedback = null; renderStart(); return; }
+  const lg = e.target.closest('[data-logtoday]'); if (lg) { logToday = lg.dataset.logtoday; renderStart(); window.scrollTo(0, 0); const f = $('srunkm-90'); if (f) f.focus(); return; }
+  if (e.target.closest('[data-logcancel]')) { logToday = null; renderStart(); return; }
   const rs = e.target.closest('[data-ressave]'); if (rs) { saveStartResult(rs.dataset.ressave, Number(rs.dataset.i) || 0); return; }
   const skipRun = (day, key) => { const wk = weekStart(day); weekSkip[wk] = [...new Set((weekSkip[wk] || []).concat(key))]; };
   if (e.target.closest('[data-runskipall]')) { const l = pendingRuns(); l.forEach(p => skipRun(p.day, p.item.key)); store(KEYS.skip, weekSkip); renderStart(); toast(T(`Notiert: ${l.length} Läufe nicht gelaufen.`, `Noted: ${l.length} runs not run.`)); return; }
@@ -2145,6 +2173,7 @@ $('startcontent').addEventListener('click', e => {
     if (hr !== null && !(hr >= 40 && hr <= 230)) { $('srunhr' + s).setAttribute('aria-invalid', 'true'); toast(T('Bitte den Ø-Puls zwischen 40 und 230 eintragen – oder leer lassen.', 'Please enter an average HR between 40 and 230 – or leave it empty.')); return; }
     const run = addRun(day, km, { sec: sec || undefined, hr: hr || undefined, kind: ru.dataset.kind }); const wp = curWeekPlan(wk); if (wp && !wp.done.includes(key)) { wp.done.push(key); storeWeekPlan(); }
     if (run.sec || run.hr) startFeedback = { id: run.id, title: ru.dataset.title };
+    if (day === localDay()) logToday = null;
     renderStart(); toast(T(`✓ ${kmText(km)} km am ${dayLabel(day)} eingetragen.`, `✓ ${kmText(km)} km on ${dayLabel(day)} logged.`)); if (startFeedback) window.scrollTo(0, 0); return;
   }
   const rd = e.target.closest('[data-resdns]'); if (rd) { const r = races.find(x => x.id === rd.dataset.resdns); if (r) { r.dns = true; persistRaces(); renderStart(); toast(T(`Notiert: ${r.name} nicht gelaufen.`, `Noted: ${r.name} not run.`)); } return; }
@@ -3070,6 +3099,7 @@ $('runcontent').addEventListener('input', e => {
 });
 $('runcontent').addEventListener('click', e => {
   if (e.target.closest('#runaddbtn')) { addRunFromForm(); return; }
+  if (e.target.closest('[data-fbclose]')) { runFeedback = null; renderLoad(); return; }
   if (e.target.closest('#runcsvbtn')) { $('runcsvfile').click(); return; }
   if (e.target.closest('#runcsvtpl')) { download(T('laeufe-vorlage.csv', 'runs-template.csv'), RUN_CSV_TEMPLATE, 'text/csv;charset=utf-8'); return; }
   const lv = e.target.closest('[data-level]'); if (lv) { setRunnerLevel(lv.dataset.level); toast(lv.dataset.level === 'beginner' ? T('Lauf-Einstieg gestartet – viel Spaß!', 'Running starter started – enjoy!') : T('Saisonplan aktiv.', 'Season plan active.')); return; }
