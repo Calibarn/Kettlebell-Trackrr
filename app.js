@@ -173,7 +173,7 @@ function resolve(pk, sl) {
   // Gewicht je Übung: Kettlebell (kg) und Kurzhantel (dbkg, je Hantel) getrennt gespeichert
   const kk = g === 'db' ? 'dbkg' : 'kg', bo = bandOptions(), kg = c[kk] === undefined || c[kk] === null ? (g === 'db' ? profile.kit.dbDefault : profile.kit.kbDefault) : validKg(c[kk]);
   const band = bo.includes(String(c.band)) ? String(c.band) : bo.includes(sl.band || '20') ? (sl.band || '20') : bo[0];
-  const gearText = (g === 'kb' ? (kg > 0 ? `Kettlebell ${kgText(kg)} kg` : T('Kettlebell ohne Gewicht', 'Kettlebell without weight')) : g === 'db' ? T(`Kurzhantel ${kgText(kg)} kg`, `Dumbbell ${kgText(kg)} kg`) : g === 'band' ? bandLabel(band) : T('Körpergewicht', 'Body weight') + (lvls && lvl !== 'mittel' ? ' · ' + LVL_LABEL[lvl] : '')) + (fallback ? T(' (Ersatz)', ' (substitute)') : '');
+  const gearText = (g === 'kb' ? (kg > 0 ? `Kettlebell ${kgText(kg)} kg` : T('Kettlebell ohne Gewicht', 'Kettlebell without weight')) : g === 'db' ? dbText(kg, dbPair(name)) : g === 'band' ? bandLabel(band) : T('Körpergewicht', 'Body weight') + (lvls && lvl !== 'mittel' ? ' · ' + LVL_LABEL[lvl] : '')) + (fallback ? T(' (Ersatz)', ' (substitute)') : '');
   const cfg = g === 'kb' || g === 'db' ? g + ':' + kg : g === 'band' ? 'band:' + band : 'bw' + (lvl !== 'mittel' ? ':' + lvl : '');
   return { slot: sl, g, name, reps, note, kg, band, gearText, cfg, avail, auto, fallback, lvls, lvl };
 }
@@ -223,6 +223,9 @@ function emomSegments(pk) {
 const segments = (pk = plan) => isTabata(pk) ? tabataSegments() : emomSegments(pk);
 const workTotal = (pk = plan) => segments(pk).filter(x => x.type === 'work').length;
 function phaseSecs(pk, i) { return isInterval(pk) && i === 1 ? segments(pk).at(-1).end : PLANS[pk].durations[i] * 60; }
+// Kurzhanteln: Übungen „… mit Kurzhanteln“ (Mehrzahl) brauchen zwei gleiche Hanteln, „… mit Kurzhantel“/„Kurzhantel-Swing“ eine
+const dbPair = name => /Kurzhanteln$/.test(name);
+const dbText = (kg, pair) => pair ? T(`Kurzhanteln 2 × ${kgText(kg)} kg`, `Dumbbells 2 × ${kgText(kg)} kg`) : T(`Kurzhantel ${kgText(kg)} kg`, `Dumbbell ${kgText(kg)} kg`);
 const cfgText = c => !c ? '' : c === 'bw' ? T('Körpergewicht', 'Body weight') : /^bw:(leicht|schwer)$/.test(c) ? T('Körpergewicht', 'Body weight') + ' · ' + LVL_LABEL[c.slice(3)] : c.startsWith('kb:') || c.startsWith('db:') ? kgText(c.slice(3)) + ' kg' : c.startsWith('band:') ? bandLabel(c.slice(5)) : c;
 
 /* ---------- Einträge & Vergleichbarkeit ---------- */
@@ -602,10 +605,12 @@ function fitTabs() {
 // Was für den Plan bereitliegen sollte – aus den Übungen, die er gerade nutzt (Gewichte, Bänder, Matte usw.)
 function planNeeds(pk = plan) {
   const ex = exList(pk), kgsOf = g => [...new Set(ex.filter(x => x.g === g).map(x => x.kg))].sort((a, b) => a - b), kgs = kgsOf('kb'), dbs = kgsOf('db');
+  // Kurzhanteln: je Gewicht ein Paar, sobald eine Übung damit zwei Hanteln braucht
+  const dbNeed = dbs.map(k => (ex.some(x => x.g === 'db' && x.kg === k && dbPair(x.name)) ? '2 × ' : '') + kgText(k) + ' kg').join(' + ');
   const bands = [...new Set(ex.filter(x => x.g === 'band').map(x => x.band))];
   const names = ex.map(x => x.name).concat((PLANS[pk].warmup || []).concat(PLANS[pk].cooldown || []).map(w => w[1]));
   const has = list => names.some(n => list.includes(n)), bulg = ex.some(x => x.slot.stages && /^Bulgarian/.test(stageOf(pk, x.slot) || ''));
-  return [kgs.length ? `Kettlebell ${kgs.map(k => kgText(k)).join(' + ')} kg` : '', dbs.length ? T(`Kurzhanteln ${dbs.map(k => kgText(k)).join(' + ')} kg`, `Dumbbells ${dbs.map(k => kgText(k)).join(' + ')} kg`) : '', bands.length ? bands.map(b => bandLabel(b)).join(', ') : '',
+  return [kgs.length ? `Kettlebell ${kgs.map(k => kgText(k)).join(' + ')} kg` : '', dbs.length ? T('Kurzhanteln ', 'Dumbbells ') + dbNeed : '', bands.length ? bands.map(b => bandLabel(b)).join(', ') : '',
     has(PREP.mat) ? T('Matte', 'Mat') : '', has(PREP.support) || bulg ? T('Stuhl, Bank oder Sofa', 'Chair, bench or sofa') : '', has(PREP.towel) ? T('Handtuch', 'Towel') : ''].filter(Boolean);
 }
 const needsLine = () => { const n = planNeeds(); return n.length ? `<p class="needs"><b>${T('Du brauchst', 'You need')}:</b> ${esc(n.join(' · '))}</p>` : ''; };
@@ -1013,6 +1018,7 @@ function renderProfile() {
     <p class="tiny">${T('Kurzhanteln (Gewicht je Hantel)', 'Dumbbells (weight per dumbbell)')}</p><div class="chips">${dbChips}</div>
     <div class="kitadd"><input type="text" inputmode="decimal" autocomplete="off" id="dbnew" placeholder="${T('Gewicht in kg, z. B. 8', 'Weight in kg, e.g. 8')}" aria-label="${T('Kurzhantel-Gewicht hinzufügen', 'Add dumbbell weight')}"><button type="button" class="btn small" id="dbadd">${T('Hinzufügen', 'Add')}</button></div>
     ${k.db.length ? `<div class="field"><label for="dbdefault">${T('Standardgewicht für Kurzhantel-Übungen', 'Default weight for dumbbell exercises')}</label><select id="dbdefault">${k.db.map(v => `<option value="${v}"${v === k.dbDefault ? ' selected' : ''}>${kgText(v)} kg</option>`).join('')}</select></div>` : ''}
+    <p class="tiny">${T('Verstellbare Kurzhanteln: jede Stufe einzeln eintragen. Übungen mit zwei Hanteln nehmen zwei gleich schwere.', 'Adjustable dumbbells: enter each setting separately. Exercises with two dumbbells use two of the same weight.')}</p>
     <p class="tiny">${T('Widerstandsbänder (Zugkraft)', 'Resistance bands (pull force)')}</p><div class="chips">${bandChips}</div>
     <div class="kitadd"><input type="text" inputmode="numeric" autocomplete="off" id="bandnew" placeholder="${T('Stärke in kg, z. B. 40', 'Strength in kg, e.g. 40')}" aria-label="${T('Band hinzufügen', 'Add band')}"><button type="button" class="btn small" id="bandadd">${T('Hinzufügen', 'Add')}</button></div>
     <p class="tiny">${T('In den Übungen stehen die Bänder einzeln und je zwei kombiniert zur Auswahl.', 'In the exercises the bands are available singly and combined in pairs.')}</p>

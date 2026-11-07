@@ -70,15 +70,16 @@ test.describe('Kurzhanteln', () => {
     await expect(page.locator('#gearbar [data-gear]')).toHaveCount(2);
     await expect(page.locator('#gearbar [data-gear="db"]')).toHaveAttribute('aria-pressed', 'true');
     const ex = await page.evaluate(() => exList().map(x => [x.name, x.gearText]));
-    expect(ex).toContainEqual(['Seitheben mit Kurzhanteln', 'Kurzhantel 8 kg']);
-    expect(ex).toContainEqual(['Schulterdrücken mit Kurzhanteln', 'Kurzhantel 8 kg']);
+    // zwei Hanteln (Mehrzahl im Namen) → „2 × 8 kg“, eine Hantel → „8 kg“
+    expect(ex).toContainEqual(['Seitheben mit Kurzhanteln', 'Kurzhanteln 2 × 8 kg']);
+    expect(ex).toContainEqual(['Pullover mit Kurzhantel', 'Kurzhantel 8 kg']);
     // Liegestütze bleiben vor der Hantel (Körpergewicht ist dort die stärkste Variante)
     expect(ex).toContainEqual(['Liegestütze erhöht', 'Körpergewicht']);
     // Gewicht je Übung: Seitheben mit 4 kg, eigener Schlüssel (dbkg) neben dem Kettlebell-Gewicht
     await page.evaluate(() => { document.querySelector('#fold-settings').open = true; });
     await page.selectOption('[data-dbkg="lateral"]', '4');
-    expect(await page.evaluate(() => { const x = exList().find(e => e.slot.id === 'lateral'); return [x.gearText, x.cfg, choices['sun.lateral']]; })).toEqual(['Kurzhantel 4 kg', 'db:4', { dbkg: 4 }]);
-    await expect(page.locator('#gearbar .needs')).toContainText('Kurzhanteln 4 + 8 kg');
+    expect(await page.evaluate(() => { const x = exList().find(e => e.slot.id === 'lateral'); return [x.gearText, x.cfg, choices['sun.lateral']]; })).toEqual(['Kurzhanteln 2 × 4 kg', 'db:4', { dbkg: 4 }]);
+    await expect(page.locator('#gearbar .needs')).toContainText('Kurzhanteln 2 × 4 kg + 2 × 8 kg');
     // Anleitung mit Hantel-Skizze (Stange + zwei Scheiben)
     await page.evaluate(() => openExerciseGuide(exList().findIndex(e => e.slot.id === 'lateral')));
     await expect(page.locator('#guide-title')).toHaveText('Seitheben mit Kurzhanteln');
