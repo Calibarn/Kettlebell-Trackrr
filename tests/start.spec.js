@@ -399,3 +399,25 @@ test.describe('Wochenleiste', () => {
     expect(await days.evaluateAll(l => l.map(x => x.className.replace('sday ', '')))).toEqual(['miss', 'done', 'rest today', 'rest', 'plan', 'rest', 'plan']);
   });
 });
+
+test.describe('Weniger Tipps', () => {
+  test.use({ start: true });
+  test('„✓ km wie geplant“ / „wie letztes Mal“ speichert mit einem Tipp; Tag in der Wochenleiste zeigt Plan und Eintragen', async ({ page }) => {
+    await page.clock.setFixedTime(new Date('2026-11-05T10:00:00+01:00')); // Donnerstag
+    await page.reload();
+    await page.evaluate(() => { races = []; persistRaces(); profile.week = Object.assign(profile.week, { quality: null, long: null, group: 3, strength: [1], extras: [], runner: 'runner' }); persistProfile();
+      runLog = [{ id: 'g', date: '2026-10-28', km: 7.5, kind: 'group' }]; persistRunLog(); localStorage.removeItem(KEYS.runask); showArea('start'); });
+    // Laufgruppe gestern: wie letztes Mal 7,5 km
+    await expect(page.locator('#startrun [data-runquick]')).toHaveText('✓ 7,5 km · wie letztes Mal');
+    await page.click('#startrun [data-runquick]');
+    expect(await page.evaluate(() => runLog.filter(r => r.date === '2026-11-04').map(r => [r.km, r.kind]))).toEqual([[7.5, 'group']]);
+    // Wochenleiste: Montag antippen → Kraft geplant, nichts erledigt; nochmal tippen schließt
+    await page.click('[data-stripday="2026-11-02"]');
+    await expect(page.locator('.sstripinfo')).toContainText('Kraft');
+    await page.click('[data-stripday="2026-11-02"]');
+    await expect(page.locator('.sstripinfo')).toHaveCount(0);
+    // Mittwoch: Laufgruppe ✓
+    await page.click('[data-stripday="2026-11-04"]');
+    await expect(page.locator('.sstripinfo')).toContainText('Laufgruppe ✓');
+  });
+});

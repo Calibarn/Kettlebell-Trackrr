@@ -40,7 +40,7 @@ test.describe('Gerät auf Englisch', () => {
     await page.click('#btnMain');
     await expect(page.locator('#rate-title')).toHaveText('Session saved');
     expect(await germanLines(page)).toEqual([]);
-    await page.click('[data-rpe="7"]'); await page.click('#rateform button[type=submit]');
+    await page.click('[data-rpe="7"]');
     await page.evaluate(() => { showArea('kraft'); document.querySelectorAll('details').forEach(d => { delete d.dataset.acc; d.open = true; }); });
     expect(await germanLines(page)).toEqual([]);
     await page.evaluate(() => document.querySelectorAll('dialog[open]').forEach(d => d.close()));

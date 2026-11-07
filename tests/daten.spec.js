@@ -57,9 +57,8 @@ test('Update-Sicherheit: Unbekanntes bleibt, Unlesbares wird aufbewahrt, Sicheru
 
 test('CSV enthält Anstrengung und Notiz, Formeln werden entschärft', async ({ page }) => {
   await page.evaluate(() => saveSession(localDay(), { manual: true, total: 20 }));
-  await page.click('[data-rpe="8"]');
   await page.fill('#ratenote', '=HYPERLINK("x")');
-  await page.click('#rateform button[type=submit]');
+  await page.click('[data-rpe="8"]'); // ein Tipp auf die Zahl speichert
   await page.evaluate(() => showArea('mehr'));
   const dl = page.waitForEvent('download');
   await openSect(page, 'sect-data');

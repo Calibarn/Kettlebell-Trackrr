@@ -25,7 +25,9 @@ const test = base.test.extend({
   start: [false, { option: true }],
   // Startbildschirm nur im eigenen Test (start.spec.js), sonst würde er die ersten Klicks abfangen
   splash: [false, { option: true }],
-  page: async ({ page, allowedErrors, initScripts, kit, start, splash }, use) => {
+  // Einrichtung beim ersten Start nur im eigenen Test
+  setup: [false, { option: true }],
+  page: async ({ page, allowedErrors, initScripts, kit, start, splash, setup }, use) => {
     const errors = [];
     page.on('pageerror', e => errors.push(String(e)));
     page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
@@ -36,6 +38,7 @@ const test = base.test.extend({
     // Die meisten Tests starten wie bisher im zuletzt genutzten Bereich; die Startseite prüft start.spec.js
     if (!start) await page.addInitScript('window.__kbtNoStart = true;');
     if (!splash) await page.addInitScript('window.__kbtNoSplash = true;');
+    if (!setup) await page.addInitScript('window.__kbtNoSetup = true;');
     for (const s of initScripts) await page.addInitScript(s);
     await page.addInitScript(SPEECH_STUB);
     await page.goto('/index.html');

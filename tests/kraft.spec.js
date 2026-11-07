@@ -97,9 +97,8 @@ test('Zirkel: abhaken, Zeitübung, zurücknehmen, Wiederherstellen, Speichern mi
   await page.click('#btnMain');
   await expect(page.locator('#rate-title')).toHaveText('Einheit gespeichert');
   await expect(page.locator('#rate-progress')).toContainText('Erste Einheit mit diesem Aufbau');
-  await page.click('[data-rpe="7"]');
   await page.fill('#ratenote', 'gut geschlafen');
-  await page.click('#rateform button[type=submit]');
+  await page.click('[data-rpe="7"]'); // ein Tipp auf die Zahl speichert, die Notiz kommt mit
   const e = await page.evaluate(() => saved.at(-1));
   expect([e.total, e.rpe, e.note]).toEqual([before + 1, 7, 'gut geschlafen']);
   expect(await page.evaluate(() => comparable(saved.at(-1)))).toBe(true);
@@ -384,4 +383,20 @@ test('Kraftübungen nach Position: erst stehend, dann knien/sitzen, zuletzt lieg
   expect(r.names.slice(0, 2)).toEqual(['Liegestütze erhöht', 'Pike-Liegestütze erhöht']);
   expect(r.slotsKept).toBe(true); // Läufer (Sätze) unverändert
   expect(r.sig).toBe(true); // alte Einträge in anderer Reihenfolge bleiben vergleichbar
+});
+
+test.describe('Wischen in der Anleitung', () => {
+  test.use({ hasTouch: true });
+  test('nach links: nächste Übung, nach rechts: vorige (außerhalb des Trainings)', async ({ page }) => {
+    await page.evaluate(() => { plan = 'wed'; resetState(); renderAll(); document.querySelector('#fold-settings').open = true; });
+    await page.locator('#settings [data-sguide="0"]').click();
+    const names = await page.evaluate(() => exList().map(x => tr(x.name)));
+    const swipe = (from, to) => page.evaluate(([a, b]) => { const g = document.getElementById('guide'), t = x => new Touch({ identifier: 1, target: g, clientX: x, clientY: 300 });
+      g.dispatchEvent(new TouchEvent('touchstart', { bubbles: true, touches: [t(a)], changedTouches: [t(a)] })); g.dispatchEvent(new TouchEvent('touchend', { bubbles: true, touches: [], changedTouches: [t(b)] })); }, [from, to]);
+    await expect(page.locator('#guide-title')).toHaveText(names[0]);
+    await swipe(300, 120);
+    await expect(page.locator('#guide-title')).toHaveText(names[1]);
+    await swipe(120, 300);
+    await expect(page.locator('#guide-title')).toHaveText(names[0]);
+  });
 });

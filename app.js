@@ -5,7 +5,7 @@ const $ = id => document.getElementById(id);
 const KEYS = {
   entries: 'jan-kettlebell-tracker-v1', waist: 'jan-kb-waist-v1', sound: 'jan-kb-sound-v1', gear: 'jan-kb-gear-v1',
   choice: 'jan-kb-choice-v1', stage: 'jan-kb-stage-v1', plan: 'jan-kb-plan-v1', session: 'jan-kb-session-v1',
-  backup: 'jan-kb-lastbackup-v1', hint: 'jan-kb-installhint-v1', area: 'jan-kb-area-v1', run: 'jan-kb-runview-v1', audio: 'jan-kb-audio-v1', mob: 'jan-kb-mobview-v1', runweeks: 'jan-kb-runweeks-v1', runlog: 'jan-kb-runlog-v1', races: 'jan-kb-races-v1', profile: 'jan-kb-profile-v1', weight: 'jan-kb-weight-v1', skip: 'jan-kb-weekskip-v1', results: 'jan-kb-results-v1', bestview: 'jan-kb-bestview-v1', notes: 'jan-kb-notes-v1', weekplan: 'jan-kb-weekplan-v1', icsremind: 'jan-kb-icsremind-v1', sections: 'jan-kb-sections-v1', starter: 'jan-kb-starter-v1', moblog: 'jan-kb-moblog-v1', runask: 'jan-kb-runask-v1', gymlog: 'jan-kb-gymlog-v1'
+  backup: 'jan-kb-lastbackup-v1', hint: 'jan-kb-installhint-v1', area: 'jan-kb-area-v1', run: 'jan-kb-runview-v1', audio: 'jan-kb-audio-v1', mob: 'jan-kb-mobview-v1', runweeks: 'jan-kb-runweeks-v1', runlog: 'jan-kb-runlog-v1', races: 'jan-kb-races-v1', profile: 'jan-kb-profile-v1', weight: 'jan-kb-weight-v1', skip: 'jan-kb-weekskip-v1', results: 'jan-kb-results-v1', bestview: 'jan-kb-bestview-v1', notes: 'jan-kb-notes-v1', weekplan: 'jan-kb-weekplan-v1', icsremind: 'jan-kb-icsremind-v1', sections: 'jan-kb-sections-v1', starter: 'jan-kb-starter-v1', moblog: 'jan-kb-moblog-v1', runask: 'jan-kb-runask-v1', gymlog: 'jan-kb-gymlog-v1', setup: 'jan-kb-setup-v1'
 };
 /* Datensicherheit bei Updates:
    - Einträge, die diese Version nicht versteht, werden nie verworfen, sondern unverändert mitgespeichert.
@@ -1600,7 +1600,7 @@ function weekSchedule(x) {
   if (x.bRace) add(new Date(x.bRace.date + 'T12:00:00').getDay(), 'brace', T(`B-Rennen: ${x.bRace.name}`, `B race: ${x.bRace.name}`), raceLabel(x.bRace) + goalLine(x.bRace) + bRole(x));
   if (w.quality !== null && (!x.a || before(w.quality, 2)) && !x.bRace) add(w.quality, 'quality', x.phase === 'recover' ? T('Locker laufen', 'Easy run') : x.test ? T('Testlauf 5 km', 'Time trial 5 km') : T('Qualität', 'Quality'), x.test ? T('nach 15 Min. Einlaufen 5 km so schnell, wie du gleichmäßig durchhalten kannst – danach unter Bestzeiten eintragen, dann passen die Tempos', 'after a 15 min warm-up run 5 km as fast as you can hold evenly – then enter it under Best times so the paces update') : weekKey(x), { easy: x.phase === 'recover' });
   if (w.group !== null && (!x.a || before(w.group))) add(w.group, 'group', T('Laufgruppe', 'Running group'), hrize(x.a ? T('ganz locker, Zone 2', 'very easy, Zone 2') : T('locker, Zone 2', 'easy, Zone 2')) + easyPace());
-  if (!x.a && !x.bLong && w.long !== null) { const lv = kmRound(x.long); add(w.long, 'long', x.noLong ? T('Locker oder frei', 'Easy or rest') : lv ? T(`Longrun ca. ${lv} km`, `Long run approx. ${lv} km`) : T('Longrun', 'Long run'), weekLongNote(x)); }
+  if (!x.a && !x.bLong && w.long !== null) { const lv = kmRound(x.long); add(w.long, 'long', x.noLong ? T('Locker oder frei', 'Easy or rest') : lv ? T(`Longrun ca. ${lv} km`, `Long run approx. ${lv} km`) : T('Longrun', 'Long run'), weekLongNote(x), x.noLong ? {} : { km: lv || null }); }
   for (const d of w.strength) if (!x.a || before(d, 2)) add(d, 'strength', strengthTitle(d), x.a ? T('leicht, keine schweren Beinübungen', 'light, no heavy leg exercises') : x.phase === 'taper' ? T('ohne schwere Beinübungen', 'without heavy leg exercises') : x.phase === 'recover' ? T('leicht', 'light') : '');
   // Weitere Einheiten: lockerer Lauf, zweite Qualität (die andere Einheit der Woche; in Erholung, Tapering und B-Rennwoche locker) oder anderes
   w.extras.forEach((e, i) => {
@@ -2046,8 +2046,17 @@ function weekStrip() {
   return `<div class="sstrip" role="list" aria-label="${T('Woche', 'Week')}">${[0, 1, 2, 3, 4, 5, 6].map(i => {
     const d = addDays(wk, i), wd = new Date(d + 'T12:00:00').getDay(), done = d <= today && (ranOn(d) || saved.some(e => e.date === d) || gymDone(d) || mob.some(e => e.d === d)), pl = planned(wd);
     const cls = done ? 'done' : pl ? (d < today ? 'miss' : 'plan') : 'rest', st = done ? T('trainiert', 'trained') : pl ? (d < today ? T('geplant, nichts eingetragen', 'planned, nothing logged') : T('geplant', 'planned')) : T('frei', 'rest');
-    return `<span class="sday ${cls}${d === today ? ' today' : ''}" role="listitem" aria-label="${esc(`${WD_LONG[wd]} ${dateGerman(d)}: ${st}`)}"><small>${WD[wd]}</small><b>${Number(d.slice(8))}</b><i></i></span>`;
-  }).join('')}</div>`;
+    return `<button type="button" class="sday ${cls}${d === today ? ' today' : ''}${d === stripDay ? ' sel' : ''}" data-stripday="${d}" aria-pressed="${d === stripDay}" aria-label="${esc(`${WD_LONG[wd]} ${dateGerman(d)}: ${st}`)}"><small>${WD[wd]}</small><b>${Number(d.slice(8))}</b><i></i></button>`;
+  }).join('')}</div>${stripDay ? stripInfo(stripDay) : ''}`;
+}
+// Angetippter Tag: was geplant war bzw. ist, was erledigt ist – und bei einem offenen Lauf „Eintragen“ für genau diesen Tag
+let stripDay = null, logPick = null;
+function stripInfo(d) {
+  const today = localDay(), wd = new Date(d + 'T12:00:00').getDay(), runs = plannedRunsOn(d), ran = ranOn(d), rows = [];
+  if (profile.week.strength.includes(wd)) { const done = saved.some(e => e.date === d) || gymDone(d); rows.push(`<li>${esc(strengthTitle(wd))}${done ? ' <span class="chkok">✓</span>' : ''}</li>`); }
+  for (const it of runs) rows.push(`<li>${esc(it.title)}${ran ? ' <span class="chkok">✓</span>' : d <= today ? ` <button type="button" class="btn small primary" data-logpick="${d}|${esc(it.key)}">${T('Eintragen', 'Log')}</button>` : ''}</li>`);
+  if (ran && !runs.length) rows.push(`<li>${T('Lauf', 'Run')} <span class="chkok">✓</span></li>`);
+  return `<div class="sstripinfo"><b>${esc(dayLabel(d))}</b>${rows.length ? `<ul>${rows.join('')}</ul>` : `<p>${T('Nichts geplant – Ruhetag.', 'Nothing planned – rest day.')}</p>`}</div>`;
 }
 let yearEdit = false;
 function yearCard() {
@@ -2137,6 +2146,11 @@ function pendingRuns() {
 const runKindOf = it => it.recovery ? 'recovery' : it.kind === 'quality' || it.kind === 'quality2' ? (it.easy ? 'easy' : 'quality') : it.kind;
 // „heute“, „gestern“, „vor 3 Tagen“ – damit klar ist, für welchen Tag die Karte fragt
 const agoText = d => { const n = Math.round((new Date(localDay() + 'T12:00:00') - new Date(d + 'T12:00:00')) / 864e5); return n <= 0 ? T('heute', 'today') : n === 1 ? T('gestern', 'yesterday') : T(`vor ${n} Tagen`, `${n} days ago`); };
+function runSuggest(p) {
+  if (p.item.km) return { km: p.item.km, why: T('wie geplant', 'as planned') };
+  const k = runKindOf(p.item), last = runLog.filter(r => r.kind === k && r.date < p.day).at(-1);
+  return last ? { km: last.km, why: T('wie letztes Mal', 'like last time') } : null;
+}
 function runCard(p, i = 0) {
   const it = p.item, s = sfx(i), today = p.day === localDay(), when = dayLabel(p.day), ref = `${p.day}|${it.key}`;
   return `<div class="scard sres" id="startrun${s}"><p class="skicker">${today ? T('Lauf eintragen · heute', 'Log run · today') : `${T('Lauf nachtragen', 'Log run')} · <b class="sago">${agoText(p.day)}</b>`}</p>
@@ -2144,7 +2158,8 @@ function runCard(p, i = 0) {
     <div class="sresin"><div class="sres2"><span><label for="srunkm${s}">${T('Gelaufen (km)', 'Ran (km)')}</label><input id="srunkm${s}" type="text" inputmode="decimal" autocomplete="off" placeholder="${T('z. B. 8,5', 'e.g. 8.5')}"></span>
       <span><label for="srunhr${s}">${T('Ø Puls (optional)', 'Avg HR (optional)')}</label><input id="srunhr${s}" type="text" inputmode="numeric" autocomplete="off" maxlength="3" placeholder="${T('z. B. 142', 'e.g. 142')}"></span></div>
       <label>${T('Zeit (optional)', 'Time (optional)')}</label>${timeFields('sruntime' + s, null, T('Zeit', 'Time'))}</div>
-    <div class="sresact">${today ? `<button type="button" class="btn small" data-logcancel>${T('Abbrechen', 'Cancel')}</button>` : `<button type="button" class="btn small" data-runskip="${esc(ref)}">${T('Nicht gelaufen', 'Did not run')}</button>`}<button type="button" class="btn small primary" data-runsave="${esc(ref)}" data-i="${i}" data-kind="${runKindOf(it)}" data-title="${esc(`${when} · ${it.title}`)}">${T('Speichern', 'Save')}</button></div></div>`;
+    ${(sg => sg ? `<button type="button" class="btn primary squick" data-runquick="${esc(kmText(sg.km))}">✓ ${esc(kmText(sg.km))} km · ${esc(sg.why)}</button>` : '')(runSuggest(p))}
+    <div class="sresact">${today || i === 91 ? `<button type="button" class="btn small" data-logcancel>${T('Abbrechen', 'Cancel')}</button>` : `<button type="button" class="btn small" data-runskip="${esc(ref)}">${T('Nicht gelaufen', 'Did not run')}</button>`}<button type="button" class="btn small primary" data-runsave="${esc(ref)}" data-i="${i}" data-kind="${runKindOf(it)}" data-title="${esc(`${when} · ${it.title}`)}">${T('Speichern', 'Save')}</button></div></div>`;
 }
 /* Auswertung eines Laufs gegen den Zielbereich der Einheit: lockere Läufe nach Puls (Zone 2, Regeneration Zone 1) und Tempo.
    Langsamer bzw. niedriger ist bei lockeren Läufen kein Fehler. Intervall/Tempo: keine Wertung – der Schnitt mischt schnelle Abschnitte, Pausen und Ein-/Auslaufen. */
@@ -2231,7 +2246,8 @@ function renderStart() {
   const bTxt = `Version ${APP_VERSION} · ` + (lastB ? T(`Sicherung ${daysAgo(lastB)}`, `backup ${daysAgo(lastB)}`) : T('noch keine Sicherung', 'no backup yet'));
   const tile = (k, name, sub, wide) => `<button type="button" class="stile${wide ? ' wide' : ''}" data-go="${k}"><span class="sthead">${startIcon(k)}<b>${name}</b></span><small>${esc(sub)}</small></button>`;
   const lt = logToday && items.find(it => it.key === logToday && RUN(it));
-  $('startcontent').innerHTML = `${startFeedback ? feedbackCard(startFeedback) : ''}${lt ? runCard({ day: today, item: lt }, 90) : ''}${pendingHtml()}<div class="scard"><p class="skicker">${T('Heute dran', 'On today')}</p>${rows}</div>
+  const lp = logPick && plannedRunsOn(logPick.day).find(it => it.key === logPick.key);
+  $('startcontent').innerHTML = `${startFeedback ? feedbackCard(startFeedback) : ''}${lt ? runCard({ day: today, item: lt }, 90) : lp ? runCard({ day: logPick.day, item: lp }, 91) : ''}${pendingHtml()}<div class="scard"><p class="skicker">${T('Heute dran', 'On today')}</p>${rows}</div>
     <div class="scard"><p class="skicker">${T('Diese Woche', 'This week')}</p>${weekStrip()}<div class="sweek">${week.map(([l, v, b]) => `<div><small>${esc(l)}</small><b>${esc(v)}</b>${b}</div>`).join('')}</div></div>${yearCard()}
     <div class="stiles">${tile('kraft', T('Kraft', 'Strength'), kTxt)}${tile('laufen', T('Laufen', 'Running'), rTxt)}${tile('mobility', 'Mobility', mTxt)}${tile('profil', T('Profil', 'Profile'), pTxt)}${tile('mehr', T('Mehr', 'More'), bTxt, true)}</div>`;
 }
@@ -2244,7 +2260,9 @@ $('startcontent').addEventListener('click', e => {
   const g = e.target.closest('[data-go]'); if (g) { showArea(g.dataset.go); return; }
   if (e.target.closest('[data-fbclose]')) { startFeedback = null; renderStart(); return; }
   const lg = e.target.closest('[data-logtoday]'); if (lg) { logToday = lg.dataset.logtoday; renderStart(); window.scrollTo(0, 0); const f = $('srunkm-90'); if (f) f.focus(); return; }
-  if (e.target.closest('[data-logcancel]')) { logToday = null; renderStart(); return; }
+  if (e.target.closest('[data-logcancel]')) { logToday = null; logPick = null; renderStart(); return; }
+  const sd = e.target.closest('[data-stripday]'); if (sd) { stripDay = stripDay === sd.dataset.stripday ? null : sd.dataset.stripday; renderStart(); return; }
+  const lk = e.target.closest('[data-logpick]'); if (lk) { const [day, key] = lk.dataset.logpick.split('|'); if (day === localDay()) logToday = key; else logPick = { day, key }; renderStart(); window.scrollTo(0, 0); return; }
   if (e.target.closest('#yearedit')) { yearEdit = true; renderStart(); const f = $('yeargoal'); if (f) f.focus(); return; }
   if (e.target.closest('#yearsave')) { const v = Number(String($('yeargoal').value).replace(/\D/g, '')), y = localDay().slice(0, 4);
     if (!(Number.isInteger(v) && v >= 50 && v <= 20000)) { $('yeargoal').setAttribute('aria-invalid', 'true'); toast(T('Bitte ein Ziel zwischen 50 und 20.000 km eintragen.', 'Please enter a goal between 50 and 20,000 km.')); return; }
@@ -2253,6 +2271,8 @@ $('startcontent').addEventListener('click', e => {
   const rs = e.target.closest('[data-ressave]'); if (rs) { saveStartResult(rs.dataset.ressave, Number(rs.dataset.i) || 0); return; }
   const skipRun = (day, key) => { const wk = weekStart(day); weekSkip[wk] = [...new Set((weekSkip[wk] || []).concat(key))]; };
   if (e.target.closest('[data-runskipall]')) { const l = pendingRuns(); l.forEach(p => skipRun(p.day, p.item.key)); store(KEYS.skip, weekSkip); renderStart(); toast(T(`Notiert: ${l.length} Läufe nicht gelaufen.`, `Noted: ${l.length} runs not run.`)); return; }
+  // „✓ 12 km wie geplant“: km eintragen und wie „Speichern“ (Zeit und Puls, falls schon eingetippt, kommen mit)
+  const rq = e.target.closest('[data-runquick]'); if (rq) { const card = rq.closest('.sres'), inp = card.querySelector('input[id^="srunkm"]'); if (!inp.value.trim()) inp.value = rq.dataset.runquick; card.querySelector('[data-runsave]').click(); return; }
   const ru = e.target.closest('[data-runsave]'), rk = e.target.closest('[data-runskip]');
   if (ru || rk) {
     const [day, key] = (ru || rk).dataset[ru ? 'runsave' : 'runskip'].split('|'), wk = weekStart(day), s = sfx(Number(ru && ru.dataset.i) || 0), f = 'srunkm' + s;
@@ -2264,7 +2284,7 @@ $('startcontent').addEventListener('click', e => {
     if (hr !== null && !(hr >= 40 && hr <= 230)) { $('srunhr' + s).setAttribute('aria-invalid', 'true'); toast(T('Bitte den Ø-Puls zwischen 40 und 230 eintragen – oder leer lassen.', 'Please enter an average HR between 40 and 230 – or leave it empty.')); return; }
     const run = addRun(day, km, { sec: sec || undefined, hr: hr || undefined, kind: ru.dataset.kind }); const wp = curWeekPlan(wk); if (wp && !wp.done.includes(key)) { wp.done.push(key); storeWeekPlan(); }
     if (run.sec || run.hr) startFeedback = { id: run.id, title: ru.dataset.title };
-    if (day === localDay()) logToday = null;
+    if (day === localDay()) logToday = null; if (logPick && logPick.day === day) logPick = null;
     renderStart(); toast(T(`✓ ${kmText(km)} km am ${dayLabel(day)} eingetragen.`, `✓ ${kmText(km)} km on ${dayLabel(day)} logged.`)); if (startFeedback) window.scrollTo(0, 0); return;
   }
   const rd = e.target.closest('[data-resdns]'); if (rd) { const r = races.find(x => x.id === rd.dataset.resdns); if (r) { r.dns = true; persistRaces(); renderStart(); toast(T(`Notiert: ${r.name} nicht gelaufen.`, `Noted: ${r.name} not run.`)); } return; }
@@ -2843,7 +2863,7 @@ async function renderStorageInfo() {
 const guide = $('guide'); let guideOrigin = null;
 /* Anleitung während des Trainings: folgt der aktuellen Übung (auch wenn die Zeit weiterschaltet – Aufwärmen, Cooldown,
    Halteübungen, Intervalle) und hat unten „Erledigt – weiter“ bzw. „Nächste Übung“, ohne die Anleitung erst zu schließen. */
-let guideFollow = false, guideKey = '';
+let guideFollow = false, guideKey = '', guideIdx = null;
 function guideTarget() {
   if (!sessionActive() || sessionSaved || isFinished()) return null;
   if (phase === 1 && isInterval()) { const sg = currentSeg(); return { kind: 'ex', i: segShown(sg), auto: true }; }
@@ -2865,7 +2885,7 @@ function guideSync() {
   if (k !== guideKey) { if (t.kind === 'ex') openExerciseGuide(t.i, guideOrigin); else openGuide(t.s.base, 'bw', { origin: guideOrigin }); return; }
   const f = guideFootHtml(t); if ($('guide-foot').dataset.html !== f) { $('guide-foot').innerHTML = f; $('guide-foot').dataset.html = f; }
 }
-// Aufwärmen/Cooldown: zum Ende des aktuellen Schritts springen
+// Aufwärmen/Cooldown: zum Ende des aktuellen Schritts springen (Schritt-Anleitung hat keinen Übungs-Index)
 function skipStep() { const s = currentStep(); if (!s) return; const left = Math.max(0, s.end - secNow()); if (running) startedAt -= left * 1000; else elapsed += left; tick(); }
 function openGuide(name, g, opts = {}) {
   const info = GUIDES[name]; if (!info) return;
@@ -2889,7 +2909,7 @@ function openGuide(name, g, opts = {}) {
   guide.scrollTop = 0; $('guide-body').scrollTop = 0;
 }
 function openExerciseGuide(i, origin) {
-  const x = exList()[i]; if (!x) return;
+  const x = exList()[i]; if (!x) return; guideIdx = i;
   const st = stageOf(plan, x.slot), name = x.slot.stages && /^Bulgarian/.test(st || '') ? 'Bulgarian Split Squat' : x.name;
   openGuide(name, x.g, { origin, slot: x.slot, stage: st, lvls: x.lvls, lvl: x.lvl, gearText: x.gearText, reps: isTabata() ? tabataCfg().rounds + T(' × 20 Sek.', ' × 20 sec') : x.reps, tabata: isTabata(), emomPlan: isEmomPlan() });
 }
@@ -3137,7 +3157,7 @@ $('sound').addEventListener('click', toggleSound);
 $('soundrow').addEventListener('click', toggleSound);
 $('testsound').addEventListener('click', () => { audioReady(); cue('finish'); say(T('Ton und Ansagen funktionieren.', 'Sound and voice are working.'), 900); });
 $('current').addEventListener('click', e => { if (phase === 1 && sessionActive()) guideFollow = true; openExerciseGuide(Number(e.currentTarget.dataset.index || 0), e.currentTarget); });
-$('stepstatus').addEventListener('click', e => { if (isInterval() && phase === 1) { const sg = currentSeg(); guideFollow = true; openExerciseGuide(segShown(sg), e.currentTarget); return; } if (phase !== 1 && sessionActive()) guideFollow = true; const s = currentStep(); openGuide(s.base, 'bw', { origin: e.currentTarget }); });
+$('stepstatus').addEventListener('click', e => { guideIdx = null; if (isInterval() && phase === 1) { const sg = currentSeg(); guideFollow = true; openExerciseGuide(segShown(sg), e.currentTarget); return; } if (phase !== 1 && sessionActive()) guideFollow = true; const s = currentStep(); openGuide(s.base, 'bw', { origin: e.currentTarget }); });
 for (const id of ['warmup', 'cooldown']) $(id).addEventListener('click', e => { const b = e.target.closest('[data-guide-name]'); if (b) openGuide(b.dataset.guideName, 'bw', { origin: b }); });
 $('worklist').addEventListener('click', e => {
   if (e.target.closest('#emomstart')) { startEmom(); return; }
@@ -3201,7 +3221,16 @@ $('area-profil').addEventListener('change', onProfileChange);
 $('measurecsv').addEventListener('click', exportWaistCsv);
 $('waistcalendar').addEventListener('click', exportWaistReminder);
 $('guide-close').addEventListener('click', () => guide.close());
-guide.addEventListener('close', () => { guideFollow = false; guideKey = ''; $('guide-foot').innerHTML = ''; $('guide-foot').dataset.html = ''; });
+/* Wischen: nach links = wie „Weiter“ unten (im Training) bzw. nächste Übung des Plans, nach rechts = vorige Übung (nur außerhalb des Trainings) */
+let swipe0 = null;
+guide.addEventListener('touchstart', e => { const t = e.touches[0]; swipe0 = e.touches.length === 1 ? { x: t.clientX, y: t.clientY } : null; }, { passive: true });
+guide.addEventListener('touchend', e => {
+  if (!swipe0) return; const t = e.changedTouches[0], dx = t.clientX - swipe0.x, dy = t.clientY - swipe0.y; swipe0 = null;
+  if (Math.abs(dx) < 60 || Math.abs(dx) < 2 * Math.abs(dy)) return;
+  if (guideFollow) { const b = $('guide-foot').querySelector('[data-gact]'); if (dx < 0 && b && !b.disabled) b.click(); return; }
+  if (guideIdx === null) return; const n = exList().length, i = guideIdx + (dx < 0 ? 1 : -1); if (i >= 0 && i < n) openExerciseGuide(i, guideOrigin);
+}, { passive: true });
+guide.addEventListener('close', () => { guideFollow = false; guideKey = ''; guideIdx = null; $('guide-foot').innerHTML = ''; $('guide-foot').dataset.html = ''; });
 $('guide-foot').addEventListener('click', e => {
   const b = e.target.closest('[data-gact]'); if (!b) return;
   if (b.dataset.gact === 'done') finishExercise(false); else skipStep();
@@ -3304,7 +3333,8 @@ $('rt-plus').addEventListener('click', () => { if (rt && !rt.done) { rt.extra +=
 $('rt-guide').addEventListener('click', e => { if (rt && !rt.done) openGuide(rtStep().name, 'bw', { origin: e.currentTarget }); });
 $('rt-close').addEventListener('click', () => routineDlg.close());
 routineDlg.addEventListener('close', stopRoutine);
-$('rpe').addEventListener('click', e => { const b = e.target.closest('[data-rpe]'); if (!b) return; const v = Number(b.dataset.rpe); rateVal = rateVal === v ? null : v; renderRpe(); });
+// Ein Tipp auf die Zahl speichert die Bewertung (eine Notiz vorher eintippen, sie kommt mit)
+$('rpe').addEventListener('click', e => { const b = e.target.closest('[data-rpe]'); if (!b) return; rateVal = Number(b.dataset.rpe); renderRpe(); saveRate(); });
 $('rateform').addEventListener('submit', e => { e.preventDefault(); saveRate(); });
 $('rate-skip').addEventListener('click', () => rateDlg.close());
 $('planhint').addEventListener('click', e => {
@@ -3359,7 +3389,77 @@ const SPLASH_MS = 600, splashLeft = (() => {
   return () => Math.max(0, until - performance.now());
 })();
 // Neuigkeiten erst nach dem Startbildschirm (ein Dialog läge sonst darüber)
-if (CHANGELOG.length && notesOpt.auto !== false && notesOpt.seen !== noteStamp(CHANGELOG[0])) setTimeout(() => { if (!document.querySelector('dialog[open]')) openNotes(false); }, splashLeft() + 300); renderMobility();
+/* ---------- Einrichtung beim ersten Start: ein paar Fragen statt Profil durchklicken (alles überspringbar, später im Profil änderbar) ---------- */
+const SETUP_KB = [4, 6, 8, 10, 12, 14, 16, 20, 24, 28, 32];
+let setupStep = 'run', setupAns = {};
+const setupDlg = (() => { const d = document.createElement('dialog'); d.className = 'sheet'; d.id = 'setup'; d.setAttribute('aria-labelledby', 'setup-title'); document.body.appendChild(d); return d; })();
+const setupWanted = () => !window.__kbtNoSetup && !load(KEYS.setup, null) && profileRaw === null && saved.length + runLog.length + runWeeks.length + races.length + results.length === 0;
+function setupOrder() {
+  const run = setupAns.run === 'runner', kb = (setupAns.kit || []).includes('kb'), age = !!setupAns.age;
+  return ['run', ...(run ? ['long', 'quality', 'group'] : []), 'strength', 'kit', ...(kb ? ['kb'] : []), 'age', ...(age ? ['rest'] : []), 'race', 'done'];
+}
+function setupNext() { const o = setupOrder(); setupStep = o[Math.min(o.indexOf(setupStep) + 1, o.length - 1)]; renderSetup(); }
+function setupBack() { const o = setupOrder(), i = o.indexOf(setupStep); if (i > 0) { setupStep = o[i - 1]; renderSetup(); } }
+function renderSetup() {
+  const o = setupOrder(), n = o.length - 1, i = o.indexOf(setupStep), w = profile.week;
+  const dayChips = (key, cur, none) => `<div class="setchips">${WEEK_ORDER.map(d => `<button type="button" class="chip" data-setday="${key}" data-v="${d}" aria-pressed="${cur === d}">${WD[d]}</button>`).join('')}${none ? `<button type="button" class="chip" data-setday="${key}" data-v="" aria-pressed="${cur === null}">${esc(none)}</button>` : ''}</div>`;
+  const opt = (k, v, label, small) => `<button type="button" class="row setopt" data-setopt="${k}" data-v="${v}"><span class="txt"><b>${esc(label)}</b>${small ? `<small>${esc(small)}</small>` : ''}</span><span class="chev"></span></button>`;
+  const multi = (k, list, cur) => `<div class="setchips">${list.map(([v, l]) => `<button type="button" class="chip" data-setmulti="${k}" data-v="${v}" aria-pressed="${cur.includes(v)}">${esc(l)}</button>`).join('')}</div>`;
+  const nextBtn = (label = T('Weiter', 'Next')) => `<button type="button" class="btn primary setnext" data-setnext>${esc(label)}</button>`;
+  let q = '', body = '';
+  if (setupStep === 'run') { q = T('Läufst du?', 'Do you run?'); body = `<div class="group">${opt('run', 'runner', T('Ja, regelmäßig', 'Yes, regularly'), T('mit Plan für deine Rennen', 'with a plan for your races'))}${opt('run', 'beginner', T('Ich fange gerade an', 'I am just starting'), T('Lauf-Einstieg in kleinen Schritten', 'running starter in small steps'))}${opt('run', 'none', T('Nein, nur Kraft', 'No, strength only'))}</div>`; }
+  else if (setupStep === 'long') { q = T('An welchem Tag ist dein langer Lauf?', 'Which day is your long run?'); body = dayChips('long', w.long, T('keiner', 'none')); }
+  else if (setupStep === 'quality') { q = T('An welchem Tag läufst du Intervall oder Tempo?', 'Which day do you run intervals or tempo?'); body = dayChips('quality', w.quality, T('keiner', 'none')); }
+  else if (setupStep === 'group') { q = T('Läufst du in einer Gruppe? An welchem Tag?', 'Do you run with a group? Which day?'); body = dayChips('group', w.group, T('nein', 'no')); }
+  else if (setupStep === 'strength') { q = T('An welchen Tagen machst du Kraft?', 'Which days do you do strength?'); body = multi('strength', WEEK_ORDER.map(d => [String(d), WD[d]]), w.strength.map(String)) + nextBtn(); }
+  else if (setupStep === 'kit') { q = T('Was hast du zu Hause?', 'What do you have at home?'); body = multi('kit', [['kb', T('Kettlebell', 'Kettlebell')], ['band', T('Widerstandsbänder', 'Resistance bands')]], setupAns.kit || []) + `<p class="tiny">${T('Nichts gewählt = nur Körpergewicht.', 'Nothing selected = body weight only.')}</p>` + nextBtn(); }
+  else if (setupStep === 'kb') { q = T('Welche Kettlebell-Gewichte hast du?', 'Which kettlebell weights do you have?'); body = multi('kb', SETUP_KB.map(v => [String(v), `${v} kg`]), profile.kit.kb.map(String)) + nextBtn(); }
+  else if (setupStep === 'age') { q = T('Wie alt bist du?', 'How old are you?'); body = `<p class="tiny">${T('Für deine Pulszonen (max. HF nach Tanaka). Wird nicht gespeichert – nur die max. HF.', 'For your heart rate zones (max HR by Tanaka). Not stored – only the max HR.')}</p><input type="text" inputmode="numeric" maxlength="2" id="setage" autocomplete="off" placeholder="${T('z. B. 43', 'e.g. 43')}">${nextBtn()}<button type="button" class="btn setskip" data-setskip>${T('Überspringen', 'Skip')}</button>`; }
+  else if (setupStep === 'rest') { q = T('Wie hoch ist dein Ruhepuls?', 'What is your resting heart rate?'); body = `<p class="tiny">${T('Morgens im Liegen gemessen, z. B. von der Uhr. Damit rechnet die App die Zonen.', 'Measured in the morning lying down, e.g. from your watch. The app uses it for the zones.')}</p><input type="text" inputmode="numeric" maxlength="3" id="setrest" autocomplete="off" placeholder="${T('z. B. 55', 'e.g. 55')}">${nextBtn()}<button type="button" class="btn setskip" data-setskip>${T('Weiß ich nicht', 'I don’t know')}</button>`; }
+  else if (setupStep === 'race') { q = T('Hast du ein Rennen geplant?', 'Do you have a race planned?'); body = `<div class="setrace"><input type="text" id="setrname" maxlength="60" autocomplete="off" placeholder="${T('Name, z. B. Berliner Halbmarathon', 'Name, e.g. Berlin Half Marathon')}"><input type="date" id="setrdate" min="${localDay()}"><select id="setrdist">${Object.entries(SEASON.dist).filter(([k]) => ['5k', '10k', 'hm', 'marathon'].includes(k)).map(([k, d]) => `<option value="${k}"${k === 'hm' ? ' selected' : ''}>${esc(tr(d.label))}</option>`).join('')}</select></div>${nextBtn(T('Rennen speichern', 'Save race'))}<button type="button" class="btn setskip" data-setskip>${T('Kein Rennen', 'No race')}</button>`; }
+  else { q = T('Fertig – los geht’s!', 'Done – let’s go!'); body = `<p>${T('Alles eingerichtet. Ändern kannst du alles unter Profil.', 'All set. You can change everything under Profile.')}</p>${nextBtn(T('Zur Startseite', 'To the home screen'))}`; }
+  setupDlg.innerHTML = `<div class="sheethead"><div class="grabber"></div><div class="rowx"><h2 id="setup-title" tabindex="-1" style="outline:none">${T('Einrichtung', 'Setup')}</h2><button class="btn small" type="button" data-setclose>${setupStep === 'done' ? T('Schließen', 'Close') : T('Später', 'Later')}</button></div></div>
+    <div class="sheetbody"><p class="setprog">${i < n ? T(`Frage ${i + 1} von ${n}`, `Question ${i + 1} of ${n}`) : ''}${i > 0 && i < n ? ` · <button type="button" class="slink" data-setback>${T('zurück', 'back')}</button>` : ''}</p><h3 class="setq">${esc(q)}</h3>${body}</div>`;
+  if (!setupDlg.open) setupDlg.showModal();
+  const f = setupDlg.querySelector('input'); if (f) f.focus(); else $('setup-title').focus();
+}
+function setupFinish(markOnly) {
+  store(KEYS.setup, localDay()); notesOpt.seen = noteStamp(CHANGELOG[0]); store(KEYS.notes, notesOpt);
+  if (setupDlg.open) setupDlg.close(); if (!markOnly) { renderAll(); showArea('start'); }
+}
+function openSetup() { setupStep = 'run'; setupAns = {}; renderSetup(); }
+setupDlg.addEventListener('cancel', () => setupFinish(true));
+setupDlg.addEventListener('click', e => {
+  const w = profile.week, b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.setclose !== undefined) { setupFinish(setupStep !== 'done' ? true : false); return; }
+  if (b.dataset.setback !== undefined) { setupBack(); return; }
+  if (b.dataset.setopt === 'run') { const v = b.dataset.v; setupAns.run = v; w.runner = v === 'none' ? null : v; if (v !== 'runner') { w.quality = null; w.long = null; w.group = null; } persistProfile(); setupNext(); return; }
+  if (b.dataset.setday) { const k = b.dataset.setday, v = b.dataset.v === '' ? null : Number(b.dataset.v); w[k] = v; persistProfile(); setupNext(); return; }
+  if (b.dataset.setmulti) {
+    const k = b.dataset.setmulti, v = b.dataset.v, on = b.getAttribute('aria-pressed') !== 'true'; b.setAttribute('aria-pressed', String(on));
+    if (k === 'strength') { w.strength = WEEK_ORDER.filter(d => (String(d) === v ? on : w.strength.includes(d))); persistProfile(); }
+    else if (k === 'kit') { const s = new Set(setupAns.kit || []); if (on) s.add(v); else s.delete(v); setupAns.kit = [...s]; }
+    else if (k === 'kb') { const s = new Set(profile.kit.kb); if (on) s.add(Number(v)); else s.delete(Number(v)); profile.kit.kb = [...s].sort((a, c) => a - c); if (!profile.kit.kb.includes(profile.kit.kbDefault)) profile.kit.kbDefault = profile.kit.kb[0] || KB_DEFAULT; persistProfile(); }
+    return;
+  }
+  if (b.dataset.setskip !== undefined) { if (setupStep === 'age') setupAns.age = null; setupNext(); return; }
+  if (b.dataset.setnext !== undefined) {
+    if (setupStep === 'kit') { const k = setupAns.kit || []; if (!k.includes('kb')) profile.kit.kb = []; profile.kit.bands = k.includes('band') ? (profile.kit.bands.length ? profile.kit.bands : [10, 20, 30]) : []; persistProfile(); }
+    if (setupStep === 'age') { const a = intNum($('setage').value); if (!okNum(a, 10, 99)) { $('setage').setAttribute('aria-invalid', 'true'); toast(T('Bitte ein Alter zwischen 10 und 99 eintragen – oder überspringen.', 'Please enter an age between 10 and 99 – or skip.')); return; } setupAns.age = a; profile.hr.max = Math.round(208 - 0.7 * a); persistProfile(); }
+    if (setupStep === 'rest') { const r = intNum($('setrest').value); if (!okNum(r, 30, 120) || r >= profile.hr.max) { $('setrest').setAttribute('aria-invalid', 'true'); toast(T('Bitte einen Ruhepuls zwischen 30 und 120 eintragen.', 'Please enter a resting HR between 30 and 120.')); return; } profile.hr = { max: profile.hr.max, rest: r, z: hrZonesFrom(profile.hr.max, r) }; persistProfile(); }
+    if (setupStep === 'race') {
+      const r = { id: uid(), name: $('setrname').value.trim().slice(0, 60), date: $('setrdate').value, dist: $('setrdist').value, prio: 'A', goal: null, km: null };
+      if (!r.name || !isDay(r.date) || r.date < localDay()) { toast(T('Bitte Name und ein Datum ab heute eintragen – oder „Kein Rennen“.', 'Please enter a name and a date from today – or “No race”.')); return; }
+      if (validRace(r)) { races.push(r); persistRaces(); }
+    }
+    if (setupStep === 'done') { setupFinish(false); return; }
+    setupNext();
+  }
+});
+(() => { const sub = document.querySelector('#area-profil .subtitle'); if (sub) sub.insertAdjacentHTML('afterend', `<button type="button" class="btn small" id="setupstart" style="margin:0 0 12px">${T('Einrichtung: Fragen von vorn', 'Setup: questions from the start')}</button>`); })();
+$('setupstart').addEventListener('click', openSetup);
+if (setupWanted()) setTimeout(() => { if (!document.querySelector('dialog[open]')) openSetup(); }, splashLeft() + 200);
+else if (CHANGELOG.length && notesOpt.auto !== false && notesOpt.seen !== noteStamp(CHANGELOG[0])) setTimeout(() => { if (!document.querySelector('dialog[open]')) openNotes(false); }, splashLeft() + 300); renderMobility();
 // Beim Öffnen immer die Startseite – außer ein Training läuft (dann direkt zum Timer). Tests können das abschalten.
 if (sessionActive()) area = 'kraft'; else if (!window.__kbtNoStart) area = 'start';
 showArea(area, false);

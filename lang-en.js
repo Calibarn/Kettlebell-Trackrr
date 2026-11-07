@@ -1619,7 +1619,11 @@ const EN_TEXT = {
 "Wochenleiste": "Week strip",
 "Rückgängig statt Rückfrage": "Undo instead of asking",
 "Unter „Diese Woche“ auf der Startseite zeigt eine Leiste Montag bis Sonntag: gefüllter Punkt = trainiert, Ring = geplant, grauer Ring = geplant, aber nichts eingetragen. Heute ist hervorgehoben.": "Under “This week” on the home screen a strip shows Monday to Sunday: filled dot = trained, ring = planned, grey ring = planned but nothing logged. Today is highlighted.",
-"Läufe, Rennen, Ergebnisse, Messungen und Trainingseinträge löschst du jetzt ohne Rückfrage – dafür steht ein paar Sekunden „Rückgängig“ im Hinweis.": "Runs, races, results, measurements and workout entries are now deleted without asking – instead “Undo” shows in the notice for a few seconds."
+"Läufe, Rennen, Ergebnisse, Messungen und Trainingseinträge löschst du jetzt ohne Rückfrage – dafür steht ein paar Sekunden „Rückgängig“ im Hinweis.": "Runs, races, results, measurements and workout entries are now deleted without asking – instead “Undo” shows in the notice for a few seconds.",
+"Weniger Tippen": "Fewer taps",
+"Einrichtung": "Setup",
+"Beim Nachtragen speichert „✓ 12 km · wie geplant“ (bzw. „wie letztes Mal“) mit einem Tipp. Die Bewertung nach dem Training speichert mit einem Tipp auf die Zahl. Ein Tag in der Wochenleiste zeigt, was geplant war, und hat „Eintragen“. In der Anleitung wischst du zur nächsten Übung.": "When logging, “✓ 12 km · as planned” (or “like last time”) saves with one tap. The rating after a workout saves with one tap on the number. A day in the week strip shows what was planned and has “Log”. In the guide you swipe to the next exercise.",
+"Beim ersten Start fragt die App kurz nach Laufen, Lauftagen, Krafttagen, Geräten, Puls und dem nächsten Rennen – je eine Antwort mit einem Tipp, alles überspringbar. Neu starten kannst du die Fragen jederzeit oben im Profil.": "On first start the app briefly asks about running, running days, strength days, equipment, heart rate and your next race – one tap per answer, everything can be skipped. You can restart the questions any time at the top of Profile."
 };
 const EN_HTML = {
 "Kraft · Laufen · Mobility": "Strength · Running · Mobility",
