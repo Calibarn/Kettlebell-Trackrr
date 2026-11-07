@@ -30,6 +30,21 @@ jobs:
           path: playwright-report/
           retention-days: 7
 
+  # Safari-Engine: kurzer Rundgang in WebKit. Blockiert nichts (Linux-WebKit ist nicht iOS-Safari), zeigt aber JavaScript-Fehler früh.
+  webkit-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps webkit
+      - run: npx playwright test tests/smoke.spec.js --browser=webkit
+
   # Datenprüfung: Live (main) → Test (dieser Stand), Sicherungen hin und zurück, Sync – keine Nutzerdaten dürfen verloren gehen.
   # Auf main selbst gibt es nichts zu vergleichen.
   upgrade-check:
