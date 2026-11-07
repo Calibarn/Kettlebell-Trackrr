@@ -1623,7 +1623,11 @@ const EN_TEXT = {
 "Weniger Tippen": "Fewer taps",
 "Einrichtung": "Setup",
 "Beim Nachtragen speichert „✓ 12 km · wie geplant“ (bzw. „wie letztes Mal“) mit einem Tipp. Die Bewertung nach dem Training speichert mit einem Tipp auf die Zahl. Ein Tag in der Wochenleiste zeigt, was geplant war, und hat „Eintragen“. In der Anleitung wischst du zur nächsten Übung.": "When logging, “✓ 12 km · as planned” (or “like last time”) saves with one tap. The rating after a workout saves with one tap on the number. A day in the week strip shows what was planned and has “Log”. In the guide you swipe to the next exercise.",
-"Beim ersten Start fragt die App kurz nach Laufen, Lauftagen, Krafttagen, Geräten, Puls und dem nächsten Rennen – je eine Antwort mit einem Tipp, alles überspringbar. Neu starten kannst du die Fragen jederzeit oben im Profil.": "On first start the app briefly asks about running, running days, strength days, equipment, heart rate and your next race – one tap per answer, everything can be skipped. You can restart the questions any time at the top of Profile."
+"Beim ersten Start fragt die App kurz nach Laufen, Lauftagen, Krafttagen, Geräten, Puls und dem nächsten Rennen – je eine Antwort mit einem Tipp, alles überspringbar. Neu starten kannst du die Fragen jederzeit oben im Profil.": "On first start the app briefly asks about running, running days, strength days, equipment, heart rate and your next race – one tap per answer, everything can be skipped. You can restart the questions any time at the top of Profile.",
+"Was machst du?": "What do you do?",
+"Mobility planen": "Plan mobility",
+"Unter Profil → Trainingswoche (und in der Einrichtung) wählst du, was du machst: Kraft, Laufen, Mobility. Abgewähltes verschwindet aus der Leiste, der Startseite und dem Profil – ohne Laufen z. B. auch Herzfrequenz und Lauftage.": "Under Profile → Training week (and in the setup) you choose what you do: strength, running, mobility. Deselected parts disappear from the bar, home screen and profile – without running, for example, heart rate and running days too.",
+"Mobility-Tage legst du im Profil fest, mit Routine je Tag (sonst die zuletzt genutzte). Am Tag steht sie unter „Heute dran“ mit „Starten“ und zählt in der Woche.": "You set mobility days in the profile, with a routine per day (otherwise the last one used). On the day it appears under “On today” with “Start” and counts for the week."
 };
 const EN_HTML = {
 "Kraft · Laufen · Mobility": "Strength · Running · Mobility",

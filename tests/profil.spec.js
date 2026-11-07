@@ -48,7 +48,7 @@ test('Trainingswoche: Tage aus dem Profil im Plan und im Kalender, Hinweise bei 
   await page.selectOption('[data-xtype="0"]', 'other');
   await page.fill('[data-xname="0"]', 'Blaze');
   await page.dispatchEvent('[data-xname="0"]', 'change');
-  expect(await page.evaluate(() => profile.week)).toEqual({ group: null, quality: 4, long: 0, strength: [6, 1], extras: [{ d: 1, type: 'other', name: 'Blaze' }], track: false, runner: null, strengthFixed: [], strengthPlan: {}, gymNames: {} });
+  expect(await page.evaluate(() => profile.week)).toEqual({ group: null, quality: 4, long: 0, strength: [6, 1], extras: [{ d: 1, type: 'other', name: 'Blaze' }], track: false, runner: null, strengthFixed: [], strengthPlan: {}, mobility: [], mobilityPlan: {}, gymNames: {} });
   await expect(page.locator('#weekpanel .alert')).toHaveCount(0);
 
   await page.reload();
@@ -254,4 +254,34 @@ test('Max. HF schätzen: Tanaka und Nes statt 220 − Alter, übernehmen setzt n
   expect(await page.evaluate(() => profile.hr.max)).toBe(186);
   // das Alter wird nicht gespeichert
   expect(await page.evaluate(() => JSON.stringify(profile).includes('43'))).toBe(false);
+});
+
+test.describe('Bereiche', () => {
+  test.use({ start: true });
+  test('Laufen abwählen blendet Leiste, Startseite und Profil-Teile aus; Mobility-Tag mit Routine auf der Startseite', async ({ page }) => {
+    const wd = await page.evaluate(() => new Date(localDay() + 'T12:00:00').getDay());
+    await page.evaluate(w => { races = []; persistRaces(); profile.week = Object.assign(profile.week, { quality: w, long: null, group: null, strength: [], extras: [], runner: 'runner' }); persistProfile(); showArea('profil'); renderProfile(); }, wd);
+    await openSect(page, 'sect-week');
+    await page.click('[data-modtoggle="laufen"]');
+    await expect(page.locator('#tabbar [data-area="laufen"]')).toBeHidden();
+    await expect(page.locator('#sect-hr')).toBeHidden();
+    await expect(page.locator('#wkquality')).toHaveCount(0);
+    // Mobility-Tag heute, Routine Hüfte
+    await page.click(`[data-mobday="${wd}"]`);
+    await page.selectOption(`[data-wkmob="${wd}"]`, 'huefte');
+    await page.evaluate(() => showArea('start'));
+    await expect(page.locator('.stile[data-go="laufen"]')).toHaveCount(0);
+    await expect(page.locator('#startcontent')).not.toContainText('Qualität');
+    const row = page.locator('#startcontent .srowt', { hasText: 'Mobility · Hüfte für Läufer' });
+    await expect(row.locator('[data-startmob]')).toBeVisible();
+    await expect(page.locator('#startcontent .sweek')).toContainText('0 von 1');
+    // Kraft abwählen: Geräte-Bereich und Kraft-Leiste weg; den letzten Bereich kann man nicht abwählen
+    await page.evaluate(() => showArea('profil'));
+    await page.click('[data-modtoggle="kraft"]');
+    await expect(page.locator('#sect-kit')).toBeHidden();
+    await expect(page.locator('#tabbar [data-area="kraft"]')).toBeHidden();
+    await page.click('[data-modtoggle="mobility"]');
+    await expect(page.locator('#toast')).toContainText('Mindestens ein Bereich');
+    expect(await page.evaluate(() => profile.modules)).toEqual({ kraft: false, laufen: false, mobility: true });
+  });
 });

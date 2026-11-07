@@ -7,6 +7,8 @@ test.describe('Einrichtung', () => {
     const dlg = page.locator('#setup');
     await expect(dlg).toBeVisible();
     await expect(dlg.locator('.setprog')).toContainText('Frage 1 von');
+    await expect(dlg.locator('.setq')).toHaveText('Was möchtest du machen?');
+    await dlg.locator('[data-setnext]').click(); // Kraft, Laufen und Mobility sind vorgewählt
     await dlg.locator('[data-setopt="run"][data-v="runner"]').click();
     await dlg.locator('[data-setday="long"][data-v="0"]').click();
     await dlg.locator('[data-setday="quality"][data-v="2"]').click();
@@ -19,6 +21,9 @@ test.describe('Einrichtung', () => {
     await dlg.locator('[data-setmulti="kb"][data-v="12"]').click();
     await dlg.locator('[data-setmulti="kb"][data-v="16"]').click();
     await dlg.locator('[data-setnext]').click();
+    await expect(dlg.locator('.setq')).toHaveText('An welchen Tagen machst du Mobility?');
+    await dlg.locator('[data-setmulti="mobility"][data-v="3"]').click();
+    await dlg.locator('[data-setnext]').click();
     await page.fill('#setage', '43'); await dlg.locator('[data-setnext]').click();
     await page.fill('#setrest', '55'); await dlg.locator('[data-setnext]').click();
     const date = await page.evaluate(() => addDays(localDay(), 120));
@@ -26,8 +31,8 @@ test.describe('Einrichtung', () => {
     await expect(dlg.locator('.setq')).toHaveText('Fertig – los geht’s!');
     await dlg.locator('[data-setnext]').click();
     await expect(dlg).toBeHidden();
-    const r = await page.evaluate(() => ({ w: [profile.week.runner, profile.week.long, profile.week.quality, profile.week.group, profile.week.strength], kit: [profile.kit.kb, profile.kit.bands], hr: profile.hr, races: races.map(x => [x.name, x.dist, x.prio]), done: !!load(KEYS.setup, null) }));
-    expect(r.w).toEqual(['runner', 0, 2, null, [1, 4]]);
+    const r = await page.evaluate(() => ({ w: [profile.week.runner, profile.week.long, profile.week.quality, profile.week.group, profile.week.strength, profile.week.mobility], kit: [profile.kit.kb, profile.kit.bands], hr: profile.hr, races: races.map(x => [x.name, x.dist, x.prio]), done: !!load(KEYS.setup, null) }));
+    expect(r.w).toEqual(['runner', 0, 2, null, [1, 4], [3]]);
     expect(r.kit).toEqual([[12, 16], []]);
     expect([r.hr.max, r.hr.rest, r.hr.z && r.hr.z.length]).toEqual([178, 55, 5]); // 208 − 0,7 × 43
     expect(r.races).toEqual([['Cardiff HM', 'hm', 'A']]);
@@ -44,9 +49,10 @@ test.describe('Einrichtung', () => {
     await expect(page.locator('#setup')).toBeHidden();
     await page.evaluate(() => showArea('profil'));
     await page.click('#setupstart');
-    await expect(page.locator('#setup .setq')).toHaveText('Läufst du?');
-    await page.locator('[data-setopt="run"][data-v="none"]').click();
+    await expect(page.locator('#setup .setq')).toHaveText('Was möchtest du machen?');
+    await page.locator('[data-setmulti="mods"][data-v="laufen"]').click();
+    await page.locator('#setup [data-setnext]').click();
     await expect(page.locator('#setup .setq')).toHaveText('An welchen Tagen machst du Kraft?');
-    expect(await page.evaluate(() => [profile.week.quality, profile.week.long, profile.week.group])).toEqual([null, null, null]);
+    expect(await page.evaluate(() => [profile.modules.laufen, profile.week.quality, profile.week.long, profile.week.group])).toEqual([false, null, null, null]);
   });
 });
