@@ -129,21 +129,40 @@ test('Tabata läuft automatisch durch und speichert nach dem Cooldown', async ({
   await forward(page, await page.evaluate(() => durationSecs() - secNow() + 1));
   expect(await page.evaluate(() => phase)).toBe(2);
   await forward(page, 4 * 60 + 1);
-  await expect(page.locator('#rate-progress')).toContainText('Alle 30 Intervalle geschafft');
+  await expect(page.locator('#rate-progress')).toContainText('Alle 15 Intervalle geschafft');
   const e = await page.evaluate(() => saved.at(-1));
-  expect([e.mode, e.total, e.of]).toEqual(['tabata', 30, 30]);
+  expect([e.mode, e.total, e.of]).toEqual(['tabata', 15, 15]);
+});
+
+test('Tabata als Zirkel: Übung 1, 10 Sek. Pause, Übung 2 … – 3 Runden mit Rundenpause; Ansage nennt die nächste Übung', async ({ page }) => {
+  const r = await page.evaluate(() => { const seg = tabataSegments(); return { order: seg.filter(x => x.type === 'work').map(x => x.block).join(''), rounds: [...new Set(seg.map(x => x.round))].join(''),
+    types: seg.slice(8, 11).map(x => x.type + x.block), total: seg.at(-1).end, cfg: tabataCfg() }; });
+  expect(r.order).toBe('012340123401234');
+  expect(r.rounds).toBe('012');
+  expect(r.types).toEqual(['work4', 'blockrest4', 'work0']); // nach der 5. Übung die Rundenpause, dann wieder Übung 1
+  expect(r.total).toBe(15 * 20 + 12 * 10 + 2 * 60);
+  expect(r.cfg).toMatchObject({ rounds: 3, blockRest: 60 });
+  // alte Einstellung (6 Runden je Übung) gibt es nicht mehr: Zirkel mit 3 Runden
+  await page.evaluate(() => { choices['tabata.cfg'] = { rounds: 6, blockRest: 90 }; });
+  expect(await page.evaluate(() => tabataCfg())).toMatchObject({ rounds: 3, blockRest: 90 });
+  await page.click('[data-plan="tabata"]');
+  await page.click('#btnMain');
+  await forward(page, 4 * 60 + 21);
+  await expect(page.locator('#phase-badge')).toHaveText('Pause');
+  await expect(page.locator('#ringsub')).toContainText('gleich:');
+  await expect(page.locator('#stepname')).toHaveText(await page.evaluate(() => tr(exList()[1].name)));
 });
 
 test('Tabata: nach drei kompletten Einheiten wird die Steigerung vorgeschlagen', async ({ page }) => {
   await page.click('[data-plan="tabata"]');
   await expect(page.locator('#planhint')).toBeHidden();
   await page.evaluate(() => {
-    for (let i = 0; i < 3; i++) saved.push({ v: 3, id: 'tb' + i, date: '2026-10-2' + i, plan: 'tabata', mode: 'tabata', total: 30, of: 30, cfg: currentCfg('tabata'), names: exList().map(x => x.name), at: '2026-10-2' + i + 'T10:00:00Z' });
+    for (let i = 0; i < 3; i++) saved.push({ v: 3, id: 'tb' + i, date: '2026-10-2' + i, plan: 'tabata', mode: 'tabata', total: 15, of: 15, cfg: currentCfg('tabata'), names: exList().map(x => x.name), at: '2026-10-2' + i + 'T10:00:00Z' });
     persistEntries(); renderAll();
   });
-  await expect(page.locator('#planhint')).toContainText('bereit für 8 Runden');
+  await expect(page.locator('#planhint')).toContainText('bereit für 4 Runden');
   await page.click('#planhintbtn');
-  expect(await page.evaluate(() => tabataCfg().rounds)).toBe(8);
+  expect(await page.evaluate(() => tabataCfg().rounds)).toBe(4);
   await expect(page.locator('#planhint')).toBeHidden();
 });
 

@@ -120,8 +120,9 @@ PLANS.core = {
 };
 const EMOM_DEFAULT = { rounds: 5 }, EMOM_ROUNDS = [4, 5, 6];
 const EMOM_PLAN_TEXT = 'EMOM heißt „Every Minute On the Minute“: Zu Beginn jeder Minute die angegebenen Wiederholungen, im Rest der Minute Pause. Dann folgt die nächste Übung. Die App sagt jeden Minutenwechsel per Ton und Ansage an, 3-2-1 vorher. Brauchst du mehr als etwa 45 Sekunden, nimm eine Wiederholung weniger.';
-const TABATA_DEFAULT = { rounds: 6, blockRest: 90 }, TABATA_ROUNDS = [6, 8], TABATA_RESTS = [60, 90];
-const TABATA_TEXT = 'Tabata: 20 Sekunden so viele saubere Wiederholungen wie möglich, 10 Sekunden Pause, dann die nächste Runde derselben Übung. Nach allen Runden folgt eine längere Pause und die nächste Übung. Die App sagt jeden Wechsel per Ton an, 3-2-1 vorher.';
+// Tabata als Zirkel: Übung 1 20″, 10″ Pause, Übung 2 … – das Ganze 3 × (je Übung 3 × 20″), zwischen den Runden eine längere Pause
+const TABATA_DEFAULT = { rounds: 3, blockRest: 60 }, TABATA_ROUNDS = [3, 4, 5], TABATA_RESTS = [60, 90];
+const TABATA_TEXT = 'Tabata als Zirkel: 20 Sekunden so viele saubere Wiederholungen wie möglich, 10 Sekunden Pause, dann die nächste Übung. Nach der letzten Übung folgt eine längere Pause und die nächste Runde – standardmäßig 3 Runden. Die App sagt jeden Wechsel per Ton an, 3-2-1 vorher.';
 const PLAN_ORDER = ['wed', 'tabata', 'amrap', 'run', 'sun', 'core', 'office'];
 
 /* Zuordnung alter Einträge (vor Version 3) zu den Übungsplätzen des Ganzkörper-Zirkels,
@@ -690,6 +691,7 @@ const CHANGELOG = [
     ['Weitere Einheiten', 'Im Profil unter Trainingswoche gibt es jetzt bis zu vier weitere Einheiten, jede mit Tag und Art: lockerer Lauf, Regenerationslauf (sehr locker, 20–40 Min., Zone 1), zweite Qualität (die jeweils andere Einheit der Woche, in Erholung und Tapering locker) oder Anderes wie Rad oder Kurs. Läufe zählen beim Nachholen und Nachtragen mit; der Plan warnt bei zwei harten Tagen hintereinander. Die bisherige weitere Einheit wird übernommen.', 'neu'],
     ['Maximale HF', 'Unter Profil → Herzfrequenz lässt sich die maximale HF schätzen, wenn es noch keinen Testwert gibt: nach Tanaka und Nes statt „220 − Alter“. Ein gemessener Wert bleibt direkt eintragbar und ist immer genauer.', 'neu'],
     ['Lauf nachtragen', 'Ab dem Tag nach einem geplanten Lauf (Qualität, Laufgruppe, Longrun) fragt die Startseite nach den gelaufenen km, damit die Wochen-km stimmen. Die Frage bleibt, bis du die km einträgst oder „Nicht gelaufen“ wählst (die Einheit „entfällt“). Sind mehrere offen, steht der älteste Eintrag oben, die übrigen sind eingeklappt.', 'neu'],
+    ['Tabata als Zirkel', 'Tabata läuft jetzt als Zirkel: Übung 1 20 Sek., 10 Sek. Pause, Übung 2 und so weiter – nach der letzten Übung eine Rundenpause, standardmäßig 3 Runden. Die Ansage nennt in jeder Pause die nächste Übung. Ältere Tabata-Einheiten zählen nicht mehr in den Vergleich, weil der Ablauf ein anderer ist.', 'neu'],
     ['Lauf heute eintragen', 'Unter „Heute dran“ trägst du den Lauf des Tages direkt ein – mit Zeit und Ø-Puls, wenn du magst. Offene Läufe und Rennen von früher stehen jetzt mit dem neuesten zuerst da, und oben auf jeder Karte steht, für welchen Tag sie fragt („gestern“, „vor 3 Tagen“).', 'neu'],
     ['Zeit und Puls im Umfang', 'Auch unter Laufen → Umfang → Lauf eintragen gibt es jetzt Zeit, Ø-Puls und die Art des Laufs (sonst nach Plan) – mit derselben Auswertung wie auf der Startseite.', 'neu'],
     ['Datensicherheit', 'Aus einem Code-Review: Zurücksetzen der Testversion lässt die echte App in Ruhe, die App räumt nur ihre eigenen Offline-Daten auf, der Sync kommt mit einer falsch gehenden Uhr zurecht, eine Sicherung aus einer neueren Version verliert beim Import nichts, und unmögliche Daten wie der 31.02. werden abgelehnt.', 'neu'],

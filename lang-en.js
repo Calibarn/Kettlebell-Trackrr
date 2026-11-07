@@ -1588,7 +1588,10 @@ const EN_TEXT = {
 "Lauf heute eintragen": "Log today’s run",
 "Unter „Heute dran“ trägst du den Lauf des Tages direkt ein – mit Zeit und Ø-Puls, wenn du magst. Offene Läufe und Rennen von früher stehen jetzt mit dem neuesten zuerst da, und oben auf jeder Karte steht, für welchen Tag sie fragt („gestern“, „vor 3 Tagen“).": "Under “On today” you log the day’s run right away – with time and average heart rate if you like. Open runs and races from earlier now show the newest first, and each card says which day it asks about (“yesterday”, “3 days ago”).",
 "Zeit und Puls im Umfang": "Time and HR in volume",
-"Auch unter Laufen → Umfang → Lauf eintragen gibt es jetzt Zeit, Ø-Puls und die Art des Laufs (sonst nach Plan) – mit derselben Auswertung wie auf der Startseite.": "Under Running → Volume → Add a run there are now time, average heart rate and the type of run (otherwise from the plan) – with the same review as on the home screen."
+"Auch unter Laufen → Umfang → Lauf eintragen gibt es jetzt Zeit, Ø-Puls und die Art des Laufs (sonst nach Plan) – mit derselben Auswertung wie auf der Startseite.": "Under Running → Volume → Add a run there are now time, average heart rate and the type of run (otherwise from the plan) – with the same review as on the home screen.",
+"Tabata als Zirkel": "Tabata as a circuit",
+"Tabata läuft jetzt als Zirkel: Übung 1 20 Sek., 10 Sek. Pause, Übung 2 und so weiter – nach der letzten Übung eine Rundenpause, standardmäßig 3 Runden. Die Ansage nennt in jeder Pause die nächste Übung. Ältere Tabata-Einheiten zählen nicht mehr in den Vergleich, weil der Ablauf ein anderer ist.": "Tabata now runs as a circuit: exercise 1 for 20 sec, 10 sec rest, exercise 2 and so on – after the last exercise a round rest, 3 rounds by default. In every rest the announcement names the next exercise. Older Tabata sessions no longer count in the comparison because the sequence is different.",
+"Tabata als Zirkel: 20 Sekunden so viele saubere Wiederholungen wie möglich, 10 Sekunden Pause, dann die nächste Übung. Nach der letzten Übung folgt eine längere Pause und die nächste Runde – standardmäßig 3 Runden. Die App sagt jeden Wechsel per Ton an, 3-2-1 vorher.": "Tabata as a circuit: 20 seconds of as many clean reps as possible, 10 seconds rest, then the next exercise. After the last exercise there is a longer rest and the next round – 3 rounds by default. The app signals every change with a tone, 3-2-1 before."
 };
 const EN_HTML = {
 "Kraft · Laufen · Mobility": "Strength · Running · Mobility",
@@ -1701,8 +1704,6 @@ const EN_HTML = {
 "Ergebnis = Runden + Übungen in der festen Zeit. Mehr ist besser – aber nur mit sauberer Technik.": "Result = rounds + exercises in the fixed time. More is better – but only with clean technique.",
 "komplett automatisch, mit oder ohne Geräte": "fully automatic, with or without equipment",
 "Plan <b>Tabata</b> wählen, bei „Geräte“ die Geräte für Tabata einstellen (die App wählt die besten Übungen) und <b>Starten</b> tippen – danach musst du nichts mehr antippen.": "Choose the <b>Tabata</b> plan, set its equipment under “Equipment” (the app picks the best exercises) and tap <b>Start</b> – after that you don’t need to tap anything.",
-"Je Übung 20 Sek. Arbeit (grüner Ring) und 10 Sek. Pause (oranger Ring). Ein Ton kündigt jeden Wechsel an, 3-2-1 vorher.": "Per exercise 20 sec work (green ring) and 10 sec rest (orange ring). A tone announces every change, with 3-2-1 before.",
-"Zwischen den Übungen gibt es eine längere Pause, die Anzeige nennt die nächste Übung.": "Between exercises there is a longer rest; the display names the next exercise.",
 "Nach dem Cooldown wird die Einheit automatisch gespeichert.": "After the cooldown the session is saved automatically.",
 "Runden (6 oder 8) und Pause zwischen den Übungen (60 oder 90 Sek.) stellst du unter „Übungen & Varianten“ ein. Einstieg: 6 Runden, 90 Sek. Nach drei kompletten Einheiten in Folge (Anstrengung unter 9) schlägt die App die nächste Steigerung vor.": "Rounds (6 or 8) and the rest between exercises (60 or 90 sec) are set under “Exercises &amp; variants”. Start with 6 rounds, 90 sec. After three complete sessions in a row (effort below 9) the app suggests the next step up.",
 "EMOM im Knien, fest mit Kettlebell": "EMOM kneeling, always with kettlebell",
@@ -1826,6 +1827,8 @@ const EN_HTML = {
 "Später": "Later",
 "Wie anstrengend war es?": "How hard was it?",
 "Anstrengung von 1 bis 10": "Effort from 1 to 10",
-"z. B. gut geschlafen, Knie gezwickt": "e.g. slept well, knee twinged"
+"z. B. gut geschlafen, Knie gezwickt": "e.g. slept well, knee twinged",
+"Zirkel: Übung 1 20 Sek. (grüner Ring), 10 Sek. Pause (oranger Ring), dann Übung 2 und so weiter. Ein Ton kündigt jeden Wechsel an, 3-2-1 vorher, und die Ansage nennt die nächste Übung.": "Circuit: exercise 1 for 20 sec (green ring), 10 sec rest (orange ring), then exercise 2 and so on. A tone signals every change, 3-2-1 before, and the announcement names the next exercise.",
+"Nach der letzten Übung gibt es eine längere Pause, dann die nächste Runde – standardmäßig 3 Runden.": "After the last exercise there is a longer rest, then the next round – 3 rounds by default."
 };
 const EN_HTML_KEEP = ["Tagwerk", "Cooldown", "Mobility", "Sprache · Language", "iPhone", "Android", "Tabata", "Core", "<b>Updates</b>"];
