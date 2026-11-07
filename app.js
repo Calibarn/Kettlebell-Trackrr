@@ -92,6 +92,8 @@ function normProfile(p) {
   const bands = Array.isArray(kit.bands) ? [...new Set(kit.bands.filter(v => okNum(v, 1, 200)).map(Math.round))].sort((a, b) => a - b).slice(0, 6) : d.kit.bands.slice();
   const strength = Array.isArray(wk.strength) ? [...new Set(wk.strength.filter(isWd))] : d.week.strength.slice();
   return {
+    // Jahresziel in km je Jahr ({ "2027": 1200 })
+    yearKm: isObj(p.yearKm) ? Object.fromEntries(Object.entries(p.yearKm).filter(([y, v]) => /^\d{4}$/.test(y) && Number.isInteger(v) && v >= 50 && v <= 20000)) : {},
     hr: { max: okNum(hr.max, 100, 230) ? Math.round(hr.max) : null, rest: okNum(hr.rest, 30, 120) ? Math.round(hr.rest) : null, z: okZones(hr.z) ? hr.z.map(Math.round) : null },
     kit: { kb, kbDefault: kb.includes(kit.kbDefault) ? kit.kbDefault : kb.includes(KB_DEFAULT) ? KB_DEFAULT : (kb.length ? kb[0] : KB_DEFAULT), bands,
       // Urlaub von–bis: alle Pläne nur mit Körpergewicht vorgewählt (im Urlaub dazugeschaltete Geräte gelten nur für den Urlaub)
@@ -111,7 +113,7 @@ function normProfile(p) {
 }
 // Unbekannte Felder (z. B. aus einer neueren Version) bleiben beim Speichern erhalten
 const profileRaw = load(KEYS.profile, null);
-const profileExtra = isObj(profileRaw) ? Object.fromEntries(Object.entries(profileRaw).filter(([k]) => !['hr', 'kit', 'week'].includes(k))) : {};
+const profileExtra = isObj(profileRaw) ? Object.fromEntries(Object.entries(profileRaw).filter(([k]) => !['hr', 'kit', 'week', 'yearKm'].includes(k))) : {};
 // Bis v35 galten ohne gespeicherte Geräte 12 kg und Bänder 10/20/30. Wer schon Daten hat, behält diesen Stand.
 const LEGACY_KIT = { kb: [KB_DEFAULT], kbDefault: KB_DEFAULT, bands: [10, 20, 30] };
 const kitMissing = !(isObj(profileRaw) && isObj(profileRaw.kit)), hadData = (() => { try { return [KEYS.entries, KEYS.gear, KEYS.choice, KEYS.plan, KEYS.session].some(k => localStorage.getItem(k) !== null); } catch (e) { return false; } })();
@@ -2006,6 +2008,43 @@ function todayItems() {
   for (const it of items) out.push(it.kind === 'strength' && gymOn(wd) ? gymItem(it) : it.kind === 'strength' ? Object.assign(kraft(it.plan || plan), { done: it.done, note: it.sameDay ? it.base : it.detail, tip: tip(it) }) : Object.assign({}, it, { act: RUN(it) ? 'plan' : null, done: it.done || (RUN(it) && ranToday) }));
   return out;
 }
+/* Jahresziel: gelaufene km im Jahr (einzelne Läufe und Rennen nach Datum, Wochensummen nach dem Donnerstag ihrer Woche),
+   Soll bis heute linear, Hochrechnung aus dem bisherigen Schnitt. Vorschlag: Vorjahr (bei Lücken aus den Wochen mit Einträgen
+   hochgerechnet) + 5 %, höchstens + 10 %; plant der Saisonplan für die A-Rennen mehr, gilt der höhere Wert. */
+function yearKm(y) {
+  const runs = allRuns().filter(r => r.date.startsWith(y + '-')), runWk = new Set(runLog.map(r => weekStart(r.date)));
+  const sums = runWeeks.filter(e => !runWk.has(e.week) && addDays(e.week, 3).startsWith(y + '-') && typeof e.km === 'number');
+  const weeks = new Set(runs.map(r => weekStart(r.date)).concat(sums.map(e => e.week)));
+  return { km: rd1(runs.reduce((a, r) => a + r.km, 0) + sums.reduce((a, e) => a + e.km, 0)), weeks: weeks.size };
+}
+const yearDays = y => (new Date(`${Number(y) + 1}-01-01T12:00:00`) - new Date(`${y}-01-01T12:00:00`)) / 864e5;
+function yearSuggest(y) {
+  const prev = yearKm(Number(y) - 1), r50 = v => Math.max(50, Math.round(v / 50) * 50);
+  const base = prev.weeks >= 8 ? (prev.weeks < 50 ? prev.km / prev.weeks * 52 : prev.km) : null;
+  const S = seasonPlan(), today = localDay(), done = yearKm(y).km;
+  const planned = S.weeks.filter(x => x.week >= weekStart(today) && addDays(x.week, 3).startsWith(y + '-') && typeof x.km === 'number');
+  const rest = Math.max(0, Math.round((new Date(`${Number(y) + 1}-01-01T12:00:00`) - new Date(today + 'T12:00:00')) / 6048e5) - planned.length);
+  const avg = loadFor(weekStart(today)).avg || 0, plan = planned.length ? done + planned.reduce((a, x) => a + x.km, 0) + rest * avg : null;
+  if (base === null && plan === null) return avg ? { km: r50(avg * 52), why: T('aus deinem Schnitt der letzten 4 Wochen', 'from your average of the last 4 weeks') } : null;
+  const up = base === null ? null : Math.min(base * 1.05, base * 1.1);
+  if (plan !== null && (up === null || plan > up)) return { km: r50(plan), why: T('aus dem Saisonplan für deine Rennen', 'from the season plan for your races') };
+  return { km: r50(up), why: prev.weeks < 50 ? T(`Vorjahr ${kmText(prev.km)} km, hochgerechnet aus ${prev.weeks} Wochen, + 5 %`, `last year ${kmText(prev.km)} km, projected from ${prev.weeks} weeks, + 5 %`) : T(`Vorjahr ${kmText(prev.km)} km + 5 %`, `last year ${kmText(prev.km)} km + 5 %`) };
+}
+let yearEdit = false;
+function yearCard() {
+  if (runnerLevel() === 'beginner') return '';
+  const today = localDay(), y = today.slice(0, 4), goal = profile.yearKm[y], cur = yearKm(y), sug = goal && !yearEdit ? null : yearSuggest(y);
+  if (!goal && !sug && !cur.km) return '';
+  const form = `<div class="syear"><input type="text" inputmode="numeric" id="yeargoal" maxlength="5" autocomplete="off" value="${goal || (sug ? sug.km : '')}" aria-label="${T(`Jahresziel ${y} in km`, `Year goal ${y} in km`)}"><span>km</span><button type="button" class="btn small primary" id="yearsave">${T('Übernehmen', 'Apply')}</button></div>${sug ? `<small class="tiny">${T('Vorschlag', 'Suggestion')}: ${esc(kmText(sug.km))} km – ${esc(sug.why)}</small>` : ''}`;
+  if (!goal || yearEdit) return `<div class="scard" id="yearcard"><p class="skicker">${T(`Jahresziel ${y}`, `Year goal ${y}`)}</p><p class="sline">${T(`Wie viele km willst du ${y} laufen?`, `How many km do you want to run in ${y}?`)}${cur.km ? T(` Bisher ${kmText(cur.km)} km.`, ` So far ${kmText(cur.km)} km.`) : ''}</p>${form}</div>`;
+  const day = Math.round((new Date(today + 'T12:00:00') - new Date(`${y}-01-01T12:00:00`)) / 864e5) + 1, n = yearDays(y);
+  const soll = Math.round(goal * day / n), proj = day >= 14 ? Math.round(cur.km / day * n) : null, ahead = Math.round(cur.km - soll);
+  const pct = Math.min(100, Math.round(cur.km / goal * 100)), sp = Math.min(100, Math.round(soll / goal * 100));
+  return `<div class="scard" id="yearcard"><p class="skicker">${T(`Jahresziel ${y}`, `Year goal ${y}`)}<button type="button" class="slink" id="yearedit">${T('Ändern', 'Change')}</button></p>
+    <p class="syearnum"><b>${esc(kmText(Math.round(cur.km)))}</b> ${T('von', 'of')} ${esc(kmText(goal))} km</p>
+    <div class="ybar" role="img" aria-label="${esc(T(`${pct} % geschafft, Soll bis heute ${sp} %`, `${pct} % done, target to date ${sp} %`))}"><span class="yfill" style="width:${pct}%"></span><span class="ysoll" style="left:${sp}%"></span></div>
+    <small class="tiny">${T(`Soll bis heute ${kmText(soll)} km`, `Target to date ${kmText(soll)} km`)} · <span class="${ahead >= 0 ? 'chkok' : 'chkwarn'}">${ahead >= 0 ? T(`${kmText(ahead)} km voraus`, `${kmText(ahead)} km ahead`) : T(`${kmText(-ahead)} km zurück`, `${kmText(-ahead)} km behind`)}</span>${proj ? T(` · Hochrechnung ca. ${kmText(proj)} km`, ` · projection about ${kmText(proj)} km`) : ''}</small></div>`;
+}
 /* Startseite: nach einem A- oder B-Rennen nach dem Ergebnis fragen – ab dem Tag danach, bis es eingetragen ist –, damit es nicht vergessen wird.
    Normal: Zeit → Bestzeiten. Wings for Life: geschaffte km, die Zeit ist die des Catcher Cars. Pace Race: Level – nur beim Rennen,
    nicht unter Bestzeiten (Pausen). „Nicht gelaufen“ merkt sich das Rennen, dann fragt die App nicht mehr. */
@@ -2174,7 +2213,7 @@ function renderStart() {
   const tile = (k, name, sub, wide) => `<button type="button" class="stile${wide ? ' wide' : ''}" data-go="${k}"><span class="sthead">${startIcon(k)}<b>${name}</b></span><small>${esc(sub)}</small></button>`;
   const lt = logToday && items.find(it => it.key === logToday && RUN(it));
   $('startcontent').innerHTML = `${startFeedback ? feedbackCard(startFeedback) : ''}${lt ? runCard({ day: today, item: lt }, 90) : ''}${pendingHtml()}<div class="scard"><p class="skicker">${T('Heute dran', 'On today')}</p>${rows}</div>
-    <div class="scard"><p class="skicker">${T('Diese Woche', 'This week')}</p><div class="sweek">${week.map(([l, v, b]) => `<div><small>${esc(l)}</small><b>${esc(v)}</b>${b}</div>`).join('')}</div></div>
+    <div class="scard"><p class="skicker">${T('Diese Woche', 'This week')}</p><div class="sweek">${week.map(([l, v, b]) => `<div><small>${esc(l)}</small><b>${esc(v)}</b>${b}</div>`).join('')}</div></div>${yearCard()}
     <div class="stiles">${tile('kraft', T('Kraft', 'Strength'), kTxt)}${tile('laufen', T('Laufen', 'Running'), rTxt)}${tile('mobility', 'Mobility', mTxt)}${tile('profil', T('Profil', 'Profile'), pTxt)}${tile('mehr', T('Mehr', 'More'), bTxt, true)}</div>`;
 }
 $('startcontent').addEventListener('input', e => {
@@ -2187,6 +2226,10 @@ $('startcontent').addEventListener('click', e => {
   if (e.target.closest('[data-fbclose]')) { startFeedback = null; renderStart(); return; }
   const lg = e.target.closest('[data-logtoday]'); if (lg) { logToday = lg.dataset.logtoday; renderStart(); window.scrollTo(0, 0); const f = $('srunkm-90'); if (f) f.focus(); return; }
   if (e.target.closest('[data-logcancel]')) { logToday = null; renderStart(); return; }
+  if (e.target.closest('#yearedit')) { yearEdit = true; renderStart(); const f = $('yeargoal'); if (f) f.focus(); return; }
+  if (e.target.closest('#yearsave')) { const v = Number(String($('yeargoal').value).replace(/\D/g, '')), y = localDay().slice(0, 4);
+    if (!(Number.isInteger(v) && v >= 50 && v <= 20000)) { $('yeargoal').setAttribute('aria-invalid', 'true'); toast(T('Bitte ein Ziel zwischen 50 und 20.000 km eintragen.', 'Please enter a goal between 50 and 20,000 km.')); return; }
+    profile.yearKm[y] = v; yearEdit = false; persistProfile(); renderStart(); toast(T(`✓ Jahresziel ${y}: ${kmText(v)} km`, `✓ Year goal ${y}: ${kmText(v)} km`)); return; }
   const gd = e.target.closest('[data-gymdone]'); if (gd) { const d = localDay(); if (!gymDone(d)) putGymLog(getGymLog().concat({ d, n: gd.dataset.gymdone })); renderStart(); toast(T(`✓ ${gd.dataset.gymdone} abgehakt.`, `✓ ${gd.dataset.gymdone} checked off.`)); return; }
   const rs = e.target.closest('[data-ressave]'); if (rs) { saveStartResult(rs.dataset.ressave, Number(rs.dataset.i) || 0); return; }
   const skipRun = (day, key) => { const wk = weekStart(day); weekSkip[wk] = [...new Set((weekSkip[wk] || []).concat(key))]; };
@@ -2435,7 +2478,13 @@ async function syncPick() {
   } catch (e) { if (e && e.name !== 'AbortError') toast(T('Die Datei konnte nicht festgelegt werden.', 'The file could not be set.')); return null; }
 }
 // Sync-Datei enthält alle Daten → zählt auch als Sicherung (Backup-Erinnerung wird zurückgesetzt)
-function syncDone(how) { syncMeta.lastSave = new Date().toISOString(); syncMeta.dirty = false; syncSaveMeta(); markBackup(); renderSyncStatus(); toast(how); }
+function syncDone(how) {
+  syncMeta.lastSave = new Date().toISOString(); syncMeta.dirty = false; syncSaveMeta(); markBackup(); renderSyncStatus(); renderBackupBanner();
+  // noch kein Ort gemerkt: einmal fragen, dann steht er in jeder Erinnerung
+  if (!syncMeta.place) { toast(how + ' ' + T('Wohin hast du sie gelegt? Unter „Speicherort“ einmal eintragen, dann steht es in der Erinnerung.', 'Where did you put it? Enter it once under “Location” and it shows in the reminder.'));
+    const f = $('syncplace'); if (f && f.offsetParent) { f.setAttribute('aria-invalid', 'false'); f.classList.add('ask'); f.focus({ preventScroll: true }); } return; }
+  toast(how);
+}
 async function syncSave() {
   const json = JSON.stringify(syncPayload());
   try {
@@ -2659,7 +2708,7 @@ function importBackup(file) {
         if (isObj(settings.gear)) { gear = { kb: settings.gear.kb !== false, band: settings.gear.band !== false, bw: settings.gear.bw !== false }; ensureGear(); store(KEYS.gear, gear); }
         if (isObj(settings.choices)) { choices = settings.choices; store(KEYS.choice, choices); }
         if (isObj(settings.stages)) { stages = settings.stages; store(KEYS.stage, stages); }
-        if (isObj(settings.profile)) { Object.assign(profileExtra, extraKeys(settings.profile, ['hr', 'kit', 'week'])); profile = normProfile(settings.profile); persistProfile(); }
+        if (isObj(settings.profile)) { Object.assign(profileExtra, extraKeys(settings.profile, ['hr', 'kit', 'week', 'yearKm'])); profile = normProfile(settings.profile); persistProfile(); }
         if (isObj(settings.audio)) { audioOpt = { voice: settings.audio.voice !== false, loud: settings.audio.loud === true }; store(KEYS.audio, audioOpt); applyAudioSession(); }
         if (!sessionActive()) runReps = emptyReps(plan);
       }
@@ -2744,7 +2793,9 @@ function renderBackupBanner() {
   const last = load(KEYS.backup, null), limit = new Date(); limit.setDate(limit.getDate() - 14);
   const due = saved.length + waist.length > 0 && (!last || last < localDay(limit));
   let html = '';
-  if (due) html += `<div class="banner"><span class="bicon">💾</span><span>${last ? T(`Letzte Sicherung am ${dateGerman(last)}.`, `Last backup on ${dateGerman(last)}.`) : T('Noch keine Sicherung.', 'No backup yet.')} ${T('Die Daten liegen nur auf diesem Gerät.', 'The data is only on this device.')}</span><button class="btn small primary" type="button" id="backupnow">${T('Sichern', 'Back up')}</button></div>`;
+  // Wer den Sync nutzt, bekommt die Sync-Datei angeboten – mit dem gemerkten Ort, wohin sie gehört
+  let sync = false; try { sync = !!(syncMeta.lastSave || syncMeta.place); } catch (e) { } // syncMeta gibt es erst nach dem Laden
+  if (due) html += `<div class="banner"><span class="bicon">💾</span><span>${last ? T(`Letzte Sicherung am ${dateGerman(last)}.`, `Last backup on ${dateGerman(last)}.`) : T('Noch keine Sicherung.', 'No backup yet.')} ${sync ? (syncMeta.place ? T(`Sync-Datei speichern nach „${esc(syncMeta.place)}“.`, `Save the sync file to “${esc(syncMeta.place)}”.`) : T('Sync-Datei speichern.', 'Save the sync file.')) : T('Die Daten liegen nur auf diesem Gerät.', 'The data is only on this device.')}</span><button class="btn small primary" type="button" id="${sync ? 'syncnow' : 'backupnow'}">${sync ? T('Sync', 'Sync') : T('Sichern', 'Back up')}</button></div>`;
   $('banners').innerHTML = html;
 }
 // Im Handy-Browser (nicht als App geöffnet) dauerhaft ganz oben in jedem Bereich: Hinweis zum Installieren mit Link zur Anleitung.
@@ -3120,7 +3171,7 @@ $('savefile').addEventListener('click', exportBackup);
 $('importbtn').addEventListener('click', () => $('importfile').click());
 $('importfile').addEventListener('change', e => { if (e.target.files[0]) importBackup(e.target.files[0]); e.target.value = ''; });
 $('exportcsv').addEventListener('click', exportCsv);
-$('banners').addEventListener('click', e => { if (e.target.id === 'kbon') { setPlanGear(plan, Object.assign({}, planGear(), { kb: true })); renderAll(); return; } if (e.target.id === 'backupnow') exportBackup(); });
+$('banners').addEventListener('click', e => { if (e.target.id === 'kbon') { setPlanGear(plan, Object.assign({}, planGear(), { kb: true })); renderAll(); return; } if (e.target.id === 'backupnow') exportBackup(); if (e.target.id === 'syncnow') syncSave(); });
 $('installbar').addEventListener('click', e => { if (e.target.id === 'installguide') openInstallGuide(); });
 $('measuredate').value = localDay();
 $('measureform').addEventListener('submit', e => { e.preventDefault(); saveMeasureFromForm(); });
@@ -3270,7 +3321,7 @@ $('syncsave').addEventListener('click', syncSave);
 $('syncpick').addEventListener('click', syncPick);
 $('factoryreset').addEventListener('click', factoryReset);
 $('settingsreset').addEventListener('click', settingsReset);
-$('syncplace').addEventListener('change', e => { syncMeta.place = e.target.value.trim().slice(0, 120); syncSaveMeta(); renderSyncStatus(); toast(T('Speicherort gemerkt.', 'Location saved.')); });
+$('syncplace').addEventListener('change', e => { syncMeta.place = e.target.value.trim().slice(0, 120); e.target.classList.remove('ask'); syncSaveMeta(); renderSyncStatus(); renderBackupBanner(); toast(T('Speicherort gemerkt – er steht jetzt auch in der Erinnerung.', 'Location saved – it now also shows in the reminder.')); });
 $('syncload').addEventListener('click', syncLoad);
 $('syncfile').addEventListener('change', e => { const f = e.target.files[0]; e.target.value = ''; if (!f) return; const r = new FileReader(); r.onload = () => syncApply(r.result); r.readAsText(f); });
 $('syncstatus').addEventListener('click', e => { if (e.target.id === 'syncforget') handleSet(null).then(renderSyncStatus); });

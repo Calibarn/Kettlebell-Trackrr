@@ -359,3 +359,30 @@ test('Bestzeiten: eigene Reiter für Wings for Life (weiteste Strecke) und Pace 
   // Wings for Life zählt weiter für die Tempos
   expect(await page.evaluate(() => fitnessRef('2027-05-20').r.id)).toBe('r2');
 });
+
+test.describe('Jahresziel', () => {
+  test.use({ start: true });
+  test('Vorschlag aus dem Vorjahr (hochgerechnet + 5 %), übernehmen, Fortschritt mit Soll und Hochrechnung', async ({ page }) => {
+    await page.clock.setFixedTime(new Date('2026-07-02T10:00:00+02:00'));
+    await page.reload();
+    await page.evaluate(() => {
+      // Vorjahr: 26 Wochen à 20 km (nur halb eingetragen) → hochgerechnet 1.040 km, + 5 % = 1.092 → 1.100
+      runLog = []; for (let i = 0; i < 26; i++) runLog.push({ id: 'p' + i, date: addDays('2025-06-02', i * 7), km: 20 });
+      // dieses Jahr: 26 Wochen à 25 km
+      for (let i = 0; i < 26; i++) runLog.push({ id: 'c' + i, date: addDays('2026-01-01', i * 7), km: 25 });
+      persistRunLog(); races = []; persistRaces(); profile.week.runner = 'runner'; persistProfile(); showArea('start');
+    });
+    const card = page.locator('#yearcard');
+    await expect(card).toContainText('Jahresziel 2026');
+    await expect(card).toContainText('Vorschlag: 1.100 km – Vorjahr 520 km, hochgerechnet aus 26 Wochen, + 5 %');
+    await expect(page.locator('#yeargoal')).toHaveValue('1100');
+    await page.fill('#yeargoal', '1200'); await page.click('#yearsave');
+    expect(await page.evaluate(() => profile.yearKm)).toEqual({ 2026: 1200 });
+    await expect(card).toContainText('650 von 1.200 km');
+    await expect(card).toContainText('Soll bis heute 602 km');
+    await expect(card).toContainText('48 km voraus');
+    await expect(card).toContainText('Hochrechnung ca. 1.296 km');
+    await page.click('#yearedit');
+    await expect(page.locator('#yeargoal')).toHaveValue('1200');
+  });
+});

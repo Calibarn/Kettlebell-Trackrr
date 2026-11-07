@@ -110,3 +110,23 @@ test('Sync: geht die Uhr eines Geräts vor, gewinnt eine spätere Änderung auf 
   expect(await b.evaluate(() => profile.week.quality)).toBe(5);
   await a.context().close(); await b.context().close();
 });
+
+test('Sync-Ort: nach dem ersten Speichern fragt die App danach, die Sicherungs-Erinnerung nennt ihn und speichert die Sync-Datei', async ({ browser }) => {
+  const page = await device(browser);
+  await page.evaluate(() => { saveSession(localDay(), { manual: true, total: 10 }); document.querySelectorAll('dialog[open]').forEach(d => d.close()); });
+  await page.evaluate(() => showArea('mehr'));
+  await openSect(page, 'sect-sync');
+  const dl = page.waitForEvent('download');
+  await page.click('#syncsave'); await dl;
+  await expect(page.locator('#toast')).toContainText('Wohin hast du sie gelegt?');
+  await expect(page.locator('#syncplace')).toBeFocused();
+  await page.fill('#syncplace', 'iCloud Drive/Tagwerk'); await page.dispatchEvent('#syncplace', 'change');
+  // Erinnerung fällig (letzte Sicherung vor 3 Wochen)
+  await page.evaluate(() => { store(KEYS.backup, addDays(localDay(), -21)); renderBackupBanner(); showArea('kraft'); });
+  await expect(page.locator('#banners')).toContainText('Sync-Datei speichern nach „iCloud Drive/Tagwerk“');
+  const dl2 = page.waitForEvent('download');
+  await page.click('#syncnow');
+  expect((await dl2).suggestedFilename()).toBe('kb-tracker-sync.json');
+  await expect(page.locator('#banners')).not.toContainText('Sync-Datei speichern');
+  await page.context().close();
+});

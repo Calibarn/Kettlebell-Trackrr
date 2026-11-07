@@ -549,6 +549,19 @@ body.onstart .livepill{bottom:calc(env(safe-area-inset-bottom) + 16px)}
 .guidefoot{position:sticky;bottom:0;z-index:1;display:flex;flex-direction:column;gap:6px;padding:10px 16px calc(12px + env(safe-area-inset-bottom));border-top:.5px solid var(--sep);background:var(--card)}
 .guidefoot .btn{width:100%;justify-content:center}
 .guidefoot .guideauto{margin:0;font-size:13px;color:var(--label2);text-align:center}
+/* Jahresziel: Balken mit Strich für das Soll bis heute */
+#yearcard .skicker{display:flex;justify-content:space-between;align-items:center}
+#yearcard .slink{border:0;background:none;color:var(--accent-ink);font:inherit;font-weight:600;text-transform:none;letter-spacing:0;padding:0;cursor:pointer}
+#yearcard .sline{margin:0 0 8px;font-size:15px}
+#yearcard .syearnum{margin:2px 0 8px;font-size:15px;color:var(--label2)}
+#yearcard .syearnum b{font-size:26px;color:var(--label)}
+#yearcard .ybar{position:relative;height:10px;margin:0 0 8px;border-radius:5px;background:var(--fill2);overflow:visible}
+#yearcard .yfill{position:absolute;left:0;top:0;bottom:0;border-radius:5px;background:var(--accent)}
+#yearcard .ysoll{position:absolute;top:-3px;bottom:-3px;width:2px;margin-left:-1px;background:var(--label)}
+#yearcard .tiny{display:block;margin:0 0 8px}
+#yearcard .syear{display:flex;gap:8px;align-items:center;margin:0 0 6px}
+#yearcard .syear input{flex:1;min-width:0}
+#syncplace.ask{box-shadow:0 0 0 2px var(--accent)}
 /* weitere offene Einträge, eingeklappt */
 .smore>summary.scard{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;margin-top:10px;font-size:15px;font-weight:600;color:var(--accent-ink)}
 .smore>summary .chev::after{content:"›";color:var(--label3);font-size:22px;line-height:1}
