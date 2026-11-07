@@ -349,3 +349,39 @@ test('Urlaub von–bis: alle Pläne nur Körpergewicht, AMRAP/Core weg, dazugesc
   await page.click('#vacclear');
   expect(await page.evaluate(() => profile.kit.vacation)).toBe(null);
 });
+
+test('Anleitung im Training folgt der aktuellen Übung: „Erledigt – nächste Übung“ im Zirkel, Aufwärmen schaltet mit', async ({ page }) => {
+  await page.click('[data-plan="wed"]');
+  await page.click('#btnMain');
+  // Aufwärmen: Anleitung zum aktuellen Schritt, „Nächste Übung“ springt weiter, Anleitung zieht mit
+  await page.click('#stepstatus');
+  await expect(page.locator('#guide')).toBeVisible();
+  const first = await page.locator('#guide-title').textContent();
+  await page.click('#guide-foot [data-gact="step"]');
+  await expect(page.locator('#guide-title')).not.toHaveText(first);
+  expect(await page.evaluate(() => currentStep().group)).toBe(1);
+  await page.click('#guide-close');
+  // Zirkel: Anleitung zur aktuellen Übung, Erledigt im Fenster, nächste Übung erscheint ohne Schließen
+  await page.click('#btnNext');
+  await page.click('#current');
+  const names = await page.evaluate(() => exList().map(x => tr(x.name)));
+  await expect(page.locator('#guide-title')).toHaveText(names[0]);
+  await page.click('#guide-foot [data-gact="done"]');
+  await expect(page.locator('#guide')).toBeVisible();
+  await expect(page.locator('#guide-title')).toHaveText(names[1]);
+  expect(await page.evaluate(() => completions)).toBe(1);
+  // außerhalb des Trainings (Übungen & Varianten) kein Weiter-Knopf
+  await page.click('#guide-close');
+  await expect(page.locator('#guide-foot')).toBeEmpty();
+});
+
+test('Kraftübungen nach Position: erst stehend, dann knien/sitzen, zuletzt liegend – innerhalb gleich wie geplant; Vergleich bleibt', async ({ page }) => {
+  const r = await page.evaluate(() => { setPlanGear('sun', { kb: false, band: false, bw: true }); const names = exList('sun').map(x => x.name), pose = names.map(poseOf);
+    return { names, pose: pose.join(''), sorted: pose.join('') === [...pose].sort().join(''), slotsKept: exList('run').map(x => x.slot.id).join(',') === PLANS.run.slots.map(s => s.id).join(','),
+      sig: entrySig({ v: 3, plan: 'wed', cfg: currentCfg('wed').slice().reverse() }) === currentSig('wed') }; });
+  expect(r.sorted, r.pose).toBe(true);
+  expect(r.pose).toBe('0000022222'); // Oberkörper nur Körpergewicht: Unterarmstütz, Y-T-W, Schwimmer, Dead Bug, Seitstütz ans Ende
+  expect(r.names.slice(0, 2)).toEqual(['Liegestütze erhöht', 'Pike-Liegestütze erhöht']);
+  expect(r.slotsKept).toBe(true); // Läufer (Sätze) unverändert
+  expect(r.sig).toBe(true); // alte Einträge in anderer Reihenfolge bleiben vergleichbar
+});

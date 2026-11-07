@@ -160,7 +160,17 @@ function resolve(pk, sl) {
   return { slot: sl, g, name, reps, note, kg, band, gearText, cfg, avail, auto, fallback, lvls, lvl };
 }
 function stageOf(pk, sl) { if (!sl.stages) return null; const s = stages[slotKey(pk, sl)]; return sl.stages.includes(s) ? s : sl.stages[0]; }
-const exList = (pk = plan) => PLANS[pk].slots.map(sl => resolve(pk, sl));
+/* Reihenfolge nach Position: erst alles im Stehen, dann Knien/Sitzen/Vierfüßler, zum Schluss liegend – nicht ständig hinlegen und aufstehen.
+   Innerhalb einer Position bleibt die geplante Reihenfolge (Muskelgruppen wechseln weiter ab). Hängt von der gewählten Variante ab.
+   Nicht im Sätze-Plan (Läufer): dort gelten Blöcke und „Zuletzt“ je Platz. */
+const POSE_KNEEL = ['Bird Dog', 'Brustwirbel-Rotation im Vierfüßlerstand', 'Clean & Press im halben Kniestand', 'Pullover im Kniestand', 'Übergabe im Grätschsitz', 'Wrestler-Halo'];
+const POSE_LIE = ['Clamshells', 'Clamshells mit Band', 'Dead Bug', 'Dead Bug mit Band', 'Dead Bug mit Kettlebell', 'Floor Press', 'Hüftheben', 'Hüftheben mit Band', 'Kettlebell-Pullover',
+  'Schwimmer in Bauchlage', 'Seitstütz', 'Squeeze Press am Boden', 'Unterarmstütz', 'Y-T-W in Bauchlage'];
+const poseOf = name => POSE_LIE.includes(name) ? 2 : POSE_KNEEL.includes(name) ? 1 : 0;
+const exList = (pk = plan) => {
+  const l = PLANS[pk].slots.map(sl => resolve(pk, sl));
+  return isSets(pk) ? l : l.map((x, i) => [x, i]).sort((a, b) => poseOf(a[0].name) - poseOf(b[0].name) || a[1] - b[1]).map(a => a[0]);
+};
 const isSets = (pk = plan) => PLANS[pk].mode === 'sets';
 const isTabata = (pk = plan) => PLANS[pk].mode === 'tabata';
 const isEmomPlan = (pk = plan) => PLANS[pk].mode === 'emom';
@@ -219,10 +229,12 @@ function legacyCfg(e) {
     return BANDS.includes(b) ? 'band:' + b : 'kb:' + w(m[1]);
   });
 }
+// Vergleichbar unabhängig von der Reihenfolge (Zirkel werden nach Position sortiert); Sätze-Plan bleibt je Platz
+const sigCfg = (pk, c) => (PLANS[pk] && isSets(pk) ? c : c.slice().sort()).join(',');
 function entrySig(e) {
-  if (e.v >= 3 && Array.isArray(e.cfg)) return e.plan + '|' + e.cfg.length + '|' + e.cfg.join(',') + (Array.isArray(e.stages) ? '|' + e.stages.join(',') : '');
+  if (e.v >= 3 && Array.isArray(e.cfg)) return e.plan + '|' + e.cfg.length + '|' + sigCfg(e.plan, e.cfg) + (Array.isArray(e.stages) ? '|' + e.stages.join(',') : '');
   const n = entryCount(e);
-  if (e.plan === 'wed' && n === PLANS.wed.slots.length) return 'wed|' + n + '|' + legacyCfg(e).join(',');
+  if (e.plan === 'wed' && n === PLANS.wed.slots.length) return 'wed|' + n + '|' + sigCfg('wed', legacyCfg(e));
   return e.plan + '|' + n + '|legacy';
 }
 function currentCfg(pk = plan) {
@@ -233,7 +245,7 @@ function currentCfg(pk = plan) {
 }
 function currentSig(pk = plan) {
   const c = currentCfg(pk);
-  return pk + '|' + c.length + '|' + c.join(',') + (isSets(pk) ? '|' + PLANS[pk].slots.map(sl => stageOf(pk, sl) || '').join(',') : '');
+  return pk + '|' + c.length + '|' + sigCfg(pk, c) + (isSets(pk) ? '|' + PLANS[pk].slots.map(sl => stageOf(pk, sl) || '').join(',') : '');
 }
 const comparable = e => entrySig(e) === currentSig(e.plan);
 const SHORT = EN ? { 'Split Squat': 'Split', 'Einarmiges Rudern': 'Row', 'Rudern mit Band': 'Row', 'Y-T-W in Bauchlage': 'Y-T-W', 'Brustdrücken mit Band': 'Press', 'Liegestütze erhöht': 'Push-ups', 'Einbeiniges Wadenheben': 'Calves', 'Einbeiniges Kreuzheben': 'SL deadlift', 'Suitcase March': 'March', 'Kettlebell-Swing': 'Swing', 'Kettlebell-Swing (beidarmig)': 'Swing', 'Hüftheben mit Band': 'Bridge' } : { 'Split Squat': 'Split', 'Einarmiges Rudern': 'Rudern', 'Rudern mit Band': 'Rudern', 'Y-T-W in Bauchlage': 'Y-T-W', 'Brustdrücken mit Band': 'Drücken', 'Liegestütze erhöht': 'Liegest.', 'Einbeiniges Wadenheben': 'Waden', 'Einbeiniges Kreuzheben': 'EB-Kreuzh.', 'Suitcase March': 'March', 'Kettlebell-Swing': 'Swing', 'Kettlebell-Swing (beidarmig)': 'Swing', 'Hüftheben mit Band': 'Hüftheben' };
@@ -323,6 +335,8 @@ function buildSteps(items) {
 }
 const STEPS = Object.fromEntries(Object.entries(PLANS).map(([k, p]) => [k, { warmup: buildSteps(p.warmup), cooldown: buildSteps(p.cooldown) }]));
 const durationSecs = () => phaseSecs(plan, phase);
+// Welche Übung das Intervall gerade zeigt: Arbeit = diese, Pause = die nächste (Tabata-Zirkel), Rundenpause = die erste
+const segShown = sg => sg.type === 'work' ? sg.block : sg.type === 'blockrest' ? (isTabata() ? 0 : sg.block + 1) : isTabata() ? sg.block + 1 : sg.block;
 function currentSeg() { const t = secNow(), sg = segments(); return sg.find(x => t < x.end) || sg.at(-1); }
 const workDoneAt = t => segments().filter(x => x.type === 'work' && x.end <= t + 0.01).length;
 const secNow = () => running ? elapsed + (Date.now() - startedAt) / 1000 : elapsed;
@@ -412,7 +426,7 @@ function tick() {
       else { const m = Math.floor(pr / 60); signalCountdown('e-' + m, (m + 1) * 60 - pr, T('Minute ', 'Minute ') + (m + 1)); }
     }
   }
-  updateClock();
+  updateClock(); guideSync();
 }
 function play() {
   if (sessionSaved) return;
@@ -611,7 +625,7 @@ function updateClock() {
   const showStep = (phase !== 1 || tb) && !done;
   $('stepstatus').classList.toggle('hide', !showStep);
   if (tb) {
-    const ex = exList(), nx = sg.type === 'work' ? null : sg.type === 'blockrest' ? ex[0] : isTabata() ? ex[sg.block + 1] : ex[sg.block];
+    const ex = exList(), nx = sg.type === 'work' ? null : ex[segShown(sg)];
     $('steplabel').textContent = sg.type === 'work' ? T('Jetzt', 'Now') : T('Gleich', 'Up next');
     $('stepname').textContent = tr(sg.type === 'work' ? ex[sg.block].name : nx.name);
     $('stepdesc').textContent = isEmomPlan() ? T(`${ex[sg.block].reps} · danach ${sg.end >= durationSecs() ? 'Cooldown' : ex[(sg.block + 1) % ex.length].name} · antippen für Anleitung`, `${tr(ex[sg.block].reps)} · then ${sg.end >= durationSecs() ? 'cooldown' : tr(ex[(sg.block + 1) % ex.length].name)} · tap for instructions`) : T('Tabata gesamt noch ', 'Tabata total ') + clock(durationSecs() - secNow()) + T(' · antippen für Anleitung', ' left · tap for instructions');
@@ -752,8 +766,9 @@ function kgParam(attr, cur, label) {
 }
 function renderSettings() {
   const pk = plan;
-  const rows = PLANS[pk].slots.map((sl, i) => {
-    const r = resolve(pk, sl);
+  // gleiche Reihenfolge wie im Training (nach Position), damit Index und Anleitung zusammenpassen
+  const rows = exList(pk).map((r, i) => {
+    const sl = r.slot;
     const best = r.avail[0];
     const opts = `<option value="auto" ${r.auto ? 'selected' : ''}>${T('Automatisch', 'Automatic')}: ${esc(tr(sl.v[best][0]))}</option>` + (r.avail.length > 1 ? r.avail.map(g => `<option value="${g}" ${!r.auto && g === r.g ? 'selected' : ''}>${esc(GEAR_LABEL[g])}: ${esc(tr(sl.v[g][0]))}</option>`).join('') : '');
     const param = r.g === 'kb' ? kgParam(`data-kg="${sl.id}"`, r.kg, T(`Gewicht für ${r.name}`, `Weight for ${tr(r.name)}`))
@@ -2742,9 +2757,35 @@ async function renderStorageInfo() {
 
 /* ---------- Anleitung ---------- */
 const guide = $('guide'); let guideOrigin = null;
+/* Anleitung während des Trainings: folgt der aktuellen Übung (auch wenn die Zeit weiterschaltet – Aufwärmen, Cooldown,
+   Halteübungen, Intervalle) und hat unten „Erledigt – weiter“ bzw. „Nächste Übung“, ohne die Anleitung erst zu schließen. */
+let guideFollow = false, guideKey = '';
+function guideTarget() {
+  if (!sessionActive() || sessionSaved || isFinished()) return null;
+  if (phase === 1 && isInterval()) { const sg = currentSeg(); return { kind: 'ex', i: segShown(sg), auto: true }; }
+  if (phase === 1) return isSets() ? null : { kind: 'ex', i: Number($('current').dataset.index || 0) };
+  const s = currentStep(); return s ? { kind: 'step', s } : null;
+}
+const guideKeyOf = t => !t ? '' : t.kind === 'ex' ? `ex${t.i}:${(exList()[t.i] || {}).name}` : `st${phase}:${t.s.group}:${t.s.base}`;
+function guideFootHtml(t) {
+  if (!t) return '';
+  if (t.kind === 'ex' && t.auto) return `<p class="guideauto">${T('Läuft automatisch weiter – die Anleitung zeigt immer die aktuelle Übung.', 'Moves on automatically – the guide always shows the current exercise.')}</p>`;
+  if (t.kind === 'ex' && timed) return `<p class="guideauto">${T('● Zeitübung läuft – geht automatisch zur nächsten Übung.', '● Timed exercise running – moves to the next exercise automatically.')}</p>`;
+  if (t.kind === 'ex') return `<button type="button" class="btn primary" data-gact="done"${running ? '' : ' disabled'}>${T('✓ Erledigt – nächste Übung', '✓ Done – next exercise')}</button>${running ? '' : `<p class="guideauto">${T('Erst das Training starten (▶).', 'Start the workout first (▶).')}</p>`}`;
+  return `<button type="button" class="btn" data-gact="step">${T('Nächste Übung →', 'Next exercise →')}</button>`;
+}
+function guideSync() {
+  if (!guideFollow || !guide.open) return;
+  const t = guideTarget(); if (!t) { $('guide-foot').innerHTML = ''; return; }
+  const k = guideKeyOf(t);
+  if (k !== guideKey) { if (t.kind === 'ex') openExerciseGuide(t.i, guideOrigin); else openGuide(t.s.base, 'bw', { origin: guideOrigin }); return; }
+  const f = guideFootHtml(t); if ($('guide-foot').dataset.html !== f) { $('guide-foot').innerHTML = f; $('guide-foot').dataset.html = f; }
+}
+// Aufwärmen/Cooldown: zum Ende des aktuellen Schritts springen
+function skipStep() { const s = currentStep(); if (!s) return; const left = Math.max(0, s.end - secNow()); if (running) startedAt -= left * 1000; else elapsed += left; tick(); }
 function openGuide(name, g, opts = {}) {
   const info = GUIDES[name]; if (!info) return;
-  guideOrigin = opts.origin || null;
+  guideOrigin = opts.origin || guideOrigin || null;
   $('guide-title').textContent = tr(name);
   let extra = '';
   const sl = opts.slot;
@@ -2758,7 +2799,10 @@ function openGuide(name, g, opts = {}) {
   $('guide-body').innerHTML = (opts.gearText ? `<span class="guidegear">${esc(opts.gearText)}${opts.reps ? ' · ' + esc(tr(opts.reps)) : ''}</span>` : '') + renderFigure(name, g || 'kb') +
     `<p class="guidecaption">${T('Schematische Skizze. Maßgeblich sind die Hinweise unten.', 'Schematic sketch. The notes below are what counts.')}</p><h3>${T('So geht’s', 'How to')}</h3><ol>` + info.steps.map(t => `<li>${esc(t)}</li>`).join('') +
     `</ol><h3>${T('Das trainierst du', 'What it trains')}</h3><p>${esc(info.effect)}</p><h3>${T('Darauf achten', 'Watch out for')}</h3><p class="guidecue">${esc(info.cue)}</p>${extra}<p class="guidecaption">${T('Ruhig weiteratmen. Kontrolliert und im angenehmen Umfang ausführen; bei Schmerzen abbrechen.', 'Keep breathing calmly. Move under control and within a comfortable range; stop if it hurts.')}</p>`;
-  guide.showModal(); guide.scrollTop = 0; $('guide-title').focus();
+  const t = guideFollow ? guideTarget() : null; guideKey = guideKeyOf(t);
+  const f = guideFootHtml(t); $('guide-foot').innerHTML = f; $('guide-foot').dataset.html = f;
+  if (!guide.open) { guide.showModal(); $('guide-title').focus(); }
+  guide.scrollTop = 0; $('guide-body').scrollTop = 0;
 }
 function openExerciseGuide(i, origin) {
   const x = exList()[i]; if (!x) return;
@@ -3008,8 +3052,8 @@ const toggleSound = () => { soundEnabled = !soundEnabled; store(KEYS.sound, soun
 $('sound').addEventListener('click', toggleSound);
 $('soundrow').addEventListener('click', toggleSound);
 $('testsound').addEventListener('click', () => { audioReady(); cue('finish'); say(T('Ton und Ansagen funktionieren.', 'Sound and voice are working.'), 900); });
-$('current').addEventListener('click', e => openExerciseGuide(Number(e.currentTarget.dataset.index || 0), e.currentTarget));
-$('stepstatus').addEventListener('click', e => { if (isInterval() && phase === 1) { const sg = currentSeg(); openExerciseGuide(sg.type === 'blockrest' ? sg.block + 1 : sg.block, e.currentTarget); return; } const s = currentStep(); openGuide(s.base, 'bw', { origin: e.currentTarget }); });
+$('current').addEventListener('click', e => { if (phase === 1 && sessionActive()) guideFollow = true; openExerciseGuide(Number(e.currentTarget.dataset.index || 0), e.currentTarget); });
+$('stepstatus').addEventListener('click', e => { if (isInterval() && phase === 1) { const sg = currentSeg(); guideFollow = true; openExerciseGuide(segShown(sg), e.currentTarget); return; } if (phase !== 1 && sessionActive()) guideFollow = true; const s = currentStep(); openGuide(s.base, 'bw', { origin: e.currentTarget }); });
 for (const id of ['warmup', 'cooldown']) $(id).addEventListener('click', e => { const b = e.target.closest('[data-guide-name]'); if (b) openGuide(b.dataset.guideName, 'bw', { origin: b }); });
 $('worklist').addEventListener('click', e => {
   if (e.target.closest('#emomstart')) { startEmom(); return; }
@@ -3071,6 +3115,12 @@ $('area-profil').addEventListener('change', onProfileChange);
 $('measurecsv').addEventListener('click', exportWaistCsv);
 $('waistcalendar').addEventListener('click', exportWaistReminder);
 $('guide-close').addEventListener('click', () => guide.close());
+guide.addEventListener('close', () => { guideFollow = false; guideKey = ''; $('guide-foot').innerHTML = ''; $('guide-foot').dataset.html = ''; });
+$('guide-foot').addEventListener('click', e => {
+  const b = e.target.closest('[data-gact]'); if (!b) return;
+  if (b.dataset.gact === 'done') finishExercise(false); else skipStep();
+  guideSync();
+});
 guide.addEventListener('click', e => { if (e.target === guide) { const r = guide.getBoundingClientRect(); if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) guide.close(); } });
 guide.addEventListener('close', () => { if (guideOrigin && document.contains(guideOrigin)) guideOrigin.focus(); });
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { tick(); routineTick(); if (running || (rt && rt.running)) keepAwake(true); renderWeek(); } else persistSession(); });
