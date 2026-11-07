@@ -62,7 +62,10 @@ test.describe('Kurzhanteln', () => {
   test('im Profil eintragen → Chip, Hantel-Varianten mit eigenem Gewicht je Übung, Skizze und „Du brauchst“', async ({ page }) => {
     await page.evaluate(() => showArea('profil'));
     await openSect(page, 'sect-kit');
+    await expect(page.locator('#dbhint')).toHaveCount(0);
     await page.fill('#dbnew', '8'); await page.click('#dbadd');
+    // beim Eintragen: Hinweis, dass Übungen mit zwei Hanteln ein Paar brauchen
+    await expect(page.locator('#dbhint')).toContainText('Übungen mit zwei Hanteln brauchen ein Paar gleicher Gewichte');
     await page.fill('#dbnew', '4'); await page.click('#dbadd');
     expect(await page.evaluate(() => [profile.kit.db, profile.kit.dbDefault])).toEqual([[4, 8], 8]);
     await expect(page.locator('#sum-kit')).toHaveText('Kurzhanteln 4 · 8 kg');
@@ -88,6 +91,8 @@ test.describe('Kurzhanteln', () => {
     await page.evaluate(() => guide.close());
     await page.click('[data-gear="db"]');
     expect(await page.evaluate(() => exList().some(x => x.g === 'db'))).toBe(false);
+    await page.click('[data-gear="db"]');
+    await expect(page.locator('#toast')).toContainText('Oberkörper: Kurzhanteln an – beste Übungen gewählt.');
   });
 
   test('mit Kettlebell und Kurzhanteln: Swing bleibt Kettlebell, Rudern und Drücken mit Hanteln; Einrichtung fragt nach Hanteln', async ({ page }) => {
