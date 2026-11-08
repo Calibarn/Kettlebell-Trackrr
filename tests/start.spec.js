@@ -282,7 +282,9 @@ test.describe('Lauf nachtragen', () => {
     // Puls zu hoch bei passendem Tempo
     await setup('l');
     await fill('10', ['1', '02', '00'], '152');
-    await expect(page.locator('#startfb .sfbtext')).toContainText('Das Tempo passte, der Puls lag trotzdem über Zone 2');
+    await expect(page.locator('#startfb .sfbtext').first()).toContainText('Das Tempo passte, der Puls lag trotzdem über Zone 2');
+    // dazu: lockeres Tempo 5 s/km langsamer (Puls über Zone 2 bei Tempo im Bereich)
+    await expect(page.locator('#sfbeasy')).toContainText('→ 6:05–6:35 /km – Puls über Zone 2.');
     // ohne Zeit und Puls: keine Auswertung
     await setup('l');
     await page.fill('#srunkm', '8'); await page.click('[data-runsave]');
@@ -293,7 +295,7 @@ test.describe('Lauf nachtragen', () => {
     await expect(page.locator('#startfb .sfbtext')).toHaveText('Bei Intervall- und Tempoeinheiten sagt der Durchschnitt wenig – entscheidend sind die schnellen Abschnitte.');
     await expect(page.locator('#startfb svg.chk')).toHaveCount(0);
   });
-  test('lockeres Tempo folgt den Läufen langsam: Puls in Zone 2, aber schneller → 10 s/km je Lauf, höchstens 30 s/km, nur locker', async ({ page }) => {
+  test('lockeres Tempo folgt den Läufen langsam in beide Richtungen: Puls in Zone 2 → 10 s/km je Lauf, höchstens 30 s/km, nur locker', async ({ page }) => {
     const wd = await page.evaluate(() => new Date(addDays(localDay(), -1) + 'T12:00:00').getDay());
     await page.evaluate(w => { profile.week = Object.assign(profile.week, { group: null, quality: null, long: w, extras: [], runner: 'runner' });
       profile.hr = Object.assign({}, profile.hr, { max: 185, rest: 55, z: hrZonesFrom(185, 55) }); persistProfile(); // Zone 2: 133–145
@@ -310,6 +312,14 @@ test.describe('Lauf nachtragen', () => {
     expect(await easy([[12, 8, 320, 140], [9, 8, 315, 138], [6, 12, 318, 142, 'long'], [3, 8, 300, 141]])).toEqual(['5:30–6:00 /km', 30, thr]);
     // Puls über Zone 2 nimmt 5 s/km zurück
     expect(await easy([[9, 8, 330, 140], [6, 8, 330, 140], [3, 8, 340, 152]])).toEqual(['5:45–6:15 /km', 15, thr]);
+    // andere Richtung: Puls in Zone 2 erst bei langsamerem Tempo → 10 s/km langsamer je Lauf, höchstens 30 s/km (Jans Beispiel: auf 7:00)
+    expect(await easy([[5, 8, 405, 140]])).toEqual(['6:10–6:40 /km', -10, thr]);
+    expect(await easy([[9, 8, 430, 140], [6, 8, 430, 139], [3, 10, 430, 141, 'long'], [1, 8, 440, 140]])).toEqual(['6:30–7:00 /km', -30, thr]);
+    // langsam mit Puls unter Zone 2 (ganz ruhig gelaufen) ändert nichts
+    expect((await easy([[5, 8, 430, 120]]))[0]).toBe('6:00–6:30 /km');
+    // Puls über Zone 2 im Bereich → 5 s/km langsamer; Puls hoch, weil zu schnell gelaufen → keine Änderung
+    expect(await easy([[5, 8, 370, 152]])).toEqual(['6:05–6:35 /km', -5, thr]);
+    expect((await easy([[5, 8, 320, 152]]))[0]).toBe('6:00–6:30 /km');
     // Intervalle, kurze Läufe, Läufe vor dem letzten Ergebnis und Läufe ohne Puls zählen nicht
     expect((await easy([[10, 8, 330, 140, 'quality'], [5, 2, 330, 138], [45, 8, 330, 142], [2, 8, 330, null]]))[0]).toBe('6:00–6:30 /km');
     // ohne Pulszonen keine Anpassung
@@ -323,6 +333,11 @@ test.describe('Lauf nachtragen', () => {
     await page.evaluate(() => { runView.tab = 'plan'; runView.plan = 'woche'; });
     await page.evaluate(() => showArea('laufen')); // wie der Reiter in der Leiste
     await expect(page.locator('#runcontent')).toContainText('an deine Läufe angepasst: 10 s/km schneller als aus der Bestzeit (6:00–6:30 /km), weil lockere Läufe mit Puls in Zone 2 schneller waren');
+    // langsamer Lauf mit Puls in Zone 2 über die Startseite: Hinweis in der Auswertung
+    await page.evaluate(() => { runLog = []; persistRunLog(); startFeedback = null; localStorage.removeItem(KEYS.runask); const wp = curWeekPlan(weekStart(addDays(localDay(), -1))); if (wp) { wp.done = []; storeWeekPlan(); } showArea('start'); });
+    await page.fill('#srunkm', '10'); for (const [i, v] of ['1', '07', '30'].entries()) await page.fill(`#sruntime [data-tpart="${i}"]`, v); await page.fill('#srunhr', '140');
+    await page.click('[data-runsave]');
+    await expect(page.locator('#sfbeasy')).toHaveText('Lockeres Tempo angepasst: 6:00–6:30 /km → 6:10–6:40 /km – Puls in Zone 2 erst bei langsamerem Tempo. Die App passt höchstens 10 s/km pro Lauf an.');
   });
   test('heutigen Lauf direkt aus „Heute dran“ eintragen, mit Zeit und Puls', async ({ page }) => {
     const wd = await page.evaluate(() => new Date(localDay() + 'T12:00:00').getDay());

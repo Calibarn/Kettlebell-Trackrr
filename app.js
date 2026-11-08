@@ -1567,23 +1567,31 @@ function trainingPaces(today = localDay()) {
   const at = d => riegel(ref.t10, 10, d) / d, p10 = ref.t10 / 10, base = [r5(p10 + 60), r5(p10 + 90)], adapt = easyFromRuns(ref, base, today);
   return { ref, easy: adapt ? adapt.easy : base, easyBase: base, adapt, marathon: at(42.195), threshold: [r5(at(15)), r5(at(21.0975))], interval: at(5) };
 }
-/* Lockeres Tempo folgt deinen Läufen – langsam, Schritt für Schritt: Jeder lockere Lauf (locker, Longrun, Laufgruppe; ab 3 km, mit Zeit und Ø-Puls)
-   seit dem letzten Ergebnis, der mit Puls in Zone 2 (oder darunter) schneller war als der lockere Bereich, rückt den Bereich um 10 s/km nach –
-   nie schneller als du tatsächlich gelaufen bist und insgesamt höchstens 30 s/km schneller als aus der Bestzeit (noch schneller spricht eher
-   für eine zu hoch eingetragene max. HF). Ein lockerer Lauf mit Puls über Zone 2 nimmt 5 s/km wieder zurück.
-   Beispiel: Bereich 6:00–6:30, Lauf in 5:50 mit Puls in Zone 2 → 5:50–6:20; noch ein Lauf in 5:50 ändert nichts mehr.
+/* Lockeres Tempo folgt deinen Läufen – in beide Richtungen, langsam, Schritt für Schritt. Es zählen lockere Läufe (locker, Longrun,
+   Laufgruppe; ab 3 km, mit Zeit und Ø-Puls) seit dem letzten Ergebnis, der Reihe nach:
+   - Puls in Zone 2 (oder darunter) und schneller als der Bereich → 10 s/km schneller, nie schneller als tatsächlich gelaufen.
+   - Puls in Zone 2 und langsamer als der Bereich → 10 s/km langsamer, nie langsamer als tatsächlich gelaufen.
+     (Puls unter Zone 2 und langsam heißt nur: ganz ruhig gelaufen – das ändert nichts.)
+   - Puls über Zone 2, obwohl im Bereich oder langsamer gelaufen → 5 s/km langsamer. War der Lauf zu schnell, ändert das nichts (zu schnell gelaufen).
+   Insgesamt höchstens 30 s/km schneller oder langsamer als aus der Bestzeit (mehr spricht eher für falsch eingetragene Pulswerte).
+   Beispiele: 6:00–6:30, Lauf in 5:50 mit Puls in Zone 2 → 5:50–6:20. Dreimal 7:10 mit Puls in Zone 2 → 6:10, 6:20, 6:30 → 6:30–7:00.
    Nur das lockere Tempo: Schwelle, Intervall und Renntempo bleiben bei der Bestzeit – die misst der Testlauf, nicht der Puls beim lockeren Laufen.
    Abgeleitet, nicht gespeichert: Mit einem neuen Ergebnis beginnt es wieder bei der Bestzeit. */
 function easyFromRuns(ref, base, today) {
   const z = profile.hr.z; if (!z) return null;
+  const w = base[1] - base[0], min = base[0] - EASY_ADAPT.maxShift, max = base[0] + EASY_ADAPT.maxShift;
   let lo = base[0], up = 0, down = 0;
   for (const r of runLog) {
     if (r.date <= ref.r.date || r.date > today || !EASY_KINDS.includes(r.kind) || !r.sec || !r.hr || r.km < EASY_ADAPT.minKm) continue;
-    const pace = r.sec / r.km;
-    if (r.hr > z[2] + 1) { if (lo < base[0]) { lo = Math.min(lo + EASY_ADAPT.back, base[0]); down++; } }
-    else if (pace < lo - 5) { const n = Math.max(lo - EASY_ADAPT.step, r5(pace), base[0] - EASY_ADAPT.maxShift); if (n < lo) { lo = n; up++; } }
+    const pace = r.sec / r.km, high = r.hr > z[2] + 1, inZone = !high && r.hr >= z[1];
+    let n = lo;
+    if (high) { if (pace >= lo - 5) n = Math.min(lo + EASY_ADAPT.back, max); }
+    else if (pace < lo - 5) n = Math.max(lo - EASY_ADAPT.step, r5(pace), min);
+    else if (inZone && pace > lo + w + 5) n = Math.min(lo + EASY_ADAPT.step, r5(pace) - w, max);
+    if (n < lo) up++; else if (n > lo) down++;
+    lo = n;
   }
-  return lo < base[0] ? { easy: [lo, lo + base[1] - base[0]], shift: base[0] - lo, up, down } : null;
+  return lo !== base[0] ? { easy: [lo, lo + w], shift: base[0] - lo, up, down } : null;
 }
 const paceRange = ([a, b]) => `${hms(a)}–${hms(b)} /km`;
 // Renntempo aus der aktuellen Form; nur ohne jedes Ergebnis als Notlösung aus der Zielzeit
@@ -1617,7 +1625,7 @@ function missingResultHint() {
 function renderPaces() {
   const tp = trainingPaces();
   if (!tp) return `<div class="header">${T('Trainingstempos', 'Training paces')}</div>${missingResultHint()}<div class="group"><div class="row"><span class="txt"><small>${T('Unter <b>Bestzeiten</b> ein Ergebnis der letzten 12 Monate eintragen (3 bis 42 km) – dann stehen hier deine Tempos für locker, Schwelle, Intervall und Marathon.', 'Enter a result from the last 12 months under <b>Best times</b> (3 to 42 km) – then your paces for easy, threshold, intervals and marathon appear here.')}</small></span></div></div>`;
-  const r = tp.ref.r, stale = missingResultHint() || (tp.ref.stale ? `<div class="alert due">${T(`Letztes Ergebnis vom ${dateGerman(tp.ref.newest)} – Zeit für einen Testlauf (5 km) oder ein B-Rennen. Danach unter <b>Bestzeiten</b> eintragen, dann passen die Tempos wieder.`, `Last result from ${dateGerman(tp.ref.newest)} – time for a time trial (5 km) or a B race. Then enter it under <b>Best times</b> so the paces fit again.`)}</div>` : ''), rows = [[T('Locker & Longrun', 'Easy & long run'), paceRange(tp.easy), tp.adapt ? T(`an deine Läufe angepasst: ${tp.adapt.shift} s/km schneller als aus der Bestzeit (${paceRange(tp.easyBase)}), weil lockere Läufe mit Puls in Zone 2 schneller waren`, `adjusted to your runs: ${tp.adapt.shift} s/km faster than from your best time (${paceRange(tp.easyBase)}), because easy runs were faster with HR in zone 2`) : T('Gesprächstempo, Zone 2', 'conversational, zone 2')],
+  const r = tp.ref.r, stale = missingResultHint() || (tp.ref.stale ? `<div class="alert due">${T(`Letztes Ergebnis vom ${dateGerman(tp.ref.newest)} – Zeit für einen Testlauf (5 km) oder ein B-Rennen. Danach unter <b>Bestzeiten</b> eintragen, dann passen die Tempos wieder.`, `Last result from ${dateGerman(tp.ref.newest)} – time for a time trial (5 km) or a B race. Then enter it under <b>Best times</b> so the paces fit again.`)}</div>` : ''), rows = [[T('Locker & Longrun', 'Easy & long run'), paceRange(tp.easy), tp.adapt ? (tp.adapt.shift > 0 ? T(`an deine Läufe angepasst: ${tp.adapt.shift} s/km schneller als aus der Bestzeit (${paceRange(tp.easyBase)}), weil lockere Läufe mit Puls in Zone 2 schneller waren`, `adjusted to your runs: ${tp.adapt.shift} s/km faster than from your best time (${paceRange(tp.easyBase)}), because easy runs were faster with HR in zone 2`) : T(`an deine Läufe angepasst: ${-tp.adapt.shift} s/km langsamer als aus der Bestzeit (${paceRange(tp.easyBase)}), weil der Puls in Zone 2 erst bei langsamerem Tempo lag`, `adjusted to your runs: ${-tp.adapt.shift} s/km slower than from your best time (${paceRange(tp.easyBase)}), because your HR only stayed in zone 2 at a slower pace`)) : T('Gesprächstempo, Zone 2', 'conversational, zone 2')],
     [T('Marathontempo', 'Marathon pace'), hms(tp.marathon) + ' /km', T('lange Abschnitte im Marathonblock', 'long segments in a marathon block')],
     [T('Schwelle', 'Threshold'), paceRange(tp.threshold), T('kontrolliert hart, etwa eine Stunde haltbar', 'controlled hard, sustainable for about an hour')],
     [T('Intervall', 'Intervals'), '≈ ' + hms(tp.interval) + ' /km', T('etwa 5-km-Renntempo, 400–1000 m', 'about 5 km race pace, 400–1000 m')]];
@@ -2279,7 +2287,7 @@ function feedbackCard(f) {
     ${c.p ? `<div class="chkrow"><span>${T('Tempo', 'Pace')} <small>${T('locker', 'easy')}</small></span>${checkBar(c.pace, c.p.lo, c.p.hi, t => hms(Math.round(t)), true, 'Tempo')}</div>` : ''}
     ${c.h ? `<div class="chkrow"><span>${T('Puls', 'HR')} <small>${zn}</small></span>${checkBar(c.hr, c.h.lo, c.h.hi, bpm, false, 'Puls')}</div>` : ''}
     ${v.text ? `<p class="sfbtext${v.ok === true ? ' good' : v.ok === false ? ' warn' : ''}">${v.ok === true ? '✓ ' : ''}${esc(v.text)}</p>` : ''}
-    ${f.easy ? `<p class="sfbtext" id="sfbeasy">${f.easy[1][0] < f.easy[0][0] ? T(`Lockeres Tempo angepasst: ${paceRange(f.easy[0])} → <b>${paceRange(f.easy[1])}</b> – Puls in Zone 2 bei schnellerem Tempo. Die App rückt höchstens 10 s/km pro Lauf nach.`, `Easy pace adjusted: ${paceRange(f.easy[0])} → <b>${paceRange(f.easy[1])}</b> – HR in zone 2 at a faster pace. The app moves at most 10 s/km per run.`) : T(`Puls über Zone 2 – lockeres Tempo etwas zurückgenommen: <b>${paceRange(f.easy[1])}</b>`, `HR above zone 2 – easy pace eased back a little: <b>${paceRange(f.easy[1])}</b>`)}</p>` : ''}
+    ${f.easy ? `<p class="sfbtext" id="sfbeasy">${f.easy[1][0] < f.easy[0][0] ? T(`Lockeres Tempo angepasst: ${paceRange(f.easy[0])} → <b>${paceRange(f.easy[1])}</b> – Puls in Zone 2 bei schnellerem Tempo. Die App rückt höchstens 10 s/km pro Lauf nach.`, `Easy pace adjusted: ${paceRange(f.easy[0])} → <b>${paceRange(f.easy[1])}</b> – HR in zone 2 at a faster pace. The app moves at most 10 s/km per run.`) : T(`Lockeres Tempo angepasst: ${paceRange(f.easy[0])} → <b>${paceRange(f.easy[1])}</b> – ${f.easy[2] ? 'Puls über Zone 2' : 'Puls in Zone 2 erst bei langsamerem Tempo'}. Die App passt höchstens 10 s/km pro Lauf an.`, `Easy pace adjusted: ${paceRange(f.easy[0])} → <b>${paceRange(f.easy[1])}</b> – ${f.easy[2] ? 'HR above zone 2' : 'HR only in zone 2 at a slower pace'}. The app adjusts at most 10 s/km per run.`)}</p>` : ''}
     <div class="sresact"><button type="button" class="btn small" data-fbclose>OK</button></div></div>`;
 }
 /* Offene Einträge: Rennen zuerst, dann Läufe, jeweils das älteste zuerst. Der erste steht offen da, weitere sind eingeklappt
@@ -2365,7 +2373,7 @@ $('startcontent').addEventListener('click', e => {
     if (run.sec || run.hr) startFeedback = { id: run.id, title: ru.dataset.title };
     if (day === localDay()) logToday = null; if (logPick && logPick.day === day) logPick = null;
     const easyNow = (trainingPaces() || {}).easy, easyMoved = easyBefore && easyNow && easyNow[0] !== easyBefore[0];
-    if (startFeedback && easyMoved) startFeedback.easy = [easyBefore, easyNow]; // Hinweis in der Auswertung (Toast wäre zu lang)
+    if (startFeedback && easyMoved) startFeedback.easy = [easyBefore, easyNow, !!(run.hr && profile.hr.z && run.hr > profile.hr.z[2] + 1)]; // Hinweis in der Auswertung (Toast wäre zu lang)
     renderStart(); toast(T(`✓ ${kmText(km)} km am ${dayLabel(day)} eingetragen.`, `✓ ${kmText(km)} km on ${dayLabel(day)} logged.`)); if (startFeedback) window.scrollTo(0, 0); return;
   }
   const rd = e.target.closest('[data-resdns]'); if (rd) { const r = races.find(x => x.id === rd.dataset.resdns); if (r) { r.dns = true; persistRaces(); renderStart(); toast(T(`Notiert: ${r.name} nicht gelaufen.`, `Noted: ${r.name} not run.`)); } return; }
