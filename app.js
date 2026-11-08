@@ -3651,7 +3651,7 @@ $('settingsreset').addEventListener('click', settingsReset);
 $('syncplace').addEventListener('change', e => { syncMeta.place = e.target.value.trim().slice(0, 120); e.target.classList.remove('ask'); syncSaveMeta(); renderSyncStatus(); renderBackupBanner(); toast(T('Speicherort gemerkt – er steht jetzt auch in der Erinnerung.', 'Location saved – it now also shows in the reminder.')); });
 $('syncload').addEventListener('click', syncLoad);
 $('syncfile').addEventListener('change', e => { const f = e.target.files[0]; e.target.value = ''; if (!f) return; const r = new FileReader(); r.onload = () => syncApply(r.result); r.readAsText(f); });
-$('syncstatus').addEventListener('click', e => { if (e.target.id === 'syncforget') handleSet(null).then(renderSyncStatus); });
+$('syncstatus').addEventListener('click', e => { if (e.target.id === 'syncforget') { syncMeta.auto = false; autoPaused = false; syncSaveMeta(); handleSet(null).then(() => { renderSyncStatus(); renderSyncAuto(); }); } }); // ohne Datei kein automatischer Abgleich
 window.addEventListener('pagehide', () => { clearTimeout(syncTimer); syncTrack(); });
 renderAll(); renderWaist(); renderWeight(); renderProfile(); renderStorageInfo(); renderRun(); renderSyncStatus(); renderNotesRows();
 // Startbildschirm: keine Ladeanzeige – weg, sobald die App bereit ist, aber mindestens SPLASH_MS ab Start, damit er nicht nur flackert. Antippen blendet sofort aus.
