@@ -504,6 +504,10 @@ html[data-os=android] .infoi{border-color:var(--accent-ink);color:var(--accent-i
 .dayplan{display:flex;align-items:center;gap:8px;min-width:0}
 .dayplan span{flex:0 0 24px;font-size:15px;font-weight:600;color:var(--accent-ink)}
 .dayplan select{flex:1;min-width:0;height:40px;font-size:15px;padding:0 6px}
+.dayplan.gym{grid-column:1/-1}
+.dayplan.gym select{flex:0 0 128px}
+.dayplan.gym input{flex:1;min-width:0;height:40px;font-size:15px}
+.dayplan.gym .chip{flex:none;white-space:nowrap;min-height:40px}
 .srowt .txt small.stip{display:block;overflow:visible;color:var(--label)}
 
 /* Startbildschirm: verschwindet, sobald die App bereit ist (mindestens kurz sichtbar); falls das Skript fehlt, nach 3 s per CSS */

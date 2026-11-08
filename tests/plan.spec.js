@@ -448,3 +448,32 @@ test('Qualität: Schwelle in Basis, Grundlage und Aufbau; harte Intervalle nur i
     expect(hard.length > 0, dist).toBe(dist !== 'hm');
   }
 });
+
+test('Harter Kurs-Tag: am Tag danach nur locker statt Qualität, Hinweis im Profil, Schalter am Kurs-Tag', async ({ page }) => {
+  // Di = 2 (CrossFit), Qualität Mi = 3; Sa = 6 Kurs ohne „hart“
+  await page.evaluate(() => {
+    races = [{ id: 'a', name: 'A', date: '2027-05-02', dist: 'hm', prio: 'A' }]; results = []; persistRaces();
+    Object.assign(profile.week, { quality: 3, group: null, long: 0, extras: [{ d: 0, type: 'quality', name: '' }], strength: [2, 6], strengthPlan: { 2: 'gym', 6: 'gym' }, gymNames: { 2: 'CrossFit' }, gymHard: [] });
+    persistProfile(); renderProfile(); showArea('profil');
+  });
+  const qual = () => page.evaluate(() => { const S = seasonPlan('2027-01-04', { L0: 12, W0: 25 }); return weekSchedule(S.weeks[0]).filter(i => /^quality/.test(i.kind)).map(i => [i.d, i.title, !!i.easy, /CrossFit \(hart\)/.test(i.detail)]); });
+  const before = await qual();
+  expect(before.find(i => i[0] === 3)).toEqual([3, 'Qualität', false, false]);
+  await openSect(page, 'sect-week');
+  await expect(page.locator('#weekpanel .alert', { hasText: 'hartem Training' })).toHaveCount(0);
+  // „hart“ am Dienstag anschalten
+  await page.click('[data-wkgymhard="2"]');
+  await expect(page.locator('[data-wkgymhard="2"]')).toHaveAttribute('aria-pressed', 'true');
+  expect(await page.evaluate(() => profile.week.gymHard)).toEqual([2]);
+  await expect(page.locator('#weekpanel .alert', { hasText: 'Qualität am Mittwoch direkt nach hartem Training (CrossFit, Dienstag)' })).toHaveCount(1);
+  const after = await qual();
+  expect(after.find(i => i[0] === 3)).toEqual([3, 'Locker laufen', true, true]);
+  // zweite Qualität am Sonntag: Samstag ist ein Kurs, aber nicht hart → bleibt Qualität
+  expect(after.find(i => i[0] === 0)[2]).toBe(false);
+  // bleibt nach dem Neuladen; Kurs-Tag wieder normaler Plan → „hart“ fällt beim Normalisieren weg
+  await page.reload();
+  expect(await page.evaluate(() => profile.week.gymHard)).toEqual([2]);
+  await page.evaluate(() => { profile.week.strengthPlan = {}; persistProfile(); });
+  await page.reload();
+  expect(await page.evaluate(() => profile.week.gymHard)).toEqual([]);
+});
