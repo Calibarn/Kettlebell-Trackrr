@@ -391,27 +391,30 @@ const SEASON = {
   grow: 0.1, cutLong: 0.8, cutWeek: 0.75, cutEvery: 3,
   phase: {
     basis: ['Basis', 'Locker laufen und das Niveau halten. Der nächste Block startet später.'],
-    base: ['Grundlage', 'Umfang aufbauen, fast alles locker in Zone 2. Kurze, schnelle Reize halten die Beine flink.'],
-    build: ['Aufbau', 'Schwelle und längere Intervalle kommen dazu, der Longrun wächst weiter.'],
-    spec: ['Spezifisch', 'Renntempo üben und Verpflegung testen. Die längsten Läufe des Blocks.'],
+    base: ['Grundlage', 'Umfang aufbauen, fast alles locker in Zone 2. Dazu Schwellen-Intervalle und kurze Steigerungen für flinke Beine.'],
+    build: ['Aufbau', 'Längere Schwellen-Abschnitte, der Longrun wächst weiter. Harte Intervalle kommen erst kurz vor dem Rennen.'],
+    spec: ['Spezifisch', 'Kurz vor dem Rennen: Renntempo üben (bei 5 und 10 km auch Intervalle) und Verpflegung testen. Die längsten Läufe des Blocks.'],
     taper: ['Tapering', 'Umfang runter, kurze Abschnitte im Renntempo bleiben. Frisch an den Start.'],
     recover: ['Erholung', 'Nur locker laufen, kein Tempo. Bei Beschwerden lieber Pause.'],
     cut: ['Entlastung', 'Bewusst weniger: Longrun und Qualitätseinheit kürzer, damit der Körper das Training umsetzt.']
   },
-  // Qualitätseinheit je Phase und Distanz; [ungerade KW, gerade KW] – Intervall und Speed im Wechsel
+  /* Qualitätseinheit je Phase und Distanz; [ungerade KW, gerade KW].
+     Schwerpunkt Schwelle (Jan: „mehr Schwellenintervalle statt Intervalle“): Basis, Grundlage und Aufbau mit Schwellen-Intervallen,
+     kurze Steigerungen bleiben für flinke Beine. Harte Intervalle (≈ 5-km-Tempo) erst in der spezifischen Phase kurz vor dem Rennen –
+     bei 5 km die letzten 2, bei 10 km die letzten 3 Wochen vor dem Tapering; HM und Marathon üben dort Renntempo statt Intervalle. */
   key: {
-    basis: { all: ['Intervall: 6 × 400 m zügig, 400 m Trabpause', 'Speed: 8 × 100 m Steigerung, Gehpause'] },
-    base: { all: ['Intervall: 5–6 × 800 m zügig, 2 Min. Trabpause', 'Speed: 10 × 200 m schnell, 200 m Trabpause'] },
+    basis: { all: ['4 × 6 Min. Schwelle, 90 Sek. Trabpause', '3 × 8 Min. Schwelle, 2 Min. Trabpause, danach 6 × 100 m Steigerung'] },
+    base: { all: ['5 × 6 Min. Schwelle, 90 Sek. Trabpause', '3 × 10 Min. Schwelle, 2 Min. Trabpause, danach 6 × 100 m Steigerung'] },
     build: {
-      '5k': ['6 × 800 m im 5-km-Tempo, 2 Min. Trabpause', '3 × 8 Min. Schwelle, 2 Min. Trabpause'],
-      '10k': ['5 × 1 km im 10-km-Tempo, 90 Sek. Trabpause', '3 × 10 Min. Schwelle, 2 Min. Trabpause'],
+      '5k': ['6 × 5 Min. Schwelle, 1 Min. Trabpause', '3 × 10 Min. Schwelle, 2 Min. Trabpause'],
+      '10k': ['4 × 8 Min. Schwelle, 90 Sek. Trabpause', '3 × 10 Min. Schwelle, 2 Min. Trabpause'],
       hm: ['3 × 10 Min. Schwelle, 2 Min. Trabpause', '2 × 15 Min. Schwelle, 3 Min. Trabpause'],
       marathon: ['3 × 10 Min. Schwelle, 2 Min. Trabpause', '2 × 15 Min. Schwelle, 3 Min. Trabpause'],
-      pace: ['6 × 1 km steigernd bis ins Level-Tempo, 60 Sek. Stehpause', '3 × 10 Min. Schwelle, 2 Min. Trabpause']
+      pace: ['3 × 10 Min. Schwelle, 2 Min. Trabpause', '2 × 15 Min. Schwelle, 3 Min. Trabpause']
     },
     spec: {
       '5k': ['5 × 1 km im 5-km-Tempo, 2 Min. Trabpause', '12 × 400 m etwas schneller als 5-km-Tempo'],
-      '10k': ['3 × 3 km im 10-km-Tempo, 3 Min. Trabpause', '6 × 1,5 km im 10-km-Tempo, 90 Sek. Trabpause'],
+      '10k': ['Intervall: 5 × 1 km zügig, 2 Min. Trabpause', '3 × 3 km im 10-km-Tempo, 3 Min. Trabpause'],
       hm: ['2 × 5 km im HM-Tempo, 3 Min. Trabpause', '3 × 3 km im HM-Tempo, 2 Min. Trabpause'],
       marathon: ['2 × 15 Min. Schwelle', '8 km im Marathontempo nach 3 km Einlaufen'],
       pace: ['Probe: 8–10 × 1 km, jeder etwas schneller, die letzten 3 im Level-Tempo, 60 Sek. Stehpause', '5 × 1 km im Level-Tempo, 60 Sek. Stehpause']
@@ -446,6 +449,7 @@ const SEASON_GUIDE = [
   ] },
   { title: 'Wie der Plan rechnet', sub: 'Phasen, Entlastung, Grenzen', items: [
     'Rückwärts ab jedem A-Rennen: Tapering (5/10 km 1 Woche, HM 2, Marathon 3), davor die spezifische Phase, Aufbau und Grundlage.',
+    'Qualitätseinheit: In Basis, Grundlage und Aufbau Schwellen-Intervalle (kontrolliert hart, dazu kurze Steigerungen) – das bringt viel bei wenig Erholungsbedarf. Harte Intervalle im 5-km-Tempo erst in der spezifischen Phase kurz vor dem Rennen: bei 5 km die letzten 2, bei 10 km die letzten 3 Wochen vor dem Tapering. HM und Marathon üben dort Renntempo.',
     'Liegen zwei A-Rennen dicht beieinander, wird der zweite Block vorne gekürzt – zuerst die Grundlage. Wird er kürzer als die Mindestdauer (5/10 km 6 Wochen, HM 8, Marathon 12), bereitet der Plan beide zusammen vor: In den Wochen davor gilt jede zweite Qualitätseinheit schon dem späteren Rennen (⇄ im Saisonplan), Longrun und Wochen-km richten sich nach dem längeren Rennen. Sind beide von derselben Art (z. B. Halbmarathon und Wings for Life über 20 km), zählt die Vorbereitung einfach für beide.',
     'Es bleibt bei einer Qualitätseinheit pro Woche, und die Erholung nach dem ersten Rennen fällt nicht weg. Hat das frühere Rennen selbst nur einen gekürzten Block, bleibt der ihm – dann warnt der Plan, dass für das spätere kein Platz ist.',
     'Zu dicht sind zwei A-Rennen, wenn das zweite in die Erholung nach dem ersten fällt oder das erste ins Tapering vor dem zweiten – etwa Halbmarathon und eine Woche später Marathon. Das zeigen Plan und Rennformular als Warnung: Eines davon als B-Rennen eintragen. Ein B-Rennen in der Erholung oder im Tapering läuft nur locker mit.',
@@ -822,6 +826,7 @@ const CHANGELOG = [
     ['Maximale HF', 'Unter Profil → Herzfrequenz lässt sich die maximale HF schätzen, wenn es noch keinen Testwert gibt: nach Tanaka und Nes statt „220 − Alter“. Ein gemessener Wert bleibt direkt eintragbar und ist immer genauer.', 'neu'],
     ['Lauf nachtragen', 'Ab dem Tag nach einem geplanten Lauf (Qualität, Laufgruppe, Longrun) fragt die Startseite nach den gelaufenen km, damit die Wochen-km stimmen. Die Frage bleibt, bis du die km einträgst oder „Nicht gelaufen“ wählst (die Einheit „entfällt“). Sind mehrere offen, steht der älteste Eintrag oben, die übrigen sind eingeklappt.', 'neu'],
     ['Was machst du?', 'Unter Profil → Trainingswoche (und in der Einrichtung) wählst du, was du machst: Kraft, Laufen, Mobility. Abgewähltes verschwindet aus der Leiste, der Startseite und dem Profil – ohne Laufen z. B. auch Herzfrequenz und Lauftage.', 'neu'],
+    ['Mehr Schwelle, Intervalle kurz vor dem Rennen', 'Der Laufplan setzt in Basis, Grundlage und Aufbau auf Schwellen-Intervalle (z. B. 5 × 6 Min., 3 × 10 Min.), kurze Steigerungen bleiben. Harte Intervalle im 5-km-Tempo gibt es erst in der spezifischen Phase: bei 5 km die letzten 2, bei 10 km die letzten 3 Wochen vor dem Tapering. HM und Marathon üben dort weiter Renntempo.', 'neu'],
     ['Lockeres Tempo folgt deinen Läufen', 'Läufst du locker mit Puls in Zone 2, aber schneller als der empfohlene Bereich, rückt die App dein lockeres Tempo nach – langsam: höchstens 10 s/km pro Lauf, nie schneller als du tatsächlich gelaufen bist und insgesamt höchstens 30 s/km. Beispiel: 6:00–6:30, Lauf in 5:50 → 5:50–6:20. Ein lockerer Lauf mit zu hohem Puls nimmt 5 s/km zurück. Schwelle, Intervall und Renntempo bleiben bei deiner Bestzeit; ein neues Ergebnis beginnt wieder von vorn. Voraussetzung: Zeit und Ø-Puls eingetragen und deine Pulszonen im Profil.', 'neu'],
     ['Fehlerprotokoll', 'Die App schreibt Fehler auf diesem Gerät mit (nur Meldung, Version und Zeitpunkt, keine Trainingsdaten). Unter Start → Mehr → Daten & Datenschutz → „Fehlerprotokoll exportieren“ bekommst du sie als Textdatei, die du für die Fehlersuche weitergeben kannst.', 'neu'],
     ['Finisher im Grätschsitz', 'Neuer Plan „Finisher“: kurzer Rumpf-Block mit einer Kettlebell im Grätschsitz – V-Chop, Lenkrad, Press-up & Press-out und Iron Arc als EMOM, 3 Runden = 12 Minuten (2–4 Runden wählbar). Passt nach einem lockeren Lauf oder ans Ende einer Krafteinheit.', 'neu'],

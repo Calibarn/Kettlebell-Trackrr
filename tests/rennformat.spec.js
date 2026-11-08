@@ -98,7 +98,9 @@ test('Pace Race: Ziel-Level, Zeitlimit der Zielrunde, Level-Tempo und 1-km-Wiede
     return { build: of('build').map(weekKey), spec: of('spec').map(weekKey), long: of('spec').map(weekLongNote), taper: of('taper').map(weekKey) };
   });
   // Level 12 verlangt 4:50, die Form gibt 5:17 her: geplant wird mit dem 5-km-Tempo, bis neue Ergebnisse schneller sind
-  expect(notes.build.join(' | ')).toContain('6 × 1 km steigernd bis ins Level-Tempo, 60 Sek. Stehpause (5:17 /km)');
+  // Aufbau: Schwelle statt Level-Tempo – schnelle Wiederholungen erst kurz vor dem Rennen (spezifische Phase)
+  expect(notes.build.join(' | ')).toContain('3 × 10 Min. Schwelle, 2 Min. Trabpause');
+  expect(notes.build.join(' | ')).not.toContain('Level-Tempo');
   expect(notes.spec.join(' | ')).toMatch(/1 km.*Level-Tempo.*\(5:17 \/km\)/);
   expect(notes.long.join(' | ')).toContain('3 × 1 km steigernd bis ins Level-Tempo');
   expect(notes.taper.join(' | ')).toContain('3–4 × 1 km im Level-Tempo');

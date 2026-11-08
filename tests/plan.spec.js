@@ -433,3 +433,18 @@ test('Kalender-Export: Erinnerung am Trainingstag optional, Uhrzeit wählbar', a
   await page.reload();
   expect(await page.evaluate(() => icsRemind)).toEqual({ on: true, time: '06:30' });
 });
+
+test('Qualität: Schwelle in Basis, Grundlage und Aufbau; harte Intervalle nur in der spezifischen Phase (5 km: 2, 10 km: 3 Wochen), HM ohne', async ({ page }) => {
+  const q = dist => page.evaluate(d => {
+    races = [{ id: 'a', name: 'A', date: '2027-05-02', dist: d, prio: 'A' }]; results = [];
+    const S = seasonPlan('2027-01-04', { L0: 12, W0: 25 });
+    return S.weeks.filter(w => !w.a && !w.test && w.phase !== 'recover').map(w => [w.phase, weekKey(w), weekKey(w, true)]);
+  }, dist);
+  for (const dist of ['5k', '10k', 'hm']) {
+    const weeks = await q(dist), hard = weeks.filter(([, a, b]) => /^(kürzer: )?Intervall|5-km-Tempo|× 400 m/.test(a + ' ' + b));
+    // vor der spezifischen Phase: nur Schwelle (bzw. Steigerungen), keine harten Intervalle
+    expect(weeks.filter(([p]) => ['basis', 'base', 'build'].includes(p)).every(([, a]) => /Schwelle/.test(a)), dist).toBe(true);
+    expect(hard.every(([p]) => p === 'spec'), dist).toBe(true);
+    expect(hard.length > 0, dist).toBe(dist !== 'hm');
+  }
+});
