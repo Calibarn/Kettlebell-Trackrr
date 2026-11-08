@@ -24,7 +24,7 @@ function loadList(key, valid) {
 function load(k, def) { try { const raw = localStorage.getItem(k); if (raw === null) return def; const v = JSON.parse(raw); return v === null || v === undefined ? def : v; } catch (e) { return def; } }
 let syncHook = null; // wird vom Geräte-Sync gesetzt und erfährt so jede Änderung
 let wiping = false;  // Werkseinstellung läuft: nichts mehr speichern (auch nicht beim Schließen der Seite)
-function store(k, v) { if (wiping) return false; try { localStorage.setItem(k, JSON.stringify(v)); if (syncHook) syncHook(k); return true; } catch (e) { return false; } }
+function store(k, v) { if (wiping) return false; try { localStorage.setItem(k, JSON.stringify(v)); if (syncHook) syncHook(k); return true; } catch (e) { logError(e && e.message, 'Speichern ' + k, e && e.stack); return false; } }
 const isObj = v => !!v && typeof v === 'object' && !Array.isArray(v);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const uid = () => (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2));
@@ -2607,7 +2607,7 @@ async function syncSave() {
 const syncText = r => r.changed ? T(`Abgeglichen: ${r.added} neu, ${r.updated} geändert, ${r.removed} gelöscht.`, `Merged: ${r.added} new, ${r.updated} changed, ${r.removed} deleted.`) : T('Schon auf dem gleichen Stand.', 'Already up to date.');
 function syncApply(text) {
   let remote; try { remote = JSON.parse(text); } catch (e) { toast(T('Die Datei ist keine Sync-Datei.', 'The file is not a sync file.')); return; }
-  let res; try { res = syncMerge(remote); } catch (e) { toast(e.message); return; }
+  let res; try { res = syncMerge(remote); } catch (e) { logError(e && e.message, 'Sync', e && e.stack); toast(e.message); return; }
   if (res.changed) { sessionStorage.setItem(SYNC_MSG, syncText(res)); location.reload(); return; }
   renderSyncStatus(); toast(syncText(res));
 }
@@ -2742,20 +2742,58 @@ function renderPreUpdate() {
 function markBackup() { store(KEYS.backup, localDay()); renderBackupBanner(); }
 // Sicherung als lokale Datei: Teilen-Menü (iPhone: „In Dateien sichern“), Dateidialog oder Download – nie ein Server.
 // Android lädt direkt herunter (Ordner „Downloads“): im Teilen-Menü fehlt dort je nach Gerät ein „Auf dem Gerät speichern“.
-async function exportBackup() {
-  const name = `tagwerk-backup-${localDay()}.json`, json = backupJson();
+// Ergebnis: 'share' (Teilen-Menü), 'picker' (Dateidialog), 'download' oder null (abgebrochen)
+async function saveFile(name, content, type, title) {
   try {
-    const file = new File([json], name, { type: 'application/json' });
-    if (navigator.canShare && navigator.canShare({ files: [file] }) && document.documentElement.dataset.os === 'ios') {
-      await navigator.share({ files: [file], title: 'Tagwerk Backup' }); markBackup(); toast(T('Sicherung übergeben.', 'Backup handed over.')); return;
-    }
+    const file = new File([content], name, { type });
+    if (navigator.canShare && navigator.canShare({ files: [file] }) && document.documentElement.dataset.os === 'ios') { await navigator.share({ files: [file], title }); return 'share'; }
     if (window.showSaveFilePicker) {
-      const h = await window.showSaveFilePicker({ suggestedName: name, types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }] });
-      const w = await h.createWritable(); await w.write(json); await w.close(); markBackup(); toast(T('In Datei gesichert.', 'Saved to file.')); return;
+      const ext = name.slice(name.lastIndexOf('.'));
+      const h = await window.showSaveFilePicker({ suggestedName: name, types: [{ description: ext.slice(1).toUpperCase(), accept: { [type]: [ext] } }] });
+      const w = await h.createWritable(); await w.write(content); await w.close(); return 'picker';
     }
-  } catch (e) { if (e && e.name === 'AbortError') return; }
-  download(name, json, 'application/json'); markBackup(); toast(T('Download gestartet – die Sicherung liegt gleich im Ordner „Downloads“.', 'Download started – the backup will be in your “Downloads” folder.'));
+  } catch (e) { if (e && e.name === 'AbortError') return null; }
+  download(name, content, type); return 'download';
 }
+async function exportBackup() {
+  const how = await saveFile(`tagwerk-backup-${localDay()}.json`, backupJson(), 'application/json', 'Tagwerk Backup');
+  if (!how) return;
+  markBackup();
+  toast(how === 'share' ? T('Sicherung übergeben.', 'Backup handed over.') : how === 'picker' ? T('In Datei gesichert.', 'Saved to file.') : T('Download gestartet – die Sicherung liegt gleich im Ordner „Downloads“.', 'Download started – the backup will be in your “Downloads” folder.'));
+}
+/* Fehlerprotokoll (Mitschreiben siehe platform.js): als Textdatei für die Fehlersuche – mit Version, Gerät und Bildschirm, ohne Trainingsdaten */
+async function errLogText() {
+  const list = readErrLog(); let cache = '';
+  try { cache = (await caches.keys()).filter(k => /kbt-v\d+$/.test(k)).join(', '); } catch (e) { }
+  const standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone;
+  const lines = ['Tagwerk Fehlerprotokoll', `Erstellt: ${new Date().toISOString()}`,
+    `Version: ${APP_VERSION}${cache ? ` (${cache})` : ''}${KEY_NS ? ' · Testversion' : ''}`,
+    `Gerät: ${navigator.userAgent}`,
+    `Bildschirm: ${screen.width}×${screen.height} @${window.devicePixelRatio || 1} · installiert: ${standalone ? 'ja' : 'nein'} · Sprache: ${LANG}`,
+    `Bereich: ${area} · Plan: ${plan}`];
+  if (loadIssues.length) lines.push(`Unlesbare Daten beim Start: ${loadIssues.join(', ')}`);
+  lines.push(`Einträge: ${list.length}`, '');
+  list.forEach((e, i) => {
+    lines.push(`[${i + 1}] ${e.t}${e.n > 1 ? ` (×${e.n})` : ''} · v${e.v || '?'}${e.area ? ` · ${e.area}${e.plan ? '/' + e.plan : ''}` : ''}`, `    ${e.msg}`, `    ${e.where}`);
+    if (e.stack) lines.push(...String(e.stack).split('\n').slice(0, 8).map(l => '    ' + l.trim()));
+    lines.push('');
+  });
+  return lines.join('\n');
+}
+function renderErrLog() {
+  const l = readErrLog(), n = l.reduce((s, e) => s + (e.n || 1), 0), last = l[l.length - 1];
+  $('errhint').textContent = l.length ? T(`${n} ${n === 1 ? 'Fehler' : 'Fehler'}, zuletzt ${dateGerman(localDay(new Date(last.t)))} – Datei für die Fehlersuche`, `${n} ${n === 1 ? 'error' : 'errors'}, last on ${dateGerman(localDay(new Date(last.t)))} – file for troubleshooting`) : T('Keine Fehler aufgezeichnet – Datei für die Fehlersuche', 'No errors recorded – file for troubleshooting');
+  $('errclear').classList.toggle('hide', !l.length);
+}
+$('errexport').addEventListener('click', async () => {
+  const how = await saveFile(`tagwerk-fehler-${localDay()}.txt`, await errLogText(), 'text/plain', 'Tagwerk Fehlerprotokoll');
+  if (how) toast(how === 'download' ? T('Fehlerprotokoll liegt gleich im Ordner „Downloads“.', 'The error log will be in your “Downloads” folder.') : T('Fehlerprotokoll gespeichert.', 'Error log saved.'));
+});
+$('errclear').addEventListener('click', () => {
+  const old = readErrLog(); try { localStorage.removeItem(ERRLOG_KEY); } catch (e) { }
+  renderErrLog(); toastUndo(T('Fehlerprotokoll geleert.', 'Error log cleared.'), () => { try { localStorage.setItem(ERRLOG_KEY, JSON.stringify(old)); } catch (e) { } renderErrLog(); });
+});
+$('sect-data').addEventListener('toggle', () => { if ($('sect-data').open) renderErrLog(); });
 // Felder, die diese Version nicht kennt (z. B. aus einer neueren Sicherung), beim Import mitnehmen
 const extraKeys = (e, known) => Object.fromEntries(Object.entries(e).filter(([k]) => !known.includes(k) && !['__proto__', 'constructor', 'prototype'].includes(k)));
 function importBackup(file) {
@@ -2811,7 +2849,7 @@ function importBackup(file) {
       renderAll(); renderWaist(); renderWeight(); renderProfile(); renderRun();
       const skippedAny = entries.length - added + wl.length - addedW + rw.length - addedR + rl.length - addedL + rc.length - addedC + wg.length - addedG + rs.length - addedS > 0;
       alert(T(`${added} Trainings-, ${addedW} Bauchumfang-, ${addedR} Laufwochen- und ${addedL} Lauf-Einträge${addedC ? ` sowie ${addedC} Rennen` : ''}${addedG ? `, ${addedG} Gewichtswerte` : ''}${addedS ? `, ${addedS} Laufergebnisse` : ''} importiert.${skippedAny ? ' Bereits vorhandene Einträge wurden übersprungen.' : ''}`, `Imported ${added} workout, ${addedW} waist, ${addedR} run-week and ${addedL} run entries${addedC ? ` plus ${addedC} races` : ''}${addedG ? `, ${addedG} weight values` : ''}${addedS ? `, ${addedS} run results` : ''}.${skippedAny ? ' Existing entries were skipped.' : ''}`));
-    } catch (e) { alert('Import fehlgeschlagen: ' + e.message); }
+    } catch (e) { logError(e && e.message, 'Import', e && e.stack); alert('Import fehlgeschlagen: ' + e.message); }
   };
   r.onerror = () => alert(T('Die Datei konnte nicht gelesen werden.', 'The file could not be read.'));
   r.readAsText(file);
@@ -3531,7 +3569,7 @@ else if (document.documentElement.dataset.os === 'android') $('savefilehint').te
 if (restored) { toast(running ? T('Laufendes Training wiederhergestellt.', 'Running workout restored.') : T('Unterbrochenes Training wiederhergestellt.', 'Interrupted workout restored.')); if (running) keepAwake(true); }
 setInterval(() => { tick(); routineTick(); }, 200);
 try { navigator.storage?.persist?.().then(renderStorageInfo).catch(() => { }); } catch (e) { }
-renderPreUpdate();
+renderPreUpdate(); renderErrLog();
 if (loadIssues.length) toast(T('Ein Teil der gespeicherten Daten war unlesbar und wurde separat aufbewahrt. Bitte Backup prüfen.', 'Some of the stored data was unreadable and has been kept separately. Please check your backup.'));
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
   const hadController = !!navigator.serviceWorker.controller;

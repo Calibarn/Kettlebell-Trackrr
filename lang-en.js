@@ -1768,7 +1768,9 @@ const EN_TEXT = {
 "zur Seite strecken, Hüfte bleibt": "reach to the side, hips stay",
 "Finisher im Grätschsitz": "Finisher in a straddle sit",
 "Neuer Plan „Finisher“: kurzer Rumpf-Block mit einer Kettlebell im Grätschsitz – V-Chop, Lenkrad, Press-up & Press-out und Iron Arc als EMOM, 3 Runden = 12 Minuten (2–4 Runden wählbar). Passt nach einem lockeren Lauf oder ans Ende einer Krafteinheit.": "New plan “Finisher”: a short core block with one kettlebell in a straddle sit – V chop, steering wheel, press-up & press-out and iron arc as an EMOM, 3 rounds = 12 minutes (2–4 rounds selectable). Fits after an easy run or at the end of a strength session.",
-"Kugel auf Augenhöhe": "bell at eye level"
+"Kugel auf Augenhöhe": "bell at eye level",
+"Fehlerprotokoll": "Error log",
+"Die App schreibt Fehler auf diesem Gerät mit (nur Meldung, Version und Zeitpunkt, keine Trainingsdaten). Unter Profil → Daten & Datenschutz → „Fehlerprotokoll exportieren“ bekommst du sie als Textdatei, die du für die Fehlersuche weitergeben kannst.": "The app records errors on this device (only message, version and time, no training data). Under Profile → Data & privacy → “Export error log” you get them as a text file you can pass on for troubleshooting."
 };
 const EN_HTML = {
 "Kraft · Laufen · Mobility": "Strength · Running · Mobility",
@@ -2006,6 +2008,9 @@ const EN_HTML = {
 "Anstrengung von 1 bis 10": "Effort from 1 to 10",
 "z. B. gut geschlafen, Knie gezwickt": "e.g. slept well, knee twinged",
 "Zirkel: Übung 1 20 Sek. (grüner Ring), 10 Sek. Pause (oranger Ring), dann Übung 2 und so weiter. Ein Ton kündigt jeden Wechsel an, 3-2-1 vorher, und die Ansage nennt die nächste Übung.": "Circuit: exercise 1 for 20 sec (green ring), 10 sec rest (orange ring), then exercise 2 and so on. A tone signals every change, 3-2-1 before, and the announcement names the next exercise.",
-"Nach der letzten Übung gibt es eine längere Pause, dann die nächste Runde – standardmäßig 3 Runden.": "After the last exercise there is a longer rest, then the next round – 3 rounds by default."
+"Nach der letzten Übung gibt es eine längere Pause, dann die nächste Runde – standardmäßig 3 Runden.": "After the last exercise there is a longer rest, then the next round – 3 rounds by default.",
+"Fehlerprotokoll exportieren": "Export error log",
+"Keine Fehler aufgezeichnet": "No errors recorded",
+"<b>Fehlerprotokoll leeren</b>": "<b>Clear error log</b>"
 };
 const EN_HTML_KEEP = ["Tagwerk", "Cooldown", "Mobility", "Sprache · Language", "iPhone", "Android", "Tabata", "Core", "<b>Updates</b>"];
