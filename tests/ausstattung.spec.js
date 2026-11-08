@@ -24,7 +24,7 @@ test.describe('neu eingerichtet (keine Geräte)', () => {
     await page.evaluate(() => showArea('profil'));
     await openSect(page, 'sect-kit');
     await page.fill('#kbnew', '16'); await page.click('#kbadd');
-    await expect(page.locator('#tabs button')).toHaveText(['Ganzkörper', 'Tabata', 'AMRAP', 'Läufer', 'Oberkörper', 'Core', 'Büro']);
+    await expect(page.locator('#tabs button')).toHaveText(['Ganzkörper', 'Tabata', 'AMRAP', 'Läufer', 'Oberkörper', 'Core', 'Finisher', 'Büro']);
     await expect(page.locator('#gearbar [data-gear]')).toHaveCount(2);
     await page.evaluate(() => { showArea('kraft'); setPlan('amrap'); });
     expect(await page.evaluate(() => exList().map(x => x.gearText))).toEqual(Array(5).fill('Kettlebell 16 kg'));

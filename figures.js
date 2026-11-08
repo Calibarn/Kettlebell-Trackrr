@@ -130,6 +130,8 @@ const AF_B = P(AF_A, { k1: [100, 150], f1: [100, 186], t1: [112, 190], k2: [98, 
 
 const BR = { h: [146, 74], n: [130, 82], p: [82, 110], k1: [102, 148], f1: [98, 188], t1: [112, 189], k2: [98, 148], f2: [94, 188], t2: [108, 189] };
 // Grätschsitz von vorne: Becken am Boden, Beine gestreckt zur Seite
+// Langsitz von der Seite: Becken am Boden, Beine lang nach vorne, Zehen oben
+const LS = { h: [86, 104], n: [86, 124], p: [86, 176], k1: [124, 182], f1: [162, 184], t1: [166, 170], k2: [122, 184], f2: [160, 186], t2: [164, 172] };
 const GS = { front: true, h: [100, 96], n: [100, 116], s1: [86, 118], s2: [114, 118], p: [100, 170], q1: [93, 170], q2: [107, 170], k1: [62, 178], f1: [26, 186], t1: [22, 175], k2: [138, 178], f2: [174, 186], t2: [178, 175] };
 Object.assign(FIG, {
   'Vorgebeugtes Rudern beidarmig': { a: fr(P(BR, { e1: [128, 110], w1: [126, 136], e2: [124, 110], w2: [122, 136] }), [KB(124, 148)]), b: fr(P(BR, { e1: [108, 84], w1: [114, 108], e2: [104, 86], w2: [110, 110] }), [KB(112, 120)]), la: 'vorgebeugt, Arme lang', lb: 'Kugel zum Bauch ziehen' },
@@ -197,6 +199,11 @@ const TK = { h: [100, 74], n: [99, 94], p: [98, 146], k1: [102, 186], f1: [64, 1
 Object.assign(FIG, {
   'Clean & Press im halben Kniestand': { a: fr(P(HF_A, { e1: [104, 120], w1: [108, 144], e2: [108, 118], w2: [112, 96] }), [KB(118, 90)]), b: fr(P(HF_A, { e1: [104, 120], w1: [108, 144], e2: [103, 68], w2: [104, 42] }), [KB(106, 30)]), la: 'Kugel in der Rack-Position', lb: 'senkrecht über Kopf drücken' },
   'Pullover im Kniestand': { a: fr(P(TK, { e1: [110, 118], w1: [118, 100], e2: [106, 118], w2: [114, 100] }), [KB(124, 94)]), b: fr(P(TK, { e1: [106, 68], w1: [88, 56], e2: [102, 68], w2: [84, 56] }), [KB(78, 62), { arrow: 'M136 96 Q138 42 96 36' }]), la: 'Kugel vor der Brust', lb: 'über den Kopf nach hinten' },
+  // Finisher im Grätschsitz (GS von vorne; Press-up & Press-out von der Seite: Langsitz LS)
+  'V-Chop im Grätschsitz': { a: fr(P(GS, { e1: [104, 100], w1: [118, 80], e2: [120, 104], w2: [124, 82] }), [KB(124, 70)]), b: fr(P(GS, { e1: [82, 142], w1: [72, 160], e2: [96, 144], w2: [76, 162] }), [KB(72, 172), { arrow: 'M128 62 Q106 110 76 158' }]), la: 'Kugel über der Schulter', lb: 'diagonal zur Hüfte hacken' },
+  'Lenkrad im Grätschsitz': { a: fr(P(GS, { e1: [88, 140], w1: [94, 108], e2: [112, 140], w2: [106, 108] }), [KB(100, 98)]), b: fr(P(GS, { e1: [86, 138], w1: [90, 112], e2: [114, 142], w2: [110, 104] }), [KB(100, 98), { arrow: 'M78 84 Q100 70 122 84' }]), la: 'Kugel auf Augenhöhe', lb: 'kleine schnelle Drehungen' },
+  'Press-up & Press-out im Sitz': { a: fr(P(LS, { e1: [90, 102], w1: [92, 80], e2: [88, 102], w2: [90, 80] }), [KB(91, 70)]), b: fr(P(LS, { e1: [108, 128], w1: [130, 126], e2: [106, 130], w2: [128, 128] }), [KB(138, 126)]), la: 'nach oben drücken', lb: 'nach vorne drücken' },
+  'Iron Arc im Grätschsitz': { a: fr(P(GS, { e1: [90, 100], w1: [96, 78], e2: [110, 100], w2: [104, 78] }), [KB(100, 68)]), b: fr(P(GS, { e1: [76, 136], w1: [62, 152], e2: [92, 138], w2: [66, 154] }), [KB(58, 164), { arrow: 'M106 58 Q62 66 54 150' }]), la: 'über den Kopf', lb: 'zur Seite strecken, Hüfte bleibt' },
   'Wrestler-Halo': { a: fr(P(TK, { e1: [106, 118], w1: [112, 140], e2: [102, 118], w2: [108, 140] }), [KB(116, 150)]), b: fr(P(TK, { e1: [110, 70], w1: [98, 50], e2: [106, 70], w2: [94, 50] }), [{ loop: [100, 70, 30, 13] }, KB(96, 40), { arrow: 'M136 84 Q144 122 124 146' }]), la: 'Kugel an der Hüfte', lb: 'um den Kopf zur anderen Hüfte' }
 });
 

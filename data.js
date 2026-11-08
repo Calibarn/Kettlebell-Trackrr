@@ -137,12 +137,26 @@ PLANS.core = {
   warmup: [['0:30', 'Marschieren auf der Stelle'], ['0:45', 'Schulter- und Armkreisen'], ['0:45', 'Katze-Kuh'], ['1:00', 'Ausfallschritt mit Rotation'], ['0:30', 'Kettlebell-Kreuzheben'], ['0:30', 'Halo um den Kopf']],
   cooldown: [['0:45 × 2', 'Hüftbeuger-Dehnung'], ['0:30 × 2', 'Brustdehnung am Türrahmen'], ['1:30', 'Kindhaltung']]
 };
+/* Finisher: kurzer Rumpf-Block im Grätschsitz, EMOM mit einer Kettlebell (Idee aus einem Video: „1 kettlebell, 10 minutes, core finisher“).
+   Im Sitzen helfen Beine und Hüfte nicht mit – der Rumpf muss drehen, halten und drücken. Fest auf Kettlebell (kbOnly). */
+PLANS.sitcore = {
+  tab: 'Finisher', label: 'Finisher · Rumpf im Grätschsitz', short: 'Finisher', mode: 'emom', kbOnly: true, durations: [2, 0, 2], emomRounds: [2, 3, 4], emomDefault: 3,
+  intro: 'Kurzer Rumpf-Finisher mit einer Kettlebell, komplett im Grätschsitz – passt nach einem lockeren Lauf oder ans Ende einer Krafteinheit. EMOM: Zu Beginn jeder Minute die nächste Übung, im Rest der Minute Pause. Vier Übungen im Wechsel, 3 Runden = 12 Minuten. Ohne Beine und Hüfte muss der Rumpf drehen, halten und drücken. Kommst du im Grätschsitz nicht aufrecht hin (runder unterer Rücken), setz dich auf ein Kissen oder beuge die Knie leicht.',
+  slots: [
+    { id: 'vchop', v: { kb: ['V-Chop im Grätschsitz', '5 je Seite', 'Arme lang, aus den Rippen drehen'] } },
+    { id: 'wheel', v: { kb: ['Lenkrad im Grätschsitz', '20 Sek.', 'Kugel auf Augenhöhe, Ellenbogen eng, schnelle kleine Drehungen'] } },
+    { id: 'press2', v: { kb: ['Press-up & Press-out im Sitz', '12', '3 × nach oben, 3 × nach vorne, im Wechsel'] } },
+    { id: 'arc', v: { kb: ['Iron Arc im Grätschsitz', '4 je Seite', 'Aufrecht sitzen, die Hüfte dreht nicht mit'] } }
+  ],
+  warmup: [['0:45', 'Schulter- und Armkreisen'], ['0:45', 'Katze-Kuh'], ['0:30', 'Halo um den Kopf']],
+  cooldown: [['0:30 × 2', 'Hintere Oberschenkel'], ['1:00', 'Kindhaltung']]
+};
 const EMOM_DEFAULT = { rounds: 5 }, EMOM_ROUNDS = [4, 5, 6];
 const EMOM_PLAN_TEXT = 'EMOM heißt „Every Minute On the Minute“: Zu Beginn jeder Minute die angegebenen Wiederholungen, im Rest der Minute Pause. Dann folgt die nächste Übung. Die App sagt jeden Minutenwechsel per Ton und Ansage an, 3-2-1 vorher. Brauchst du mehr als etwa 45 Sekunden, nimm eine Wiederholung weniger.';
 // Tabata als Zirkel: Übung 1 20″, 10″ Pause, Übung 2 … – das Ganze 3 × (je Übung 3 × 20″), zwischen den Runden eine längere Pause
 const TABATA_DEFAULT = { rounds: 3, blockRest: 60 }, TABATA_ROUNDS = [3, 4, 5], TABATA_RESTS = [60, 90];
 const TABATA_TEXT = 'Tabata als Zirkel: 20 Sekunden so viele saubere Wiederholungen wie möglich, 10 Sekunden Pause, dann die nächste Übung. Nach der letzten Übung folgt eine längere Pause und die nächste Runde – standardmäßig 3 Runden. Die App sagt jeden Wechsel per Ton an, 3-2-1 vorher.';
-const PLAN_ORDER = ['hotel', 'wed', 'tabata', 'amrap', 'run', 'sun', 'core', 'office'];
+const PLAN_ORDER = ['hotel', 'wed', 'tabata', 'amrap', 'run', 'sun', 'core', 'sitcore', 'office'];
 
 /* Zuordnung alter Einträge (vor Version 3) zu den Übungsplätzen des Ganzkörper-Zirkels,
    damit bisherige Bestwerte vergleichbar bleiben. */
@@ -763,6 +777,10 @@ for (const [pk, m] of Object.entries(DB_VARIANTS)) for (const sl of PLANS[pk].sl
 // Anleitung aus der Kettlebell-Anleitung: nur geänderte Schritte (Index) bzw. effect/cue angeben, der Rest bleibt gleich
 const dbGuide = (src, ch) => { const g = GUIDES[src]; return { steps: g.steps.map((s, i) => ch[i] !== undefined ? ch[i] : s), effect: ch.effect || g.effect, cue: ch.cue || g.cue }; };
 Object.assign(GUIDES, {
+  'V-Chop im Grätschsitz': { steps: ['Im Grätschsitz aufrecht sitzen, Kettlebell mit beiden Händen an den Hörnern und langen Armen schräg über einer Schulter.', 'Mit langen Armen diagonal nach unten Richtung gegenüberliegende Hüfte hacken, die Drehung kommt aus den Rippen.', 'Auf demselben Weg hoch und über den Kopf zurück. Alle Wiederholungen einer Seite, dann wechseln.'], effect: 'Schräge Bauchmuskeln und Rumpfrotation; Schultern halten die Kugel auf langen Armen.', cue: 'Brust bleibt aufrecht, Becken bleibt am Boden. Abbremsen statt reißen – lieber eine leichtere Kugel.' },
+  'Lenkrad im Grätschsitz': { steps: ['Im Grätschsitz aufrecht sitzen, Kettlebell an den Hörnern auf Augenhöhe, Ellenbogen eng am Körper.', 'Die Kugel wie ein Lenkrad schnell und klein nach links und rechts drehen.', 'Die ganze Zeit durchhalten, ruhig weiteratmen.'], effect: 'Schultern im Halten, Unterarme und Rumpf gegen die Drehbewegung.', cue: 'Schultern unten, nicht ins Hohlkreuz lehnen. Kleine Bewegung reicht – Tempo vor Weite.' },
+  'Press-up & Press-out im Sitz': { steps: ['Im Grätschsitz aufrecht sitzen, Kettlebell an den Hörnern vor der Brust.', 'Dreimal senkrecht über den Kopf drücken, dann dreimal waagerecht nach vorne vom Körper weg drücken.', 'Im Wechsel weiter, bis die Wiederholungen erreicht sind.'], effect: 'Schultern und Trizeps; nach vorne gedrückt arbeitet der Rumpf gegen das Zurückkippen.', cue: 'Überkopf nur so weit, wie der Rücken gerade bleibt – sonst nur nach vorne drücken. Rippen unten.' },
+  'Iron Arc im Grätschsitz': { steps: ['Im Grätschsitz aufrecht sitzen, Kettlebell an den Hörnern vor der Brust.', 'In einem Bogen über den Kopf zur Seite führen und neben der Hüfte Richtung Boden strecken.', 'Auf demselben Bogen zurück vor die Brust. Seiten abwechseln.'], effect: 'Seitliche Rumpfmuskeln und Schulterkontrolle über den ganzen Bogen.', cue: 'Die Hüfte dreht nicht mit, das Becken bleibt schwer am Boden. Langsam und kontrolliert.' },
   'Kurzhantel-Swing': dbGuide('Kettlebell-Swing', { 0: 'Eine Kurzhantel senkrecht am oberen Ende mit beiden Händen greifen, Füße etwas breiter als hüftbreit. Hüfte nach hinten schieben, Hantel zwischen die Beine führen.', 1: 'Hüfte kraftvoll strecken, sodass die Hantel bis etwa Brusthöhe schwingt. Die Arme führen nur.', 2: 'Hantel zurückpendeln lassen und erneut in der Hüfte beugen.', cue: 'Hantel fest greifen, nur bis Brusthöhe. Nicht aus den Schultern heben, kein Hohlkreuz am oberen Punkt.' }),
   'Holzhacker mit Kurzhantel': dbGuide('Holzhacker mit Kettlebell', { 0: 'Etwas breiter als hüftbreit stehen, Hantel mit beiden Händen an den Enden neben dem rechten Knie, leicht in die Knie gehen.', 1: 'Hantel mit fast gestreckten Armen diagonal nach links oben über die Schulter führen. Hüfte und Oberkörper drehen mit, der rechte Fuß dreht auf dem Ballen mit.', cue: 'Die Drehung kommt aus Hüfte und Brustwirbelsäule, nicht aus dem unteren Rücken. Langsam abbremsen statt reißen, Hantel fest greifen.' }),
   'Halo mit Kurzhantel': dbGuide('Halo um den Kopf', { 0: 'Kurzhantel senkrecht am oberen Ende mit beiden Händen vor der Brust halten.', cue: 'Kopf ruhig halten, Rippen nicht nach vorne schieben. Leichte Hantel wählen und fest greifen.' }),
@@ -804,6 +822,7 @@ const CHANGELOG = [
     ['Maximale HF', 'Unter Profil → Herzfrequenz lässt sich die maximale HF schätzen, wenn es noch keinen Testwert gibt: nach Tanaka und Nes statt „220 − Alter“. Ein gemessener Wert bleibt direkt eintragbar und ist immer genauer.', 'neu'],
     ['Lauf nachtragen', 'Ab dem Tag nach einem geplanten Lauf (Qualität, Laufgruppe, Longrun) fragt die Startseite nach den gelaufenen km, damit die Wochen-km stimmen. Die Frage bleibt, bis du die km einträgst oder „Nicht gelaufen“ wählst (die Einheit „entfällt“). Sind mehrere offen, steht der älteste Eintrag oben, die übrigen sind eingeklappt.', 'neu'],
     ['Was machst du?', 'Unter Profil → Trainingswoche (und in der Einrichtung) wählst du, was du machst: Kraft, Laufen, Mobility. Abgewähltes verschwindet aus der Leiste, der Startseite und dem Profil – ohne Laufen z. B. auch Herzfrequenz und Lauftage.', 'neu'],
+    ['Finisher im Grätschsitz', 'Neuer Plan „Finisher“: kurzer Rumpf-Block mit einer Kettlebell im Grätschsitz – V-Chop, Lenkrad, Press-up & Press-out und Iron Arc als EMOM, 3 Runden = 12 Minuten (2–4 Runden wählbar). Passt nach einem lockeren Lauf oder ans Ende einer Krafteinheit.', 'neu'],
     ['Kurzhanteln', 'Neben Kettlebell und Bändern kannst du im Profil (und in der Einrichtung) Kurzhanteln mit ihren Gewichten eintragen. Jede Kraftübung hat eine Hantel-Variante mit Anleitung und Skizze; die App nimmt wie bisher je Übung die wirksamste Variante deiner Geräte – Swing und Halo bleiben mit Kettlebell, Seitheben geht zuerst mit Hanteln. Das Gewicht je Hantel stellst du je Übung oder für alle Hantel-Übungen eines Plans ein; Übungen mit zwei Hanteln zeigen „2 × 8 kg“.', 'neu'],
     ['Mobility planen', 'Mobility-Tage legst du im Profil fest, mit Routine je Tag (sonst die zuletzt genutzte). Am Tag steht sie unter „Heute dran“ mit „Starten“ und zählt in der Woche.', 'neu'],
     ['Weniger Tippen', 'Beim Nachtragen speichert „✓ 12 km · wie geplant“ (bzw. „wie letztes Mal“) mit einem Tipp. Die Bewertung nach dem Training speichert mit einem Tipp auf die Zahl. Ein Tag in der Wochenleiste zeigt, was geplant war, und hat „Eintragen“. In der Anleitung wischst du zur nächsten Übung.', 'neu'],

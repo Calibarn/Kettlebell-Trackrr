@@ -1,7 +1,7 @@
 const { test, expect, forward, closeRating, openSect } = require('./fixtures');
 
 test('lädt ohne Fehler und zeigt alle Kraft-Pläne', async ({ page }) => {
-  await expect(page.locator('#tabs button')).toHaveText(['Ganzkörper', 'Tabata', 'AMRAP', 'Läufer', 'Oberkörper', 'Core', 'Büro']);
+  await expect(page.locator('#tabs button')).toHaveText(['Ganzkörper', 'Tabata', 'AMRAP', 'Läufer', 'Oberkörper', 'Core', 'Finisher', 'Büro']);
   await expect(page.locator('#gearbar [data-gear]')).toHaveCount(3);
 });
 
@@ -399,4 +399,16 @@ test.describe('Wischen in der Anleitung', () => {
     await swipe(120, 300);
     await expect(page.locator('#guide-title')).toHaveText(names[0]);
   });
+});
+
+test('Finisher: Rumpf im Grätschsitz als EMOM, 3 Runden = 12 Min., Runden 2–4 wählbar', async ({ page }) => {
+  await page.evaluate(() => { setPlan('sitcore'); renderAll(); });
+  expect(await page.evaluate(() => [isEmomPlan(), emomCfg().rounds, Math.round(phaseSecs('sitcore', 1) / 60), exList().map(x => x.name)]))
+    .toEqual([true, 3, 12, ['V-Chop im Grätschsitz', 'Lenkrad im Grätschsitz', 'Press-up & Press-out im Sitz', 'Iron Arc im Grätschsitz']]);
+  await page.evaluate(() => { document.querySelector('#fold-settings').open = true; });
+  await expect(page.locator('[data-icfg="rounds"] option')).toHaveText(['2 Runden · 8 Min.', '3 Runden · 12 Min.', '4 Runden · 16 Min.']);
+  await page.selectOption('[data-icfg="rounds"]', '2');
+  expect(await page.evaluate(() => Math.round(phaseSecs('sitcore', 1) / 60))).toBe(8);
+  // andere EMOM-Pläne behalten ihre Runden (Core: 4–6)
+  expect(await page.evaluate(() => [emomCfg('core').rounds, emomRounds('core')])).toEqual([5, [4, 5, 6]]);
 });
