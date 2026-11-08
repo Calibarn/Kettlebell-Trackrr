@@ -293,6 +293,34 @@ test.describe('Lauf nachtragen', () => {
     await expect(page.locator('#startfb .sfbtext')).toHaveText('Bei Intervall- und Tempoeinheiten sagt der Durchschnitt wenig – entscheidend sind die schnellen Abschnitte.');
     await expect(page.locator('#startfb svg.chk')).toHaveCount(0);
   });
+  test('lockeres Tempo folgt den Läufen langsam: Puls in Zone 2, aber schneller → 10 s/km je Lauf, höchstens 30 s/km, nur locker', async ({ page }) => {
+    const wd = await page.evaluate(() => new Date(addDays(localDay(), -1) + 'T12:00:00').getDay());
+    await page.evaluate(w => { profile.week = Object.assign(profile.week, { group: null, quality: null, long: w, extras: [], runner: 'runner' });
+      profile.hr = Object.assign({}, profile.hr, { max: 185, rest: 55, z: hrZonesFrom(185, 55) }); persistProfile(); // Zone 2: 133–145
+      results = [{ id: 'r', date: addDays(localDay(), -40), km: 10, time: 3000, dist: '10k' }]; persistResults(); // locker 6:00–6:30 /km
+      races = []; persistRaces(); localStorage.removeItem(KEYS.runask); startFeedback = null; }, wd);
+    // Läufe: [vor Tagen, km, s/km, Ø-Puls, Art]
+    const easy = async runs => page.evaluate(rs => { runLog = rs.map(([ago, km, pace, hr, kind], i) => ({ id: 'x' + i, date: addDays(localDay(), -ago), km, sec: Math.round(km * pace), hr, kind: kind || 'easy' })); const tp = trainingPaces(); return [paceRange(tp.easy), tp.adapt && tp.adapt.shift, paceRange(tp.threshold)]; }, runs);
+    const thr = (await easy([]))[2];
+    // Jans Beispiel: Bereich 6:00–6:30, ein Lauf in 5:50 mit Puls in Zone 2 → 5:50–6:20 (nicht gleich auf 5:50 als Mitte)
+    expect(await easy([[5, 8, 350, 140]])).toEqual(['5:50–6:20 /km', 10, thr]);
+    // noch ein Lauf in 5:50 ändert nichts – nie schneller als tatsächlich gelaufen
+    expect((await easy([[5, 8, 350, 140], [3, 8, 350, 139]]))[0]).toBe('5:50–6:20 /km');
+    // schnell und im Bereich, Lauf für Lauf je 10 s/km, höchstens 30 s/km (5:30–6:00); Schwelle bleibt bei der Bestzeit
+    expect(await easy([[12, 8, 320, 140], [9, 8, 315, 138], [6, 12, 318, 142, 'long'], [3, 8, 300, 141]])).toEqual(['5:30–6:00 /km', 30, thr]);
+    // Puls über Zone 2 nimmt 5 s/km zurück
+    expect(await easy([[9, 8, 330, 140], [6, 8, 330, 140], [3, 8, 340, 152]])).toEqual(['5:45–6:15 /km', 15, thr]);
+    // Intervalle, kurze Läufe, Läufe vor dem letzten Ergebnis und Läufe ohne Puls zählen nicht
+    expect((await easy([[10, 8, 330, 140, 'quality'], [5, 2, 330, 138], [45, 8, 330, 142], [2, 8, 330, null]]))[0]).toBe('6:00–6:30 /km');
+    // ohne Pulszonen keine Anpassung
+    expect(await page.evaluate(() => { runLog = [{ id: 'a', date: addDays(localDay(), -3), km: 8, sec: 2800, hr: 140, kind: 'easy' }]; const z = profile.hr.z; profile.hr.z = null; const e = paceRange(trainingPaces().easy); profile.hr.z = z; return e; })).toBe('6:00–6:30 /km');
+    // über die Startseite: Hinweis beim Eintragen, die Tempos unter Laufen zeigen die Anpassung
+    await page.evaluate(() => { runLog = []; persistRunLog(); showArea('start'); });
+    await page.fill('#srunkm', '12'); for (const [i, v] of ['1', '10', '00'].entries()) await page.fill(`#sruntime [data-tpart="${i}"]`, v); await page.fill('#srunhr', '141');
+    await page.click('[data-runsave]');
+    await expect(page.locator('#toast')).toHaveText('✓ Eingetragen. Lockeres Tempo angepasst: 5:50–6:20 /km');
+    expect(await page.evaluate(() => renderPaces())).toContain('an deine Läufe angepasst: 10 s/km schneller als aus der Bestzeit (6:00–6:30 /km), weil lockere Läufe mit Puls in Zone 2 schneller waren');
+  });
   test('heutigen Lauf direkt aus „Heute dran“ eintragen, mit Zeit und Puls', async ({ page }) => {
     const wd = await page.evaluate(() => new Date(localDay() + 'T12:00:00').getDay());
     await page.evaluate(w => { profile.week = Object.assign(profile.week, { group: w, quality: null, long: null, extras: [], strength: [], runner: 'runner' });
