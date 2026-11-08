@@ -267,6 +267,7 @@
     <button class="row" type="button" id="syncload"><span class="icon" style="background:var(--accent)">⇣</span><span class="txt"><b>Sync laden</b><small>Stand aus der Sync-Datei übernehmen</small></span><span class="chev"></span></button>
     <button class="row" type="button" id="syncsave"><span class="icon" style="background:var(--blue)">⇡</span><span class="txt"><b>Sync speichern</b><small>Stand dieses Geräts in die Sync-Datei schreiben</small></span><span class="chev"></span></button>
     <button class="row hide" type="button" id="syncpick"><span class="icon" style="background:#8e8e93">⌖</span><span class="txt"><b>Sync-Datei festlegen</b><small>Einmal wählen, danach ohne Nachfrage (Chrome/Edge am Mac/PC)</small></span><span class="chev"></span></button>
+    <button class="row hide" type="button" id="syncauto"><span class="icon" style="background:var(--accent)">↻</span><span class="txt"><b>Automatisch abgleichen</b><small id="syncautohint">Beim Öffnen und nach jeder Änderung, ohne Knopfdruck</small></span><span class="val" id="syncautoval">Aus</span></button>
     <input type="file" accept=".json,application/json" id="syncfile" class="hide">
     <div class="panel" style="border-top:.5px solid var(--sep);padding-top:10px"><div class="field"><label for="syncplace">Speicherort auf diesem Gerät (zur Erinnerung)</label><input id="syncplace" type="text" maxlength="120" autocomplete="off" placeholder="z. B. iCloud Drive › Tagwerk"></div>
       <p class="tiny">Web-Apps dürfen keinen Pfad selbst öffnen – nur Dateien, die du auswählst. Der Speicherort wird beim Laden und Speichern als Hinweis angezeigt.</p></div>
@@ -275,9 +276,10 @@
       <li>Eine Datei <b>kb-tracker-sync.json</b> in einem Cloud-Ordner, den alle Geräte sehen: iCloud Drive, Google Drive, OneDrive oder Dropbox.</li>
       <li>Vor dem Training bzw. beim Öffnen: <b>Sync laden</b> und die Datei wählen. Danach: <b>Sync speichern</b> und die alte Datei ersetzen.</li>
       <li>Der Abgleich übernimmt neue, geänderte und gelöschte Einträge – je Eintrag gewinnt der neuere Stand. Vergisst du einmal zu laden, geht nichts verloren: Jedes Gerät behält seinen Stand, beim nächsten Laden wird zusammengeführt.</li>
-      <li>Abgeglichen werden Trainings, Läufe, Wochensummen, Rennen, Gewicht, Bauchumfang, Übungs-Einstellungen, Profil und „Entfällt“. Die Geräte je Plan gehören zu den Übungs-Einstellungen. Ton, Stimme und Sprache bleiben je Gerät.</li>
+      <li>In der Datei steht alles, was du einträgst: Trainings, Läufe, Wochensummen, Rennen und Ergebnisse, Gewicht, Bauchumfang, Mobility-Routinen, Kurs-Tage, Profil (Trainingswoche, Puls, Geräte, Module, Jahresziel), Übungs-Einstellungen, Geräte-Auswahl, Stufen, „Entfällt“, Longrun-Anpassungen, Lauf-Einstieg und Erfolge. Damit taugt sie auch zum Wiederherstellen nach einer Neuinstallation. Nur Ton, Stimme, Sprache und Ansichten bleiben je Gerät.</li>
+      <li><b>Automatisch abgleichen</b> (Chrome/Edge am Mac/PC, Chrome auf Android): Einmal die Datei festlegen und den Haken setzen – danach liest und schreibt die App die Datei selbst, beim Öffnen und nach jeder Änderung. Arbeitest du auf zwei Geräten gleichzeitig, gewinnt je Eintrag der neuere Stand.</li>
       <li>Chrome oder Edge am Mac/PC: <b>Sync-Datei festlegen</b> (z. B. im Google-Drive-Ordner). Danach laden und speichern die Knöpfe ohne erneutes Auswählen; beim Speichern wird vorher automatisch abgeglichen.</li>
-      <li>iPhone/iPad: Speichern öffnet „Teilen“ → <b>In Dateien sichern</b> → Cloud-Ordner wählen → <b>Ersetzen</b>.</li>
+      <li>iPhone/iPad: Safari erlaubt Web-Apps keinen dauerhaften Zugriff auf eine Datei, deshalb gibt es dort kein automatisches Abgleichen. Speichern öffnet „Teilen“ → <b>In Dateien sichern</b> → Cloud-Ordner wählen → <b>Ersetzen</b>; Laden über die Dateiauswahl.</li>
     </ol><p class="tiny">Die App verbindet sich dafür mit keinem Server – die Datei bewegt dein Cloud-Dienst. Das Backup unter „Daten“ bleibt zusätzlich sinnvoll.</p></div></details>
   </div>
   </details>

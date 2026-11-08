@@ -2153,7 +2153,7 @@ function stripInfo(d) {
   if (ran && !runs.length) rows.push(`<li>${T('Lauf', 'Run')} <span class="chkok">✓</span></li>`);
   return `<div class="sstripinfo"><b>${esc(dayLabel(d))}</b>${rows.length ? `<ul>${rows.join('')}</ul>` : `<p>${T('Nichts geplant – Ruhetag.', 'Nothing planned – rest day.')}</p>`}</div>`;
 }
-/* Rennbereit? (Startseite): Würdest du das Rennen mit deinem aktuellen Training schaffen – und, mit Zielzeit, in dieser Zeit?
+/* Rennbereit? (Startseite, nur A-Rennen): Würdest du das Rennen mit deinem aktuellen Training schaffen – und, mit Zielzeit, in dieser Zeit?
    Schaffen (Faustregeln für Hobbyläufer): längster Lauf im Zeitraum und Ø km pro Woche der letzten 4 vollen Wochen –
    5 km: Lauf ≥ 4 km (4 Wochen) · 10 km: ≥ 8 km (4 Wochen), Ø 15 km · HM: ≥ 16 km (6 Wochen), Ø 25 km · Marathon: ≥ 28 km (8 Wochen), Ø 40 km;
    andere Strecken dazwischen umgerechnet. Zielzeit: Prognose aus der aktuellen Form (Riegel, wie die Trainingstempos) höchstens die Zielzeit.
@@ -2205,9 +2205,10 @@ function badgesNow(today = localDay()) {
 function readyCard() {
   if (!mod('laufen')) return '';
   const today = localDay(), got = badgesNow(today), ico = startIcon('laufen');
-  const list = races.filter(r => r.date >= today && !r.dns).sort((a, b) => a.date.localeCompare(b.date)).slice(0, 3);
+  // nur A-Rennen (Jan: B-Rennen laufen ohne Bereitschafts-Prüfung mit)
+  const list = races.filter(r => r.prio === 'A' && r.date >= today && !r.dns).sort((a, b) => a.date.localeCompare(b.date)).slice(0, 3);
   const when = r => { const n = daysTo(r.date); return n === 0 ? T('heute', 'today') : n === 1 ? T('morgen', 'tomorrow') : T(`in ${n} Tagen`, `in ${n} days`); };
-  const rows = list.map(r => { const x = raceReady(r); return `<div class="srowt">${ico}<span class="txt"><b>${esc(r.name)}${r.prio ? ' · ' + esc(r.prio) : ''}</b><small>${esc(when(r) + ' · ' + readyWhy(r, x))}</small></span><span class="spill ${x.ready ? 'yes' : 'no'}">${x.ready ? T('✓ bereit', '✓ ready') : T('noch nicht', 'not yet')}</span></div>`; }).join('');
+  const rows = list.map(r => { const x = raceReady(r); return `<div class="srowt">${ico}<span class="txt"><b>${esc(r.name)}</b><small>${esc(when(r) + ' · ' + readyWhy(r, x))}</small></span><span class="spill ${x.ready ? 'yes' : 'no'}">${x.ready ? T('✓ bereit', '✓ ready') : T('noch nicht', 'not yet')}</span></div>`; }).join('');
   const earned = BADGES.filter(([k]) => isDay(got[k])), newest = earned.slice().sort((a, b) => got[b[0]].localeCompare(got[a[0]]) || b[1] - a[1])[0];
   const isNew = newest && got[newest[0]] >= addDays(today, -14), next = BADGES.find(([k]) => !isDay(got[k]));
   const head = newest ? `<span class="sbadge got">★ ${isNew ? T('Neu: ', 'New: ') : ''}${esc(newest[2])} ready</span>` : `<span class="sbadge open">☆ ${T('Nächstes', 'Next')}: ${esc(next[2])}</span>`;
@@ -2406,7 +2407,8 @@ function renderStart() {
   const lastB = load(KEYS.backup, null), bTxt = `Version ${APP_VERSION} · ` + (lastB ? T(`Sicherung ${daysAgo(lastB)}`, `backup ${daysAgo(lastB)}`) : T('noch keine Sicherung', 'no backup yet'));
   const lt = logToday && items.find(it => it.key === logToday && RUN(it));
   const lp = logPick && plannedRunsOn(logPick.day).find(it => it.key === logPick.key);
-  $('startcontent').innerHTML = `${startFeedback ? feedbackCard(startFeedback) : ''}${lt ? runCard({ day: today, item: lt }, 90) : lp ? runCard({ day: logPick.day, item: lp }, 91) : ''}${pendingHtml()}<div class="scard"><p class="skicker">${T('Heute dran', 'On today')}</p>${rows}</div>
+  const syncPause = autoOn() && autoPaused ? `<div class="scard" id="syncresume"><div class="srowt">${startIcon('mehr')}<span class="txt"><b>${T('Sync pausiert', 'Sync paused')}</b><small>${T('Der Browser fragt wieder nach dem Zugriff auf die Sync-Datei.', 'The browser asks for access to the sync file again.')}</small></span><button type="button" class="btn small primary sgo" data-syncresume>${T('Fortsetzen', 'Resume')}</button></div></div>` : '';
+  $('startcontent').innerHTML = `${syncPause}${startFeedback ? feedbackCard(startFeedback) : ''}${lt ? runCard({ day: today, item: lt }, 90) : lp ? runCard({ day: logPick.day, item: lp }, 91) : ''}${pendingHtml()}<div class="scard"><p class="skicker">${T('Heute dran', 'On today')}</p>${rows}</div>
     <div class="scard"><p class="skicker">${T('Diese Woche', 'This week')}</p>${weekStrip()}<div class="sweek">${week.map(([l, v, b]) => `<div><small>${esc(l)}</small><b>${esc(v)}</b>${b}</div>`).join('')}</div>${yearCard()}</div>${readyCard()}
     <button type="button" class="scard smorerow" data-go="mehr">${startIcon('mehr')}<span class="txt"><b>${T('Mehr', 'More')}</b><small>${esc(T('Neuigkeiten, Sync, Daten', 'News, sync, data') + ' · ' + bTxt)}</small></span><span class="chev"></span></button>`;
 }
@@ -2418,6 +2420,7 @@ $('startcontent').addEventListener('toggle', e => { if (e.target.id === 'startmo
 $('startcontent').addEventListener('click', e => {
   const g = e.target.closest('[data-go]'); if (g) { showArea(g.dataset.go); return; }
   if (e.target.closest('[data-fbclose]')) { startFeedback = null; renderStart(); return; }
+  if (e.target.closest('[data-syncresume]')) { syncAuto(true); return; }
   if (e.target.closest('[data-longedit]')) { longEdit = true; renderStart(); const f = $('slongkm'); if (f) { f.focus(); f.select(); } return; }
   const ls = e.target.closest('[data-longsave]'), lr = e.target.closest('[data-longreset]');
   if (ls) {
@@ -2575,10 +2578,13 @@ const SYNC_COLLS = {
   runlog: { key: KEYS.runlog, id: e => isObj(e) && typeof e.id === 'string' ? e.id : null },
   races: { key: KEYS.races, id: e => isObj(e) && typeof e.id === 'string' ? e.id : null },
   weight: { key: KEYS.weight, id: e => isObj(e) && isDay(e.date) ? e.date : null },
-  results: { key: KEYS.results, id: e => isObj(e) && typeof e.id === 'string' ? e.id : null }
+  results: { key: KEYS.results, id: e => isObj(e) && typeof e.id === 'string' ? e.id : null },
+  // Mobility-Routinen und Kurs-Tage je Eintrag (bis 1.1 als Ganzes unter „Einstellungen“ – dort übersprang der Abgleich Listen)
+  moblog: { key: KEYS.moblog, id: e => isObj(e) && isDay(e.d) && typeof e.t === 'string' ? `${e.d}|${e.t}` : null },
+  gymlog: { key: KEYS.gymlog, id: e => isObj(e) && isDay(e.d) && typeof e.n === 'string' ? `${e.d}|${e.n}` : null }
 };
-// Einstellungen, die zwischen Geräten gleich sein sollen (Ton und Stimme bleiben je Gerät; die Geräte je Plan stecken in den Übungs-Einstellungen)
-const SYNC_SETTINGS = { choices: KEYS.choice, stages: KEYS.stage, profile: KEYS.profile, weekSkip: KEYS.skip, longSet: KEYS.longset, weekPlan: KEYS.weekplan, starter: KEYS.starter, mobLog: KEYS.moblog, gymLog: KEYS.gymlog };
+// Einstellungen, die zwischen Geräten gleich sein sollen (Ton, Stimme und Sprache bleiben je Gerät). Erfolge: je Strecke das früheste Datum.
+const SYNC_SETTINGS = { choices: KEYS.choice, stages: KEYS.stage, profile: KEYS.profile, gear: KEYS.gear, weekSkip: KEYS.skip, longSet: KEYS.longset, weekPlan: KEYS.weekplan, starter: KEYS.starter, badges: KEYS.badges };
 const SYNC_TRACKED = new Set(Object.values(SYNC_COLLS).map(c => c.key).concat(Object.values(SYNC_SETTINGS)));
 const syncHash = s => { let h = 5381; for (let i = 0; i < s.length; i++) h = (h * 33 ^ s.charCodeAt(i)) >>> 0; return h.toString(36) + s.length.toString(36); };
 const rawGet = k => { try { const r = localStorage.getItem(k); return r === null ? null : JSON.parse(r); } catch (e) { return null; } };
@@ -2607,7 +2613,7 @@ function syncTrack() {
   return changed;
 }
 let syncTimer = null;
-syncHook = k => { if (SYNC_TRACKED.has(k)) { clearTimeout(syncTimer); syncTimer = setTimeout(() => { syncTrack(); renderSyncStatus(); }, 250); } };
+syncHook = k => { if (SYNC_TRACKED.has(k)) { clearTimeout(syncTimer); syncTimer = setTimeout(() => { syncTrack(); renderSyncStatus(); syncAutoSoon(); }, 250); } };
 function syncPayload() {
   syncTrack();
   const m = syncMeta, colls = {}, settings = {};
@@ -2643,11 +2649,19 @@ function syncMerge(remote) {
       if (idx.has(id) && ts > (m.mod[k] || 0)) { arr = arr.filter(e => d.id(e) !== id); idx.clear(); arr.forEach((e, i) => idx.set(d.id(e), i)); delete m.h[k]; delete m.mod[k]; res.removed++; touched = true; }
       if (!idx.has(id)) m.del[k] = Math.max(m.del[k] || 0, ts);
     }
-    if (touched) { if (d.key === KEYS.runlog || d.key === KEYS.weight || d.key === KEYS.races || d.key === KEYS.results) arr.sort((a, b) => String(a.date).localeCompare(String(b.date))); rawSet(d.key, arr); }
+    if (touched) { if (d.key === KEYS.runlog || d.key === KEYS.weight || d.key === KEYS.races || d.key === KEYS.results) arr.sort((a, b) => String(a.date).localeCompare(String(b.date)));
+      if (d.key === KEYS.moblog || d.key === KEYS.gymlog) arr.sort((a, b) => String(a.d).localeCompare(String(b.d)));
+      rawSet(d.key, arr); }
   }
   for (const [n, key] of Object.entries(SYNC_SETTINGS)) {
     const r = isObj(remote.settings) ? remote.settings[n] : null, k = 'set:' + n;
     if (!isObj(r) || !okTs(r.ts) || !isObj(r.v)) continue;
+    if (n === 'badges') { // Erfolge zusammenführen, je Strecke das früheste Datum – kein Gerät verliert einen Erfolg
+      const cur = rawGet(key), u = Object.assign({}, isObj(cur) ? cur : {}); let ch = false;
+      for (const [b, d] of Object.entries(r.v)) if (isDay(d) && (!isDay(u[b]) || d < u[b])) { u[b] = d; ch = true; }
+      if (ch) { rawSet(key, u); m.h[k] = syncHash(JSON.stringify(u)); m.mod[k] = Math.max(r.ts, m.mod[k] || 0); res.updated++; }
+      continue;
+    }
     const h = syncHash(JSON.stringify(r.v));
     if (m.h[k] !== h && (r.ts > (m.mod[k] || 0) || (r.ts === (m.mod[k] || 0) && h > (m.h[k] || '')))) { rawSet(key, r.v); m.h[k] = h; m.mod[k] = r.ts; res.updated++; }
   }
@@ -2671,7 +2685,8 @@ function idb(mode, fn) {
     rq.onsuccess = () => { const tx = rq.result.transaction('kv', mode), st = tx.objectStore('kv'), r = fn(st); tx.oncomplete = () => ok(r && r.result); tx.onerror = () => fail(tx.error); };
   });
 }
-const handleGet = () => canHandle() ? idb('readonly', st => st.get('syncHandle')).catch(() => null) : Promise.resolve(null);
+// window.__kbtHandle: nur für Tests (nachgebauter Datei-Griff, IndexedDB kann keine Funktionen speichern)
+const handleGet = () => window.__kbtHandle ? Promise.resolve(window.__kbtHandle) : canHandle() ? idb('readonly', st => st.get('syncHandle')).catch(() => null) : Promise.resolve(null);
 const handleSet = h => idb('readwrite', st => h ? st.put(h, 'syncHandle') : st.delete('syncHandle')).catch(() => null);
 async function handleReady(h, write) {
   const o = { mode: write ? 'readwrite' : 'read' };
@@ -2738,6 +2753,44 @@ async function syncLoad() {
   }
   if (syncMeta.place) toast(T(`Datei aus „${syncMeta.place}“ wählen.`, `Choose the file from “${syncMeta.place}”.`));
   $('syncfile').click();
+}
+/* Automatisch abgleichen (Haken unter Geräte-Sync, je Gerät gemerkt) – nur wo die App eine Datei dauerhaft öffnen darf: Chrome/Edge am Mac/PC
+   und Chrome auf Android. Beim Öffnen, beim Zurückkehren in die App, beim Verlassen und kurz nach jeder Änderung: Datei lesen, zusammenführen
+   (je Eintrag gewinnt der neuere Stand), Neueres zurückschreiben. Nicht während eines Trainings und nicht, während du etwas eintippst.
+   Fragt der Browser (z. B. nach einem Neustart) wieder nach dem Zugriff, pausiert der Abgleich, bis du einmal „Fortsetzen“ tippst.
+   iPhone/iPad: Safari erlaubt Web-Apps keinen dauerhaften Dateizugriff – dort weiter „Sync laden“ und „Sync speichern“. */
+let autoBusy = false, autoTimer = null, autoPaused = false, autoErr = false;
+const autoOn = () => !!syncMeta.auto && canHandle();
+function syncAutoSoon(ms = 3000) { if (!autoOn()) return; clearTimeout(autoTimer); autoTimer = setTimeout(() => syncAuto(), ms); }
+async function syncAuto(ask = false) {
+  if (!autoOn() || autoBusy || wiping) return;
+  if (sessionActive() || /^(INPUT|TEXTAREA|SELECT)$/.test((document.activeElement || {}).tagName || '')) { syncAutoSoon(10000); return; }
+  const h = await handleGet(); if (!h) return;
+  autoBusy = true;
+  try {
+    const o = { mode: 'readwrite' };
+    if (await h.queryPermission(o) !== 'granted' && !(ask && await h.requestPermission(o) === 'granted')) { if (!autoPaused) { autoPaused = true; renderSyncAuto(); } return; }
+    if (autoPaused) { autoPaused = false; renderSyncAuto(); }
+    const text = (await (await h.getFile()).text()).trim();
+    let res = null;
+    if (text) { let x; try { x = JSON.parse(text); } catch (e) { throw Error(T('Die Sync-Datei ist beschädigt oder keine Sync-Datei.', 'The sync file is damaged or not a sync file.')); } res = syncMerge(x); }
+    else syncTrack();
+    if (!text || syncMeta.dirty) { const w = await h.createWritable(); await w.write(JSON.stringify(syncPayload())); await w.close(); syncMeta.lastSave = new Date().toISOString(); syncMeta.dirty = false; syncSaveMeta(); markBackup(); }
+    autoErr = false;
+    if (res && res.changed) { sessionStorage.setItem(SYNC_MSG, syncText(res)); location.reload(); return; }
+    renderSyncStatus();
+  } catch (e) {
+    logError(e && e.message, 'Auto-Sync', e && e.stack);
+    if (!autoErr) { autoErr = true; toast(T('Automatischer Sync: ', 'Automatic sync: ') + ((e && e.message) || T('Datei nicht erreichbar.', 'file not reachable.'))); }
+  } finally { autoBusy = false; }
+}
+function renderSyncAuto() {
+  const row = $('syncauto'); if (!row) return;
+  row.classList.toggle('hide', !canHandle());
+  $('syncautoval').textContent = !syncMeta.auto ? T('Aus', 'Off') : autoPaused ? T('Pausiert', 'Paused') : T('An', 'On');
+  $('syncautohint').textContent = autoPaused ? T('Der Browser fragt wieder nach dem Zugriff – tippen zum Fortsetzen', 'The browser asks for access again – tap to resume')
+    : T('Beim Öffnen und nach jeder Änderung, ohne Knopfdruck – je Eintrag gewinnt der neuere Stand', 'On opening and after every change, no button needed – the newer state wins per entry');
+  if (area === 'start') renderStart();
 }
 const syncPlaceText = () => syncMeta.place ? T(`in „${syncMeta.place}“`, `in “${syncMeta.place}”`) : T('in deinen Cloud-Ordner', 'in your cloud folder');
 async function renderSyncStatus() {
@@ -2843,7 +2896,7 @@ $('notesauto').addEventListener('click', () => { notesOpt.auto = notesOpt.auto =
 
 /* ---------- Dateien: Backup, CSV, Kalender ---------- */
 function download(name, content, type) { const blob = new Blob([content], { type }), url = URL.createObjectURL(blob), a = document.createElement('a'); a.href = url; a.download = name; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 3000); }
-function backupJson() { return JSON.stringify({ version: 3, entries: saved.concat(savedKeep), waist: waist.concat(waistKeep), runWeeks: runWeeks.concat(runWeeksKeep), runLog: runLog.concat(runLogKeep), races: races.concat(racesKeep), weights: weights.concat(weightKeep), results: results.concat(resultsKeep), weekSkip, longSet, starter: getStarter(), mobLog: getMobLog(), gymLog: getGymLog(), settings: { gear, choices, stages, audio: audioOpt, profile: Object.assign({}, profileExtra, profile) }, exportedAt: new Date().toISOString() }, null, 2); }
+function backupJson() { return JSON.stringify({ version: 3, entries: saved.concat(savedKeep), waist: waist.concat(waistKeep), runWeeks: runWeeks.concat(runWeeksKeep), runLog: runLog.concat(runLogKeep), races: races.concat(racesKeep), weights: weights.concat(weightKeep), results: results.concat(resultsKeep), weekSkip, longSet, badges: load(KEYS.badges, {}), starter: getStarter(), mobLog: getMobLog(), gymLog: getGymLog(), settings: { gear, choices, stages, audio: audioOpt, profile: Object.assign({}, profileExtra, profile) }, exportedAt: new Date().toISOString() }, null, 2); }
 function schemaCheck() {
   const prev = load(SCHEMA_KEY, null);
   if (prev === SCHEMA || (typeof prev === 'number' && prev > SCHEMA)) return; // neuere Daten mit älterer App: nichts verändern
@@ -2929,6 +2982,7 @@ function importBackup(file) {
       const wg = isObj(x) && Array.isArray(x.weights) ? x.weights.filter(validWeight) : [];
       const rs = isObj(x) && Array.isArray(x.results) ? x.results.filter(validResult) : [];
       if (isObj(x) && isObj(x.weekSkip)) { for (const [k, v] of Object.entries(x.weekSkip)) if (isDay(k) && Array.isArray(v)) weekSkip[k] = [...new Set((weekSkip[k] || []).concat(v.filter(y => typeof y === 'string')))]; store(KEYS.skip, weekSkip); }
+      if (isObj(x) && isObj(x.badges)) { const g = load(KEYS.badges, {}), u = isObj(g) ? g : {}; for (const [k, v] of Object.entries(x.badges)) if (isDay(v) && (!isDay(u[k]) || v < u[k])) u[k] = v; store(KEYS.badges, u); }
       if (isObj(x) && isObj(x.longSet)) { for (const [k, v] of Object.entries(x.longSet)) if (isDay(k) && okNum(v, 1, 60) && !(k in longSet)) longSet[k] = v; store(KEYS.longset, longSet); }
       // Lauf-Einstieg: der Stand mit mehr erledigten Einheiten gewinnt
       if (isObj(x) && isObj(x.starter)) { const a = normStarter(x.starter); if (a.log.length > getStarter().log.length) putStarter(a); }
@@ -3583,6 +3637,14 @@ if (!restored) runReps = emptyReps(plan);
 syncTrack();
 { const msg = sessionStorage.getItem(SYNC_MSG); if (msg) { sessionStorage.removeItem(SYNC_MSG); setTimeout(() => toast(msg), 300); } }
 $('syncsave').addEventListener('click', syncSave);
+$('syncauto').addEventListener('click', async () => {
+  if (syncMeta.auto) { syncMeta.auto = false; syncSaveMeta(); autoPaused = false; renderSyncAuto(); toast(T('Automatischer Sync aus – laden und speichern wieder per Knopf.', 'Automatic sync off – load and save by button again.')); return; }
+  let h = await handleGet(); if (h && !(await handleReady(h, true))) h = null;
+  if (!h) { h = await syncPick(); if (!h) return; }
+  syncMeta.auto = true; syncSaveMeta(); renderSyncAuto(); toast(T(`Automatischer Sync an – „${h.name}“.`, `Automatic sync on – “${h.name}”.`)); await syncAuto(true);
+});
+document.addEventListener('visibilitychange', () => { if (document.hidden) { if (syncMeta.dirty) syncAuto(); } else syncAutoSoon(500); });
+window.addEventListener('focus', () => syncAutoSoon(500));
 $('syncpick').addEventListener('click', syncPick);
 $('factoryreset').addEventListener('click', factoryReset);
 $('settingsreset').addEventListener('click', settingsReset);
@@ -3687,7 +3749,7 @@ else if (document.documentElement.dataset.os === 'android') $('savefilehint').te
 if (restored) { toast(running ? T('Laufendes Training wiederhergestellt.', 'Running workout restored.') : T('Unterbrochenes Training wiederhergestellt.', 'Interrupted workout restored.')); if (running) keepAwake(true); }
 setInterval(() => { tick(); routineTick(); }, 200);
 try { navigator.storage?.persist?.().then(renderStorageInfo).catch(() => { }); } catch (e) { }
-renderPreUpdate(); renderErrLog();
+renderPreUpdate(); renderErrLog(); renderSyncAuto(); syncAutoSoon(1500);
 if (loadIssues.length) toast(T('Ein Teil der gespeicherten Daten war unlesbar und wurde separat aufbewahrt. Bitte Backup prüfen.', 'Some of the stored data was unreadable and has been kept separately. Please check your backup.'));
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
   const hadController = !!navigator.serviceWorker.controller;

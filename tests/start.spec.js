@@ -519,17 +519,19 @@ test.describe('Rennbereit?', () => {
       runLog = []; for (let w = 1; w <= 6; w++) { const m = addDays('2026-11-02', -7 * w); runLog.push({ id: 'a' + w, date: m, km: 9 }, { id: 'b' + w, date: addDays(m, 2), km: 8 }, { id: 'c' + w, date: addDays(m, 5), km: 14, kind: 'long' }); }
       runLog.sort((a, b) => a.date.localeCompare(b.date)); persistRunLog();
       results = [{ id: 'r', date: '2026-09-27', km: 10, time: 3060, dist: '10k' }]; persistResults(); // 51:00 → HM-Prognose 1:52:32
-      races = [{ id: 'b', name: 'Silvesterlauf', date: '2026-12-31', dist: '10k', prio: 'B' }, { id: 'h', name: 'Spandauer HM', date: '2027-03-14', dist: 'hm', prio: 'A', goal: 7500 },
+      races = [{ id: 'b', name: 'Silvesterlauf', date: '2026-12-31', dist: '10k', prio: 'B' }, { id: 's', name: 'Stadtlauf', date: '2027-01-31', dist: '10k', prio: 'A' }, { id: 'h', name: 'Spandauer HM', date: '2027-03-14', dist: 'hm', prio: 'A', goal: 7500 },
         { id: 'm', name: 'Berlin', date: '2027-09-26', dist: 'marathon', prio: 'A', goal: 15300 }]; persistRaces();
       profile.week.runner = 'runner'; persistProfile(); showArea('start');
     });
     const card = page.locator('#readycard'), row = n => card.locator('.srowt', { hasText: n });
-    await expect(row('Silvesterlauf · B')).toContainText('in 53 Tagen · Ziel: ankommen');
-    await expect(row('Silvesterlauf · B').locator('.spill')).toHaveText('✓ bereit');
-    await expect(row('Spandauer HM · A')).toContainText('längster Lauf 14/16 km · Ziel 2:05:00 · Prognose 1:52:32');
-    await expect(row('Spandauer HM · A').locator('.spill')).toHaveText('noch nicht');
+    // nur A-Rennen
+    await expect(row('Silvesterlauf')).toHaveCount(0);
+    await expect(row('Stadtlauf')).toContainText('in 84 Tagen · Ziel: ankommen');
+    await expect(row('Stadtlauf').locator('.spill')).toHaveText('✓ bereit');
+    await expect(row('Spandauer HM')).toContainText('längster Lauf 14/16 km · Ziel 2:05:00 · Prognose 1:52:32');
+    await expect(row('Spandauer HM').locator('.spill')).toHaveText('noch nicht');
     // Marathon: weder schaffen noch Zielzeit (4:15 Ziel, Prognose aus 10 km ≈ 3:56 → Zeit passt, aber Longrun/Umfang fehlen)
-    await expect(row('Berlin · A')).toContainText('längster Lauf 14/28 km · Ø 31/40 km pro Woche');
+    await expect(row('Berlin')).toContainText('längster Lauf 14/28 km · Ø 31/40 km pro Woche');
     // Erfolge: eingeklappt, sichtbar der neueste
     await expect(card.locator('#badges')).not.toHaveAttribute('open', '');
     await expect(card.locator('#badges summary')).toContainText('★ Neu: 10 km ready');
@@ -539,12 +541,12 @@ test.describe('Rennbereit?', () => {
     await expect(card.locator('.sbadgehint')).toHaveText('Für Halbmarathon ready: Lauf ≥ 16 km in 6 Wochen, Ø 25 km pro Woche.');
     // ein 17-km-Lauf: HM ist zu schaffen und die Prognose passt → bereit, neuer Erfolg
     await page.evaluate(() => { runLog.push({ id: 'x', date: '2026-11-07', km: 17, kind: 'long' }); persistRunLog(); renderStart(); });
-    await expect(row('Spandauer HM · A').locator('.spill')).toHaveText('✓ bereit');
+    await expect(row('Spandauer HM').locator('.spill')).toHaveText('✓ bereit');
     await expect(card.locator('#badges summary')).toContainText('★ Neu: Halbmarathon ready');
     // mit Zielzeit, die die Form nicht hergibt: noch nicht
-    await page.evaluate(() => { races[1].goal = 6000; persistRaces(); renderStart(); });
-    await expect(row('Spandauer HM · A')).toContainText('Ziel 1:40:00 · Prognose 1:52:32');
-    await expect(row('Spandauer HM · A').locator('.spill')).toHaveText('noch nicht');
+    await page.evaluate(() => { races[2].goal = 6000; persistRaces(); renderStart(); });
+    await expect(row('Spandauer HM')).toContainText('Ziel 1:40:00 · Prognose 1:52:32');
+    await expect(row('Spandauer HM').locator('.spill')).toHaveText('noch nicht');
     // Erfolge bleiben, auch wenn der Stand später sinkt
     await page.evaluate(() => { runLog = []; persistRunLog(); renderStart(); });
     await expect(card.locator('#badges summary')).toContainText('3 Erfolge');
