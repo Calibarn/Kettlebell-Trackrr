@@ -212,3 +212,20 @@ test('Sync automatisch: Haken setzen, Änderungen landen von selbst in der Datei
   expect(await cloud(A)).toBe(before);
   await A.context().close(); await B.context().close();
 });
+
+test('Sync automatisch: ohne dauerhaften Dateizugriff (iPhone) sichtbar, erklärt warum und lässt sich nicht einschalten', async ({ browser }) => {
+  const P = await device(browser); // Datei-Auswahl fehlt wie in Safari
+  await P.evaluate(() => { document.documentElement.dataset.os = 'ios'; renderSyncAuto(); showArea('mehr'); });
+  await openSect(P, 'sect-sync');
+  await expect(P.locator('#syncauto')).toBeVisible();
+  await expect(P.locator('#syncauto')).toHaveAttribute('aria-disabled', 'true');
+  await expect(P.locator('#syncautoval')).toHaveText('Nicht verfügbar');
+  await expect(P.locator('#syncautohint')).toContainText('Auf iPhone/iPad nicht möglich: Safari erlaubt Web-Apps keinen dauerhaften Zugriff auf eine Datei.');
+  await P.evaluate(() => document.getElementById('syncauto').click()); // aria-disabled: Antippen erklärt nur
+  await expect(P.locator('#toast')).toContainText('Auf iPhone/iPad nicht möglich');
+  expect(await P.evaluate(() => !!syncMeta.auto)).toBe(false);
+  // anderer Browser ohne Zugriff (z. B. Firefox): eigener Hinweis
+  await P.evaluate(() => { document.documentElement.dataset.os = 'other'; renderSyncAuto(); });
+  await expect(P.locator('#syncautohint')).toContainText('In diesem Browser nicht möglich');
+  await P.context().close();
+});
