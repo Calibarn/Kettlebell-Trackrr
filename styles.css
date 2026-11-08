@@ -467,9 +467,7 @@ html.testbuild .largetitle::after{content:" Test";font-size:.5em;font-weight:700
 html[data-os=android] .infoi{border-color:var(--accent-ink);color:var(--accent-ink)}
 .appversion{text-align:center;margin-top:20px}
 /* Startseite „Heute“: ohne untere Leiste, Kacheln führen in die Bereiche */
-body.onstart{padding-bottom:calc(env(safe-area-inset-bottom) + 24px)}
-body.onstart .tabbar{display:none}
-body.onstart .livepill{bottom:calc(env(safe-area-inset-bottom) + 16px)}
+/* Startseite: die Leiste bleibt sichtbar (keine Kacheln mehr), „Start“ ist markiert */
 .startdate{margin:14px 2px 0;font-size:13px;font-weight:600;color:var(--label2);text-transform:uppercase;letter-spacing:.04em}
 #area-start .largetitle{margin-top:0}
 .scard{background:var(--card);border-radius:var(--group-radius);padding:4px 16px 8px;margin-top:14px}
@@ -552,18 +550,44 @@ body.onstart .livepill{bottom:calc(env(safe-area-inset-bottom) + 16px)}
 .guidefoot{position:sticky;bottom:0;z-index:1;display:flex;flex-direction:column;gap:6px;padding:10px 16px calc(12px + env(safe-area-inset-bottom));border-top:.5px solid var(--sep);background:var(--card)}
 .guidefoot .btn{width:100%;justify-content:center}
 .guidefoot .guideauto{margin:0;font-size:13px;color:var(--label2);text-align:center}
-/* Jahresziel: Balken mit Strich für das Soll bis heute */
-#yearcard .skicker{display:flex;justify-content:space-between;align-items:center}
-#yearcard .slink{border:0;background:none;color:var(--accent-ink);font:inherit;font-weight:600;text-transform:none;letter-spacing:0;padding:0;cursor:pointer}
-#yearcard .sline{margin:0 0 8px;font-size:15px}
-#yearcard .syearnum{margin:2px 0 8px;font-size:15px;color:var(--label2)}
-#yearcard .syearnum b{font-size:26px;color:var(--label)}
-#yearcard .ybar{position:relative;height:10px;margin:0 0 8px;border-radius:5px;background:var(--fill2);overflow:visible}
-#yearcard .yfill{position:absolute;left:0;top:0;bottom:0;border-radius:5px;background:var(--accent)}
+/* Jahresziel: eine Zeile in „Diese Woche“ (Details und Eingabe zum Aufklappen), Balken mit Strich für das Soll bis heute */
+.syd{margin-top:10px;padding-top:8px;border-top:.5px solid var(--sep)}
+.syd summary{list-style:none;display:flex;align-items:center;gap:10px;min-height:36px;cursor:pointer}
+.syd summary::-webkit-details-marker{display:none}
+.syd .sydl{font-size:13px;color:var(--label2);flex:none}
+.syd .sydv{font-size:15px;color:var(--label2);flex:none}
+.syd .sydv b{font-size:17px;color:var(--label)}
+.syd .chev{margin-left:auto;transition:transform .2s}
+.syd[open] .chev{transform:rotate(90deg)}
+#yearcard .ybar{position:relative;flex:1;height:8px;border-radius:4px;background:var(--fill2);overflow:visible;display:block}
+#yearcard .yfill{position:absolute;left:0;top:0;bottom:0;border-radius:4px;background:var(--accent)}
 #yearcard .ysoll{position:absolute;top:-3px;bottom:-3px;width:2px;margin-left:-1px;background:var(--label)}
-#yearcard .tiny{display:block;margin:0 0 8px}
+#yearcard .slink{border:0;background:none;color:var(--accent-ink);font:inherit;font-weight:600;padding:6px 0;cursor:pointer}
+#yearcard .sline{margin:6px 0 8px;font-size:15px}
+#yearcard .tiny{display:block;margin:0}
 #yearcard .syear{display:flex;gap:8px;align-items:center;margin:0 0 6px}
 #yearcard .syear input{flex:1;min-width:0}
+/* Rennbereit? Rennen mit ✓/noch nicht, Erfolge eingeklappt (sichtbar nur der neueste) */
+.srdy .srowt .txt small{-webkit-line-clamp:3}
+.spill{flex:none;padding:5px 10px;border-radius:99px;font-size:13px;font-weight:700;white-space:nowrap}
+.spill.yes{background:rgba(48,209,88,.16);color:var(--accent-ink)}
+.spill.no{background:rgba(255,159,10,.16);color:var(--orange)}
+.sbadges{border-top:.5px solid var(--sep);margin-top:2px;padding:8px 0 4px}
+.sbadges summary{list-style:none;display:flex;align-items:center;gap:10px;min-height:40px;cursor:pointer}
+.sbadges summary::-webkit-details-marker{display:none}
+.sbadges .more{margin-left:auto;font-size:14px;color:var(--label2);white-space:nowrap}
+.sbadge{display:inline-flex;align-items:center;gap:6px;padding:6px 11px;border-radius:14px;font-size:14px;font-weight:600;background:var(--fill)}
+.sbadge.got{background:linear-gradient(135deg,rgba(255,214,10,.24),rgba(255,159,10,.16));color:#c79a00}
+@media (prefers-color-scheme: dark){.sbadge.got{color:#ffd60a}}
+.sbadge.open{color:var(--label3)}
+.sbadge small{font-weight:400;color:var(--label2);font-size:12px}
+.sbadgelist{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 4px}
+.sbadgehint{font-size:13px;color:var(--label2);margin:6px 0 2px}
+/* „Mehr“ am Ende der Startseite */
+.smorerow{display:flex;align-items:center;gap:12px;width:100%;border:0;color:var(--label);font:inherit;text-align:left;padding:12px 16px;cursor:pointer}
+.smorerow .txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.smorerow .txt b{font-size:17px;font-weight:600}
+.smorerow .txt small{font-size:13px;color:var(--label2)}
 #syncplace.ask{box-shadow:0 0 0 2px var(--accent)}
 /* Wochenleiste Mo–So */
 .sstrip{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin:2px 0 10px}

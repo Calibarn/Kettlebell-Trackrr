@@ -5,7 +5,7 @@ const $ = id => document.getElementById(id);
 const KEYS = {
   entries: 'jan-kettlebell-tracker-v1', waist: 'jan-kb-waist-v1', sound: 'jan-kb-sound-v1', gear: 'jan-kb-gear-v1',
   choice: 'jan-kb-choice-v1', stage: 'jan-kb-stage-v1', plan: 'jan-kb-plan-v1', session: 'jan-kb-session-v1',
-  backup: 'jan-kb-lastbackup-v1', hint: 'jan-kb-installhint-v1', area: 'jan-kb-area-v1', run: 'jan-kb-runview-v1', audio: 'jan-kb-audio-v1', mob: 'jan-kb-mobview-v1', runweeks: 'jan-kb-runweeks-v1', runlog: 'jan-kb-runlog-v1', races: 'jan-kb-races-v1', profile: 'jan-kb-profile-v1', weight: 'jan-kb-weight-v1', skip: 'jan-kb-weekskip-v1', results: 'jan-kb-results-v1', bestview: 'jan-kb-bestview-v1', notes: 'jan-kb-notes-v1', weekplan: 'jan-kb-weekplan-v1', icsremind: 'jan-kb-icsremind-v1', sections: 'jan-kb-sections-v1', starter: 'jan-kb-starter-v1', moblog: 'jan-kb-moblog-v1', runask: 'jan-kb-runask-v1', gymlog: 'jan-kb-gymlog-v1', setup: 'jan-kb-setup-v1', longset: 'jan-kb-longset-v1'
+  backup: 'jan-kb-lastbackup-v1', hint: 'jan-kb-installhint-v1', area: 'jan-kb-area-v1', run: 'jan-kb-runview-v1', audio: 'jan-kb-audio-v1', mob: 'jan-kb-mobview-v1', runweeks: 'jan-kb-runweeks-v1', runlog: 'jan-kb-runlog-v1', races: 'jan-kb-races-v1', profile: 'jan-kb-profile-v1', weight: 'jan-kb-weight-v1', skip: 'jan-kb-weekskip-v1', results: 'jan-kb-results-v1', bestview: 'jan-kb-bestview-v1', notes: 'jan-kb-notes-v1', weekplan: 'jan-kb-weekplan-v1', icsremind: 'jan-kb-icsremind-v1', sections: 'jan-kb-sections-v1', starter: 'jan-kb-starter-v1', moblog: 'jan-kb-moblog-v1', runask: 'jan-kb-runask-v1', gymlog: 'jan-kb-gymlog-v1', setup: 'jan-kb-setup-v1', longset: 'jan-kb-longset-v1', badges: 'jan-kb-badges-v1'
 };
 /* Datensicherheit bei Updates:
    - Einträge, die diese Version nicht versteht, werden nie verworfen, sondern unverändert mitgespeichert.
@@ -2060,7 +2060,7 @@ function bestPrefill(id) {
 }
 
 /* ---------- Startseite „Heute“: beim Öffnen der App, ohne untere Leiste ----------
-   Oben, was heute dran ist (mit Start), darunter die Woche und je Bereich eine Kachel mit dem aktuellen Stand. */
+   Oben offene Einträge und was heute dran ist (mit Start), darunter die Woche (mit Jahresziel), „Rennbereit?“ und „Mehr“. Die Bereiche über die Leiste. */
 // Mobility: bis zum Ende geführte Routinen zählen für die Woche (nur Datum und Titel)
 const normMobLog = v => Array.isArray(v) ? v.filter(e => isObj(e) && isDay(e.d) && typeof e.t === 'string').map(e => ({ d: e.d, t: e.t.slice(0, 60) })).slice(-120) : [];
 const getMobLog = () => normMobLog(load(KEYS.moblog, []));
@@ -2153,20 +2153,84 @@ function stripInfo(d) {
   if (ran && !runs.length) rows.push(`<li>${T('Lauf', 'Run')} <span class="chkok">✓</span></li>`);
   return `<div class="sstripinfo"><b>${esc(dayLabel(d))}</b>${rows.length ? `<ul>${rows.join('')}</ul>` : `<p>${T('Nichts geplant – Ruhetag.', 'Nothing planned – rest day.')}</p>`}</div>`;
 }
+/* Rennbereit? (Startseite): Würdest du das Rennen mit deinem aktuellen Training schaffen – und, mit Zielzeit, in dieser Zeit?
+   Schaffen (Faustregeln für Hobbyläufer): längster Lauf im Zeitraum und Ø km pro Woche der letzten 4 vollen Wochen –
+   5 km: Lauf ≥ 4 km (4 Wochen) · 10 km: ≥ 8 km (4 Wochen), Ø 15 km · HM: ≥ 16 km (6 Wochen), Ø 25 km · Marathon: ≥ 28 km (8 Wochen), Ø 40 km;
+   andere Strecken dazwischen umgerechnet. Zielzeit: Prognose aus der aktuellen Form (Riegel, wie die Trainingstempos) höchstens die Zielzeit.
+   Pace Race: Form reicht bis zum Ziel-Level. Wings for Life: Form reicht bis zu den Ziel-km. Mit Ziel, aber ohne Ergebnis: keine Prognose → „noch nicht“. */
+const READY_PTS = [[5, 4, 0, 28], [10, 8, 15, 28], [21.0975, 16, 25, 42], [42.195, 28, 40, 56]]; // [km, längster Lauf, Ø km/Woche, Tage]
+function readyNeed(km) {
+  const P = READY_PTS;
+  if (km <= P[0][0]) return { long: Math.max(1, Math.round(km * 0.8)), week: 0, days: 28 };
+  for (let i = 0; i < P.length - 1; i++) if (km <= P[i + 1][0]) {
+    const f = (km - P[i][0]) / (P[i + 1][0] - P[i][0]), L = j => P[i][j] + f * (P[i + 1][j] - P[i][j]);
+    return { long: Math.round(L(1)), week: Math.round(L(2)), days: Math.round(L(3) / 7) * 7 };
+  }
+  return { long: 30, week: 45, days: 56 };
+}
+function readiness(km, today = localDay()) {
+  const n = readyNeed(km), from = addDays(today, -n.days), runs = allRuns().filter(r => r.date > from && r.date <= today), w0 = weekStart(today);
+  const long = runs.length ? Math.max(...runs.map(r => r.km)) : 0, week = Math.round([1, 2, 3, 4].reduce((a, i) => a + (weekKm(addDays(w0, -7 * i)) || 0), 0) / 4 * 10) / 10;
+  return { ok: long >= n.long && week >= n.week, long, week, need: n };
+}
+function raceReady(r) {
+  const km = raceKm(r), x = Object.assign({ km }, readiness(km));
+  if (r.fmt === 'pace') { const fr = formReach('pace'); x.level = fr ? fr.level : null; x.time = fr ? fr.level >= r.km : null; }
+  else if (r.fmt === 'wfl') { const fr = formReach('wfl'); x.reach = fr ? fr.km : null; x.time = fr ? fr.km >= r.km : null; }
+  else if (r.goal) { const tp = trainingPaces(); x.pred = tp ? riegel(tp.ref.t10, 10, km) : null; x.time = tp ? x.pred <= r.goal : null; }
+  else x.time = true;
+  x.ready = x.ok && x.time === true;
+  return x;
+}
+function readyWhy(r, x) {
+  const out = [];
+  if (x.long < x.need.long) out.push(T(`längster Lauf ${kmText(x.long)}/${x.need.long} km`, `longest run ${kmText(x.long)}/${x.need.long} km`));
+  if (x.week < x.need.week) out.push(T(`Ø ${kmText(x.week)}/${x.need.week} km pro Woche`, `avg ${kmText(x.week)}/${x.need.week} km per week`));
+  const noRes = T('für die Prognose ein Ergebnis eintragen', 'enter a result for a prediction');
+  if (r.fmt === 'pace') out.push(x.level === null ? noRes : T(`Ziel Level ${r.km} · Form reicht bis ${x.level}`, `goal level ${r.km} · form reaches ${x.level}`));
+  else if (r.fmt === 'wfl') out.push(x.reach === null ? noRes : T(`Ziel ${kmText(r.km)} km · Form reicht bis ca. ${kmText(Math.round(x.reach))} km`, `goal ${kmText(r.km)} km · form reaches about ${kmText(Math.round(x.reach))} km`));
+  else if (r.goal) out.push(T(`Ziel ${hms(r.goal)}`, `goal ${hms(r.goal)}`) + (x.pred ? T(` · Prognose ${hms(x.pred)}`, ` · prediction ${hms(x.pred)}`) : ' · ' + noRes));
+  else out.push(T('Ziel: ankommen', 'goal: finish'));
+  return out.join(' · ');
+}
+/* Erfolge: „ready“ je Strecke (nur schaffen, ohne Zeit). Gemerkt wird der Tag, an dem du es zum ersten Mal warst – ein Erfolg bleibt,
+   auch wenn der Trainingsstand später sinkt (dafür gibt es „Rennbereit?“). Nur auf diesem Gerät, 14 Tage lang als „Neu“. */
+const BADGES = [['5k', 5, '5 km'], ['10k', 10, '10 km'], ['hm', 21.0975, T('Halbmarathon', 'Half marathon')], ['marathon', 42.195, 'Marathon']];
+function badgesNow(today = localDay()) {
+  let got = load(KEYS.badges, {}), changed = false; if (!isObj(got)) got = {};
+  for (const [k, km] of BADGES) if (!isDay(got[k]) && readiness(km, today).ok) { got[k] = today; changed = true; }
+  if (changed) store(KEYS.badges, got);
+  return got;
+}
+function readyCard() {
+  if (!mod('laufen')) return '';
+  const today = localDay(), got = badgesNow(today), ico = startIcon('laufen');
+  const list = races.filter(r => r.date >= today && !r.dns).sort((a, b) => a.date.localeCompare(b.date)).slice(0, 3);
+  const when = r => { const n = daysTo(r.date); return n === 0 ? T('heute', 'today') : n === 1 ? T('morgen', 'tomorrow') : T(`in ${n} Tagen`, `in ${n} days`); };
+  const rows = list.map(r => { const x = raceReady(r); return `<div class="srowt">${ico}<span class="txt"><b>${esc(r.name)}${r.prio ? ' · ' + esc(r.prio) : ''}</b><small>${esc(when(r) + ' · ' + readyWhy(r, x))}</small></span><span class="spill ${x.ready ? 'yes' : 'no'}">${x.ready ? T('✓ bereit', '✓ ready') : T('noch nicht', 'not yet')}</span></div>`; }).join('');
+  const earned = BADGES.filter(([k]) => isDay(got[k])), newest = earned.slice().sort((a, b) => got[b[0]].localeCompare(got[a[0]]) || b[1] - a[1])[0];
+  const isNew = newest && got[newest[0]] >= addDays(today, -14), next = BADGES.find(([k]) => !isDay(got[k]));
+  const head = newest ? `<span class="sbadge got">★ ${isNew ? T('Neu: ', 'New: ') : ''}${esc(newest[2])} ready</span>` : `<span class="sbadge open">☆ ${T('Nächstes', 'Next')}: ${esc(next[2])}</span>`;
+  const all = BADGES.map(([k, km, l]) => isDay(got[k]) ? `<span class="sbadge got">★ ${esc(l)} <small>${T('seit', 'since')} ${esc(dateGerman(got[k]).slice(0, 6))}</small></span>` : `<span class="sbadge open">☆ ${esc(l)}</span>`).join('');
+  const nx = next ? (n => `<p class="sbadgehint">${T(`Für ${esc(next[2])} ready: Lauf ≥ ${n.long} km in ${n.days / 7} Wochen${n.week ? `, Ø ${n.week} km pro Woche` : ''}.`, `For ${esc(next[2])} ready: a run ≥ ${n.long} km within ${n.days / 7} weeks${n.week ? `, avg ${n.week} km per week` : ''}.`)}</p>`)(readyNeed(next[1])) : '';
+  return `<div class="scard srdy" id="readycard"><p class="skicker">${T('Rennbereit?', 'Race ready?')}</p>${rows}
+    <details class="sbadges" id="badges"><summary>${head}<span class="more">${earned.length ? T(`${earned.length} ${earned.length === 1 ? 'Erfolg' : 'Erfolge'}`, `${earned.length} ${earned.length === 1 ? 'badge' : 'badges'}`) : T('Erfolge', 'Badges')} ▾</span></summary><div class="sbadgelist">${all}</div>${nx}</details></div>`;
+}
 let yearEdit = false;
 function yearCard() {
   if (runnerLevel() === 'beginner' || !mod('laufen')) return '';
   const today = localDay(), y = today.slice(0, 4), goal = profile.yearKm[y], cur = yearKm(y), sug = goal && !yearEdit ? null : yearSuggest(y);
   if (!goal && !sug && !cur.km) return '';
   const form = `<div class="syear"><input type="text" inputmode="numeric" id="yeargoal" maxlength="5" autocomplete="off" value="${goal || (sug ? sug.km : '')}" aria-label="${T(`Jahresziel ${y} in km`, `Year goal ${y} in km`)}"><span>km</span><button type="button" class="btn small primary" id="yearsave">${T('Übernehmen', 'Apply')}</button></div>${sug ? `<small class="tiny">${T('Vorschlag', 'Suggestion')}: ${esc(kmText(sug.km))} km – ${esc(sug.why)}</small>` : ''}`;
-  if (!goal || yearEdit) return `<div class="scard" id="yearcard"><p class="skicker">${T(`Jahresziel ${y}`, `Year goal ${y}`)}</p><p class="sline">${T(`Wie viele km willst du ${y} laufen?`, `How many km do you want to run in ${y}?`)}${cur.km ? T(` Bisher ${kmText(cur.km)} km.`, ` So far ${kmText(cur.km)} km.`) : ''}</p>${form}</div>`;
+  // in „Diese Woche“: eine Zeile, Details und Eingabe zum Aufklappen
+  if (!goal || yearEdit) return `<details class="syd" id="yearcard"${yearEdit ? ' open' : ''}><summary><span class="sydl">${T(`Jahresziel ${y}`, `Year goal ${y}`)}</span><span class="sydv">${T('festlegen', 'set')}</span><span class="chev"></span></summary><p class="sline">${T(`Wie viele km willst du ${y} laufen?`, `How many km do you want to run in ${y}?`)}${cur.km ? T(` Bisher ${kmText(cur.km)} km.`, ` So far ${kmText(cur.km)} km.`) : ''}</p>${form}</details>`;
   const day = Math.round((new Date(today + 'T12:00:00') - new Date(`${y}-01-01T12:00:00`)) / 864e5) + 1, n = yearDays(y);
   const soll = Math.round(goal * day / n), proj = day >= 14 ? Math.round(cur.km / day * n) : null, ahead = Math.round(cur.km - soll);
   const pct = Math.min(100, Math.round(cur.km / goal * 100)), sp = Math.min(100, Math.round(soll / goal * 100));
-  return `<div class="scard" id="yearcard"><p class="skicker">${T(`Jahresziel ${y}`, `Year goal ${y}`)}<button type="button" class="slink" id="yearedit">${T('Ändern', 'Change')}</button></p>
-    <p class="syearnum"><b>${esc(kmText(Math.round(cur.km)))}</b> ${T('von', 'of')} ${esc(kmText(goal))} km</p>
-    <div class="ybar" role="img" aria-label="${esc(T(`${pct} % geschafft, Soll bis heute ${sp} %`, `${pct} % done, target to date ${sp} %`))}"><span class="yfill" style="width:${pct}%"></span><span class="ysoll" style="left:${sp}%"></span></div>
-    <small class="tiny">${T(`Soll bis heute ${kmText(soll)} km`, `Target to date ${kmText(soll)} km`)} · <span class="${ahead >= 0 ? 'chkok' : 'chkwarn'}">${ahead >= 0 ? T(`${kmText(ahead)} km voraus`, `${kmText(ahead)} km ahead`) : T(`${kmText(-ahead)} km zurück`, `${kmText(-ahead)} km behind`)}</span>${proj ? T(` · Hochrechnung ca. ${kmText(proj)} km`, ` · projection about ${kmText(proj)} km`) : ''}</small></div>`;
+  return `<details class="syd" id="yearcard"><summary><span class="sydl">${T(`Jahr ${y}`, `Year ${y}`)}</span><span class="sydv syearnum"><b>${esc(kmText(Math.round(cur.km)))}</b> / ${esc(kmText(goal))} km</span>
+    <span class="ybar" role="img" aria-label="${esc(T(`${pct} % geschafft, Soll bis heute ${sp} %`, `${pct} % done, target to date ${sp} %`))}"><span class="yfill" style="width:${pct}%"></span><span class="ysoll" style="left:${sp}%"></span></span><span class="chev"></span></summary>
+    <p class="sline"><small class="tiny">${T(`Soll bis heute ${kmText(soll)} km`, `Target to date ${kmText(soll)} km`)} · <span class="${ahead >= 0 ? 'chkok' : 'chkwarn'}">${ahead >= 0 ? T(`${kmText(ahead)} km voraus`, `${kmText(ahead)} km ahead`) : T(`${kmText(-ahead)} km zurück`, `${kmText(-ahead)} km behind`)}</span>${proj ? T(` · Hochrechnung ca. ${kmText(proj)} km`, ` · projection about ${kmText(proj)} km`) : ''}</small>
+    <button type="button" class="slink" id="yearedit">${T('Ziel ändern', 'Change goal')}</button></p></details>`;
 }
 /* Startseite: nach einem A- oder B-Rennen nach dem Ergebnis fragen – ab dem Tag danach, bis es eingetragen ist –, damit es nicht vergessen wird.
    Normal: Zeit → Bestzeiten. Wings for Life: geschaffte km, die Zeit ist die des Catcher Cars. Pace Race: Level – nur beim Rennen,
@@ -2338,23 +2402,13 @@ function renderStart() {
   const nM = getMobLog().filter(e => e.d >= wk && e.d <= today).length;
   const pM = mod('mobility') ? profile.week.mobility.length : 0;
   const week = [mod('kraft') && [T('Kraft', 'Strength'), pK ? `${nK} ${T('von', 'of')} ${pK}` : `${nK} ×`, bar(nK, pK, 'b-kraft')], mod('laufen') && [run[2], run[0], run[1]], mod('mobility') && ['Mobility', pM ? `${nM} ${T('von', 'of')} ${pM}` : `${nM} ×`, bar(nM, pM, 'b-mob')]].filter(Boolean);
-  // Kacheln mit Stand
-  const lastK = saved.slice().sort((a, b) => (a.date + (a.at || '')).localeCompare(b.date + (b.at || ''))).at(-1);
-  const nextRace = races.filter(r => r.date >= today).sort((a, b) => a.date.localeCompare(b.date))[0], lastRun = allRuns().at(-1);
-  const s = getStarter(), lastM = getMobLog().at(-1), lastW = weights.at(-1), lastB = load(KEYS.backup, null);
-  const kTxt = lastK ? T(`Zuletzt ${WD[new Date(lastK.date + 'T12:00:00').getDay()]} · ${PLANS[lastK.plan] ? PLANS[lastK.plan].tab : ''}`, `Last ${WD[new Date(lastK.date + 'T12:00:00').getDay()]} · ${PLANS[lastK.plan] ? tr(PLANS[lastK.plan].tab) : ''}`) : T('Noch keine Einheit', 'No session yet');
-  const rTxt = runnerLevel() === 'beginner' ? T(`Einstieg · Woche ${s.week + 1} von ${STARTER.weeks.length}`, `Starter · week ${s.week + 1} of ${STARTER.weeks.length}`)
-    : nextRace ? (daysTo(nextRace.date) === 0 ? T(`${nextRace.name} ist heute`, `${nextRace.name} is today`) : T(`${nextRace.name} in ${daysTo(nextRace.date)} ${daysTo(nextRace.date) === 1 ? 'Tag' : 'Tagen'}`, `${nextRace.name} in ${daysTo(nextRace.date)} ${daysTo(nextRace.date) === 1 ? 'day' : 'days'}`))
-      : lastRun ? T(`Zuletzt ${kmText(lastRun.km)} km · ${daysAgo(lastRun.date)}`, `Last ${kmText(lastRun.km)} km · ${daysAgo(lastRun.date)}`) : T('Plan, Warm-up, Umfang', 'Plan, warm-up, volume');
-  const mTxt = lastM ? T(`Zuletzt ${lastM.t} · ${daysAgo(lastM.d)}`, `Last ${tr(lastM.t)} · ${daysAgo(lastM.d)}`) : T('Dehnen & Routinen', 'Stretching & routines');
-  const pTxt = lastW ? T(`Gewicht ${kgOne(lastW.kg)} kg`, `Weight ${kgOne(lastW.kg)} kg`) : T('Woche, Geräte, Maße', 'Week, equipment, measurements');
-  const bTxt = `Version ${APP_VERSION} · ` + (lastB ? T(`Sicherung ${daysAgo(lastB)}`, `backup ${daysAgo(lastB)}`) : T('noch keine Sicherung', 'no backup yet'));
-  const tile = (k, name, sub, wide) => `<button type="button" class="stile${wide ? ' wide' : ''}" data-go="${k}"><span class="sthead">${startIcon(k)}<b>${name}</b></span><small>${esc(sub)}</small></button>`;
+  // Bereiche erreicht man über die Leiste unten; „Mehr“ hat dort keinen Platz → eine Zeile am Ende (mit Version und Sicherungsstand)
+  const lastB = load(KEYS.backup, null), bTxt = `Version ${APP_VERSION} · ` + (lastB ? T(`Sicherung ${daysAgo(lastB)}`, `backup ${daysAgo(lastB)}`) : T('noch keine Sicherung', 'no backup yet'));
   const lt = logToday && items.find(it => it.key === logToday && RUN(it));
   const lp = logPick && plannedRunsOn(logPick.day).find(it => it.key === logPick.key);
   $('startcontent').innerHTML = `${startFeedback ? feedbackCard(startFeedback) : ''}${lt ? runCard({ day: today, item: lt }, 90) : lp ? runCard({ day: logPick.day, item: lp }, 91) : ''}${pendingHtml()}<div class="scard"><p class="skicker">${T('Heute dran', 'On today')}</p>${rows}</div>
-    <div class="scard"><p class="skicker">${T('Diese Woche', 'This week')}</p>${weekStrip()}<div class="sweek">${week.map(([l, v, b]) => `<div><small>${esc(l)}</small><b>${esc(v)}</b>${b}</div>`).join('')}</div></div>${yearCard()}
-    <div class="stiles">${mod('kraft') ? tile('kraft', T('Kraft', 'Strength'), kTxt) : ''}${mod('laufen') ? tile('laufen', T('Laufen', 'Running'), rTxt) : ''}${mod('mobility') ? tile('mobility', 'Mobility', mTxt) : ''}${tile('profil', T('Profil', 'Profile'), pTxt)}${tile('mehr', T('Mehr', 'More'), bTxt, true)}</div>`;
+    <div class="scard"><p class="skicker">${T('Diese Woche', 'This week')}</p>${weekStrip()}<div class="sweek">${week.map(([l, v, b]) => `<div><small>${esc(l)}</small><b>${esc(v)}</b>${b}</div>`).join('')}</div>${yearCard()}</div>${readyCard()}
+    <button type="button" class="scard smorerow" data-go="mehr">${startIcon('mehr')}<span class="txt"><b>${T('Mehr', 'More')}</b><small>${esc(T('Neuigkeiten, Sync, Daten', 'News, sync, data') + ' · ' + bTxt)}</small></span><span class="chev"></span></button>`;
 }
 $('startcontent').addEventListener('input', e => {
   const t = e.target; tpartJump(t); t.removeAttribute('aria-invalid'); if (t.closest && t.closest('.timein')) markTime(t.closest('.timein').id, false);
@@ -3089,7 +3143,7 @@ let runView = load(KEYS.run, null); if (!isObj(runView)) runView = {};
 function showArea(a, scroll = true) {
   area = a; store(KEYS.area, a);
   for (const x of AREAS) $('area-' + x).classList.toggle('hide', x !== a);
-  // Mehr hat keinen eigenen Reiter mehr (Kachel auf der Startseite) – dort ist „Start“ markiert
+  // Mehr hat keinen eigenen Reiter (Zeile am Ende der Startseite) – dort ist „Start“ markiert
   for (const b of $('tabbar').children) b.setAttribute('aria-selected', String(b.dataset.area === (a === 'mehr' ? 'start' : a)));
   document.body.classList.toggle('onstart', a === 'start');
   if (a === 'start') renderStart();

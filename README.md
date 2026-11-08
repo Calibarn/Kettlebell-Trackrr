@@ -12,7 +12,7 @@ Mein persönlicher Trainings-Begleiter als Web-App für iPhone und Android – K
   - Bestwerte vergleichen nur Einheiten mit gleichem Aufbau; nach dem Speichern Zusammenfassung mit neuem Bestwert
   - Progressionshinweise: Läufer-Plan bei allen Sätzen an der Obergrenze (nächste Stufe, Gewicht, Band), Tabata nach drei kompletten Einheiten (8 Runden, dann 60 Sek. Pause), Core nach drei kompletten Einheiten eine Runde mehr
   - Gefühlte Anstrengung (1–10) und Notiz je Einheit, nachträglich im Verlauf änderbar
-- **Start („Heute“)**: erscheint bei jedem Öffnen (außer ein Training läuft), ohne untere Leiste: was heute dran ist (Kraft mit Start, Läufe aus dem Plan, Lauf-Einstieg), die Woche (Kraft gegen Krafttage, km gegen Plan, geführte Mobility-Routinen) und je Bereich eine Kachel mit Stand; in den Bereichen hat die Leiste „Start“ statt „Mehr“
+- **Start („Heute“)**: erscheint bei jedem Öffnen (außer ein Training läuft), mit der unteren Leiste („Start“ markiert): offene Einträge, was heute dran ist (Kraft mit Start, Läufe aus dem Plan, Longrun anpassbar, Lauf-Einstieg), die Woche (Kraft gegen Krafttage, km gegen Plan, Mobility, Jahresziel als Zeile), „Rennbereit?“ (je Rennen schaffen und Zielzeit, Erfolge je Strecke eingeklappt) und „Mehr“ als Zeile am Ende
 - **Laufen** (Anleitungen, Saisonplan und Umfang)
   - Bestzeiten: Ergebnisse je Distanz (auch eigene km, aus Rennen übernehmbar; ab dem Tag nach einem Rennen fragt die Startseite nach der Zeit), neue Bestzeiten automatisch erkannt, Verlauf als Grafik, Prognose für andere Distanzen (Riegel)
   - Plan: A- und B-Rennen mit Datum, Distanz (5 km bis Marathon, eigene km) und optional Zielzeit – oder als Wings for Life World Run mit Ziel in km (Zielzeit und Mindest-Pace aus dem Tempo des Catcher Cars, dazu wie weit die Form reicht) bzw. Pace Race mit Ziel-Level (Zeitlimit der Zielrunde, 1-km-Wiederholungen mit 60 Sek. Pause im Plan). Die A-Rennen werden nach Datum abgearbeitet: je ein Block aus Grundlage, Aufbau, spezifischer Phase und Tapering, danach Erholung und Basis bis zum nächsten Block. B-Rennen laufen ohne eigenen Block mit und ersetzen die Qualität (deutlich kürzer als das A-Rennen: Tempoeinheit) bzw. ab Halbmarathon den Longrun. Longrun und Wochen-km kommen aus dem Umfang (höchstens +10 % pro Woche, nach drei Aufbauwochen Entlastung); Warnung, wenn A-Rennen zu dicht liegen oder das Longrun-Ziel nicht erreichbar ist. Dazu Renntempo-Rechner, Pacing, Tapering, Verpflegung und Checkliste für die Rennwoche
@@ -33,7 +33,7 @@ Mein persönlicher Trainings-Begleiter als Web-App für iPhone und Android – K
   - Alltag: Morgens, Nach dem Sitzen
   - Übungen nach Körperbereich: Hüfte, Rücken, Schultern, Beine & Fuß
   - Kurzprogramme mit geführtem Timer inkl. Seitenwechsel und Ansage
-- **Mehr** (Kachel auf der Startseite): Neuigkeiten, Anleitung (inkl. Hinweise), Geräte-Sync, Datensicherung, Zurücksetzen
+- **Mehr** (Zeile am Ende der Startseite): Neuigkeiten, Anleitung (inkl. Hinweise), Geräte-Sync, Datensicherung, Zurücksetzen
 - **Im Handy-Browser** (iPhone/Android, nicht als App geöffnet) steht in jedem Bereich ganz oben der Hinweis „Als App installieren“ mit Link zur Anleitung – nicht wegklickbar, während eines Trainings ausgeblendet
 
 ## Neuigkeiten (Patch Notes)

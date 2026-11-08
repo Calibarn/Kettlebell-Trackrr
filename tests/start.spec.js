@@ -1,21 +1,23 @@
-// Startseite „Heute“: beim Öffnen, ohne untere Leiste; Kacheln führen in die Bereiche, in den Bereichen „Start“ statt „Mehr“.
+// Startseite „Heute“: beim Öffnen, mit der unteren Leiste („Start“ markiert); „Mehr“ als Zeile am Ende der Startseite.
 const { test, expect, openSect } = require('./fixtures');
 
 test.describe('mit Startseite', () => {
   test.use({ start: true });
 
-  test('öffnet auf der Startseite, ohne Leiste; Kachel führt in den Bereich, „Start“ zurück', async ({ page }) => {
+  test('öffnet auf der Startseite, mit Leiste; Bereiche über die Leiste, „Mehr“ als Zeile, „Start“ zurück', async ({ page }) => {
     await expect(page.locator('#area-start')).toBeVisible();
-    await expect(page.locator('#tabbar')).toBeHidden();
+    await expect(page.locator('#tabbar')).toBeVisible();
+    await expect(page.locator('#tabbar [data-area="start"]')).toHaveAttribute('aria-selected', 'true');
     await expect(page.locator('#t-start')).toHaveText('Heute');
-    await expect(page.locator('#startcontent .stile')).toHaveCount(5);
-    await page.click('#startcontent [data-go="laufen"]');
+    await expect(page.locator('#startcontent .stile')).toHaveCount(0);
+    await page.click('#tabbar [data-area="laufen"]');
     await expect(page.locator('#area-laufen')).toBeVisible();
     await expect(page.locator('#tabbar')).toBeVisible();
     await expect(page.locator('#tabbar [data-area]')).toHaveCount(5);
     await expect(page.locator('#tabbar [data-area="mehr"]')).toHaveCount(0);
     await page.click('#tabbar [data-area="start"]');
     await expect(page.locator('#area-start')).toBeVisible();
+    await expect(page.locator('#startcontent .smorerow')).toContainText('Neuigkeiten, Sync, Daten · Version');
     await page.click('#startcontent [data-go="mehr"]');
     await expect(page.locator('#area-mehr')).toBeVisible();
     await expect(page.locator('#tabbar [data-area="start"]')).toHaveAttribute('aria-selected', 'true');
@@ -37,7 +39,6 @@ test.describe('mit Startseite', () => {
     await expect(page.locator('#startcontent .sweek')).toContainText('0 von 1');
     await expect(page.locator('#startcontent .sweek')).toContainText('6,5 km');
     await expect(page.locator('#startcontent .sweek')).toContainText('1 ×');
-    await expect(page.locator('#startcontent [data-go="mobility"]')).toContainText('Nach dem Lauf · heute');
     await page.click('[data-startact="kraft"]');
     await expect(page.locator('#area-kraft')).toBeVisible();
     expect(await page.evaluate(() => sessionActive())).toBe(true);
@@ -420,14 +421,16 @@ test.describe('Jahresziel', () => {
     });
     const card = page.locator('#yearcard');
     await expect(card).toContainText('Jahresziel 2026');
+    await page.click('#yearcard summary'); // eine Zeile in „Diese Woche“, Eingabe zum Aufklappen
     await expect(card).toContainText('Vorschlag: 1.100 km – Vorjahr 520 km, hochgerechnet aus 26 Wochen, + 5 %');
     await expect(page.locator('#yeargoal')).toHaveValue('1100');
     await page.fill('#yeargoal', '1200'); await page.click('#yearsave');
     expect(await page.evaluate(() => profile.yearKm)).toEqual({ 2026: 1200 });
-    await expect(card).toContainText('650 von 1.200 km');
+    await expect(card.locator('summary')).toContainText('Jahr 2026650 / 1.200 km');
     await expect(card).toContainText('Soll bis heute 602 km');
     await expect(card).toContainText('48 km voraus');
     await expect(card).toContainText('Hochrechnung ca. 1.296 km');
+    await page.click('#yearcard summary');
     await page.click('#yearedit');
     await expect(page.locator('#yeargoal')).toHaveValue('1200');
   });
@@ -502,5 +505,51 @@ test.describe('Longrun selbst setzen', () => {
     // im Backup
     await page.fill('#slongkm', '14'); await page.click('[data-longsave]');
     expect(await page.evaluate(() => JSON.parse(backupJson()).longSet)).toEqual(await page.evaluate(() => ({ [weekStart(localDay())]: 14 })));
+  });
+});
+
+test.describe('Rennbereit?', () => {
+  test.use({ start: true });
+  test('je Rennen: schaffen (längster Lauf, Wochen-km) und Zielzeit (Prognose); Erfolge eingeklappt, sichtbar der neueste', async ({ page }) => {
+    await page.clock.setFixedTime(new Date('2026-11-08T10:00:00+01:00')); // Sonntag
+    await page.reload();
+    await page.evaluate(() => {
+      localStorage.removeItem(KEYS.badges);
+      // 6 volle Wochen à 31 km: Mo 9, Mi 8, Sa 14 (Longrun)
+      runLog = []; for (let w = 1; w <= 6; w++) { const m = addDays('2026-11-02', -7 * w); runLog.push({ id: 'a' + w, date: m, km: 9 }, { id: 'b' + w, date: addDays(m, 2), km: 8 }, { id: 'c' + w, date: addDays(m, 5), km: 14, kind: 'long' }); }
+      runLog.sort((a, b) => a.date.localeCompare(b.date)); persistRunLog();
+      results = [{ id: 'r', date: '2026-09-27', km: 10, time: 3060, dist: '10k' }]; persistResults(); // 51:00 → HM-Prognose 1:52:32
+      races = [{ id: 'b', name: 'Silvesterlauf', date: '2026-12-31', dist: '10k', prio: 'B' }, { id: 'h', name: 'Spandauer HM', date: '2027-03-14', dist: 'hm', prio: 'A', goal: 7500 },
+        { id: 'm', name: 'Berlin', date: '2027-09-26', dist: 'marathon', prio: 'A', goal: 15300 }]; persistRaces();
+      profile.week.runner = 'runner'; persistProfile(); showArea('start');
+    });
+    const card = page.locator('#readycard'), row = n => card.locator('.srowt', { hasText: n });
+    await expect(row('Silvesterlauf · B')).toContainText('in 53 Tagen · Ziel: ankommen');
+    await expect(row('Silvesterlauf · B').locator('.spill')).toHaveText('✓ bereit');
+    await expect(row('Spandauer HM · A')).toContainText('längster Lauf 14/16 km · Ziel 2:05:00 · Prognose 1:52:32');
+    await expect(row('Spandauer HM · A').locator('.spill')).toHaveText('noch nicht');
+    // Marathon: weder schaffen noch Zielzeit (4:15 Ziel, Prognose aus 10 km ≈ 3:56 → Zeit passt, aber Longrun/Umfang fehlen)
+    await expect(row('Berlin · A')).toContainText('längster Lauf 14/28 km · Ø 31/40 km pro Woche');
+    // Erfolge: eingeklappt, sichtbar der neueste
+    await expect(card.locator('#badges')).not.toHaveAttribute('open', '');
+    await expect(card.locator('#badges summary')).toContainText('★ Neu: 10 km ready');
+    await expect(card.locator('#badges summary')).toContainText('2 Erfolge');
+    await card.locator('#badges summary').click();
+    await expect(card.locator('.sbadge.got')).toHaveCount(3); // Kopf + 5 km + 10 km
+    await expect(card.locator('.sbadgehint')).toHaveText('Für Halbmarathon ready: Lauf ≥ 16 km in 6 Wochen, Ø 25 km pro Woche.');
+    // ein 17-km-Lauf: HM ist zu schaffen und die Prognose passt → bereit, neuer Erfolg
+    await page.evaluate(() => { runLog.push({ id: 'x', date: '2026-11-07', km: 17, kind: 'long' }); persistRunLog(); renderStart(); });
+    await expect(row('Spandauer HM · A').locator('.spill')).toHaveText('✓ bereit');
+    await expect(card.locator('#badges summary')).toContainText('★ Neu: Halbmarathon ready');
+    // mit Zielzeit, die die Form nicht hergibt: noch nicht
+    await page.evaluate(() => { races[1].goal = 6000; persistRaces(); renderStart(); });
+    await expect(row('Spandauer HM · A')).toContainText('Ziel 1:40:00 · Prognose 1:52:32');
+    await expect(row('Spandauer HM · A').locator('.spill')).toHaveText('noch nicht');
+    // Erfolge bleiben, auch wenn der Stand später sinkt
+    await page.evaluate(() => { runLog = []; persistRunLog(); renderStart(); });
+    await expect(card.locator('#badges summary')).toContainText('3 Erfolge');
+    // ohne Laufen-Bereich keine Karte
+    await page.evaluate(() => { profile.modules = { kraft: true, laufen: false, mobility: true }; persistProfile(); renderAll(); renderStart(); });
+    await expect(page.locator('#readycard')).toHaveCount(0);
   });
 });

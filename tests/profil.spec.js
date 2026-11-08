@@ -270,7 +270,7 @@ test.describe('Bereiche', () => {
     await page.click(`[data-mobday="${wd}"]`);
     await page.selectOption(`[data-wkmob="${wd}"]`, 'huefte');
     await page.evaluate(() => showArea('start'));
-    await expect(page.locator('.stile[data-go="laufen"]')).toHaveCount(0);
+    await expect(page.locator('#readycard')).toHaveCount(0);
     await expect(page.locator('#startcontent')).not.toContainText('Qualität');
     const row = page.locator('#startcontent .srowt', { hasText: 'Mobility · Hüfte für Läufer' });
     await expect(row.locator('[data-startmob]')).toBeVisible();
