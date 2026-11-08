@@ -318,8 +318,11 @@ test.describe('Lauf nachtragen', () => {
     await page.evaluate(() => { runLog = []; persistRunLog(); showArea('start'); });
     await page.fill('#srunkm', '12'); for (const [i, v] of ['1', '10', '00'].entries()) await page.fill(`#sruntime [data-tpart="${i}"]`, v); await page.fill('#srunhr', '141');
     await page.click('[data-runsave]');
-    await expect(page.locator('#toast')).toHaveText('✓ Eingetragen. Lockeres Tempo angepasst: 5:50–6:20 /km');
-    expect(await page.evaluate(() => renderPaces())).toContain('an deine Läufe angepasst: 10 s/km schneller als aus der Bestzeit (6:00–6:30 /km), weil lockere Läufe mit Puls in Zone 2 schneller waren');
+    await expect(page.locator('#sfbeasy')).toHaveText('Lockeres Tempo angepasst: 6:00–6:30 /km → 5:50–6:20 /km – Puls in Zone 2 bei schnellerem Tempo. Die App rückt höchstens 10 s/km pro Lauf nach.');
+    // Reiter „Laufen“ zeigt den neuen Stand sofort (ohne Unterreiter-Wechsel)
+    await page.evaluate(() => { runView.tab = 'plan'; runView.plan = 'woche'; });
+    await page.evaluate(() => showArea('laufen')); // wie der Reiter in der Leiste
+    await expect(page.locator('#runcontent')).toContainText('an deine Läufe angepasst: 10 s/km schneller als aus der Bestzeit (6:00–6:30 /km), weil lockere Läufe mit Puls in Zone 2 schneller waren');
   });
   test('heutigen Lauf direkt aus „Heute dran“ eintragen, mit Zeit und Puls', async ({ page }) => {
     const wd = await page.evaluate(() => new Date(localDay() + 'T12:00:00').getDay());

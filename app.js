@@ -2279,6 +2279,7 @@ function feedbackCard(f) {
     ${c.p ? `<div class="chkrow"><span>${T('Tempo', 'Pace')} <small>${T('locker', 'easy')}</small></span>${checkBar(c.pace, c.p.lo, c.p.hi, t => hms(Math.round(t)), true, 'Tempo')}</div>` : ''}
     ${c.h ? `<div class="chkrow"><span>${T('Puls', 'HR')} <small>${zn}</small></span>${checkBar(c.hr, c.h.lo, c.h.hi, bpm, false, 'Puls')}</div>` : ''}
     ${v.text ? `<p class="sfbtext${v.ok === true ? ' good' : v.ok === false ? ' warn' : ''}">${v.ok === true ? '✓ ' : ''}${esc(v.text)}</p>` : ''}
+    ${f.easy ? `<p class="sfbtext" id="sfbeasy">${f.easy[1][0] < f.easy[0][0] ? T(`Lockeres Tempo angepasst: ${paceRange(f.easy[0])} → <b>${paceRange(f.easy[1])}</b> – Puls in Zone 2 bei schnellerem Tempo. Die App rückt höchstens 10 s/km pro Lauf nach.`, `Easy pace adjusted: ${paceRange(f.easy[0])} → <b>${paceRange(f.easy[1])}</b> – HR in zone 2 at a faster pace. The app moves at most 10 s/km per run.`) : T(`Puls über Zone 2 – lockeres Tempo etwas zurückgenommen: <b>${paceRange(f.easy[1])}</b>`, `HR above zone 2 – easy pace eased back a little: <b>${paceRange(f.easy[1])}</b>`)}</p>` : ''}
     <div class="sresact"><button type="button" class="btn small" data-fbclose>OK</button></div></div>`;
 }
 /* Offene Einträge: Rennen zuerst, dann Läufe, jeweils das älteste zuerst. Der erste steht offen da, weitere sind eingeklappt
@@ -2364,7 +2365,8 @@ $('startcontent').addEventListener('click', e => {
     if (run.sec || run.hr) startFeedback = { id: run.id, title: ru.dataset.title };
     if (day === localDay()) logToday = null; if (logPick && logPick.day === day) logPick = null;
     const easyNow = (trainingPaces() || {}).easy, easyMoved = easyBefore && easyNow && easyNow[0] !== easyBefore[0];
-    renderStart(); toast(easyMoved ? (easyNow[0] < easyBefore[0] ? T(`✓ Eingetragen. Lockeres Tempo angepasst: ${paceRange(easyNow)}`, `✓ Logged. Easy pace adjusted: ${paceRange(easyNow)}`) : T(`✓ Eingetragen. Puls über Zone 2 – lockeres Tempo etwas zurückgenommen: ${paceRange(easyNow)}`, `✓ Logged. HR above zone 2 – easy pace eased back a little: ${paceRange(easyNow)}`)) : T(`✓ ${kmText(km)} km am ${dayLabel(day)} eingetragen.`, `✓ ${kmText(km)} km on ${dayLabel(day)} logged.`)); if (startFeedback) window.scrollTo(0, 0); return;
+    if (startFeedback && easyMoved) startFeedback.easy = [easyBefore, easyNow]; // Hinweis in der Auswertung (Toast wäre zu lang)
+    renderStart(); toast(T(`✓ ${kmText(km)} km am ${dayLabel(day)} eingetragen.`, `✓ ${kmText(km)} km on ${dayLabel(day)} logged.`)); if (startFeedback) window.scrollTo(0, 0); return;
   }
   const rd = e.target.closest('[data-resdns]'); if (rd) { const r = races.find(x => x.id === rd.dataset.resdns); if (r) { r.dns = true; persistRaces(); renderStart(); toast(T(`Notiert: ${r.name} nicht gelaufen.`, `Noted: ${r.name} not run.`)); } return; }
   const a = e.target.closest('[data-startact]'); if (!a) return;
@@ -3052,6 +3054,7 @@ function showArea(a, scroll = true) {
   for (const b of $('tabbar').children) b.setAttribute('aria-selected', String(b.dataset.area === (a === 'mehr' ? 'start' : a)));
   document.body.classList.toggle('onstart', a === 'start');
   if (a === 'start') renderStart();
+  if (a === 'laufen') renderRun(); // aktuell zeigen, was auf der Startseite eingetragen wurde (Umfang, angepasste Tempos)
   const bar = a === 'kraft';
   $('actionbar').classList.toggle('hide', !bar);
   document.body.style.setProperty('--actbar', bar ? '66px' : '0px');
