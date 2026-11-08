@@ -67,7 +67,7 @@ test('Laufen und Mobility: jede antippbare Übung hat Anleitung und Skizze', asy
 test('Mobility-Reiter: jedes Programm und jeder Körperbereich erreichbar, Auswahl wird gemerkt', async ({ page }) => {
   await page.evaluate(() => showArea('mobility'));
   await expect(page.locator('#mobtabs button')).toHaveText(['Läufer', 'Alltag', 'Übungen']);
-  await expect(page.locator('#mobsub button')).toHaveText(['Nach dem Lauf', 'Hüfte', 'Sprunggelenk']);
+  await expect(page.locator('#mobsub button')).toHaveText(['Nach dem Lauf', 'Hüfte', 'Sprunggelenk', 'Füße']);
   const all = await page.evaluate(() => [MOBILITY.routines.map(r => [r.tab, r.id, r.steps.length]), MOBILITY.regions.map(([id]) => [id, MOBILITY.groups.filter(g => g.region === id).reduce((n, g) => n + g.items.length, 0)])]);
   for (const [tab, id, n] of all[0]) {
     await openMob(page, tab, id);

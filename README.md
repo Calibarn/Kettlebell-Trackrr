@@ -29,7 +29,7 @@ Mein persönlicher Trainings-Begleiter als Web-App für iPhone und Android – K
   - Körpermaße: Gewicht und Bauchumfang in einem Formular und Protokoll, Diagramm umschaltbar, Ø pro Woche (Gewicht, 4 Wochen), Erinnerung, CSV
   - Ton & Ansagen
 - **Mobility** (ohne Tracking), in Reitern wie Laufen
-  - Läufer: Nach dem Lauf, Hüfte, Sprunggelenk
+  - Läufer: Nach dem Lauf, Hüfte, Sprunggelenk, Füße & Achillessehne
   - Alltag: Morgens, Nach dem Sitzen
   - Übungen nach Körperbereich: Hüfte, Rücken, Schultern, Beine & Fuß
   - Kurzprogramme mit geführtem Timer inkl. Seitenwechsel und Ansage

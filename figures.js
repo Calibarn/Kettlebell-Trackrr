@@ -27,6 +27,8 @@ const SW_A = P(SS, { k2: [95, 148], f2: [86, 176], t2: [98, 180] });
 const SW_B = { h: [162, 92], n: [146, 96], p: [96, 112], k1: [102, 150], f1: [100, 188], t1: [114, 189], k2: [60, 108], f2: [24, 104], t2: [20, 94], e1: [146, 122], w1: [146, 148], e2: [142, 122], w2: [142, 148] };
 const CA_A = P(SS, { k2: [102, 150], f2: [84, 168], t2: null, e1: [132, 74], w1: [166, 70] });
 const CA_B = { h: [100, 30], n: [100, 50], p: [98, 102], k1: [101, 140], f1: [101, 177], t1: [112, 190], k2: [102, 140], f2: [84, 158], e1: [132, 64], w1: [166, 60], e2: [97, 76], w2: [96, 101] };
+// aufrecht auf dem Stuhl, beide Füße flach (Fußübungen)
+const CH = { h: [87, 66], n: [86, 86], p: [84, 140], k1: [124, 142], f1: [126, 188], t1: [140, 189], k2: [120, 143], f2: [122, 188], t2: [136, 189], e1: [100, 112], w1: [116, 132], e2: [96, 112], w2: [112, 132] };
 // Wadenheben mit gebeugtem Knie: Becken tiefer, Standknie vorn
 const CB_A = { h: [100, 48], n: [100, 68], p: [94, 120], k1: [112, 152], f1: [99, 188], t1: [113, 189], k2: [108, 154], f2: [88, 170], e1: [132, 82], w1: [166, 78], e2: [97, 94], w2: [96, 119] };
 const CB_B = { h: [100, 38], n: [100, 58], p: [94, 110], k1: [112, 142], f1: [100, 178], t1: [112, 190], k2: [108, 144], f2: [88, 160], e1: [132, 72], w1: [166, 68], e2: [97, 84], w2: [96, 109] };
@@ -229,7 +231,12 @@ Object.assign(FIG, {
   'Soleus-Dehnung': { a: fr(WD_B, [{ wall: 168 }]), b: fr({ h: [134, 66], n: [122, 80], p: [98, 128], k1: [128, 158], f1: [124, 188], t1: [138, 189], k2: [92, 160], f2: [66, 188], t2: [80, 189], e1: [144, 76], w1: [166, 70], e2: [142, 78], w2: [164, 72] }, [{ wall: 168 }, { arrow: 'M76 136 L86 154' }]), la: 'Schrittstellung an der Wand', lb: 'Knie beugen, Ferse unten' },
   'Sprunggelenk mit Kettlebell': { a: fr(P(HF_A, { e1: [110, 116], w1: [124, 132], e2: [106, 116], w2: [120, 132] }), [KB(130, 136)]), b: fr(P(HF_A, { h: [118, 76], n: [117, 96], p: [116, 150], k1: [156, 156], k2: [96, 186], f2: [62, 186], e1: [128, 118], w1: [142, 138], e2: [124, 118], w2: [138, 138] }), [KB(148, 142), { arrow: 'M164 128 H186' }]), la: 'Kugel auf dem vorderen Knie', lb: 'Knie vor, Ferse bleibt unten' },
   'Schienbeinheben': { a: fr(TR_A, [{ wall: 26 }]), b: fr(P(TR_A, { t1: [90, 174], t2: [88, 175] }), [{ wall: 26 }, { arrow: 'M108 186 V162' }]), la: 'Rücken an der Wand, Füße vor', lb: 'Zehen zum Schienbein ziehen' },
-  'Einbeinstand': { a: fr(P(FS, Object.assign({ k2: [114, 132], f2: [120, 162] }, HANDS_HIP))), la: 'auf einem Bein, Knie leicht gebeugt' }
+  'Einbeinstand': { a: fr(P(FS, Object.assign({ k2: [114, 132], f2: [120, 162] }, HANDS_HIP))), la: 'auf einem Bein, Knie leicht gebeugt' },
+  'Zehen spreizen': { a: fr(CH, [{ chair: [58, 146, 56] }]), la: 'Zehen weit spreizen, 5 Sek. halten' },
+  'Zehen-Yoga': { a: fr(P(CH, { t1: [138, 178] }), [{ chair: [58, 146, 56] }]), b: fr(CH, [{ chair: [58, 146, 56] }]), la: 'große Zehen hoch', lb: 'große Zehen unten, andere hoch' },
+  'Kurzer Fuß': { a: fr(CH, [{ chair: [58, 146, 56] }]), b: fr(P(CH, { f1: [126, 183] }), [{ chair: [58, 146, 56] }, { arrow: 'M136 186 V170' }]), la: 'Fuß flach, Zehen lang', lb: 'Gewölbe anheben' },
+  'Fußsohle dehnen': { a: fr(P(F4_A, { t2: [138, 130], e1: [112, 110], w1: [140, 126] }), [{ chair: [58, 146, 56] }]), la: 'Fuß aufs Knie, Zehen zurückziehen' },
+  'Wadenheben halten': { a: fr({ h: [100, 30], n: [100, 50], p: [98, 102], k1: [101, 140], f1: [101, 177], t1: [112, 190], k2: [97, 140], f2: [97, 177], t2: [108, 190], e1: [132, 64], w1: [166, 60], e2: [130, 66], w2: [164, 62] }, [{ wall: 168 }]), la: 'halb hoch auf die Ballen, halten' }
 });
 
 // AMRAP mit einer Kettlebell (aus vorhandenen Posen zusammengesetzt)
