@@ -275,7 +275,7 @@ function currentSig(pk = plan) {
   return pk + '|' + c.length + '|' + sigCfg(pk, c) + (isSets(pk) ? '|' + PLANS[pk].slots.map(sl => stageOf(pk, sl) || '').join(',') : '');
 }
 const comparable = e => entrySig(e) === currentSig(e.plan);
-const SHORT = EN ? { 'Split Squat': 'Split', 'Einarmiges Rudern': 'Row', 'Rudern mit Band': 'Row', 'Y-T-W in Bauchlage': 'Y-T-W', 'Brustdrücken mit Band': 'Press', 'Liegestütze erhöht': 'Push-ups', 'Einbeiniges Wadenheben': 'Calves', 'Einbeiniges Kreuzheben': 'SL deadlift', 'Suitcase March': 'March', 'Kettlebell-Swing': 'Swing', 'Kettlebell-Swing (beidarmig)': 'Swing', 'Hüftheben mit Band': 'Bridge', 'Split Squat mit Kurzhanteln': 'Split', 'Einarmiges Rudern mit Kurzhantel': 'Row', 'Floor Press mit Kurzhanteln': 'Floor press', 'Einbeiniges Wadenheben mit Kurzhantel': 'Calves', 'Einbeiniges Kreuzheben mit Kurzhantel': 'SL deadlift', 'Suitcase March mit Kurzhantel': 'March', 'Kurzhantel-Swing': 'Swing' } : { 'Split Squat': 'Split', 'Einarmiges Rudern': 'Rudern', 'Rudern mit Band': 'Rudern', 'Y-T-W in Bauchlage': 'Y-T-W', 'Brustdrücken mit Band': 'Drücken', 'Liegestütze erhöht': 'Liegest.', 'Einbeiniges Wadenheben': 'Waden', 'Einbeiniges Kreuzheben': 'EB-Kreuzh.', 'Suitcase March': 'March', 'Kettlebell-Swing': 'Swing', 'Kettlebell-Swing (beidarmig)': 'Swing', 'Hüftheben mit Band': 'Hüftheben', 'Split Squat mit Kurzhanteln': 'Split', 'Einarmiges Rudern mit Kurzhantel': 'Rudern', 'Floor Press mit Kurzhanteln': 'Floor Press', 'Einbeiniges Wadenheben mit Kurzhantel': 'Waden', 'Einbeiniges Kreuzheben mit Kurzhantel': 'EB-Kreuzh.', 'Suitcase March mit Kurzhantel': 'March', 'Kurzhantel-Swing': 'Swing' };
+const SHORT = EN ? { 'Split Squat': 'Split', 'Einarmiges Rudern': 'Row', 'Rudern mit Band': 'Row', 'Y-T-W in Bauchlage': 'Y-T-W', 'Brustdrücken mit Band': 'Press', 'Liegestütze erhöht': 'Push-ups', 'Einbeiniges Wadenheben': 'Calves', 'Wadenheben mit gebeugtem Knie': 'Bent-knee calves', 'Wadenheben mit gebeugtem Knie und Band': 'Bent-knee calves', 'Wadenheben mit gebeugtem Knie und Kurzhantel': 'Bent-knee calves', 'Einbeiniges Kreuzheben': 'SL deadlift', 'Suitcase March': 'March', 'Kettlebell-Swing': 'Swing', 'Kettlebell-Swing (beidarmig)': 'Swing', 'Hüftheben mit Band': 'Bridge', 'Split Squat mit Kurzhanteln': 'Split', 'Einarmiges Rudern mit Kurzhantel': 'Row', 'Floor Press mit Kurzhanteln': 'Floor press', 'Einbeiniges Wadenheben mit Kurzhantel': 'Calves', 'Einbeiniges Kreuzheben mit Kurzhantel': 'SL deadlift', 'Suitcase March mit Kurzhantel': 'March', 'Kurzhantel-Swing': 'Swing' } : { 'Split Squat': 'Split', 'Einarmiges Rudern': 'Rudern', 'Rudern mit Band': 'Rudern', 'Y-T-W in Bauchlage': 'Y-T-W', 'Brustdrücken mit Band': 'Drücken', 'Liegestütze erhöht': 'Liegest.', 'Einbeiniges Wadenheben': 'Waden', 'Wadenheben mit gebeugtem Knie': 'Waden gebeugt', 'Wadenheben mit gebeugtem Knie und Band': 'Waden gebeugt', 'Wadenheben mit gebeugtem Knie und Kurzhantel': 'Waden gebeugt', 'Einbeiniges Kreuzheben': 'EB-Kreuzh.', 'Suitcase March': 'March', 'Kettlebell-Swing': 'Swing', 'Kettlebell-Swing (beidarmig)': 'Swing', 'Hüftheben mit Band': 'Hüftheben', 'Split Squat mit Kurzhanteln': 'Split', 'Einarmiges Rudern mit Kurzhantel': 'Rudern', 'Floor Press mit Kurzhanteln': 'Floor Press', 'Einbeiniges Wadenheben mit Kurzhantel': 'Waden', 'Einbeiniges Kreuzheben mit Kurzhantel': 'EB-Kreuzh.', 'Suitcase March mit Kurzhantel': 'March', 'Kurzhantel-Swing': 'Swing' };
 const shortName = n => SHORT[n] || tr(n);
 function resultText(e) {
   if (e.mode === 'sets') {
@@ -541,12 +541,18 @@ const rpeOf = e => Number.isInteger(e.rpe) && e.rpe >= 1 && e.rpe <= 10 ? e.rpe 
 const repTop = reps => { const m = String(reps).match(/(\d+)\s*[–-]\s*(\d+)/) || String(reps).match(/(\d+)/); return m ? Number(m[2] || m[1]) : null; };
 const totalText = e => e.mode === 'sets' ? e.total + T(' Wdh.', ' reps') : T(`${Math.floor(e.total / entryCount(e))} Runden + ${e.total % entryCount(e)}`, `${Math.floor(e.total / entryCount(e))} rounds + ${e.total % entryCount(e)}`);
 // Doppelte Progression: Erst wenn alle Sätze die Obergrenze erreichen, wird es schwerer (Stufe, Gewicht, Band)
+// Stelle der Übung in einem älteren Eintrag: gleicher Aufbau → gleiche Stelle; sonst (z. B. neue Übung im Plan) über den Namen
+function lastIdx(e, i) {
+  const ex = exList(), names = Array.isArray(e.names) ? e.names : [], nm = ex[i] && ex[i].name;
+  if ((e.cfg || []).length === ex.length) return i;
+  return nm && names.filter(n => n === nm).length === 1 ? names.indexOf(nm) : -1;
+}
 function setsAdvice(e, i) {
   const ex = exList(), x = ex[i];
-  if (!x || !e || e.mode !== 'sets' || e.plan !== plan || !Array.isArray(e.sets) || (e.cfg || []).length !== ex.length) return null;
-  const st = stageOf(plan, x.slot) || '';
-  if (e.cfg[i] !== x.cfg || ((e.stages || [])[i] || '') !== st) return null;
-  const top = repTop(x.reps), r = e.sets[i];
+  if (!x || !e || e.mode !== 'sets' || e.plan !== plan || !Array.isArray(e.sets)) return null;
+  const j = lastIdx(e, i), st = stageOf(plan, x.slot) || '';
+  if (j < 0 || (e.cfg || [])[j] !== x.cfg || ((e.stages || [])[j] || '') !== st) return null;
+  const top = repTop(x.reps), r = e.sets[j];
   if (!top || !Array.isArray(r) || r.length < x.slot.sets || !r.every(v => typeof v === 'number' && v >= top)) return null;
   const sl = x.slot, k = sl.stages ? sl.stages.indexOf(st) : -1;
   if (sl.stages && k >= 0 && k < sl.stages.length - 1) return { text: T('Nächste Stufe: ', 'Next stage: ') + tr(sl.stages[k + 1]), stage: sl.stages[k + 1] };
@@ -776,7 +782,8 @@ function renderList() {
     const stageSel = sl.stages ? `<select class="stagesel" data-stage="${sl.id}" aria-label="${T('Stufe', 'Stage')} ${esc(tr(x.name))}">${sl.stages.map(s => `<option value="${esc(s)}" ${s === st ? 'selected' : ''}>${esc(tr(s))}</option>`).join('')}</select>` : '';
     const inputs = runReps[sl.id].map((v, k) => `<label class="setin"><span>${sl.setLabel ? tr(sl.setLabel) : T('Satz', 'Set')} ${k + 1}</span><input type="number" inputmode="numeric" min="0" max="${/Sek\./.test(x.reps) ? 600 : 200}" step="1" data-slot="${sl.id}" data-idx="${k}" value="${esc(v)}" placeholder="${/Sek\./.test(x.reps) ? T('Sek.', 'sec') : T('Wdh.', 'reps')}"></label>`).join('');
     let lastTxt = T('Noch kein Eintrag', 'No entry yet');
-    if (last && (last.cfg || []).length === ex.length && last.sets[i]) lastTxt = `${T('Zuletzt', 'Last')} (${dateGerman(last.date)}): ${last.sets[i].map(r => r ?? '–').join(' / ')}${last.stages && last.stages[i] ? ' · ' + esc(tr(last.stages[i])) : ''} · ${esc(cfgText(last.cfg[i]))}${last.names && last.names[i] !== x.name ? ' · ' + esc(tr(last.names[i])) : ''}`;
+    const j = last ? lastIdx(last, i) : -1;
+    if (j >= 0 && Array.isArray(last.sets) && last.sets[j]) lastTxt = `${T('Zuletzt', 'Last')} (${dateGerman(last.date)}): ${last.sets[j].map(r => r ?? '–').join(' / ')}${last.stages && last.stages[j] ? ' · ' + esc(tr(last.stages[j])) : ''} · ${esc(cfgText(last.cfg[j]))}${last.names && last.names[j] !== x.name ? ' · ' + esc(tr(last.names[j])) : ''}`;
     const adv = setsAdvice(last, i);
     const advHtml = adv ? `<div class="advice"><span>${T('↑ Alle Sätze an der Obergrenze – bereit für mehr:', '↑ All sets at the upper limit – ready for more:')} <b>${esc(adv.text)}</b></span>${adv.stage ? `<button type="button" class="btn small" data-advance="${sl.id}" data-to="${esc(adv.stage)}">${T('Übernehmen', 'Apply')}</button>` : adv.lvl ? `<button type="button" class="btn small" data-lvlup="${sl.id}" data-to="${adv.lvl}">${T('Übernehmen', 'Apply')}</button>` : ''}</div>` : '';
     const em = sl.emom ? '<div class="timedctl" style="padding:8px 0 0"><button type="button" class="btn small primary" id="emomstart">' + T('▶ EMOM starten', '▶ Start EMOM') + '</button><strong class="stepclock" id="emomclock">03:00</strong></div><p class="tiny" id="emominfo"></p>' : '';

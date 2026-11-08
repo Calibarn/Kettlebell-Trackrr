@@ -214,6 +214,26 @@ test('Core: nach drei kompletten Einheiten eine Runde mehr vorschlagen', async (
   await expect(page.locator('#planhint')).toBeHidden();
 });
 
+test('Läufer: Wadenheben auch mit gebeugtem Knie; „Zuletzt“ und „bereit für mehr“ bleiben bei Einträgen ohne die neue Übung', async ({ page }) => {
+  // Eintrag im alten Aufbau (7 Übungen, ohne Wadenheben mit gebeugtem Knie)
+  await page.evaluate(() => {
+    gear = { kb: true, band: true, bw: true, db: false }; store(KEYS.gear, gear); setPlan('run');
+    const ex = exList().filter(x => x.slot.id !== 'soleus'), top = { split: 15, row: 12, press: 10, calf: 15, sldl: 8, march: 25, swing: 12 };
+    saved.push({ v: 3, id: 'alt', date: '2026-11-01', plan: 'run', mode: 'sets', total: 1, cfg: ex.map(x => x.cfg), names: ex.map(x => x.name),
+      stages: PLANS.run.slots.filter(sl => sl.id !== 'soleus').map(sl => stageOf('run', sl) || ''), units: [], sets: ex.map(x => Array(x.slot.sets).fill(top[x.slot.id])) });
+    persistEntries(); renderAll();
+  });
+  const ids = await page.evaluate(() => exList().map(x => x.slot.id));
+  expect(ids.slice(3, 7)).toEqual(['calf', 'soleus', 'sldl', 'march']);
+  const card = id => page.locator('.setcard').filter({ has: page.locator(`[data-slot="${id}"]`) });
+  await expect(card('soleus')).toContainText('Wadenheben mit gebeugtem Knie');
+  await expect(card('soleus')).toContainText('Noch kein Eintrag');
+  await expect(card('sldl')).toContainText('Zuletzt (01.11.2026): 8 / 8');
+  await expect(card('calf')).toContainText('Zuletzt (01.11.2026): 15 / 15');
+  await expect(card('calf').locator('.advice')).toHaveCount(1); // 15 = Obergrenze → bereit für mehr
+  expect(await page.evaluate(() => [getFigure('Wadenheben mit gebeugtem Knie', 'kb') && getFigure('Wadenheben mit gebeugtem Knie und Kurzhantel', 'db') && getFigure('Wadenheben mit gebeugtem Knie und Band', 'band') ? 'ok' : 'fehlt', !!GUIDES['Wadenheben mit gebeugtem Knie und Kurzhantel']])).toEqual(['ok', true]);
+});
+
 test('Läufer: Sätze, EMOM und Hinweis „bereit für mehr“ mit Stufenwechsel', async ({ page }) => {
   await page.click('[data-plan="run"]');
   for (let i = 0; i < 3; i++) await page.fill(`[data-slot="split"][data-idx="${i}"]`, '15');

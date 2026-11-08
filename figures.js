@@ -27,6 +27,9 @@ const SW_A = P(SS, { k2: [95, 148], f2: [86, 176], t2: [98, 180] });
 const SW_B = { h: [162, 92], n: [146, 96], p: [96, 112], k1: [102, 150], f1: [100, 188], t1: [114, 189], k2: [60, 108], f2: [24, 104], t2: [20, 94], e1: [146, 122], w1: [146, 148], e2: [142, 122], w2: [142, 148] };
 const CA_A = P(SS, { k2: [102, 150], f2: [84, 168], t2: null, e1: [132, 74], w1: [166, 70] });
 const CA_B = { h: [100, 30], n: [100, 50], p: [98, 102], k1: [101, 140], f1: [101, 177], t1: [112, 190], k2: [102, 140], f2: [84, 158], e1: [132, 64], w1: [166, 60], e2: [97, 76], w2: [96, 101] };
+// Wadenheben mit gebeugtem Knie: Becken tiefer, Standknie vorn
+const CB_A = { h: [100, 48], n: [100, 68], p: [94, 120], k1: [112, 152], f1: [99, 188], t1: [113, 189], k2: [108, 154], f2: [88, 170], e1: [132, 82], w1: [166, 78], e2: [97, 94], w2: [96, 119] };
+const CB_B = { h: [100, 38], n: [100, 58], p: [94, 110], k1: [112, 142], f1: [100, 178], t1: [112, 190], k2: [108, 144], f2: [88, 160], e1: [132, 72], w1: [166, 68], e2: [97, 84], w2: [96, 109] };
 const DB = P(LB, { e1: [52, 150], w1: [54, 122], e2: [48, 150], w2: [50, 122], k1: [104, 146], f1: [138, 146], t1: [146, 140], k2: [100, 148], f2: [134, 148], t2: [142, 142] });
 const HF_A = { h: [102, 74], n: [101, 94], p: [100, 146], k1: [138, 150], f1: [138, 188], t1: [152, 189], k2: [86, 186], f2: [52, 186], e1: [118, 120], w1: [134, 148], e2: [114, 120], w2: [130, 148] };
 const HF_B = { h: [112, 78], n: [111, 98], p: [110, 150], k1: [146, 152], f1: [138, 188], t1: [152, 189], k2: [86, 186], f2: [52, 186], e1: [128, 124], w1: [142, 150], e2: [124, 124], w2: [138, 150] };
@@ -81,6 +84,7 @@ const FIG = {
   'Einbeiniges Kreuzheben': { a: fr(SW_A, [KB(96, 124)]), b: fr(SW_B, [KB(142, 160)]), la: 'Kugel gegenüber dem Standbein', lb: 'Hüfte zurück, Bein nach hinten' },
   'Stehende Knie-Ellenbogen-Crunches': { a: fr(P(FS, { e1: [74, 52], w1: [90, 40], e2: [126, 52], w2: [110, 40] })), b: fr(P(FS, { n: [97, 66], s1: [84, 70], s2: [110, 64], h: [94, 46], e1: [92, 92], w1: [84, 48], e2: [124, 56], w2: [106, 40], k2: [96, 104], f2: [112, 134] })), la: 'Hände an den Kopf', lb: 'Knie zum Gegen-Ellenbogen' },
   'Einbeiniges Wadenheben': g => ({ a: fr(CA_A, [{ wall: 168 }].concat(g === 'kb' ? [KB(96, 124)] : [])), b: fr(CA_B, [{ wall: 168 }, { arrow: 'M70 150 V118' }].concat(g === 'kb' ? [KB(96, 114)] : [])), la: 'auf einem Bein, Hand an der Wand', lb: 'auf den Fußballen' }),
+  'Wadenheben mit gebeugtem Knie': g => ({ a: fr(CB_A, [{ wall: 168 }].concat(g === 'kb' ? [KB(96, 132)] : [])), b: fr(CB_B, [{ wall: 168 }, { arrow: 'M70 150 V118' }].concat(g === 'kb' ? [KB(96, 122)] : [])), la: 'Knie leicht gebeugt', lb: 'hoch, Knie bleibt gebeugt' }),
   'Schulterdrücken': { a: fr(P(FS, { e1: [78, 92], w1: [90, 112], e2: [120, 96], w2: [118, 70] }), [KB(126, 66)]), b: fr(P(FS, { e1: [78, 92], w1: [90, 112], e2: [116, 36], w2: [117, 10] }), [KB(121, 0)]), la: 'Rack-Position', lb: 'senkrecht über Kopf' },
   'Überkopfdrücken mit Band': { a: fr(P(FS, { e1: [78, 90], w1: [84, 66], e2: [122, 90], w2: [116, 66] }), [BAND([89, 188], [84, 66]), BAND([111, 188], [116, 66])]), b: fr(P(FS, { e1: [84, 36], w1: [86, 10], e2: [116, 36], w2: [114, 10] }), [BAND([89, 188], [86, 10]), BAND([111, 188], [114, 10])]), la: 'Hände auf Schulterhöhe', lb: 'nach oben drücken' },
   'Pike-Liegestütze erhöht': { a: fr(PK_A, [{ box: [130, 166, 54, 24] }]), b: fr(PK_B, [{ box: [130, 166, 54, 24] }]), la: 'Hüfte hoch, umgedrehtes V', lb: 'Kopf Richtung Kante senken' },
@@ -185,6 +189,7 @@ Object.assign(FIG, {
   'Suitcase Hold mit Band': { a: fr(P(FS, { e2: [121, 88], w2: [124, 114] }), [BAND([111, 188], [124, 114])]), la: 'Gegen den Zug ruhig halten' },
   'Einbeiniges Kreuzheben mit Band': { a: fr(SW_A, [BAND([99, 188], [96, 111])]), b: fr(SW_B, [BAND([100, 188], [142, 148])]), la: 'Band unter dem Standfuß', lb: 'Hüfte zurück, Bein nach hinten' },
   'Einbeiniges Wadenheben mit Band': { a: fr(P(CA_A, { e2: [98, 86], w2: [104, 64] }), [{ wall: 168 }, BAND([100, 188], [104, 64])]), b: fr(P(CA_B, { e2: [98, 76], w2: [104, 54] }), [{ wall: 168 }, { arrow: 'M70 150 V118' }, BAND([101, 177], [104, 54])]), la: 'Band unter dem Fußballen', lb: 'auf den Fußballen' },
+  'Wadenheben mit gebeugtem Knie und Band': { a: fr(P(CB_A, { e2: [98, 94], w2: [104, 72] }), [{ wall: 168 }, BAND([100, 188], [104, 72])]), b: fr(P(CB_B, { e2: [98, 84], w2: [104, 62] }), [{ wall: 168 }, { arrow: 'M70 150 V118' }, BAND([101, 177], [104, 62])]), la: 'Band unter dem Fuß', lb: 'hoch, Knie bleibt gebeugt' },
   'Dead Bug mit Kettlebell': { a: fr(DB, [KB(54, 112)]), b: fr(P(DB, { k1: [138, 172], f1: [174, 178], t1: [182, 172] }), [KB(54, 112)]), la: 'Kugel über der Brust', lb: 'Bein strecken, Kugel ruhig' },
   'Dead Bug mit Band': { a: fr(DB, [BAND([54, 122], [138, 146])]), b: fr(P(DB, { e2: [26, 170], w2: [6, 176], k1: [138, 172], f1: [174, 178], t1: [182, 172] }), [BAND([54, 122], [174, 178])]), la: 'Band zwischen Händen und Füßen', lb: 'Arm und Gegenbein strecken' },
   'Squeeze Press am Boden': { a: fr(P(LB, { e1: [70, 185], w1: [72, 160], e2: [66, 184], w2: [68, 160] }), [KB(70, 150)]), b: fr(P(LB, { e1: [50, 150], w1: [52, 122], e2: [46, 151], w2: [48, 123] }), [KB(50, 112)]), la: 'Kugel zwischen den Händen', lb: 'senkrecht nach oben drücken' },
@@ -260,6 +265,7 @@ Object.assign(FIG, {
   'Dead Bug mit Kurzhantel': dbSwap(FIG['Dead Bug mit Kettlebell']),
   'Split Squat mit Kurzhanteln': { a: fr2(P(SP_A, { e1: [99, 86], w1: [100, 111], e2: [95, 86], w2: [96, 111] })), b: fr2(P(SP_B, { e1: [99, 120], w1: [100, 145], e2: [95, 120], w2: [96, 145] })), la: 'Schrittstellung', lb: 'hinteres Knie absenken' },
   'Einbeiniges Wadenheben mit Kurzhantel': dbSwap(FIG['Einbeiniges Wadenheben']('kb')),
+  'Wadenheben mit gebeugtem Knie und Kurzhantel': dbSwap(FIG['Wadenheben mit gebeugtem Knie']('kb')),
   'Squeeze Press mit Kurzhanteln': dbSwap(FIG['Squeeze Press am Boden'], { la: 'Hanteln aneinander drücken' }),
   'Schulterdrücken mit Kurzhanteln': { a: fr(P(FS, { e1: [78, 96], w1: [82, 72], e2: [122, 96], w2: [118, 72] }), [DBW(82, 66), DBW(118, 66)]), b: fr(P(FS, { e1: [84, 36], w1: [86, 10], e2: [116, 36], w2: [114, 10] }), [DBW(86, 4), DBW(114, 4)]), la: 'Hanteln auf Schulterhöhe', lb: 'senkrecht über Kopf' },
   'Seitheben mit Kurzhanteln': { a: fr2(FS), b: fr(P(FS, { e1: [66, 70], w1: [42, 74], e2: [134, 70], w2: [158, 74] }), [DBW(42, 74), DBW(158, 74)]), la: 'Arme unten', lb: 'seitlich bis Schulterhöhe' },
