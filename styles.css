@@ -605,3 +605,8 @@ body.onstart .livepill{bottom:calc(env(safe-area-inset-bottom) + 16px)}
 #wkextras .extrarow{margin:4px 0 12px;padding-bottom:10px!important;border-bottom:.5px solid var(--sep)}
 #wkextras .kitadd input{flex:1}
 .hrest{margin:10px 0 2px}.hrest>summary{cursor:pointer;color:var(--accent-ink);list-style:none}.hrest>summary::-webkit-details-marker{display:none}
+/* Longrun selbst setzen (Startseite → Heute dran) */
+.srowt .txt small.slong{display:block;overflow:visible}
+.srowt .txt small.slong .linkbtn{font-size:inherit;padding:6px 0}
+.slongedit{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px}
+.slongedit input{width:84px;text-align:center}

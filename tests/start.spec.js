@@ -467,3 +467,40 @@ test.describe('Weniger Tipps', () => {
     await expect(page.locator('.sstripinfo')).toContainText('Laufgruppe ✓');
   });
 });
+
+test.describe('Longrun selbst setzen', () => {
+  test.use({ start: true });
+  test('heute weniger oder mehr: Wert gilt für die Woche, Vorschlag bleibt zurückholbar, Hinweis bei deutlich mehr', async ({ page }) => {
+    const wd = await page.evaluate(() => new Date(localDay() + 'T12:00:00').getDay());
+    await page.evaluate(w => { profile.week = Object.assign(profile.week, { group: null, quality: null, long: w, extras: [], strength: [], runner: 'runner' }); persistProfile(); races = [{ id: 'a', name: 'HM', date: addDays(localDay(), 120), dist: 'hm', prio: 'A' }]; persistRaces();
+      runLog = [7, 14, 21, 28].flatMap(d => [{ id: 'l' + d, date: addDays(localDay(), -d), km: 12, kind: 'long' }, { id: 'e' + d, date: addDays(localDay(), -d - 3), km: 8, kind: 'easy' }]).sort((a, b) => a.date.localeCompare(b.date)); persistRunLog(); showArea('start'); }, wd);
+    const sug = await page.evaluate(() => todayItems().find(i => i.kind === 'long').suggested);
+    expect(sug).toBeGreaterThan(0);
+    // weniger („fühl mich nicht gut“)
+    await page.click('[data-longedit]');
+    await page.fill('#slongkm', String(sug - 2)); await page.click('[data-longsave]');
+    await expect(page.locator('#startcontent')).toContainText(`Longrun ${sug - 2} km · selbst gesetzt`);
+    await expect(page.locator('.slong')).toContainText(`Vorschlag des Plans: ${sug} km`);
+    expect(await page.evaluate(() => [longSet[weekStart(localDay())], todayItems().find(i => i.kind === 'long').km])).toEqual([sug - 2, sug - 2]);
+    // „✓ … wie geplant“ beim Eintragen nimmt den eigenen Wert
+    await page.click('[data-logtoday="long"]');
+    await expect(page.locator('[data-runquick]')).toContainText(`${sug - 2} km`);
+    await page.click('[data-logcancel]');
+    // deutlich mehr („übelst Bock“): Hinweis
+    await page.click('[data-longedit]');
+    await page.fill('#slongkm', '25'); await page.click('[data-longsave]');
+    await expect(page.locator('#toast')).toContainText(`Longrun 25 km – deutlich mehr als geplant (${sug} km)`);
+    // zurück auf den Vorschlag
+    await page.click('[data-longedit]');
+    await page.click('[data-longreset]');
+    await expect(page.locator('#startcontent')).toContainText(`Longrun ca. ${sug} km`);
+    expect(await page.evaluate(() => Object.keys(longSet).length)).toBe(0);
+    // ungültig
+    await page.click('[data-longedit]');
+    await page.fill('#slongkm', '0'); await page.click('[data-longsave]');
+    await expect(page.locator('#slongkm')).toHaveAttribute('aria-invalid', 'true');
+    // im Backup
+    await page.fill('#slongkm', '14'); await page.click('[data-longsave]');
+    expect(await page.evaluate(() => JSON.parse(backupJson()).longSet)).toEqual(await page.evaluate(() => ({ [weekStart(localDay())]: 14 })));
+  });
+});
