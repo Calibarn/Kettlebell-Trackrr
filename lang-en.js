@@ -448,7 +448,6 @@ const EN_TEXT = {
 "Einen Fuß zum Gesäß führen und am Fuß oder Knöchel halten.": "Bring one foot to the glutes and hold it by the foot or ankle.",
 "Knie ungefähr nebeneinander, Becken leicht aufrichten.": "Knees roughly side by side, tilt the pelvis up slightly.",
 "Dehnt die Vorderseite des Oberschenkels.": "Stretches the front of the thigh.",
-"Nicht am Knie ziehen oder den Rücken überstrecken.": "Don't pull on the knee or overextend the back.",
 "Auf einen stabilen Stuhl setzen und einen Knöchel auf den anderen Oberschenkel legen.": "Sit on a sturdy chair and place one ankle on the other thigh.",
 "Rücken lang halten und den Oberkörper leicht nach vorne neigen.": "Keep the back long and lean the torso slightly forward.",
 "Sanft halten, dann wechseln.": "Hold gently, then switch.",
@@ -532,7 +531,6 @@ const EN_TEXT = {
 "Kugel mit fast gestreckten Armen über den Kopf führen und hinter dem Kopf absenken, die Ellenbogen zeigen nach oben.": "Bring the bell overhead with almost straight arms and lower it behind the head, elbows pointing up.",
 "Auf demselben Weg zurück über den Kopf und vor die Brust.": "Return the same way over the head and in front of the chest.",
 "Breiter Rückenmuskel, Schultern und Trizeps. Im Knien muss der Rumpf das Hohlkreuz aktiv verhindern.": "Lats, shoulders and triceps. Kneeling, the trunk has to actively prevent an arched back.",
-"Rippen unten, Gesäß fest – der Rücken bleibt neutral, auch wenn die Kugel hinter den Kopf geht. Nur so weit absenken, wie die Schultern es frei zulassen.": "Ribs down, glutes tight – the back stays neutral even when the bell goes behind the head. Only lower as far as the shoulders allow freely.",
 "Aufrecht knien, Knie hüftbreit, Gesäß angespannt. Kugel an den Hörnern neben der linken Hüfte.": "Kneel tall, knees hip width apart, glutes tight. Bell by the horns beside the left hip.",
 "Kugel diagonal vor dem Körper nach oben führen, einmal dicht um den Kopf kreisen und auf der anderen Seite diagonal zur rechten Hüfte absenken.": "Bring the bell diagonally up in front of the body, circle it once closely around the head and lower it diagonally to the right hip on the other side.",
 "Von dort in die Gegenrichtung: um den Kopf und zurück zur linken Hüfte. Seiten abwechseln.": "From there the other way: around the head and back to the left hip. Alternate sides.",
@@ -624,7 +622,6 @@ const EN_TEXT = {
 "Oberkörper nach vorne ablegen, Arme lang nach vorne.": "Lay the torso forward, arms long in front.",
 "Ruhig in den Rücken atmen.": "Breathe calmly into the back.",
 "Entspannt Rücken und Schultern, dehnt den unteren Rücken.": "Relaxes back and shoulders, stretches the lower back.",
-"Bei Kniebeschwerden ein Kissen zwischen Gesäß und Fersen legen.": "With knee complaints put a cushion between glutes and heels.",
 "Einlaufen": "Easy jog",
 "Sehr locker beginnen – du solltest dich problemlos unterhalten können.": "Start very easy – you should be able to chat without trouble.",
 "Nach einigen Minuten das Tempo leicht anheben.": "After a few minutes raise the pace slightly.",
@@ -1844,7 +1841,10 @@ const EN_TEXT = {
 "Fuß aufs Knie, Zehen zurückziehen": "foot on knee, pull toes back",
 "halb hoch auf die Ballen, halten": "halfway up on the balls, hold",
 "Barfuß, 3–4 × pro Woche: kleine Fußmuskeln, Fußsohle und Achillessehne. Bei Fußkrampf: Zehen Richtung Schienbein ziehen, bis er nachlässt – häufige Krämpfe ärztlich abklären.": "Barefoot, 3–4 × a week: small foot muscles, sole of the foot and Achilles tendon. With a foot cramp: pull your toes towards your shin until it eases – have frequent cramps checked by a doctor.",
-"Neues Mobility-Programm im Reiter Läufer (7 Min., barfuß): Zehen spreizen, Zehen-Yoga, kurzer Fuß, Fußsohle dehnen, Wadenheben halten und Wadendehnung – für die kleinen Fußmuskeln und eine schonend belastete Achillessehne. Mit Tipp gegen akute Fußkrämpfe. Die Übungen stehen auch unter Übungen → Beine & Fuß.": "New mobility routine in the Runners tab (7 min, barefoot): toe spread, toe yoga, short foot, sole stretch, calf raise hold and calf stretch – for the small foot muscles and a gently loaded Achilles tendon. With a tip for acute foot cramps. The exercises are also under Exercises → Legs & feet."
+"Bei Kniebeschwerden ein Kissen zwischen Gesäß und Fersen legen. Krampft der Fuß: ein gerolltes Handtuch unter die Sprunggelenke legen oder die Zehen aufstellen.": "With knee complaints put a cushion between glutes and heels. If your foot cramps: place a rolled towel under your ankles or tuck your toes under.",
+"Nicht am Knie ziehen oder den Rücken überstrecken.": "Don't pull on the knee or overextend the back.",
+"Rippen unten, Gesäß fest – der Rücken bleibt neutral, auch wenn die Kugel hinter den Kopf geht. Nur so weit absenken, wie die Schultern es frei zulassen.": "Ribs down, glutes tight – the back stays neutral even when the bell goes behind the head. Only lower as far as the shoulders allow freely.",
+"Neues Mobility-Programm im Reiter Läufer (7 Min., barfuß): Zehen spreizen, Zehen-Yoga, kurzer Fuß, Fußsohle dehnen, Wadenheben halten und Wadendehnung – für die kleinen Fußmuskeln und eine schonend belastete Achillessehne. Mit Tipp gegen akute Fußkrämpfe; die Kindhaltung zeigt, was hilft, wenn der Fuß im Fersensitz krampft. Die Übungen stehen auch unter Übungen → Beine & Fuß.": "New mobility routine in the Runners tab (7 min, barefoot): toe spread, toe yoga, short foot, sole stretch, calf raise hold and calf stretch – for the small foot muscles and a gently loaded Achilles tendon. With a tip for acute foot cramps; child's pose shows what helps if your foot cramps while sitting on your heels. The exercises are also under Exercises → Legs & feet."
 };
 const EN_HTML = {
 "Kraft · Laufen · Mobility": "Strength · Running · Mobility",
