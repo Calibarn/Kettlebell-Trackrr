@@ -21,7 +21,7 @@ if (KEY_NS) {
   if (off) document.documentElement.classList.add('nosplash');
 })();
 /* Fehlerprotokoll: Fehler der App mitschreiben – nur auf diesem Gerät, höchstens 50 Einträge, gleiche Fehler hintereinander zusammengefasst.
-   Enthält nur Meldung, Datei/Zeile, Version und Zeitpunkt, keine Trainingsdaten. Export: Profil → Daten & Datenschutz → Fehlerprotokoll.
+   Enthält nur Meldung, Datei/Zeile, Version und Zeitpunkt, keine Trainingsdaten. Export: Start → Mehr → Daten & Datenschutz → Fehlerprotokoll.
    Steht hier (erstes Skript), damit auch Fehler beim Laden der übrigen Skripte erfasst werden. Nicht in Backup oder Sync. */
 var ERRLOG_KEY = KEY_NS + 'jan-kb-errlog-v1', ERRLOG_MAX = 50;
 function readErrLog() { try { var l = JSON.parse(localStorage.getItem(ERRLOG_KEY) || '[]'); return Array.isArray(l) ? l : []; } catch (e) { return []; } }

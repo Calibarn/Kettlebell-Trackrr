@@ -1770,7 +1770,7 @@ const EN_TEXT = {
 "Neuer Plan „Finisher“: kurzer Rumpf-Block mit einer Kettlebell im Grätschsitz – V-Chop, Lenkrad, Press-up & Press-out und Iron Arc als EMOM, 3 Runden = 12 Minuten (2–4 Runden wählbar). Passt nach einem lockeren Lauf oder ans Ende einer Krafteinheit.": "New plan “Finisher”: a short core block with one kettlebell in a straddle sit – V chop, steering wheel, press-up & press-out and iron arc as an EMOM, 3 rounds = 12 minutes (2–4 rounds selectable). Fits after an easy run or at the end of a strength session.",
 "Kugel auf Augenhöhe": "bell at eye level",
 "Fehlerprotokoll": "Error log",
-"Die App schreibt Fehler auf diesem Gerät mit (nur Meldung, Version und Zeitpunkt, keine Trainingsdaten). Unter Profil → Daten & Datenschutz → „Fehlerprotokoll exportieren“ bekommst du sie als Textdatei, die du für die Fehlersuche weitergeben kannst.": "The app records errors on this device (only message, version and time, no training data). Under Profile → Data & privacy → “Export error log” you get them as a text file you can pass on for troubleshooting."
+"Die App schreibt Fehler auf diesem Gerät mit (nur Meldung, Version und Zeitpunkt, keine Trainingsdaten). Unter Start → Mehr → Daten & Datenschutz → „Fehlerprotokoll exportieren“ bekommst du sie als Textdatei, die du für die Fehlersuche weitergeben kannst.": "The app records errors on this device (only message, version and time, no training data). Under Start → More → Data & privacy → “Export error log” you get them as a text file you can pass on for troubleshooting."
 };
 const EN_HTML = {
 "Kraft · Laufen · Mobility": "Strength · Running · Mobility",
