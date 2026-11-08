@@ -219,10 +219,10 @@ test('Sync automatisch: ohne dauerhaften Dateizugriff (iPhone) sichtbar, erklär
   await openSect(P, 'sect-sync');
   await expect(P.locator('#syncauto')).toBeVisible();
   await expect(P.locator('#syncauto')).toHaveAttribute('aria-disabled', 'true');
-  await expect(P.locator('#syncautoval')).toHaveText('Nicht verfügbar');
+  await expect(P.locator('#syncautoval')).toHaveText(''); // kein Wert, der Hinweis bekommt die volle Breite
   await expect(P.locator('#syncautohint')).toContainText('Auf iPhone/iPad nicht möglich: Safari erlaubt Web-Apps keinen dauerhaften Zugriff auf eine Datei.');
   await P.evaluate(() => document.getElementById('syncauto').click()); // aria-disabled: Antippen erklärt nur
-  await expect(P.locator('#toast')).toContainText('Auf iPhone/iPad nicht möglich');
+  await expect(P.locator('#toast')).toHaveText('Auf iPhone/iPad nicht verfügbar.');
   expect(await P.evaluate(() => !!syncMeta.auto)).toBe(false);
   // anderer Browser ohne Zugriff (z. B. Firefox): eigener Hinweis
   await P.evaluate(() => { document.documentElement.dataset.os = 'other'; renderSyncAuto(); });

@@ -2791,7 +2791,7 @@ const autoNoText = () => document.documentElement.dataset.os === 'ios'
 function renderSyncAuto() {
   const row = $('syncauto'); if (!row) return;
   const ok = canHandle(); row.setAttribute('aria-disabled', String(!ok)); row.classList.toggle('dim', !ok);
-  $('syncautoval').textContent = !ok ? T('Nicht verfügbar', 'Not available') : !syncMeta.auto ? T('Aus', 'Off') : autoPaused ? T('Pausiert', 'Paused') : T('An', 'On');
+  $('syncautoval').textContent = !ok ? '' : !syncMeta.auto ? T('Aus', 'Off') : autoPaused ? T('Pausiert', 'Paused') : T('An', 'On');
   $('syncautohint').textContent = !ok ? autoNoText() : autoPaused ? T('Der Browser fragt wieder nach dem Zugriff – tippen zum Fortsetzen', 'The browser asks for access again – tap to resume')
     : T('Beim Öffnen und nach jeder Änderung, ohne Knopfdruck – je Eintrag gewinnt der neuere Stand', 'On opening and after every change, no button needed – the newer state wins per entry');
   if (area === 'start') renderStart();
@@ -3642,7 +3642,7 @@ syncTrack();
 { const msg = sessionStorage.getItem(SYNC_MSG); if (msg) { sessionStorage.removeItem(SYNC_MSG); setTimeout(() => toast(msg), 300); } }
 $('syncsave').addEventListener('click', syncSave);
 $('syncauto').addEventListener('click', async () => {
-  if (!canHandle()) { toast(autoNoText()); return; }
+  if (!canHandle()) { toast(document.documentElement.dataset.os === 'ios' ? T('Auf iPhone/iPad nicht verfügbar.', 'Not available on iPhone/iPad.') : T('In diesem Browser nicht verfügbar.', 'Not available in this browser.')); return; } // Grund steht in der Zeile
   if (syncMeta.auto) { syncMeta.auto = false; syncSaveMeta(); autoPaused = false; renderSyncAuto(); toast(T('Automatischer Sync aus – laden und speichern wieder per Knopf.', 'Automatic sync off – load and save by button again.')); return; }
   let h = await handleGet(); if (h && !(await handleReady(h, true))) h = null;
   if (!h) { h = await syncPick(); if (!h) return; }
