@@ -5,7 +5,7 @@ const $ = id => document.getElementById(id);
 const KEYS = {
   entries: 'jan-kettlebell-tracker-v1', waist: 'jan-kb-waist-v1', sound: 'jan-kb-sound-v1', gear: 'jan-kb-gear-v1',
   choice: 'jan-kb-choice-v1', stage: 'jan-kb-stage-v1', plan: 'jan-kb-plan-v1', session: 'jan-kb-session-v1',
-  backup: 'jan-kb-lastbackup-v1', hint: 'jan-kb-installhint-v1', area: 'jan-kb-area-v1', run: 'jan-kb-runview-v1', audio: 'jan-kb-audio-v1', mob: 'jan-kb-mobview-v1', runweeks: 'jan-kb-runweeks-v1', runlog: 'jan-kb-runlog-v1', races: 'jan-kb-races-v1', profile: 'jan-kb-profile-v1', weight: 'jan-kb-weight-v1', skip: 'jan-kb-weekskip-v1', results: 'jan-kb-results-v1', bestview: 'jan-kb-bestview-v1', notes: 'jan-kb-notes-v1', weekplan: 'jan-kb-weekplan-v1', icsremind: 'jan-kb-icsremind-v1', sections: 'jan-kb-sections-v1', starter: 'jan-kb-starter-v1', moblog: 'jan-kb-moblog-v1', runask: 'jan-kb-runask-v1', gymlog: 'jan-kb-gymlog-v1', setup: 'jan-kb-setup-v1', longset: 'jan-kb-longset-v1', badges: 'jan-kb-badges-v1'
+  backup: 'jan-kb-lastbackup-v1', hint: 'jan-kb-installhint-v1', area: 'jan-kb-area-v1', run: 'jan-kb-runview-v1', audio: 'jan-kb-audio-v1', mob: 'jan-kb-mobview-v1', runweeks: 'jan-kb-runweeks-v1', runlog: 'jan-kb-runlog-v1', races: 'jan-kb-races-v1', profile: 'jan-kb-profile-v1', weight: 'jan-kb-weight-v1', skip: 'jan-kb-weekskip-v1', results: 'jan-kb-results-v1', bestview: 'jan-kb-bestview-v1', notes: 'jan-kb-notes-v1', weekplan: 'jan-kb-weekplan-v1', icsremind: 'jan-kb-icsremind-v1', sections: 'jan-kb-sections-v1', starter: 'jan-kb-starter-v1', moblog: 'jan-kb-moblog-v1', runask: 'jan-kb-runask-v1', gymlog: 'jan-kb-gymlog-v1', setup: 'jan-kb-setup-v1', longset: 'jan-kb-longset-v1', swap: 'jan-kb-swap-v1', badges: 'jan-kb-badges-v1'
 };
 /* Datensicherheit bei Updates:
    - Einträge, die diese Version nicht versteht, werden nie verworfen, sondern unverändert mitgespeichert.
@@ -1664,7 +1664,8 @@ function weekLongNote(x) {
 // Im Urlaub ist jeder Krafttag ein Hotel-Tag (auch ein Kurs-Tag); „Gym/Kurs“ hat keinen App-Plan
 const dayPlan = d => { if (vacation()) return 'hotel'; const pk = profile.week.strengthPlan[d]; return pk && PLANS[pk] && planOwned(pk) ? pk : null; };
 const gymOn = d => !vacation() && profile.week.strengthPlan[d] === 'gym' ? (profile.week.gymNames[d] || T('Gym/Kurs', 'Gym/class')) : null;
-const hardGymBefore = d => { const p = (d + 6) % 7; return gymOn(p) && profile.week.gymHard.includes(p) ? gymOn(p) : null; }; // harter Kurs am Vortag?
+// harter Kurs am Vortag? (week: Wochenstart – ein heute getauschter Kurs zählt nicht)
+const hardGymBefore = (d, week) => { const p = (d + 6) % 7, s = week ? daySwap[addDays(week, dayIdx(p))] : null; return gymOn(p) && profile.week.gymHard.includes(p) && !(s && s.from === 'strength-' + p) ? gymOn(p) : null; };
 const strengthTitle = d => { const g = gymOn(d); if (g) return `${T('Kurs', 'Class')} · ${g}`; const pk = dayPlan(d); return pk ? `${T('Kraft', 'Strength')} · ${tr(PLANS[pk].tab)}` : T('Kraft', 'Strength'); };
 // Einheiten der Woche auf die Tage aus dem Profil verteilt, Montag bis Sonntag
 const dayIdx = d => WEEK_ORDER.indexOf(d);
@@ -1688,7 +1689,7 @@ function weekSchedule(x) {
   const before = (d, gap = 1) => dayIdx(d) <= rd - gap;
   if (x.a) add(new Date(x.a.date + 'T12:00:00').getDay(), 'race', T(`Rennen: ${x.a.name}`, `Race: ${x.a.name}`), raceLabel(x.a) + goalLine(x.a));
   if (x.bRace) add(new Date(x.bRace.date + 'T12:00:00').getDay(), 'brace', T(`B-Rennen: ${x.bRace.name}`, `B race: ${x.bRace.name}`), raceLabel(x.bRace) + goalLine(x.bRace) + bRole(x));
-  const hg = w.quality !== null && x.phase !== 'recover' ? hardGymBefore(w.quality) : null;
+  const hg = w.quality !== null && x.phase !== 'recover' ? hardGymBefore(w.quality, x.week) : null;
   if (hg && (!x.a || before(w.quality, 2)) && !x.bRace) add(w.quality, 'quality', T('Locker laufen', 'Easy run'), hrize(T(`locker, Zone 2 – gestern ${hg} (hart), daher heute keine Qualität`, `easy, Zone 2 – ${hg} yesterday (hard), so no quality today`)) + easyPace(), { easy: true, afterHard: hg });
   else if (w.quality !== null && (!x.a || before(w.quality, 2)) && !x.bRace) add(w.quality, 'quality', x.phase === 'recover' ? T('Locker laufen', 'Easy run') : x.test ? T('Testlauf 5 km', 'Time trial 5 km') : T('Qualität', 'Quality'), x.test ? T('nach 15 Min. Einlaufen 5 km so schnell, wie du gleichmäßig durchhalten kannst – danach unter Bestzeiten eintragen, dann passen die Tempos', 'after a 15 min warm-up run 5 km as fast as you can hold evenly – then enter it under Best times so the paces update') : weekKey(x), { easy: x.phase === 'recover' });
   if (w.group !== null && (!x.a || before(w.group))) add(w.group, 'group', T('Laufgruppe', 'Running group'), hrize(x.a ? T('ganz locker, Zone 2', 'very easy, Zone 2') : T('locker, Zone 2', 'easy, Zone 2')) + easyPace());
@@ -1703,7 +1704,7 @@ function weekSchedule(x) {
     if (x.a && !before(e.d, e.type === 'quality' ? 2 : 1)) return;
     if (e.type === 'easy') add(e.d, 'easy', extraTitle(e), hrize(T('locker, Zone 2', 'easy, Zone 2')) + easyPace(), { key });
     else if (e.type === 'recovery') add(e.d, 'easy', extraTitle(e), recoveryDetail(), { key, recovery: true });
-    else if (e.type === 'quality') { const hq = hardGymBefore(e.d); if (['recover', 'taper'].includes(x.phase) || x.bRace || x.test || hq) add(e.d, 'quality2', e.name || T('Lockerer Lauf', 'Easy run'), hrize(hq ? T(`locker statt Tempo, Zone 2 – gestern ${hq} (hart)`, `easy instead of speed, Zone 2 – ${hq} yesterday (hard)`) : T('locker statt Tempo, Zone 2', 'easy instead of speed, Zone 2')) + easyPace(), { key, easy: true }); else add(e.d, 'quality2', e.name || T('Qualität 2', 'Quality 2'), weekKey(x, true), { key }); }
+    else if (e.type === 'quality') { const hq = hardGymBefore(e.d, x.week); if (['recover', 'taper'].includes(x.phase) || x.bRace || x.test || hq) add(e.d, 'quality2', e.name || T('Lockerer Lauf', 'Easy run'), hrize(hq ? T(`locker statt Tempo, Zone 2 – gestern ${hq} (hart)`, `easy instead of speed, Zone 2 – ${hq} yesterday (hard)`) : T('locker statt Tempo, Zone 2', 'easy instead of speed, Zone 2')) + easyPace(), { key, easy: true }); else add(e.d, 'quality2', e.name || T('Qualität 2', 'Quality 2'), weekKey(x, true), { key }); }
     else add(e.d, 'extra', extraTitle(e), '', { key });
   });
   const skip = weekSkip[x.week] || [], wp = curWeekPlan(x.week);
@@ -1713,6 +1714,7 @@ function weekSchedule(x) {
       it.done = wp.done.includes(it.key); if (isWd(wp.moved[it.key])) { it.from = it.d; it.d = wp.moved[it.key]; }
     }
   }
+  for (let i = 0; i < 7; i++) swapIn(out, addDays(x.week, i));
   // Kraft und Laufen am selben Tag gehen parallel: Kraft nach dem Lauf, nach Qualität oder Longrun ohne schwere Beinübungen
   for (const it of out) if (it.kind === 'strength' && !it.skip) {
     const runs = out.filter(o => o !== it && !o.skip && o.d === it.d && RUN(o)); if (!runs.length) continue;
@@ -1766,6 +1768,25 @@ function setLong(week, km) {
   if (km === null) delete longSet[week]; else longSet[week] = km;
   const limit = addDays(weekStart(localDay()), -56); for (const k of Object.keys(longSet)) if (k < limit) delete longSet[k];
   store(KEYS.longset, longSet);
+}
+/* Heute tauschen (Startseite → Heute dran): nur für heute statt Kraft/Kurs locker laufen oder statt eines Laufs Kraft machen,
+   z. B. wenn die Hand weh tut. Die getauschte Einheit fällt an dem Tag aus (ohne „nachholen“), dafür steht die andere da.
+   Gespeichert { Tag: { from: Schlüssel, to: 'run' | 'kraft' } }, ältere als 14 Tage fallen weg; im Backup und Sync. */
+let daySwap = load(KEYS.swap, {});
+daySwap = isObj(daySwap) ? Object.fromEntries(Object.entries(daySwap).filter(([k, v]) => isDay(k) && isObj(v) && typeof v.from === 'string' && ['run', 'kraft'].includes(v.to))) : {};
+function setSwap(day, v) {
+  if (v) daySwap[day] = v; else delete daySwap[day];
+  const limit = addDays(localDay(), -14); for (const k of Object.keys(daySwap)) if (k < limit) delete daySwap[k];
+  store(KEYS.swap, daySwap);
+}
+// Getauschte Einheit eines Tages in einer Liste von Einheiten (mit Schlüssel): ausfallen lassen, die andere dazu
+function swapIn(list, day) {
+  const s = daySwap[day]; if (!s) return;
+  const d = new Date(day + 'T12:00:00').getDay(), from = list.find(o => o && o.key === s.from && (o.d === undefined || o.d === d) && !o.skip); if (!from) return;
+  from.skip = true; from.swapped = true;
+  const was = from.kind === 'strength' ? gymOn(d) || T('Kraft', 'strength') : from.title;
+  list.push(s.to === 'run' ? { d, kind: 'easy', key: 'swap', swap: true, title: T('Locker laufen', 'Easy run'), detail: hrize(T(`locker, Zone 2 – heute statt ${was}`, `easy, Zone 2 – today instead of ${was}`)) + easyPace() }
+    : { d, kind: 'strength', key: 'swap', swap: true, plan: PLANS[plan] ? plan : 'wed', detail: T(`heute statt ${was}`, `today instead of ${was}`) });
 }
 let weekSkip = load(KEYS.skip, {});
 weekSkip = isObj(weekSkip) ? Object.fromEntries(Object.entries(weekSkip).filter(([k, v]) => isDay(k) && Array.isArray(v)).map(([k, v]) => [k, v.filter(x => typeof x === 'string')])) : {};
@@ -2113,14 +2134,15 @@ function todayItems() {
     w.quality === wd && { kind: 'quality', key: 'quality', title: T('Qualität', 'Quality'), detail: T('Intervall oder Tempo', 'Intervals or tempo') },
     w.long === wd && { kind: 'long', key: 'long', title: T('Longrun', 'Long run'), detail: hrize(T('locker, Zone 2', 'easy, Zone 2')) },
     w.group === wd && { kind: 'group', key: 'group', title: T('Laufgruppe', 'Running group'), detail: hrize(T('locker, Zone 2', 'easy, Zone 2')) },
-    strengthDays().includes(wd) && { kind: 'strength', plan: dayPlan(wd), base: '', sameDay: [w.quality, w.long].includes(wd) ? 'hard' : w.group === wd ? 'easy' : null },
+    strengthDays().includes(wd) && { kind: 'strength', key: 'strength-' + wd, plan: dayPlan(wd), base: '', sameDay: [w.quality, w.long].includes(wd) ? 'hard' : w.group === wd ? 'easy' : null },
     ...w.extras.map((e, i) => ({ e, i })).filter(({ e }) => e.d === wd).map(({ e, i }) => ({ kind: extraKind(e), key: 'x' + i, recovery: e.type === 'recovery', title: extraTitle(e), detail: e.type === 'easy' ? hrize(T('locker, Zone 2', 'easy, Zone 2')) : e.type === 'recovery' ? recoveryDetail() : e.type === 'quality' ? T('Intervall oder Tempo', 'Intervals or tempo') : '' }))].filter(Boolean);
+  if (!x) { swapIn(items, today); items.splice(0, items.length, ...items.filter(o => !o.skip)); }
   // Kraft am Lauftag: der Hinweis steht kurz in einer eigenen Zeile (im Wochenplan ausführlicher)
   const tip = it => !it.sameDay ? '' : it.base && /Beinübungen|leg exercises/.test(it.base) ? T('Nach dem Lauf', 'After the run') : it.sameDay === 'hard' ? T('Nach dem Lauf, ohne schwere Beinübungen', 'After the run, no heavy leg exercises') : T('Nach dem Lauf oder mit ein paar Stunden Abstand', 'After the run or a few hours apart');
   // ein heute eingetragener Lauf hakt den geplanten Lauf ab (auch ohne Saisonplan)
   const ranToday = ranOn(today);
   const gymItem = it => ({ kind: 'strength', gym: gymOn(wd), key: it.key || 'strength-' + wd, title: `${T('Kurs', 'Class')} · ${gymOn(wd)}`, detail: it.sameDay ? it.base : it.detail || T('im Studio', 'at the gym'), act: 'gym', done: it.done || gymDone(today), tip: tip(it) });
-  for (const it of items) out.push(it.kind === 'strength' && gymOn(wd) ? gymItem(it) : it.kind === 'strength' ? Object.assign(kraft(it.plan || plan), { done: it.done, note: it.sameDay ? it.base : it.detail, tip: tip(it) }) : Object.assign({}, it, { act: RUN(it) ? 'plan' : null, done: it.done || (RUN(it) && ranToday) }));
+  for (const it of items) out.push(it.kind === 'strength' && !it.swap && gymOn(wd) ? gymItem(it) : it.kind === 'strength' ? Object.assign(kraft(it.plan || plan), { key: it.key, swap: it.swap, done: it.done, note: it.sameDay ? it.base : it.detail, tip: tip(it) }) : Object.assign({}, it, { act: RUN(it) ? 'plan' : null, done: it.done || (RUN(it) && ranToday) }));
   const mi = mobItem(); if (mi) out.push(mi);
   return out;
 }
@@ -2392,6 +2414,16 @@ function pendingHtml() {
   return card(list[0], 0) + (list.length > 1 ? `<details class="smore" id="startmore"${startMoreOpen ? ' open' : ''}><summary class="scard"><span>${T(`${list.length - 1} weitere offen`, `${list.length - 1} more open`)}</span><span class="chev"></span></summary>
     ${list.slice(1).map((p, i) => card(p, i + 1)).join('')}${runs > 1 ? `<div class="smoreact"><button type="button" class="btn small" data-runskipall>${T(`Alle ${runs} offenen Läufe: nicht gelaufen`, `All ${runs} open runs: did not run`)}</button></div>` : ''}</details>` : '');
 }
+// Heute tauschen: unter Kraft/Kurs „stattdessen laufen“, unter einem Lauf „stattdessen Kraft“ – nur wenn es das andere heute nicht schon gibt
+function swapCtl(it, items) {
+  if (it.done) return '';
+  if (it.swap) return `<small class="sswap"><button type="button" class="linkbtn" data-swapundo>${T('Tausch zurücknehmen', 'Undo swap')}</button></small>`;
+  if (daySwap[localDay()] || !it.key) return '';
+  const hasRun = items.some(o => RUN(o)), hasKraft = items.some(o => o.kind === 'strength');
+  if (it.kind === 'strength' && mod('laufen') && !hasRun) return `<small class="sswap"><button type="button" class="linkbtn" data-swap="run" data-from="${esc(it.key)}">${T('Heute stattdessen laufen', 'Run instead today')}</button></small>`;
+  if (RUN(it) && !['race', 'brace'].includes(it.kind) && mod('kraft') && !hasKraft) return `<small class="sswap"><button type="button" class="linkbtn" data-swap="kraft" data-from="${esc(it.key)}">${T('Heute stattdessen Kraft', 'Strength instead today')}</button></small>`;
+  return '';
+}
 // Longrun heute selbst setzen: „km anpassen“ unter dem Longrun in „Heute dran“ (Vorschlag bleibt zurückholbar)
 let longEdit = false;
 function longCtl(it) {
@@ -2406,10 +2438,12 @@ function renderStart() {
   const logBtn = it => RUN(it) && it.key && !ranOn(today) ? `<button type="button" class="btn small primary sgo" data-logtoday="${esc(it.key)}">${T('Eintragen', 'Log')}</button>` : '';
   const btn = it => it.done ? `<span class="sdone">✓ ${T('erledigt', 'done')}</span>` : it.act === 'mob' ? `<button type="button" class="btn small primary sgo" data-startmob="${it.mob}">▶ ${T('Starten', 'Start')}</button>` : it.act === 'gym' ? `<button type="button" class="btn small primary sgo" data-gymdone="${esc(it.gym)}">✓ ${T('Abhaken', 'Check off')}</button>` : it.act === 'kraft' || it.act === 'starter' ? `<button type="button" class="btn small primary sgo" data-startact="${it.act}"${it.plan ? ` data-startplan="${it.plan}"` : ''}>▶ ${T('Starten', 'Start')}</button>` : it.act ? `<span class="sbtns"><button type="button" class="btn small sgo" data-startact="${it.act}">${T('Details', 'Details')}</button>${logBtn(it)}</span>` : '';
   const ico = it => startIcon(it.kind === 'strength' ? 'kraft' : it.kind === 'mobility' ? 'mobility' : it.kind === 'extra' ? 'mehr' : 'laufen');
-  const rows = items.length ? items.map(it => `<div class="srowt${it.done ? ' isdone' : ''}">${ico(it)}<span class="txt"><b>${esc(it.title)}</b>${it.detail || it.note ? `<small>${esc([it.detail, it.note].filter(Boolean).join(' · '))}</small>` : ''}${it.need && it.need.length && !it.done ? `<small class="sneed"><b>${T('Du brauchst', 'You need')}:</b> ${esc(it.need.join(' · '))}</small>` : ''}${it.tip ? `<small class="stip">${esc(it.tip)}</small>` : ''}${longCtl(it)}</span>${btn(it)}</div>`).join('')
+  const rows = items.length ? items.map(it => `<div class="srowt${it.done ? ' isdone' : ''}">${ico(it)}<span class="txt"><b>${esc(it.title)}</b>${it.detail || it.note ? `<small>${esc([it.detail, it.note].filter(Boolean).join(' · '))}</small>` : ''}${it.need && it.need.length && !it.done ? `<small class="sneed"><b>${T('Du brauchst', 'You need')}:</b> ${esc(it.need.join(' · '))}</small>` : ''}${it.tip ? `<small class="stip">${esc(it.tip)}</small>` : ''}${longCtl(it)}${swapCtl(it, items)}</span>${btn(it)}</div>`).join('')
     : `<div class="srowt">${startIcon('mobility')}<span class="txt"><b>${T('Heute ist nichts geplant', 'Nothing planned today')}</b><small>${T('Ruhetag – oder eine kurze Mobility-Routine', 'Rest day – or a short mobility routine')}</small></span><button type="button" class="btn small sgo" data-go="mobility">Mobility</button></div>`;
   // Diese Woche: Kraft gegen die Krafttage im Profil, Laufen gegen den Plan bzw. den Schnitt der letzten 4 Wochen, Mobility als Anzahl
-  const nK = saved.filter(e => e.date >= wk && e.date <= today).length + getGymLog().filter(e => e.d >= wk && e.d <= today).length, pK = strengthDays().length;
+  const nK = saved.filter(e => e.date >= wk && e.date <= today).length + getGymLog().filter(e => e.d >= wk && e.d <= today).length;
+  // getauschte Tage: Kraft statt Lauf zählt dazu, Lauf statt Kraft fällt weg
+  const sw = Object.entries(daySwap).filter(([d]) => weekStart(d) === wk).map(([, s]) => s), pK = Math.max(0, strengthDays().length + sw.filter(s => s.to === 'kraft').length - sw.filter(s => s.to === 'run' && /^strength-/.test(s.from)).length);
   const bar = (v, max, cls) => max > 0 ? `<span class="sbar"><span class="${cls}" style="width:${Math.min(100, Math.round(v / max * 100))}%"></span></span>` : '';
   let run;
   if (runnerLevel() === 'beginner') { const s = getStarter(); run = [`${s.done} ${T('von', 'of')} ${STARTER_N}`, bar(s.done, STARTER_N, 'b-run'), T('Einstieg', 'Starter')]; }
@@ -2435,6 +2469,9 @@ $('startcontent').addEventListener('click', e => {
   const g = e.target.closest('[data-go]'); if (g) { showArea(g.dataset.go); return; }
   if (e.target.closest('[data-fbclose]')) { startFeedback = null; renderStart(); return; }
   if (e.target.closest('[data-syncresume]')) { syncAuto(true); return; }
+  const sw = e.target.closest('[data-swap]');
+  if (sw) { setSwap(localDay(), { from: sw.dataset.from, to: sw.dataset.swap }); renderStart(); toast(sw.dataset.swap === 'run' ? T('Heute getauscht: locker laufen.', 'Swapped for today: easy run.') : T('Heute getauscht: Kraft.', 'Swapped for today: strength.')); return; }
+  if (e.target.closest('[data-swapundo]')) { setSwap(localDay(), null); renderStart(); toast(T('Wieder wie geplant.', 'Back to plan.')); return; }
   if (e.target.closest('[data-longedit]')) { longEdit = true; renderStart(); const f = $('slongkm'); if (f) { f.focus(); f.select(); } return; }
   const ls = e.target.closest('[data-longsave]'), lr = e.target.closest('[data-longreset]');
   if (ls) {
@@ -2598,7 +2635,7 @@ const SYNC_COLLS = {
   gymlog: { key: KEYS.gymlog, id: e => isObj(e) && isDay(e.d) && typeof e.n === 'string' ? `${e.d}|${e.n}` : null }
 };
 // Einstellungen, die zwischen Geräten gleich sein sollen (Ton, Stimme und Sprache bleiben je Gerät). Erfolge: je Strecke das früheste Datum.
-const SYNC_SETTINGS = { choices: KEYS.choice, stages: KEYS.stage, profile: KEYS.profile, gear: KEYS.gear, weekSkip: KEYS.skip, longSet: KEYS.longset, weekPlan: KEYS.weekplan, starter: KEYS.starter, badges: KEYS.badges };
+const SYNC_SETTINGS = { choices: KEYS.choice, stages: KEYS.stage, profile: KEYS.profile, gear: KEYS.gear, weekSkip: KEYS.skip, longSet: KEYS.longset, daySwap: KEYS.swap, weekPlan: KEYS.weekplan, starter: KEYS.starter, badges: KEYS.badges };
 const SYNC_TRACKED = new Set(Object.values(SYNC_COLLS).map(c => c.key).concat(Object.values(SYNC_SETTINGS)));
 const syncHash = s => { let h = 5381; for (let i = 0; i < s.length; i++) h = (h * 33 ^ s.charCodeAt(i)) >>> 0; return h.toString(36) + s.length.toString(36); };
 const rawGet = k => { try { const r = localStorage.getItem(k); return r === null ? null : JSON.parse(r); } catch (e) { return null; } };
@@ -2914,7 +2951,7 @@ $('notesauto').addEventListener('click', () => { notesOpt.auto = notesOpt.auto =
 
 /* ---------- Dateien: Backup, CSV, Kalender ---------- */
 function download(name, content, type) { const blob = new Blob([content], { type }), url = URL.createObjectURL(blob), a = document.createElement('a'); a.href = url; a.download = name; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 3000); }
-function backupJson() { return JSON.stringify({ version: 3, entries: saved.concat(savedKeep), waist: waist.concat(waistKeep), runWeeks: runWeeks.concat(runWeeksKeep), runLog: runLog.concat(runLogKeep), races: races.concat(racesKeep), weights: weights.concat(weightKeep), results: results.concat(resultsKeep), weekSkip, longSet, badges: load(KEYS.badges, {}), starter: getStarter(), mobLog: getMobLog(), gymLog: getGymLog(), settings: { gear, choices, stages, audio: audioOpt, profile: Object.assign({}, profileExtra, profile) }, exportedAt: new Date().toISOString() }, null, 2); }
+function backupJson() { return JSON.stringify({ version: 3, entries: saved.concat(savedKeep), waist: waist.concat(waistKeep), runWeeks: runWeeks.concat(runWeeksKeep), runLog: runLog.concat(runLogKeep), races: races.concat(racesKeep), weights: weights.concat(weightKeep), results: results.concat(resultsKeep), weekSkip, longSet, daySwap, badges: load(KEYS.badges, {}), starter: getStarter(), mobLog: getMobLog(), gymLog: getGymLog(), settings: { gear, choices, stages, audio: audioOpt, profile: Object.assign({}, profileExtra, profile) }, exportedAt: new Date().toISOString() }, null, 2); }
 function schemaCheck() {
   const prev = load(SCHEMA_KEY, null);
   if (prev === SCHEMA || (typeof prev === 'number' && prev > SCHEMA)) return; // neuere Daten mit älterer App: nichts verändern
@@ -3002,6 +3039,7 @@ function importBackup(file) {
       if (isObj(x) && isObj(x.weekSkip)) { for (const [k, v] of Object.entries(x.weekSkip)) if (isDay(k) && Array.isArray(v)) weekSkip[k] = [...new Set((weekSkip[k] || []).concat(v.filter(y => typeof y === 'string')))]; store(KEYS.skip, weekSkip); }
       if (isObj(x) && isObj(x.badges)) { const g = load(KEYS.badges, {}), u = isObj(g) ? g : {}; for (const [k, v] of Object.entries(x.badges)) if (isDay(v) && (!isDay(u[k]) || v < u[k])) u[k] = v; store(KEYS.badges, u); }
       if (isObj(x) && isObj(x.longSet)) { for (const [k, v] of Object.entries(x.longSet)) if (isDay(k) && okNum(v, 1, 60) && !(k in longSet)) longSet[k] = v; store(KEYS.longset, longSet); }
+      if (isObj(x) && isObj(x.daySwap)) { for (const [k, v] of Object.entries(x.daySwap)) if (isDay(k) && isObj(v) && typeof v.from === 'string' && ['run', 'kraft'].includes(v.to) && !(k in daySwap)) daySwap[k] = { from: v.from, to: v.to }; store(KEYS.swap, daySwap); }
       // Lauf-Einstieg: der Stand mit mehr erledigten Einheiten gewinnt
       if (isObj(x) && isObj(x.starter)) { const a = normStarter(x.starter); if (a.log.length > getStarter().log.length) putStarter(a); }
       if (isObj(x) && Array.isArray(x.gymLog)) { const a = normGymLog(x.gymLog), have = new Set(getGymLog().map(e => e.d)); putGymLog(getGymLog().concat(a.filter(e => !have.has(e.d)))); }

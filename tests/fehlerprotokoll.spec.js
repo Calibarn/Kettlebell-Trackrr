@@ -12,8 +12,8 @@ test.describe('Fehlerprotokoll', () => {
     // zweimal derselbe Fehler, einmal ein abgelehntes Promise
     await page.evaluate(() => { setPlan('wed'); for (let i = 0; i < 2; i++) setTimeout(() => { throw new Error('Testfehler A'); }, 0); setTimeout(() => Promise.reject(new Error('Testfehler B')), 5); });
     await expect.poll(() => page.evaluate(() => readErrLog().length)).toBe(2);
-    const log = await page.evaluate(() => readErrLog());
-    expect(log.map(e => [e.msg.replace(/^Uncaught /, ''), e.n || 1, e.v, e.area, e.plan])).toEqual([['Error: Testfehler A', 2, '1.1', 'mehr', 'wed'], ['Testfehler B', 1, '1.1', 'mehr', 'wed']]);
+    const log = await page.evaluate(() => readErrLog()), v = await page.evaluate(() => APP_VERSION);
+    expect(log.map(e => [e.msg.replace(/^Uncaught /, ''), e.n || 1, e.v, e.area, e.plan])).toEqual([['Error: Testfehler A', 2, v, 'mehr', 'wed'], ['Testfehler B', 1, v, 'mehr', 'wed']]);
     expect(log[1].where).toBe('Promise');
     // Anzeige aktualisiert sich beim Öffnen des Bereichs
     await page.evaluate(() => { document.getElementById('sect-data').open = false; });
@@ -26,9 +26,9 @@ test.describe('Fehlerprotokoll', () => {
     expect(d.suggestedFilename()).toMatch(/^tagwerk-fehler-\d{4}-\d{2}-\d{2}\.txt$/);
     const txt = fs.readFileSync(await d.path(), 'utf8');
     expect(txt).toContain('Tagwerk Fehlerprotokoll');
-    expect(txt).toContain('Version: 1.1');
+    expect(txt).toContain(`Version: ${v}`);
     expect(txt).toContain('Einträge: 2');
-    expect(txt).toMatch(/\[1\] .* \(×2\) · v1\.1 · mehr\/wed/);
+    expect(txt).toMatch(new RegExp(`\\[1\\] .* \\(×2\\) · v${v.replace(".", "\\.")} · mehr/wed`));
     expect(txt).toContain('Testfehler B');
     // nicht in Backup oder Sync
     expect(await page.evaluate(() => backupJson().includes('Testfehler'))).toBe(false);

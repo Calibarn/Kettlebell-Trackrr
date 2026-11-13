@@ -636,6 +636,8 @@ html[data-os=android] .infoi{border-color:var(--accent-ink);color:var(--accent-i
 /* Longrun selbst setzen (Startseite → Heute dran) */
 .srowt .txt small.slong{display:block;overflow:visible}
 .srowt .txt small.slong .linkbtn{font-size:inherit;padding:6px 0}
+.srowt .txt small.sswap{display:block;overflow:visible}
+.srowt .txt small.sswap .linkbtn{font-size:inherit;padding:6px 0}
 .slongedit{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px}
 .slongedit input{width:84px;text-align:center}
 /* Geräte-Sync: „Automatisch abgleichen“ ohne dauerhaften Dateizugriff (z. B. iPhone) – sichtbar, aber ausgegraut */

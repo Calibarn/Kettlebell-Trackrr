@@ -42,13 +42,12 @@ Mein persönlicher Trainings-Begleiter als Web-App für iPhone und Android – K
 
 ## Versionsnummer
 
-`APP_VERSION` in `data.js`, angezeigt unten unter **Mehr** (in der Testversion mit „Testversion“) und beim zugehörigen Neuigkeiten-Eintrag (`version`). Jede Veröffentlichung ist eine neue Nebenversion: 1.0, 1.1, 1.2 … Erhöht wird mit der ersten Änderung nach einer Veröffentlichung auf `dev`, damit die Testversion schon die kommende Nummer zeigt. Größere Umbauten (z. B. ein neues Datenformat) bekommen eine neue Hauptversion (2.0). Unabhängig davon steht in `sw.js` die Cache-Version, die bei jeder Änderung an den Dateien steigt.
+`APP_VERSION` in `data.js`, angezeigt unten unter **Mehr** (in der Testversion mit „Testversion“) und beim zugehörigen Neuigkeiten-Eintrag (`version`). Jeder Tag mit Veröffentlichung ist eine neue Nebenversion: 1.1, 1.2, 1.3 … Größere Umbauten (z. B. ein neues Datenformat) bekommen eine neue Hauptversion (2.0). Unabhängig davon steht in `sw.js` die Cache-Version, die bei jeder Änderung an den Dateien steigt.
 
 ## Testversion und Veröffentlichung
 
-- **Branch `dev`**: Hier landet jede Änderung. Nach grünen Tests stößt `.github/workflows/test.yml` den Pages-Workflow an, die Testversion liegt dann unter **…/Kettlebell-Trackrr/dev/** (Titel mit „Test“-Markierung).
-- **Branch `main`**: die echte App. Eine geplante Aufgabe übernimmt den Stand von `dev` einmal pro Woche, **mittwochs um 00:00** (nur bei grünen Tests, nur als Fast-Forward). `.github/workflows/deploy.yml` veröffentlicht bei jedem Push auf `main`.
-- **Branch `hotfix`**: Fehlerbehebungen für die laufende Version (1.0.1, 1.0.2 …), ohne auf den Mittwoch zu warten. Arbeitsweise: `hotfix` zuerst auf `origin/main` vorziehen (Fast-Forward), Fehler beheben, Tests grün, pushen – und **sofort auch in `dev` mergen**, damit der Wochen-Release die Behebung enthält und `main` ein Vorfahre von `dev` bleibt. Eine geplante Aufgabe veröffentlicht täglich um 00:05 (außer mittwochs, da läuft der Wochen-Release), wenn `hotfix` Neues hat: nur bei grünen Tests, nur als Fast-Forward. Nach dem Wochen-Release wird `hotfix` auf den neuen Stand von `main` vorgezogen. Versionsnummer: Fehlerbehebungen erhöhen die dritte Stelle (1.0.1); beim Mergen in `dev` behält `dev` seine kommende Nummer (z. B. 1.1).
+- **Seit 13.11.2026 direkt live:** Änderungen gehen ohne Wochen-Release direkt auf `main`; `.github/workflows/deploy.yml` veröffentlicht bei jedem Push auf `main`. Vorher lokal alle Tests (`npx playwright test`) und die Datenprüfung gegen die Live-Version (`node tools/upgrade-check.js --base origin/main --head HEAD`), nur als Fast-Forward, nie force-push.
+- **Branch `dev`** wird auf demselben Stand mitgeführt (Testversion unter **…/Kettlebell-Trackrr/dev/**, Titel mit „Test“-Markierung), `hotfix` ebenso.
 - **Getrennte Daten**: Beide Versionen liegen unter derselben Adresse. Die Testversion nutzt deshalb eigene Speicherschlüssel (`dev:` vorn, `KEY_NS` in `platform.js`), einen eigenen Cache (`dev-kbt-…` in `sw.js`), eine eigene Sync-Datei (`kb-tracker-test-sync.json`) und ein eigenes Manifest (`manifest-test.webmanifest`). Sie kann die Daten der echten App nicht verändern.
 - GitHub → Settings → Pages: Quelle „GitHub Actions“.
 
