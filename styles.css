@@ -638,6 +638,11 @@ html[data-os=android] .infoi{border-color:var(--accent-ink);color:var(--accent-i
 .srowt .txt small.slong .linkbtn{font-size:inherit;padding:6px 0}
 .srowt .txt small.sswap{display:block;overflow:visible}
 .srowt .txt small.sswap .linkbtn{font-size:inherit;padding:6px 0}
+.saddrow{margin-top:6px}
+.saddrow > .linkbtn{padding:8px 0}
+.sswapbox{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:8px}
+.sswapplan{display:flex;flex-direction:column;gap:4px;flex:1 1 100%;font-size:13px;color:var(--muted)}
+.sswapplan select{height:40px;font-size:15px;padding:0 8px;width:100%;min-width:0;box-sizing:border-box}
 .slongedit{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px}
 .slongedit input{width:84px;text-align:center}
 /* Geräte-Sync: „Automatisch abgleichen“ ohne dauerhaften Dateizugriff (z. B. iPhone) – sichtbar, aber ausgegraut */

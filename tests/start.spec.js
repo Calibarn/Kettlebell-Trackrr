@@ -556,45 +556,130 @@ test.describe('Rennbereit?', () => {
   });
 });
 
-test('Heute tauschen: statt Kurs locker laufen (nur heute), zurücknehmen, statt Lauf Kraft; harter Kurs zählt dann nicht für morgen', async ({ page }) => {
+test('Heute tauschen: „Heute stattdessen …“ – Kraft zu Hause statt Kurs (Plan wählbar), locker laufen, Mobility, Ruhetag, zurücknehmen', async ({ page }) => {
   const wd = await page.evaluate(() => new Date().getDay());
   await page.evaluate(wd => {
     const next = (wd + 1) % 7, other = (wd + 3) % 7;
     races = [{ id: 'a', name: 'A', date: addDays(localDay(), 100), dist: 'hm', prio: 'A' }]; results = []; persistRaces();
-    Object.assign(profile.week, { group: null, quality: next, long: (wd + 5) % 7, extras: [], strength: [wd, other], strengthPlan: { [wd]: 'gym' }, gymNames: { [wd]: 'Hyrox' }, gymHard: [wd] });
+    Object.assign(profile.week, { group: null, quality: next, long: (wd + 5) % 7, extras: [], strength: [wd, other], strengthPlan: { [wd]: 'gym' }, gymNames: { [wd]: 'Hyrox' }, gymHard: [wd], mobility: [] });
     persistProfile(); renderAll(); showArea('start');
   }, wd);
-  const todayCard = page.locator('#startcontent .scard', { hasText: 'Heute dran' });
-  await expect(todayCard).toContainText('Kurs · Hyrox');
-  // ohne Tausch: morgen nur locker (harter Kurs am Vortag) – außer der Qualitätstag liegt in der nächsten Woche
-  const qualTomorrow = () => page.evaluate(wd => { const S = seasonPlan(); const it = weekSchedule(S.weeks[0]).find(o => o.kind === 'quality' && o.d === (wd + 1) % 7); return it ? !!it.easy : null; }, wd);
-  const before = await qualTomorrow();
-  if (before !== null) expect(before).toBe(true);
-  await todayCard.locator('[data-swap="run"]').click();
-  await expect(todayCard).toContainText('Locker laufen');
-  await expect(todayCard).toContainText('heute statt Hyrox');
-  await expect(todayCard).not.toContainText('Kurs · Hyrox');
-  await expect(todayCard.locator('[data-logtoday="swap"]')).toHaveCount(1);
-  if (before !== null) expect(await qualTomorrow()).toBe(false);
-  // Kraft-Soll der Woche: der getauschte Kurs fällt weg
-  await expect(page.locator('.sweek')).toContainText('0 von 1');
-  // bleibt nach dem Neuladen, im Backup
+  const card = page.locator('#startcontent .scard', { hasText: 'Heute dran' });
+  await expect(card).toContainText('Kurs · Hyrox');
+  const qualTomorrow = () => page.evaluate(wd => { const it = weekSchedule(seasonPlan().weeks[0]).find(o => o.kind === 'quality' && o.d === (wd + 1) % 7); return it ? !!it.easy : null; }, wd);
+  const before = await qualTomorrow(); if (before !== null) expect(before).toBe(true);
+  // Auswahl öffnen: Locker laufen, Kraft (mit Plan), Mobility, Ruhetag
+  await card.locator('[data-swapopen]').click();
+  await expect(card.locator('[data-swap]')).toHaveText(['Locker laufen', 'Intervall/Tempo', 'Kraft', 'Mobility', 'Ruhetag']);
+  await page.selectOption('#swapplan', 'run');
+  await card.locator('[data-swap="kraft"]').click();
+  await expect(card).toContainText('Kraft · Läufer');
+  await expect(card).toContainText('heute statt Hyrox');
+  await expect(card).not.toContainText('Kurs · Hyrox');
+  await expect(card.locator('[data-startact="kraft"][data-startplan="run"]')).toHaveCount(1);
+  if (before !== null) expect(await qualTomorrow()).toBe(false); // kein harter Kurs mehr am Vortag
+  await expect(page.locator('.sweek')).toContainText('0 von 2'); // Kraft bleibt Kraft
+  // bleibt nach dem Neuladen, steht im Backup
   await page.reload();
   await expect(page.locator('#startcontent .scard', { hasText: 'Heute dran' })).toContainText('heute statt Hyrox');
-  expect(await page.evaluate(() => JSON.parse(backupJson()).daySwap[localDay()])).toEqual({ from: `strength-${new Date().getDay()}`, to: 'run' });
-  // zurücknehmen
+  expect(await page.evaluate(() => JSON.parse(backupJson()).daySwap[localDay()])).toEqual({ from: `strength-${new Date().getDay()}`, to: 'kraft', plan: 'run' });
+  // zurücknehmen, dann locker laufen
   await page.locator('[data-swapundo]').click();
-  await expect(page.locator('#startcontent .scard', { hasText: 'Heute dran' })).toContainText('Kurs · Hyrox');
-  // Lauf statt Kraft: heute Laufgruppe, kein Krafttag
+  await expect(card).toContainText('Kurs · Hyrox');
+  await card.locator('[data-swapopen]').click(); await card.locator('[data-swap="run"]').click();
+  await expect(card).toContainText('Locker laufen');
+  await expect(card.locator('[data-logtoday="swap"]')).toHaveCount(1);
+  await expect(page.locator('.sweek')).toContainText('0 von 1'); // Kurs fällt aus
+  // Mobility und Ruhetag
+  await page.locator('[data-swapundo]').click();
+  await card.locator('[data-swapopen]').click(); await card.locator('[data-swap="mob"]').click();
+  await expect(card).toContainText('Mobility ·'); await expect(card.locator('[data-startmob]')).toHaveCount(1);
+  await page.locator('[data-swapundo]').click();
+  await card.locator('[data-swapopen]').click(); await card.locator('[data-swap="rest"]').click();
+  await expect(card).toContainText('Ruhetag'); await expect(card).toContainText('heute statt Hyrox');
+  // Abbrechen schließt die Auswahl
+  await page.locator('[data-swapundo]').click();
+  await card.locator('[data-swapopen]').click(); await card.locator('[data-swapclose]').click();
+  await expect(card.locator('[data-swap]')).toHaveCount(0);
+  // Lauf statt: Laufgruppe → Kraft (ohne „Locker laufen“, ist schon locker)
   await page.evaluate(wd => { Object.assign(profile.week, { group: wd, strength: [(wd + 3) % 7], strengthPlan: {}, gymNames: {}, gymHard: [] }); persistProfile(); renderAll(); showArea('start'); }, wd);
-  const card = page.locator('#startcontent .scard', { hasText: 'Heute dran' });
   await expect(card).toContainText('Laufgruppe');
+  await card.locator('[data-swapopen]').click();
+  await expect(card.locator('[data-swap]')).toHaveText(['Intervall/Tempo', 'Kraft', 'Mobility', 'Ruhetag']);
   await card.locator('[data-swap="kraft"]').click();
-  await expect(card).toContainText('Kraft ·');
   await expect(card).toContainText('heute statt Laufgruppe');
-  await expect(card.locator('[data-startact="kraft"]')).toHaveCount(1);
-  // gestern getauscht → heute nichts mehr anzubieten außer dem Plan; alter Tausch wirkt nicht auf heute
+  // ein Tausch von gestern wirkt nicht auf heute
   await page.evaluate(() => { setSwap(addDays(localDay(), -1), { from: 'group', to: 'kraft' }); setSwap(localDay(), null); renderStart(); });
   await expect(card).toContainText('Laufgruppe');
-  await expect(card.locator('[data-swap="kraft"]')).toHaveCount(1);
+  await expect(card.locator('[data-swapopen]')).toHaveCount(1);
+});
+
+test('Heute zusätzlich: lockerer Lauf, Kraft (Plan wählbar) oder Mobility dazuplanen, nur was heute fehlt; wieder entfernen', async ({ page }) => {
+  const wd = await page.evaluate(() => new Date().getDay());
+  await page.evaluate(wd => {
+    races = [{ id: 'a', name: 'A', date: addDays(localDay(), 100), dist: 'hm', prio: 'A' }]; results = []; persistRaces();
+    Object.assign(profile.week, { group: wd, quality: (wd + 2) % 7, long: (wd + 4) % 7, extras: [], strength: [(wd + 3) % 7], strengthPlan: {}, gymNames: {}, gymHard: [], mobility: [] });
+    persistProfile(); renderAll(); showArea('start');
+  }, wd);
+  const card = page.locator('#startcontent .scard', { hasText: 'Heute dran' });
+  await expect(card).toContainText('Laufgruppe');
+  await card.locator('[data-addopen]').click();
+  await expect(card.locator('[data-add]')).toHaveText(['Kraft', 'Mobility']); // Lauf gibt es heute schon
+  await page.selectOption('#addplan', 'core');
+  await card.locator('[data-add="kraft"]').click();
+  await expect(card).toContainText('Laufgruppe');
+  await expect(card).toContainText('heute zusätzlich');
+  await expect(card.locator('[data-startact="kraft"][data-startplan="core"]')).toHaveCount(1);
+  await expect(page.locator('.sweek')).toContainText('0 von 2');
+  expect(await page.evaluate(() => JSON.parse(backupJson()).dayAdd[localDay()])).toEqual({ to: 'kraft', plan: 'core' });
+  // nur eine Zusatzeinheit pro Tag; entfernen
+  await expect(card.locator('[data-addopen]')).toHaveCount(0);
+  await card.locator('[data-addundo]').click();
+  await expect(card).not.toContainText('heute zusätzlich');
+  await expect(page.locator('.sweek')).toContainText('0 von 1');
+  // Ruhetag: Lauf dazuplanen erscheint im Wochenplan und lässt sich eintragen
+  await page.evaluate(wd => { profile.week.group = null; persistProfile(); renderAll(); showArea('start'); }, wd);
+  await expect(card).toContainText('Heute ist nichts geplant');
+  await card.locator('[data-addopen]').click();
+  await expect(card.locator('[data-add]')).toHaveText(['Locker laufen', 'Kraft', 'Mobility']);
+  await card.locator('[data-add="run"]').click();
+  await expect(card).toContainText('Locker laufen');
+  await expect(card.locator('[data-logtoday="add"]')).toHaveCount(1);
+  expect(await page.evaluate(wd => weekSchedule(seasonPlan().weeks[0]).some(o => o.key === 'add' && o.d === wd && o.kind === 'easy'), wd)).toBe(true);
+  await card.locator('[data-addundo]').click();
+  await card.locator('[data-addopen]').click(); await card.locator('[data-add="mob"]').click();
+  await expect(card.locator('[data-startmob]')).toHaveCount(1);
+  await expect(card).toContainText('heute zusätzlich');
+});
+
+test('Heute tauschen: Laufgruppe fällt aus → Intervall oder Testlauf; die reguläre Qualität später in der Woche wird locker', async ({ page }) => {
+  // Montag als „heute“, damit die Qualität (Donnerstag) sicher später in derselben Woche liegt
+  await page.evaluate(() => {
+    const mon = weekStart(localDay());
+    races = [{ id: 'a', name: 'A', date: addDays(mon, 100), dist: 'hm', prio: 'A' }]; results = []; persistRaces();
+    runLog.push({ id: 'l1', date: addDays(localDay(), -3), km: 8, kind: 'long' }); persistRunLog();
+    Object.assign(profile.week, { group: 1, quality: 4, long: 0, extras: [], strength: [3], strengthPlan: {}, gymNames: {}, gymHard: [], mobility: [] });
+    persistProfile();
+  });
+  const sched = () => page.evaluate(() => { const S = seasonPlan(weekStart(localDay())); return weekSchedule(S.weeks[0]).filter(o => RUN(o) && !o.skip).map(o => [o.d, o.kind, o.title, !!o.easy]); });
+  const q0 = (await sched()).find(i => i[0] === 4);
+  expect(q0[3]).toBe(false);
+  // Tausch am Montag (Laufgruppe) → Qualität
+  await page.evaluate(() => setSwap(weekStart(localDay()), { from: 'group', to: 'quality' }));
+  const s1 = await sched();
+  expect(s1.find(i => i[0] === 1)).toEqual([1, 'quality2', 'Qualität', false]);
+  expect(s1.find(i => i[0] === 4)).toEqual([4, 'quality', 'Locker laufen', true]);
+  // Testlauf statt Laufgruppe
+  await page.evaluate(() => setSwap(weekStart(localDay()), { from: 'group', to: 'test' }));
+  const s2 = await sched();
+  expect(s2.find(i => i[0] === 1)).toEqual([1, 'quality2', 'Testlauf 5 km', false]);
+  expect(s2.find(i => i[0] === 4)[3]).toBe(true);
+  // Auswahl heute: Testlauf nur, wenn 5 km schon machbar sind (längster Lauf 8 km)
+  await page.evaluate(() => { setSwap(weekStart(localDay()), null); const wd = new Date().getDay(); profile.week.group = wd; profile.week.quality = (wd + 3) % 7; persistProfile(); renderAll(); showArea('start'); });
+  const card = page.locator('#startcontent .scard', { hasText: 'Heute dran' });
+  await card.locator('[data-swapopen]').click();
+  await expect(card.locator('[data-swap]')).toHaveText(['Intervall/Tempo', 'Testlauf 5 km', 'Kraft', 'Mobility', 'Ruhetag']);
+  await card.locator('[data-swap="test"]').click();
+  await expect(card).toContainText('Testlauf 5 km');
+  await expect(card).toContainText('heute statt Laufgruppe');
 });

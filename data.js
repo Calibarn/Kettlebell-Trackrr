@@ -833,8 +833,9 @@ PREP.mat.push('Dead Bug mit Kurzhantel', 'Floor Press mit Kurzhanteln', 'Pullove
 const APP_VERSION = '1.2';
 // Ein Eintrag pro Tag: Änderungen desselben Tages kommen in den Eintrag des Tages (aka = frühere ids für „schon gesehen“)
 const CHANGELOG = [
-  { id: '2026-11-13', date: '2026-11-13', version: '1.2', title: 'Heute tauschen', items: [
-    ['Heute tauschen', 'Unter „Heute dran“ lässt sich eine Einheit nur für heute tauschen: „Heute stattdessen laufen“ unter Kraft oder Kurs macht daraus einen lockeren Lauf, „Heute stattdessen Kraft“ unter einem Lauf eine Krafteinheit. „Tausch zurücknehmen“ stellt den Plan wieder her. Ein getauschter harter Kurs zählt dann nicht mehr für den Tag danach.', 'neu']
+  { id: '2026-11-13', date: '2026-11-13', version: '1.2', title: 'Heute tauschen oder zusätzlich', items: [
+    ['Heute tauschen', 'Unter Kraft, Kurs oder einem Lauf in „Heute dran“ steht „Heute stattdessen …“: nur für heute locker laufen, Intervall/Tempo, Testlauf, Kraft zu Hause (Plan wählbar), Mobility oder Ruhetag – z. B. Home Workout statt Kurs oder Intervalle, wenn die Laufgruppe ausfällt. Wird heute Qualität gelaufen, ist die reguläre Qualität später in der Woche nur noch locker. „Tausch zurücknehmen“ stellt den Plan wieder her; ein getauschter harter Kurs zählt nicht mehr für den Tag danach.', 'neu'],
+    ['Heute zusätzlich', '„+ Heute zusätzlich …“ am Ende von „Heute dran“ plant für heute einen lockeren Lauf, Kraft oder Mobility dazu – angeboten wird nur, was heute noch nicht dran ist. „Wieder entfernen“ nimmt es zurück.', 'neu']
   ] },
   { id: '2026-11-04', date: '2026-11-04', version: '1.1', title: 'Neuer Name Tagwerk, Startseite „Heute“ & neue Rennformate', items: [
     ['Neuer Name', 'Die App heißt jetzt Tagwerk – sie kann längst mehr als Kettlebell: Kraft, Laufen und Mobility, jeden Tag das, was dran ist. Deine Daten und die Sync-Datei bleiben, wie sie sind. Ein schon installiertes App-Icon behält auf dem iPhone den alten Namen. Wer es neu hinzufügen will, macht vorher unbedingt „Sync speichern“ oder ein Backup – beim Entfernen kann iOS die Daten der App löschen.', 'neu'],
