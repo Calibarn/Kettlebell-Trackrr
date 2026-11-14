@@ -19,11 +19,11 @@ const PLANS = {
       { id: 'halo', v: { kb: ['Halo um den Kopf', '10 je Richtung', 'Kopf ruhig, Rippen unten'], bw: ['Armkreisen mit Spannung', '10 je Richtung', 'Arme seitlich gestreckt, Fäuste fest'] } },
       { id: 'squat', v: { kb: ['Kniebeugen (Goblet)', '10', 'Kugel vor der Brust'], band: ['Kniebeugen mit Band', '10', 'Band unter den Füßen, Enden an den Schultern'], bw: ['Kniebeugen', '15', 'Arme nach vorne'] } },
       { id: 'lunge', v: { kb: ['Ausfallschritte', '10 je Seite', 'Rückwärts, Kugel vor der Brust'], bw: ['Ausfallschritte', '10 je Seite', 'Rückwärts, Hände an der Hüfte'] } },
-      { id: 'march', v: { kb: ['Suitcase March', '20 Sek. je Seite', 'Kugel einseitig, aufrecht marschieren'], bw: ['Seitstütz', '20 Sek. je Seite', 'Auf Unterarm, Knie dürfen am Boden bleiben'] } },
+      { id: 'march', v: { kb: ['Slingshot mit Blocker', '30 Sek.', 'Um den Körper, vorne abrupt blocken – nach der halben Zeit Richtung wechseln'], bw: ['Seitstütz', '20 Sek. je Seite', 'Auf Unterarm, Knie dürfen am Boden bleiben'] } },
       { id: 'row', band: '20', v: { kb: ['Einarmiges Rudern', '10 je Seite', 'Freie Hand abstützen'], band: ['Rudern mit Band', '10 je Seite', 'Band unter dem vorderen Fuß'], bw: ['Y-T-W in Bauchlage', '6 je Position', 'Arme anheben, Blick zum Boden'] } },
       { id: 'press', order: ['band', 'kb', 'bw'], band: '20', v: { band: ['Brustdrücken mit Band', '10–12', 'Band hinter dem oberen Rücken'], kb: ['Floor Press', '10 je Seite', 'Rückenlage, einarmig'], bw: ['Liegestütze erhöht', '8–12', 'Hände auf Tisch oder Sofalehne'] } },
       { id: 'tri', band: '10', v: { kb: ['Trizeps über Kopf', '10', 'Beide Hände am Griff'], band: ['Trizeps mit Band', '10 je Seite', 'Unteres Ende hinter dem Rücken halten'], bw: ['Enge Liegestütze erhöht', '8–10', 'Ellenbogen nah am Körper'] } },
-      { id: 'curl', band: '10', v: { kb: ['Bizepscurls', '10', 'Ellenbogen am Körper'], band: ['Bizepscurls mit Band', '10–12', 'Beide Füße auf der Bandmitte'], bw: ['Handtuch-Curl (halten)', '20 Sek. je Seite', 'Gegen das Handtuch unter dem Fuß ziehen'] } },
+      { id: 'curl', band: '10', v: { kb: ['Curl & Press', '6–8 je Seite', 'Curl in die Rack-Position, dann über Kopf drücken'], band: ['Bizepscurls mit Band', '10–12', 'Beide Füße auf der Bandmitte'], bw: ['Handtuch-Curl (halten)', '20 Sek. je Seite', 'Gegen das Handtuch unter dem Fuß ziehen'] } },
       { id: 'balance', order: ['bw', 'kb'], v: { bw: ['Standwaage', '6–10 je Seite', 'Zunächst ohne Gewicht'], kb: ['Einbeiniges Kreuzheben', '6–10 je Seite', 'Kugel in der Hand gegenüber dem Standbein'] } },
       { id: 'crunch', v: { bw: ['Stehende Knie-Ellenbogen-Crunches', '10 je Seite', 'Ohne Gewicht'] } }
     ],
@@ -59,7 +59,7 @@ const PLANS = {
       { id: 'curl', band: '10', v: { kb: ['Bizepscurls', '10', 'Ellenbogen am Körper'], band: ['Bizepscurls mit Band', '10–12', 'Beide Füße auf der Bandmitte'], bw: ['Handtuch-Curl (halten)', '20 Sek. je Seite', 'Gegen das Handtuch unter dem Fuß ziehen'] } },
       { id: 'tri', band: '10', v: { kb: ['Trizeps über Kopf', '10', 'Beide Hände am Griff'], band: ['Trizeps mit Band', '10 je Seite', 'Unteres Ende hinter dem Rücken halten'], bw: ['Enge Liegestütze erhöht', '8–10', 'Ellenbogen nah am Körper'] } },
       { id: 'deadbug', v: { bw: ['Dead Bug', '8 je Seite', 'Unterer Rücken bleibt am Boden'] } },
-      { id: 'hold', v: { kb: ['Suitcase Hold', '20–30 Sek. je Seite', 'Kugel ruhig halten'], bw: ['Seitstütz', '20–30 Sek. je Seite', 'Auf Unterarm, Knie dürfen am Boden bleiben'] } }
+      { id: 'hold', v: { kb: ['Heiße Kartoffel', '30 Sek.', 'Schnell von Hand zu Hand, die Kugel bleibt immer in einer Hand'], bw: ['Seitstütz', '20–30 Sek. je Seite', 'Auf Unterarm, Knie dürfen am Boden bleiben'] } }
     ],
     warmup: [['0:45', 'Locker marschieren'], ['0:45', 'Schulter- und Armkreisen'], ['0:45', 'Wand-Engel'], ['0:45', 'Katze-Kuh']],
     cooldown: [['0:30 × 2', 'Brustdehnung am Türrahmen'], ['1:00', 'Kindhaltung'], ['0:45 × 2', 'Hüftbeuger-Dehnung'], ['0:30 × 2', 'Figure-4 Gesäß'], ['0:45 × 2', 'Wadendehnung']]
@@ -691,11 +691,11 @@ const BEST = {
     halo: [['kb', 'band', 'bw'], 'Das Gewicht über Kopf fordert die Schulterkontrolle am stärksten; das Band öffnet die Schultern, Armkreisen ist die Variante ohne Gerät.'],
     squat: [['kb', 'band', 'bw'], 'Die Kugel vor der Brust hält den Oberkörper aufrecht und belastet auch unten in der Kniebeuge; das Band wirkt vor allem oben.'],
     lunge: [['kb', 'band', 'bw'], 'Zusatzgewicht erhöht den Reiz für Gesäß und Oberschenkel; die Kugel belastet über den ganzen Weg, das Band vor allem oben.'],
-    march: [['kb', 'band', 'bw'], 'Die einseitige Last trainiert den seitlichen Rumpf so, wie er beim Laufen arbeitet.'],
+    march: [['kb', 'band', 'bw'], 'Mit Kettlebell der Slingshot: Der Rumpf muss die Kugel abbremsen – mehr Bewegung als Marschieren. Mit Band trainiert die einseitige Last den seitlichen Rumpf.'],
     row: [['kb', 'band', 'bw'], 'Rudern mit Gewicht trifft den Rücken direkter als Y-T-W; das Band unter dem Fuß verrutscht leichter.'],
     press: [['bw', 'band', 'kb'], 'Liegestütze bewegen einen großen Teil des Körpergewichts und fordern Rumpf und Brust stärker als 12 kg oder ein Band.'],
     tri: [['kb', 'band', 'bw'], 'Gezielter Reiz für den Trizeps; enge Liegestütze sind die Alternative ohne Gerät.'],
-    curl: [['kb', 'band', 'bw'], 'Bewegung mit Gewicht über den vollen Weg; das Halten gegen das Handtuch ist die Notlösung.'],
+    curl: [['kb', 'band', 'bw'], 'Curl & Press verbindet Bizeps und Schulter in einer Bewegung; das Halten gegen das Handtuch ist die Notlösung.'],
     balance: [['bw', 'kb', 'band'], 'Im Zirkel unter Ermüdung zuerst ohne Gewicht – Gleichgewicht und saubere Hüftbeugung gehen vor Last.'],
     crunch: [['bw', 'kb', 'band'], 'Ohne Gerät am einfachsten sauber auszuführen; die Übergabe im Grätschsitz und der Dead Bug mit Band sind gleichwertige Rumpfübungen.']
   },
@@ -726,7 +726,7 @@ const BEST = {
     curl: [['kb', 'band', 'bw'], 'Bewegung mit Gewicht über den vollen Weg.'],
     tri: [['kb', 'band', 'bw'], 'Gezielter Reiz für den Trizeps.'],
     deadbug: [['kb', 'band', 'bw'], 'Die Kugel über der Brust macht den Dead Bug deutlich fordernder.'],
-    hold: [['kb', 'band', 'bw'], 'Die einseitige Last trainiert den seitlichen Rumpf; der Seitstütz ist die Alternative ohne Gerät.']
+    hold: [['kb', 'band', 'bw'], 'Mit Kettlebell die heiße Kartoffel: dynamisch statt nur halten. Mit Band hält die einseitige Last den seitlichen Rumpf; der Seitstütz ist die Alternative ohne Gerät.']
   },
   office: {
     hinge: [['kb', 'band', 'bw'], 'Kreuzheben trainiert genau die Muskeln, die beim Sitzen abschalten.'],
@@ -814,6 +814,7 @@ Object.assign(GUIDES, {
   'Press-up & Press-out im Sitz': { steps: ['Im Grätschsitz aufrecht sitzen, Kettlebell an den Hörnern vor der Brust.', 'Dreimal senkrecht über den Kopf drücken, dann dreimal waagerecht nach vorne vom Körper weg drücken.', 'Im Wechsel weiter, bis die Wiederholungen erreicht sind.'], effect: 'Schultern und Trizeps; nach vorne gedrückt arbeitet der Rumpf gegen das Zurückkippen.', cue: 'Überkopf nur so weit, wie der Rücken gerade bleibt – sonst nur nach vorne drücken. Rippen unten.' },
   'Iron Arc im Grätschsitz': { steps: ['Im Grätschsitz aufrecht sitzen, Kettlebell an den Hörnern vor der Brust.', 'In einem Bogen über den Kopf zur Seite führen und neben der Hüfte Richtung Boden strecken.', 'Auf demselben Bogen zurück vor die Brust. Seiten abwechseln.'], effect: 'Seitliche Rumpfmuskeln und Schulterkontrolle über den ganzen Bogen.', cue: 'Die Hüfte dreht nicht mit, das Becken bleibt schwer am Boden. Langsam und kontrolliert.' },
   // Stand-Core
+  'Curl & Press': { steps: ['Aufrecht stehen, Kugel am Griff in einer Hand, Arm gestreckt neben dem Körper.', 'Ellenbogen am Körper lassen und die Kugel bis vor die Schulter curlen – sie landet in der Rack-Position.', 'Von dort senkrecht über den Kopf drücken, kontrolliert zurück in die Rack-Position und langsam nach unten. Alle Wiederholungen, dann Seite wechseln.'], effect: 'Bizeps und Schulter in einer Bewegung – mehr Muskeln und mehr Fluss als reine Curls.', cue: 'Nicht mit dem Rücken schwingen, Rippen unten beim Drücken. Wird das Drücken zu schwer: weniger Wiederholungen statt Schwung.' },
   'Heiße Kartoffel': { steps: ['Hüftbreit stehen, Bauch fest. Die Kugel mit beiden Händen am Kugelkörper vor dem Gesicht halten, Ellenbogen nah am Körper.', 'Die Kugel schnell und in kleinen Bewegungen von einer Hand in die andere schieben – nach links, nach rechts, immer hin und her.', 'Die Kugel bleibt immer in mindestens einer Hand, nicht werfen. Hüfte und Schultern bleiben vorne, nur die Arme arbeiten.'], effect: 'Anti-Rotation: Der Rumpf hält bei jedem Richtungswechsel dagegen. Macht Spaß und geht schnell in die seitliche Bauchmuskulatur.', cue: 'Schwerer: Füße eng zusammen, Fersen aneinander, Oberschenkel gegeneinander drücken. Erst langsam, dann schneller.' },
   'Slingshot mit Blocker': { steps: ['Hüftbreit stehen, Knie locker, Kugel am Griff in der rechten Hand.', 'Die Kugel hinter dem Rücken in die linke Hand übergeben und vorne herum schwingen.', 'Vorne mit der freien Hand die Kugel abrupt stoppen (blocken), kurz halten, dann weiter um den Körper. Nach der halben Zeit Richtung wechseln.'], effect: 'Die Kugel ist träge – beim Blocken muss der Rumpf sie abbremsen. Trainiert Rotation und Abbremsen, wie bei jedem Richtungswechsel im Alltag und beim Laufen.', cue: 'Becken und Schultern zeigen nach vorne. Leichter: nah am Körper blocken; schwerer: mit gestrecktem Arm schwingen und blocken.' },
   'Einbeiniges Überkopfdrücken': { steps: ['Kugel rechts in der Rack-Position. Auf dem linken Bein stehen, das rechte Knie auf Hüfthöhe anheben.', 'Bauch fest, die Kugel senkrecht über den Kopf drücken, der Arm endet neben dem Ohr.', 'Kontrolliert zurück in die Rack-Position. Alle Wiederholungen, dann Seite wechseln.'], effect: 'Schulterkraft plus Rumpf- und Hüftstabilität: Auf einem Bein muss die Körpermitte jede Seitneigung abfangen. Gut für Läufer – Standbein und Becken bleiben stabil.', cue: 'Rippen unten, nicht ins Hohlkreuz ausweichen. Wackelt es zu sehr: die Fußspitze des freien Beins am Boden lassen.' },
@@ -851,7 +852,8 @@ const APP_VERSION = '1.3';
 // Ein Eintrag pro Tag: Änderungen desselben Tages kommen in den Eintrag des Tages (aka = frühere ids für „schon gesehen“)
 const CHANGELOG = [
   { id: '2026-11-14', date: '2026-11-14', version: '1.3', title: 'Stand-Core', items: [
-    ['Stand-Core', 'Neuer Kraft-Plan mit drei Rumpfübungen im Stehen, die Spaß machen: Heiße Kartoffel, Slingshot mit Blocker und Überkopfdrücken auf einem Bein. EMOM mit einer Kettlebell, 3 Runden = 9 Minuten – als kurze Einheit oder als Finisher.', 'neu']
+    ['Stand-Core', 'Neuer Kraft-Plan mit drei Rumpfübungen im Stehen, die Spaß machen: Heiße Kartoffel, Slingshot mit Blocker und Überkopfdrücken auf einem Bein. EMOM mit einer Kettlebell, 3 Runden = 9 Minuten – als kurze Einheit oder als Finisher.', 'neu'],
+    ['Mehr Spaß in Ganzkörper und Oberkörper', 'Mit Kettlebell ersetzen drei bewegtere Übungen die langweiligsten: im Ganzkörper Curl & Press statt Bizepscurls und Slingshot mit Blocker statt Suitcase March, im Oberkörper die heiße Kartoffel statt Suitcase Hold. Ältere Einheiten dieser Pläne erscheinen im Verlauf als „anderer Aufbau“.', 'neu']
   ] },
   { id: '2026-11-13', date: '2026-11-13', version: '1.2', title: 'Heute tauschen oder zusätzlich', items: [
     ['Heute tauschen', 'Unter Kraft, Kurs oder einem Lauf in „Heute dran“ steht „Heute stattdessen …“: nur für heute locker laufen, Intervall/Tempo, Testlauf, Kraft zu Hause (Plan wählbar), Mobility oder Ruhetag – z. B. Home Workout statt Kurs oder Intervalle, wenn die Laufgruppe ausfällt. Wird heute Qualität gelaufen, ist die reguläre Qualität später in der Woche nur noch locker. „Tausch zurücknehmen“ stellt den Plan wieder her; ein getauschter harter Kurs zählt nicht mehr für den Tag danach.', 'neu'],

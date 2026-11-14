@@ -139,7 +139,6 @@ const EN_TEXT = {
 "Die Kugel über der Brust macht den Dead Bug deutlich fordernder.": "The bell above the chest makes the dead bug much more demanding.",
 "Suitcase Hold": "Suitcase hold",
 "Kugel ruhig halten": "Hold the bell steady",
-"Die einseitige Last trainiert den seitlichen Rumpf; der Seitstütz ist die Alternative ohne Gerät.": "The one-sided load trains the side of the trunk; the side plank is the no-equipment alternative.",
 "Locker marschieren": "Easy marching",
 "Wand-Engel": "Wall angels",
 "Katze-Kuh": "Cat-cow",
@@ -1880,7 +1879,23 @@ const EN_TEXT = {
 "vorne abrupt blocken": "block abruptly in front",
 "Rack, Knie hoch": "rack, knee up",
 "auf einem Bein drücken": "press on one leg",
-"Neuer Kraft-Plan mit drei Rumpfübungen im Stehen, die Spaß machen: Heiße Kartoffel, Slingshot mit Blocker und Überkopfdrücken auf einem Bein. EMOM mit einer Kettlebell, 3 Runden = 9 Minuten – als kurze Einheit oder als Finisher.": "New strength plan with three fun standing core exercises: hot potato, slingshot with block and single-leg overhead press. EMOM with one kettlebell, 3 rounds = 9 minutes – as a short session or as a finisher."
+"Neuer Kraft-Plan mit drei Rumpfübungen im Stehen, die Spaß machen: Heiße Kartoffel, Slingshot mit Blocker und Überkopfdrücken auf einem Bein. EMOM mit einer Kettlebell, 3 Runden = 9 Minuten – als kurze Einheit oder als Finisher.": "New strength plan with three fun standing core exercises: hot potato, slingshot with block and single-leg overhead press. EMOM with one kettlebell, 3 rounds = 9 minutes – as a short session or as a finisher.",
+"Curl & Press": "Curl & press",
+"Curl in die Rack-Position, dann über Kopf drücken": "Curl into the rack, then press overhead",
+"Um den Körper, vorne abrupt blocken – nach der halben Zeit Richtung wechseln": "Around the body, block abruptly in front – switch direction halfway",
+"Schnell von Hand zu Hand, die Kugel bleibt immer in einer Hand": "Quickly from hand to hand, the bell always stays in one hand",
+"Mit Kettlebell der Slingshot: Der Rumpf muss die Kugel abbremsen – mehr Bewegung als Marschieren. Mit Band trainiert die einseitige Last den seitlichen Rumpf.": "With a kettlebell the slingshot: your core has to brake the bell – more movement than marching. With a band the one-sided load trains the side of your core.",
+"Curl & Press verbindet Bizeps und Schulter in einer Bewegung; das Halten gegen das Handtuch ist die Notlösung.": "Curl & press combines biceps and shoulders in one movement; holding against the towel is the fallback.",
+"Mit Kettlebell die heiße Kartoffel: dynamisch statt nur halten. Mit Band hält die einseitige Last den seitlichen Rumpf; der Seitstütz ist die Alternative ohne Gerät.": "With a kettlebell the hot potato: dynamic instead of just holding. With a band the one-sided load works the side of your core; the side plank is the no-equipment alternative.",
+"Aufrecht stehen, Kugel am Griff in einer Hand, Arm gestreckt neben dem Körper.": "Stand tall, bell by the handle in one hand, arm straight beside the body.",
+"Ellenbogen am Körper lassen und die Kugel bis vor die Schulter curlen – sie landet in der Rack-Position.": "Keep the elbow by your side and curl the bell up to the shoulder – it lands in the rack position.",
+"Von dort senkrecht über den Kopf drücken, kontrolliert zurück in die Rack-Position und langsam nach unten. Alle Wiederholungen, dann Seite wechseln.": "From there press straight overhead, lower under control to the rack and slowly down. All reps, then switch sides.",
+"Bizeps und Schulter in einer Bewegung – mehr Muskeln und mehr Fluss als reine Curls.": "Biceps and shoulders in one movement – more muscles and more flow than plain curls.",
+"Nicht mit dem Rücken schwingen, Rippen unten beim Drücken. Wird das Drücken zu schwer: weniger Wiederholungen statt Schwung.": "Don't swing with your back, ribs down when pressing. If pressing gets too heavy: fewer reps rather than momentum.",
+"bis vor die Schulter curlen": "curl up to the shoulder",
+"dann über Kopf drücken": "then press overhead",
+"Mehr Spaß in Ganzkörper und Oberkörper": "More fun in full body and upper body",
+"Mit Kettlebell ersetzen drei bewegtere Übungen die langweiligsten: im Ganzkörper Curl & Press statt Bizepscurls und Slingshot mit Blocker statt Suitcase March, im Oberkörper die heiße Kartoffel statt Suitcase Hold. Ältere Einheiten dieser Pläne erscheinen im Verlauf als „anderer Aufbau“.": "With a kettlebell, three livelier exercises replace the most boring ones: in full body curl & press instead of biceps curls and slingshot with block instead of suitcase march, in upper body the hot potato instead of suitcase hold. Older sessions of these plans show up in the history as “different setup”."
 };
 const EN_HTML = {
 "Kraft · Laufen · Mobility": "Strength · Running · Mobility",
