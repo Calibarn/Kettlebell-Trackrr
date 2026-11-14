@@ -1,7 +1,7 @@
 const { test, expect, forward, closeRating, openSect } = require('./fixtures');
 
 test('lädt ohne Fehler und zeigt alle Kraft-Pläne', async ({ page }) => {
-  await expect(page.locator('#tabs button')).toHaveText(['Ganzkörper', 'Tabata', 'AMRAP', 'Läufer', 'Oberkörper', 'Core', 'Finisher', 'Büro']);
+  await expect(page.locator('#tabs button')).toHaveText(['Ganzkörper', 'Tabata', 'AMRAP', 'Läufer', 'Oberkörper', 'Core', 'Finisher', 'Stand-Core', 'Büro']);
   await expect(page.locator('#gearbar [data-gear]')).toHaveCount(3);
 });
 

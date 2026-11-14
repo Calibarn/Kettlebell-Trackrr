@@ -152,12 +152,25 @@ PLANS.sitcore = {
   warmup: [['0:45', 'Schulter- und Armkreisen'], ['0:45', 'Katze-Kuh'], ['0:30', 'Halo um den Kopf']],
   cooldown: [['0:30 × 2', 'Hintere Oberschenkel'], ['1:00', 'Kindhaltung']]
 };
+/* Stand-Core: drei Rumpfübungen im Stehen mit einer Kettlebell, die Spaß machen (Idee aus einem Video: „Starke Mitte? 3 Kettlebell-Übungen,
+   die Spaß machen“). Die heiße Kartoffel ohne Werfen – die Kugel bleibt immer in einer Hand. Fest auf Kettlebell (kbOnly). */
+PLANS.standcore = {
+  tab: 'Stand-Core', label: 'Stand-Core · Rumpf im Stehen', short: 'Stand-Core', mode: 'emom', kbOnly: true, durations: [3, 0, 2], emomRounds: [2, 3, 4], emomDefault: 3,
+  intro: 'Drei Rumpfübungen im Stehen mit einer Kettlebell, die Spaß machen: Heiße Kartoffel, Slingshot mit Blocker und Überkopfdrücken auf einem Bein. EMOM: Zu Beginn jeder Minute die nächste Übung, im Rest der Minute Pause. 3 Runden = 9 Minuten – als kurze Einheit oder als Finisher nach einem lockeren Lauf.',
+  slots: [
+    { id: 'potato', v: { kb: ['Heiße Kartoffel', '30 Sek.', 'Füße eng = schwerer; die Kugel bleibt immer in einer Hand'] } },
+    { id: 'sling', v: { kb: ['Slingshot mit Blocker', '30 Sek.', 'Nach der halben Zeit Richtung wechseln'] } },
+    { id: 'slpress', v: { kb: ['Einbeiniges Überkopfdrücken', '5 je Seite', 'Knie auf Hüfthöhe, Rippen unten'] } }
+  ],
+  warmup: [['0:30', 'Marschieren auf der Stelle'], ['0:45', 'Schulter- und Armkreisen'], ['0:45', 'Ausfallschritt mit Rotation'], ['0:30', 'Hüftbeuge ohne Gewicht'], ['0:30', 'Halo um den Kopf']],
+  cooldown: [['0:30 × 2', 'Brustdehnung am Türrahmen'], ['1:00', 'Kindhaltung']]
+};
 const EMOM_DEFAULT = { rounds: 5 }, EMOM_ROUNDS = [4, 5, 6];
 const EMOM_PLAN_TEXT = 'EMOM heißt „Every Minute On the Minute“: Zu Beginn jeder Minute die angegebenen Wiederholungen, im Rest der Minute Pause. Dann folgt die nächste Übung. Die App sagt jeden Minutenwechsel per Ton und Ansage an, 3-2-1 vorher. Brauchst du mehr als etwa 45 Sekunden, nimm eine Wiederholung weniger.';
 // Tabata als Zirkel: Übung 1 20″, 10″ Pause, Übung 2 … – das Ganze 3 × (je Übung 3 × 20″), zwischen den Runden eine längere Pause
 const TABATA_DEFAULT = { rounds: 3, blockRest: 60 }, TABATA_ROUNDS = [3, 4, 5], TABATA_RESTS = [60, 90];
 const TABATA_TEXT = 'Tabata als Zirkel: 20 Sekunden so viele saubere Wiederholungen wie möglich, 10 Sekunden Pause, dann die nächste Übung. Nach der letzten Übung folgt eine längere Pause und die nächste Runde – standardmäßig 3 Runden. Die App sagt jeden Wechsel per Ton an, 3-2-1 vorher.';
-const PLAN_ORDER = ['hotel', 'wed', 'tabata', 'amrap', 'run', 'sun', 'core', 'sitcore', 'office'];
+const PLAN_ORDER = ['hotel', 'wed', 'tabata', 'amrap', 'run', 'sun', 'core', 'sitcore', 'standcore', 'office'];
 
 /* Zuordnung alter Einträge (vor Version 3) zu den Übungsplätzen des Ganzkörper-Zirkels,
    damit bisherige Bestwerte vergleichbar bleiben. */
@@ -800,6 +813,10 @@ Object.assign(GUIDES, {
   'Lenkrad im Grätschsitz': { steps: ['Im Grätschsitz aufrecht sitzen, Kettlebell an den Hörnern auf Augenhöhe, Ellenbogen eng am Körper.', 'Die Kugel wie ein Lenkrad schnell und klein nach links und rechts drehen.', 'Die ganze Zeit durchhalten, ruhig weiteratmen.'], effect: 'Schultern im Halten, Unterarme und Rumpf gegen die Drehbewegung.', cue: 'Schultern unten, nicht ins Hohlkreuz lehnen. Kleine Bewegung reicht – Tempo vor Weite.' },
   'Press-up & Press-out im Sitz': { steps: ['Im Grätschsitz aufrecht sitzen, Kettlebell an den Hörnern vor der Brust.', 'Dreimal senkrecht über den Kopf drücken, dann dreimal waagerecht nach vorne vom Körper weg drücken.', 'Im Wechsel weiter, bis die Wiederholungen erreicht sind.'], effect: 'Schultern und Trizeps; nach vorne gedrückt arbeitet der Rumpf gegen das Zurückkippen.', cue: 'Überkopf nur so weit, wie der Rücken gerade bleibt – sonst nur nach vorne drücken. Rippen unten.' },
   'Iron Arc im Grätschsitz': { steps: ['Im Grätschsitz aufrecht sitzen, Kettlebell an den Hörnern vor der Brust.', 'In einem Bogen über den Kopf zur Seite führen und neben der Hüfte Richtung Boden strecken.', 'Auf demselben Bogen zurück vor die Brust. Seiten abwechseln.'], effect: 'Seitliche Rumpfmuskeln und Schulterkontrolle über den ganzen Bogen.', cue: 'Die Hüfte dreht nicht mit, das Becken bleibt schwer am Boden. Langsam und kontrolliert.' },
+  // Stand-Core
+  'Heiße Kartoffel': { steps: ['Hüftbreit stehen, Bauch fest. Die Kugel mit beiden Händen am Kugelkörper vor dem Gesicht halten, Ellenbogen nah am Körper.', 'Die Kugel schnell und in kleinen Bewegungen von einer Hand in die andere schieben – nach links, nach rechts, immer hin und her.', 'Die Kugel bleibt immer in mindestens einer Hand, nicht werfen. Hüfte und Schultern bleiben vorne, nur die Arme arbeiten.'], effect: 'Anti-Rotation: Der Rumpf hält bei jedem Richtungswechsel dagegen. Macht Spaß und geht schnell in die seitliche Bauchmuskulatur.', cue: 'Schwerer: Füße eng zusammen, Fersen aneinander, Oberschenkel gegeneinander drücken. Erst langsam, dann schneller.' },
+  'Slingshot mit Blocker': { steps: ['Hüftbreit stehen, Knie locker, Kugel am Griff in der rechten Hand.', 'Die Kugel hinter dem Rücken in die linke Hand übergeben und vorne herum schwingen.', 'Vorne mit der freien Hand die Kugel abrupt stoppen (blocken), kurz halten, dann weiter um den Körper. Nach der halben Zeit Richtung wechseln.'], effect: 'Die Kugel ist träge – beim Blocken muss der Rumpf sie abbremsen. Trainiert Rotation und Abbremsen, wie bei jedem Richtungswechsel im Alltag und beim Laufen.', cue: 'Becken und Schultern zeigen nach vorne. Leichter: nah am Körper blocken; schwerer: mit gestrecktem Arm schwingen und blocken.' },
+  'Einbeiniges Überkopfdrücken': { steps: ['Kugel rechts in der Rack-Position. Auf dem linken Bein stehen, das rechte Knie auf Hüfthöhe anheben.', 'Bauch fest, die Kugel senkrecht über den Kopf drücken, der Arm endet neben dem Ohr.', 'Kontrolliert zurück in die Rack-Position. Alle Wiederholungen, dann Seite wechseln.'], effect: 'Schulterkraft plus Rumpf- und Hüftstabilität: Auf einem Bein muss die Körpermitte jede Seitneigung abfangen. Gut für Läufer – Standbein und Becken bleiben stabil.', cue: 'Rippen unten, nicht ins Hohlkreuz ausweichen. Wackelt es zu sehr: die Fußspitze des freien Beins am Boden lassen.' },
   'Kurzhantel-Swing': dbGuide('Kettlebell-Swing', { 0: 'Eine Kurzhantel senkrecht am oberen Ende mit beiden Händen greifen, Füße etwas breiter als hüftbreit. Hüfte nach hinten schieben, Hantel zwischen die Beine führen.', 1: 'Hüfte kraftvoll strecken, sodass die Hantel bis etwa Brusthöhe schwingt. Die Arme führen nur.', 2: 'Hantel zurückpendeln lassen und erneut in der Hüfte beugen.', cue: 'Hantel fest greifen, nur bis Brusthöhe. Nicht aus den Schultern heben, kein Hohlkreuz am oberen Punkt.' }),
   'Holzhacker mit Kurzhantel': dbGuide('Holzhacker mit Kettlebell', { 0: 'Etwas breiter als hüftbreit stehen, Hantel mit beiden Händen an den Enden neben dem rechten Knie, leicht in die Knie gehen.', 1: 'Hantel mit fast gestreckten Armen diagonal nach links oben über die Schulter führen. Hüfte und Oberkörper drehen mit, der rechte Fuß dreht auf dem Ballen mit.', cue: 'Die Drehung kommt aus Hüfte und Brustwirbelsäule, nicht aus dem unteren Rücken. Langsam abbremsen statt reißen, Hantel fest greifen.' }),
   'Halo mit Kurzhantel': dbGuide('Halo um den Kopf', { 0: 'Kurzhantel senkrecht am oberen Ende mit beiden Händen vor der Brust halten.', cue: 'Kopf ruhig halten, Rippen nicht nach vorne schieben. Leichte Hantel wählen und fest greifen.' }),
@@ -830,9 +847,12 @@ PREP.mat.push('Dead Bug mit Kurzhantel', 'Floor Press mit Kurzhanteln', 'Pullove
    Der älteste (letzte) Eintrag ist der Grundstand mit allen Funktionen; Neulinge sehen ihn plus die 3 neuesten Updates. */
 /* Versionsnummer der App, angezeigt unter Mehr. Seit 13.11.2026 gehen Änderungen direkt live (main, ohne Wochen-Release über dev);
    jeder Tag mit Veröffentlichung ist eine neue Nebenversion: 1.1, 1.2, 1.3 … Der Neuigkeiten-Eintrag des Tages bekommt dieselbe Nummer (version). */
-const APP_VERSION = '1.2';
+const APP_VERSION = '1.3';
 // Ein Eintrag pro Tag: Änderungen desselben Tages kommen in den Eintrag des Tages (aka = frühere ids für „schon gesehen“)
 const CHANGELOG = [
+  { id: '2026-11-14', date: '2026-11-14', version: '1.3', title: 'Stand-Core', items: [
+    ['Stand-Core', 'Neuer Kraft-Plan mit drei Rumpfübungen im Stehen, die Spaß machen: Heiße Kartoffel, Slingshot mit Blocker und Überkopfdrücken auf einem Bein. EMOM mit einer Kettlebell, 3 Runden = 9 Minuten – als kurze Einheit oder als Finisher.', 'neu']
+  ] },
   { id: '2026-11-13', date: '2026-11-13', version: '1.2', title: 'Heute tauschen oder zusätzlich', items: [
     ['Heute tauschen', 'Unter Kraft, Kurs oder einem Lauf in „Heute dran“ steht „Heute stattdessen …“: nur für heute locker laufen, Intervall/Tempo, Testlauf, Kraft zu Hause (Plan wählbar), Mobility oder Ruhetag – z. B. Home Workout statt Kurs oder Intervalle, wenn die Laufgruppe ausfällt. Wird heute Qualität gelaufen, ist die reguläre Qualität später in der Woche nur noch locker. „Tausch zurücknehmen“ stellt den Plan wieder her; ein getauschter harter Kurs zählt nicht mehr für den Tag danach.', 'neu'],
     ['Heute zusätzlich', '„+ Heute zusätzlich …“ am Ende von „Heute dran“ plant für heute einen lockeren Lauf, Kraft oder Mobility dazu – angeboten wird nur, was heute noch nicht dran ist. „Wieder entfernen“ nimmt es zurück.', 'neu']
