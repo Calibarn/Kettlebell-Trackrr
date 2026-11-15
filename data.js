@@ -139,15 +139,18 @@ PLANS.core = {
   cooldown: [['0:45 × 2', 'Hüftbeuger-Dehnung'], ['0:30 × 2', 'Brustdehnung am Türrahmen'], ['1:30', 'Kindhaltung']]
 };
 /* Finisher: kurzer Rumpf-Block im Grätschsitz, EMOM mit einer Kettlebell (Idee aus einem Video: „1 kettlebell, 10 minutes, core finisher“).
-   Im Sitzen helfen Beine und Hüfte nicht mit – der Rumpf muss drehen, halten und drücken. Fest auf Kettlebell (kbOnly). */
+   Im Sitzen helfen Beine und Hüfte nicht mit – der Rumpf muss drehen, halten und drücken. Fest auf Kettlebell (kbOnly),
+   einzige Ausnahme ist der Unterarmstütz am Ende (nur Körpergewicht). */
 PLANS.sitcore = {
   tab: 'Finisher', label: 'Finisher · Rumpf im Grätschsitz', short: 'Finisher', mode: 'emom', kbOnly: true, durations: [2, 0, 2], emomRounds: [2, 3, 4], emomDefault: 3,
-  intro: 'Kurzer Rumpf-Finisher mit einer Kettlebell, komplett im Grätschsitz – passt nach einem lockeren Lauf oder ans Ende einer Krafteinheit. EMOM: Zu Beginn jeder Minute die nächste Übung, im Rest der Minute Pause. Vier Übungen im Wechsel, 3 Runden = 12 Minuten. Ohne Beine und Hüfte muss der Rumpf drehen, halten und drücken. Kommst du im Grätschsitz nicht aufrecht hin (runder unterer Rücken), setz dich auf ein Kissen oder beuge die Knie leicht.',
+  intro: 'Kurzer Rumpf-Finisher mit einer Kettlebell im Grätschsitz, zum Schluss ein richtiger Plank – passt nach einem lockeren Lauf oder ans Ende einer Krafteinheit. EMOM: Zu Beginn jeder Minute die nächste Übung, im Rest der Minute Pause. Vier Übungen im Grätschsitz und der Unterarmstütz ohne Kugel, 3 Runden = 15 Minuten. Ohne Beine und Hüfte muss der Rumpf drehen, halten und drücken. Kommst du im Grätschsitz nicht aufrecht hin (runder unterer Rücken), setz dich auf ein Kissen oder beuge die Knie leicht.',
   slots: [
     { id: 'vchop', v: { kb: ['V-Chop im Grätschsitz', '5 je Seite', 'Arme lang, aus den Rippen drehen'] } },
     { id: 'wheel', v: { kb: ['Lenkrad im Grätschsitz', '20 Sek.', 'Kugel auf Augenhöhe, Ellenbogen eng, schnelle kleine Drehungen'] } },
     { id: 'press2', v: { kb: ['Press-up & Press-out im Sitz', '12', '3 × nach oben, 3 × nach vorne, im Wechsel'] } },
-    { id: 'arc', v: { kb: ['Iron Arc im Grätschsitz', '4 je Seite', 'Aufrecht sitzen, die Hüfte dreht nicht mit'] } }
+    { id: 'arc', v: { kb: ['Iron Arc im Grätschsitz', '4 je Seite', 'Aufrecht sitzen, die Hüfte dreht nicht mit'] } },
+    // einzige Ausnahme ohne Kugel: ein richtiger Plank zum Schluss
+    { id: 'plank', v: { bw: ['Unterarmstütz', '40 Sek.', 'Körper in einer Linie, Bauch und Gesäß fest'] } }
   ],
   warmup: [['0:45', 'Schulter- und Armkreisen'], ['0:45', 'Katze-Kuh'], ['0:30', 'Halo um den Kopf']],
   cooldown: [['0:30 × 2', 'Hintere Oberschenkel'], ['1:00', 'Kindhaltung']]
@@ -887,6 +890,7 @@ const CHANGELOG = [
   { id: '2026-11-15', date: '2026-11-15', version: '1.4', title: 'Miniband', items: [
     ['Miniband', 'Neuer Kraft-Plan „Miniband · Beine fürs Laufen“ für die kurzen Gummibänder: Seitliches Gehen, Monster Walk, Kniebeugen, Knieheben, Beinheben seitlich, Fire Hydrant, Kickback, Hüftheben und Clamshells – Gesäß und Hüfte, die beim Laufen Becken und Knie stabil halten. Die Band-Stärke (Light bis XX-Heavy) wählst du einmal für den Plan. Erscheint, sobald du unter Profil → Geräte ein Miniband einträgst.', 'neu'],
     ['Hüfte aktivieren', 'Unter Mobility → Läufer gibt es dazu ein 6-Minuten-Programm mit Miniband – gut vor dem Laufen.', 'neu'],
+    ['Finisher mit Plank', 'Der Finisher endet jetzt mit einem richtigen Plank (Unterarmstütz, 40 Sek., ohne Kugel). 3 Runden = 15 Minuten; ältere Finisher-Einheiten erscheinen im Verlauf als „anderer Aufbau“.', 'neu'],
     ['Nur, was zu deinen Geräten passt', 'Gibt es eine Übung mit den gewählten Geräten nicht und auch nicht ohne Gerät, wird sie ausgeblendet statt durch eine andere ersetzt.', 'neu']
   ] },
   { id: '2026-11-14', date: '2026-11-14', version: '1.3', title: 'Stand-Core', items: [

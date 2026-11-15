@@ -421,14 +421,16 @@ test.describe('Wischen in der Anleitung', () => {
   });
 });
 
-test('Finisher: Rumpf im Grätschsitz als EMOM, 3 Runden = 12 Min., Runden 2–4 wählbar', async ({ page }) => {
+test('Finisher: Rumpf im Grätschsitz plus Plank als EMOM, 3 Runden = 15 Min., Runden 2–4 wählbar', async ({ page }) => {
   await page.evaluate(() => { setPlan('sitcore'); renderAll(); });
   expect(await page.evaluate(() => [isEmomPlan(), emomCfg().rounds, Math.round(phaseSecs('sitcore', 1) / 60), exList().map(x => x.name)]))
-    .toEqual([true, 3, 12, ['V-Chop im Grätschsitz', 'Lenkrad im Grätschsitz', 'Press-up & Press-out im Sitz', 'Iron Arc im Grätschsitz']]);
+    .toEqual([true, 3, 15, ['V-Chop im Grätschsitz', 'Lenkrad im Grätschsitz', 'Press-up & Press-out im Sitz', 'Iron Arc im Grätschsitz', 'Unterarmstütz']]);
+  // der Plank ist die einzige Übung ohne Kugel
+  expect(await page.evaluate(() => exList().map(x => x.g))).toEqual(['kb', 'kb', 'kb', 'kb', 'bw']);
   await page.evaluate(() => { document.querySelector('#fold-settings').open = true; });
-  await expect(page.locator('[data-icfg="rounds"] option')).toHaveText(['2 Runden · 8 Min.', '3 Runden · 12 Min.', '4 Runden · 16 Min.']);
+  await expect(page.locator('[data-icfg="rounds"] option')).toHaveText(['2 Runden · 10 Min.', '3 Runden · 15 Min.', '4 Runden · 20 Min.']);
   await page.selectOption('[data-icfg="rounds"]', '2');
-  expect(await page.evaluate(() => Math.round(phaseSecs('sitcore', 1) / 60))).toBe(8);
+  expect(await page.evaluate(() => Math.round(phaseSecs('sitcore', 1) / 60))).toBe(10);
   // andere EMOM-Pläne behalten ihre Runden (Core: 4–6)
   expect(await page.evaluate(() => [emomCfg('core').rounds, emomRounds('core')])).toEqual([5, [4, 5, 6]]);
 });

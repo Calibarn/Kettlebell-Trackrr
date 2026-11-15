@@ -159,7 +159,7 @@ const owns = g => g === 'bw' || (g === 'kb' ? profile.kit.kb.length > 0 : g === 
 const planOwned = pk => PLANS[pk].vacationOnly ? !!vacation() : PLANS[pk].miniOnly ? owns('mini') : !PLANS[pk].kbOnly || (owns('kb') && (!vacation() || vacation().gear.kb));
 const miniLevel = () => { const c = choices['mini.cfg']; return isObj(c) && MINI_LEVELS.includes(c.level) ? c.level : 'Medium'; };
 function availableGears(sl, pk) {
-  if (pk && PLANS[pk].kbOnly) return ['kb'];
+  if (pk && PLANS[pk].kbOnly) return sl.v.kb ? ['kb'] : []; // Kettlebell-Pläne: Übungen ohne Kugel (Plank im Finisher) bleiben Körpergewicht
   if (pk && PLANS[pk].miniOnly) return ['bw'];
   const pg = planGear(pk || plan), act = ['kb', 'db', 'band', 'bw'].filter(g => pg[g] && owns(g)); if (!act.length) act.push('bw');
   return (sl.order || ['kb', 'db', 'band', 'bw']).filter(g => sl.v[g] && act.includes(g));
