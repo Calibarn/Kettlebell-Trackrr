@@ -1723,8 +1723,8 @@ function weekSchedule(x) {
   const w = profile.week, out = [], rd = x.a ? dayIdx(new Date(x.a.date + 'T12:00:00').getDay()) : 9;
   const add = (d, kind, title, detail, extra = {}) => out.push(Object.assign({ d, kind, title, detail, plan: kind === 'strength' ? dayPlan(d) : null }, extra));
   const before = (d, gap = 1) => dayIdx(d) <= rd - gap;
-  if (x.a) add(new Date(x.a.date + 'T12:00:00').getDay(), 'race', T(`Rennen: ${x.a.name}`, `Race: ${x.a.name}`), raceLabel(x.a) + goalLine(x.a));
-  if (x.bRace) add(new Date(x.bRace.date + 'T12:00:00').getDay(), 'brace', T(`${prioText(x.bRace.prio)}-Rennen: ${x.bRace.name}`, `${prioText(x.bRace.prio)} race: ${x.bRace.name}`), raceLabel(x.bRace) + goalLine(x.bRace) + bRole(x));
+  if (x.a) add(new Date(x.a.date + 'T12:00:00').getDay(), 'race', T(`Rennen: ${x.a.name}`, `Race: ${x.a.name}`), raceLabel(x.a) + goalLine(x.a), { warm: x.a.dist });
+  if (x.bRace) add(new Date(x.bRace.date + 'T12:00:00').getDay(), 'brace', T(`${prioText(x.bRace.prio)}-Rennen: ${x.bRace.name}`, `${prioText(x.bRace.prio)} race: ${x.bRace.name}`), raceLabel(x.bRace) + goalLine(x.bRace) + bRole(x), { warm: x.bRace.dist });
   const hg = w.quality !== null && x.phase !== 'recover' ? hardGymBefore(w.quality, x.week) : null;
   if (hg && (!x.a || before(w.quality, 2)) && !x.bRace) add(w.quality, 'quality', T('Locker laufen', 'Easy run'), hrize(T(`locker, Zone 2 – gestern ${hg} (hart), daher heute keine Qualität`, `easy, Zone 2 – ${hg} yesterday (hard), so no quality today`)) + easyPace(), { easy: true, afterHard: hg });
   else if (w.quality !== null && (!x.a || before(w.quality, 2)) && !x.bRace) add(w.quality, 'quality', x.phase === 'recover' || x.mPost ? T('Locker laufen', 'Easy run') : x.test ? T('Testlauf 5 km', 'Time trial 5 km') : T('Qualität', 'Quality'), x.mPost ? hrize(T(`locker, Zone 2 – Erholung nach ${x.mPost.name}`, `easy, Zone 2 – recovery after ${x.mPost.name}`)) + easyPace() : x.test ? T('nach 15 Min. Einlaufen 5 km so schnell, wie du gleichmäßig durchhalten kannst – danach unter Bestzeiten eintragen, dann passen die Tempos', 'after a 15 min warm-up run 5 km as fast as you can hold evenly – then enter it under Best times so the paces update') : weekKey(x) + (x.mPre ? T(` · etwas kürzer, nächste Woche ${x.mPre.name}`, ` · a little shorter, ${x.mPre.name} next week`) : ''), { easy: x.phase === 'recover' || !!x.mPost, test: !!x.test && x.phase !== 'recover' && !x.mPost });
@@ -2610,6 +2610,15 @@ function addCtl(items) {
   return `<div class="saddrow"><span class="sswapbox">${ch.map(([to, l]) => `<button type="button" class="btn small" data-add="${to}">${esc(l)}</button>`).join('')}
     ${ch.some(([to]) => to === 'kraft') ? planPick('addplan') : ''}<button type="button" class="linkbtn" data-addclose>${T('Abbrechen', 'Cancel')}</button></span></div>`;
 }
+/* Warm-up direkt an der harten Einheit in „Heute dran“, nach dem Eintragen der Cooldown: Qualität und Testlauf → Intervall-Warm-up
+   (kurze schnelle Stücke 200–400 m → Speed), Rennen → Renntag-Warm-up der Strecke. Lockere Läufe brauchen keins. Startet den geführten Ablauf. */
+const warmFor = it => it.easy || it.recovery ? null : it.kind === 'race' || it.kind === 'brace' ? (RUN_GUIDE.race.some(r => r.id === it.warm) ? it.warm : '10k')
+  : it.kind === 'quality' || it.kind === 'quality2' ? (/\d+ × (?:200|300|400) m\b/.test(it.detail || '') ? 'speed' : 'interval') : null;
+function warmCtl(it) {
+  const id = warmFor(it), g = id && WARMUPS.find(r => r.id === id); if (!g) return '';
+  const k = it.done ? 'cooldown' : 'warmup', m = g.intro.match(/(?:etwa|about) (\d+(?:–\d+)?) (?:Minuten|minutes)/);
+  return `<small class="slong swarm"><button type="button" class="linkbtn" data-warmgo="${id}|${k}">▶ ${k === 'warmup' ? 'Warm-up' : 'Cooldown'}${k === 'warmup' && m ? T(` · ca. ${m[1]} Min.`, ` · approx. ${m[1]} min`) : ''}</button></small>`;
+}
 // Longrun heute selbst setzen: „km anpassen“ unter dem Longrun in „Heute dran“ (Vorschlag bleibt zurückholbar)
 let longEdit = false;
 function longCtl(it) {
@@ -2624,7 +2633,7 @@ function renderStart() {
   const logBtn = it => RUN(it) && it.key && !ranOn(today) ? `<button type="button" class="btn small primary sgo" data-logtoday="${esc(it.key)}">${T('Eintragen', 'Log')}</button>` : '';
   const btn = it => it.done ? `<span class="sdone">✓ ${T('erledigt', 'done')}</span>` : it.act === 'mob' ? `<button type="button" class="btn small primary sgo" data-startmob="${it.mob}">▶ ${T('Starten', 'Start')}</button>` : it.act === 'gym' ? `<button type="button" class="btn small primary sgo" data-gymdone="${esc(it.gym)}">✓ ${T('Abhaken', 'Check off')}</button>` : it.act === 'kraft' || it.act === 'starter' ? `<button type="button" class="btn small primary sgo" data-startact="${it.act}"${it.plan ? ` data-startplan="${it.plan}"` : ''}>▶ ${T('Starten', 'Start')}</button>` : it.act ? `<span class="sbtns"><button type="button" class="btn small sgo" data-startact="${it.act}">${T('Details', 'Details')}</button>${logBtn(it)}</span>` : '';
   const ico = it => startIcon(it.kind === 'strength' ? 'kraft' : it.kind === 'mobility' || it.kind === 'rest' ? 'mobility' : it.kind === 'extra' ? 'mehr' : 'laufen');
-  const rows = items.length ? items.map(it => `<div class="srowt${it.done ? ' isdone' : ''}">${ico(it)}<span class="txt"><b>${esc(it.title)}</b>${it.detail || it.note ? `<small>${esc([it.detail, it.note].filter(Boolean).join(' · '))}</small>` : ''}${it.need && it.need.length && !it.done ? `<small class="sneed"><b>${T('Du brauchst', 'You need')}:</b> ${esc(it.need.join(' · '))}</small>` : ''}${it.tip ? `<small class="stip">${esc(it.tip)}</small>` : ''}${longCtl(it)}${swapCtl(it, items)}</span>${swapOpen && swapOpen === it.key && !it.swap ? '' : btn(it)}</div>`).join('')
+  const rows = items.length ? items.map(it => `<div class="srowt${it.done ? ' isdone' : ''}">${ico(it)}<span class="txt"><b>${esc(it.title)}</b>${it.detail || it.note ? `<small>${esc([it.detail, it.note].filter(Boolean).join(' · '))}</small>` : ''}${it.need && it.need.length && !it.done ? `<small class="sneed"><b>${T('Du brauchst', 'You need')}:</b> ${esc(it.need.join(' · '))}</small>` : ''}${it.tip ? `<small class="stip">${esc(it.tip)}</small>` : ''}${longCtl(it)}${warmCtl(it)}${swapCtl(it, items)}</span>${swapOpen && swapOpen === it.key && !it.swap ? '' : btn(it)}</div>`).join('')
     : `<div class="srowt">${startIcon('mobility')}<span class="txt"><b>${T('Heute ist nichts geplant', 'Nothing planned today')}</b><small>${T('Ruhetag – oder eine kurze Mobility-Routine', 'Rest day – or a short mobility routine')}</small></span><button type="button" class="btn small sgo" data-go="mobility">Mobility</button></div>`;
   // Diese Woche: Kraft gegen die Krafttage im Profil, Laufen gegen den Plan bzw. den Schnitt der letzten 4 Wochen, Mobility als Anzahl
   const nK = saved.filter(e => e.date >= wk && e.date <= today).length + getGymLog().filter(e => e.d >= wk && e.d <= today).length;
@@ -2665,6 +2674,7 @@ $('startcontent').addEventListener('click', e => {
   if (e.target.closest('[data-addundo]')) { setAdd(localDay(), null); renderStart(); toast(T('Wieder entfernt.', 'Removed.')); return; }
   if (e.target.closest('[data-swapclose]')) { swapOpen = null; renderStart(); return; }
   if (e.target.closest('[data-swapundo]')) { setSwap(localDay(), null); renderStart(); toast(T('Wieder wie geplant.', 'Back to plan.')); return; }
+  const wg = e.target.closest('[data-warmgo]'); if (wg) { const [id, k] = wg.dataset.warmgo.split('|'), g = WARMUPS.find(r => r.id === id); if (g && g[k]) startRoutine(`${g.label} · ${k === 'warmup' ? 'Warm-up' : 'Cooldown'}`, g[k]); return; }
   if (e.target.closest('[data-longedit]')) { longEdit = true; renderStart(); const f = $('slongkm'); if (f) { f.focus(); f.select(); } return; }
   const ls = e.target.closest('[data-longsave]'), lr = e.target.closest('[data-longreset]');
   if (ls) {

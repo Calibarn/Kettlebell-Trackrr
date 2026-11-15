@@ -683,3 +683,31 @@ test('Heute tauschen: Laufgruppe fällt aus → Intervall oder Testlauf; die reg
   await expect(card).toContainText('Testlauf 5 km');
   await expect(card).toContainText('heute statt Laufgruppe');
 });
+
+test('Warm-up an der harten Einheit: „▶ Warm-up“ in Heute dran startet den geführten Ablauf, nach dem Eintragen „▶ Cooldown“', async ({ page }) => {
+  const wd = await page.evaluate(() => new Date().getDay());
+  await page.evaluate(wd => {
+    races = [{ id: 'a', name: 'A', date: addDays(localDay(), 100), dist: 'hm', prio: 'A' }]; results = []; persistRaces();
+    Object.assign(profile.week, { group: null, quality: wd, long: (wd + 3) % 7, extras: [], strength: [], mobility: [] });
+    persistProfile(); renderAll(); showArea('start');
+  }, wd);
+  const card = page.locator('#startcontent .scard', { hasText: 'Heute dran' });
+  const go = card.locator('[data-warmgo]');
+  await expect(go).toHaveAttribute('data-warmgo', 'interval|warmup');
+  await expect(go).toHaveText('▶ Warm-up · ca. 25 Min.');
+  await go.click();
+  await expect(page.locator('#routine')).toBeVisible();
+  await expect(page.locator('#rt-title')).toHaveText('Intervall · Warm-up');
+  await page.click('#rt-close');
+  await expect(page.locator('#routine')).toBeHidden();
+  // welche Einheit welches Warm-up bekommt: lockere Läufe keins, kurze schnelle Stücke Speed, Rennen nach Strecke
+  const m = await page.evaluate(() => [
+    warmFor({ kind: 'quality', detail: '12 × 400 m etwas schneller als 5-km-Tempo' }), warmFor({ kind: 'quality2', detail: '3 × 10 Min. Schwelle' }),
+    warmFor({ kind: 'quality', easy: true }), warmFor({ kind: 'long' }), warmFor({ kind: 'group' }), warmFor({ kind: 'easy' }),
+    warmFor({ kind: 'race', warm: 'hm' }), warmFor({ kind: 'brace', warm: 'pace' })]);
+  expect(m).toEqual(['speed', 'interval', null, null, null, null, 'hm', '10k']);
+  // eingetragen → Cooldown
+  await page.evaluate(() => { addRun(localDay(), 8, { kind: 'quality' }); renderStart(); });
+  await expect(card.locator('[data-warmgo]')).toHaveAttribute('data-warmgo', 'interval|cooldown');
+  await expect(card.locator('[data-warmgo]')).toHaveText('▶ Cooldown');
+});
