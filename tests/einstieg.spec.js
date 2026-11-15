@@ -1,7 +1,7 @@
 // Laufanfänger: Laufniveau, Lauf-Einstieg (9 Wochen × 3 Einheiten, geführt), kein Testlauf ohne 5 km.
 const { test, expect, openSect } = require('./fixtures');
 
-const openOverview = page => page.evaluate(() => { showArea('laufen'); runView.tab = 'plan'; runView.plan = 'woche'; store(KEYS.run, runView); renderRun(); });
+const openOverview = page => page.evaluate(() => { showArea('laufen'); runView.tab = 'woche'; store(KEYS.run, runView); renderRun(); });
 
 test('Neu ohne Daten: Übersicht fragt einmal; „Ich laufe schon“ → Saisonplan, im Profil umstellbar', async ({ page }) => {
   await openOverview(page);

@@ -40,7 +40,7 @@ test('Gemeinsamer Block: Wings for Life im Mai und Pace Race im Juni bereiten si
   expect(['2027-05-10', '2027-05-17'].map(w => S.weeks.find(x => x.week === w).phase)).toEqual(['recover', 'recover']);
   expect(k('2027-05-10')).toContain('keine – nur locker');
   // ⇄ im Saisonplan
-  await page.evaluate(() => { showArea('laufen'); }); await page.click('[data-runtab="plan"]'); await page.click('[data-runsub="woche"]');
+  await page.evaluate(() => { showArea('laufen'); }); await page.click('[data-runtab="woche"]');
   await expect(page.locator('#runcontent .alert.planmix')).toContainText('bereitet beide zusammen vor');
   const html = await page.evaluate(() => renderPlanSeason(seasonPlan('2026-11-04', { L0: 12, W0: 25 })));
   expect((html.match(/⇄ Pace Race/g) || []).length).toBe(2);
@@ -83,7 +83,7 @@ test('B-Rennen in der Erholung: nur locker mitlaufen; Formular warnt schon beim 
   expect(wk.phase).toBe('recover');
   expect(wk.brace).toContain('locker, nicht auf Zeit');
 
-  await page.evaluate(() => { showArea('laufen'); }); await page.click('[data-runtab="plan"]'); await page.click('[data-runsub="rennen"]');
+  await page.evaluate(() => { showArea('laufen'); }); await page.click('[data-runtab="rennen"]');
   await expect(page.locator('#racewarn')).toBeHidden();
   await page.fill('#racename', 'Marathon');
   await page.selectOption('#racedist', 'marathon');

@@ -137,8 +137,8 @@ test('Hüfte für Läufer und Sprunggelenk: Seiten, Zeiten und Abhaken', async (
 
 test('geführtes Lauf-Warm-up: Zeitschritte automatisch, Strecken zum Abhaken, +1 Min.', async ({ page }) => {
   await page.evaluate(() => showArea('laufen'));
-  await page.click('[data-runtab="warmup"]');
-  await page.click('[data-runsub="5k"]');
+  await page.click('[data-runtab="wissen"]'); await page.click('[data-runsub="warmup"]');
+  await page.selectOption('#warmpick', '5k');
   await page.click('[data-routine="warmup"]');
   const steps = await page.evaluate(() => rt.steps.map(s => [s.name, s.secs, s.sides]));
   expect(steps[0]).toEqual(['Einlaufen', 600, 1]);
@@ -159,8 +159,8 @@ test('geführtes Lauf-Warm-up: Zeitschritte automatisch, Strecken zum Abhaken, +
 
 test('Cooldown mit Essen: nicht-Übungen werden abgehakt, Dehnungen je Seite', async ({ page }) => {
   await page.evaluate(() => showArea('laufen'));
-  await page.click('[data-runtab="warmup"]');
-  await page.click('[data-runsub="long"]');
+  await page.click('[data-runtab="wissen"]'); await page.click('[data-runsub="warmup"]');
+  await page.selectOption('#warmpick', 'long');
   await page.click('[data-routine="cooldown"]');
   const steps = await page.evaluate(() => rt.steps.map(s => [s.name, s.secs, s.sides]));
   expect(steps).toEqual([['Locker gehen', 300, 1], ['Trinken & Essen', null, 1], ['Wadendehnung', 45, 2], ['Hüftbeuger-Dehnung', 45, 2], ['Vorderer Oberschenkel', 30, 2], ['Figure-4 Gesäß', 30, 2]]);

@@ -525,7 +525,7 @@ const SEASON_GUIDE = [
     'Der Exponent 1,06 bildet ab, dass man auf längeren Strecken langsamer wird. Die Formel stammt aus Daten gut trainierter Läufer: Für den Marathon ist sie bei weniger als etwa 50 km pro Woche meist zu optimistisch – eher 5–10 % Puffer einplanen. Am verlässlichsten ist eine Prognose aus einer Bestzeit über eine ähnliche Distanz.',
     'Eigene Distanz (z. B. 20 km): Für Plan und Trainingsstufe zählt die nächstliegende Kategorie (bis 7,5 km → 5 km, bis 15 km → 10 km, bis 30 km → Halbmarathon, darüber Marathon). Die Zielzeit wird dafür per Riegel auf diese Distanz umgerechnet; Pace und Zwischenzeiten rechnet die App mit den echten km.',
     'Renntempo in den Einheiten („im HM-Tempo“) kommt aus deiner aktuellen Form, nicht aus der Zielzeit – nur solange noch kein Ergebnis eingetragen ist, aus der Zielzeit.',
-    'Trainingstempos (Plan → Übersicht): Grundlage ist dein neuestes Ergebnis, solange es höchstens 3 % langsamer ist als dein bestes der letzten 12 Monate (sonst das beste), per Riegel auf 10 km umgerechnet. Locker = 10-km-Pace + 60–90 s/km, Schwelle = Renntempo für 15 km bis Halbmarathon (etwa eine Stunde haltbar), Intervall ≈ 5-km-Renntempo, Marathontempo per Riegel. Beispiel 10 km in 50:00: locker 6:00–6:30, Schwelle 5:05–5:15, Intervall 4:48, Marathon 5:27 /km.',
+    'Trainingstempos (Laufen → Woche): Grundlage ist dein neuestes Ergebnis, solange es höchstens 3 % langsamer ist als dein bestes der letzten 12 Monate (sonst das beste), per Riegel auf 10 km umgerechnet. Locker = 10-km-Pace + 60–90 s/km, Schwelle = Renntempo für 15 km bis Halbmarathon (etwa eine Stunde haltbar), Intervall ≈ 5-km-Renntempo, Marathontempo per Riegel. Beispiel 10 km in 50:00: locker 6:00–6:30, Schwelle 5:05–5:15, Intervall 4:48, Marathon 5:27 /km.',
     'Fortschritt kommt über Testläufe: Ist dein letztes Ergebnis oder Rennen 8 Wochen her, macht der Plan in der nächsten passenden Woche (Basis, Grundlage oder Aufbau) die Qualitätseinheit zum 5-km-Testlauf. Ergebnis unter Bestzeiten eintragen – B- und C-Rennen zählen genauso.',
     'Einen Testlauf gibt es erst, wenn 5 km machbar sind: in der laufenden Woche, wenn dein längster Lauf der letzten 30 Tage mindestens 5 km war, später, wenn der geplante Longrun der Woche so lang ist. Im Lauf-Einstieg nie.',
     'Die Tempos sind Richtwerte. Bei Hitze, Wind, Hügeln oder müden Beinen gilt das Gefühl bzw. die Herzfrequenz-Zone, nicht die Uhr.',
@@ -565,7 +565,7 @@ const SEASON_GUIDE = [
     'Wetter checken, Wegwerfschicht für den Startblock.',
     'Gels, Uhr laden, Herzfrequenzgurt, Pflaster und Vaseline für Scheuerstellen.',
     'Anreise und Startblock planen, Zeitpuffer für Toilette und Warm-up einrechnen.',
-    'Warm-up für die Distanz unter Laufen → Warm-up ansehen und vorher einmal im Training testen.',
+    'Warm-up für die Distanz unter Laufen → Wissen → Warm-up ansehen und vorher einmal im Training testen.',
     'Die Nacht vor der Nacht vor dem Rennen ist für den Schlaf wichtiger als die letzte.'
   ] },
   { title: 'Erholung nach dem Rennen', sub: 'wie lange, was hilft', items: [
@@ -887,9 +887,17 @@ PREP.mat.push('Dead Bug mit Kurzhantel', 'Floor Press mit Kurzhanteln', 'Pullove
    Der älteste (letzte) Eintrag ist der Grundstand mit allen Funktionen; Neulinge sehen ihn plus die 3 neuesten Updates. */
 /* Versionsnummer der App, angezeigt unter Mehr. Seit 13.11.2026 gehen Änderungen direkt live (main, ohne Wochen-Release über dev);
    jeder Tag mit Veröffentlichung ist eine neue Nebenversion: 1.1, 1.2, 1.3 … Der Neuigkeiten-Eintrag des Tages bekommt dieselbe Nummer (version). */
-const APP_VERSION = '1.4';
+const APP_VERSION = '1.5';
 // Ein Eintrag pro Tag: Änderungen desselben Tages kommen in den Eintrag des Tages (aka = frühere ids für „schon gesehen“)
 const CHANGELOG = [
+  { id: '2026-11-16', date: '2026-11-16', version: '1.5', title: 'Einfacher', items: [
+    ['Laufen: eine Reiterzeile', 'Statt zwei Reihen gibt es nur noch Woche · Rennen · Läufe · Wissen. Bestzeiten stehen unter Rennen (aufklappbar), Warm-up, Lauf-ABC und Tempo & Tipps unter Wissen.', 'neu'],
+    ['Läufe bearbeiten', 'Unter Laufen → Läufe steht „Lauf eintragen“ ganz oben. Einen Lauf antippen, um Art, km, Zeit oder Puls zu ändern oder ihn zu löschen – z. B. Laufgruppe statt Intervall. Die Liste zeigt die neuesten 5.', 'neu'],
+    ['Anders gelaufen?', 'Beim Nachtragen auf der Startseite lässt sich die Art ändern, wenn du etwas anderes gelaufen bist als geplant.', 'neu'],
+    ['Startseite aufgeräumt', '„Heute dran“ steht immer oben. Offene Nachträge sind kompakte Zeilen, das Formular kommt erst nach Antippen. „Rennbereit?“ zeigt eine Zeile je Rennen, woran es hängt, nach Antippen.', 'neu'],
+    ['Weniger Knöpfe', '„Entfällt“ im Wochenplan erscheint erst nach Antippen der Einheit, die Wochenübersicht bei Kraft ist eingeklappt, lange Einleitungstexte sind weg.', 'neu'],
+    ['Kraft vor Intervall', 'Die Trainingswoche warnt, wenn die Qualitätseinheit direkt nach einem Kraft-Tag mit Beinen liegt. Oberkörper und Core am Vortag sind in Ordnung.', 'neu']
+  ] },
   { id: '2026-11-15', date: '2026-11-15', version: '1.4', title: 'Miniband', items: [
     ['Miniband', 'Neuer Kraft-Plan „Miniband · Beine fürs Laufen“ für die kurzen Gummibänder: Seitliches Gehen, Monster Walk, Kniebeugen, Knieheben, Beinheben seitlich, Fire Hydrant, Kickback, Hüftheben und Clamshells – Gesäß und Hüfte, die beim Laufen Becken und Knie stabil halten. Die Band-Stärke (Light bis XX-Heavy) wählst du einmal für den Plan. Erscheint, sobald du unter Profil → Geräte ein Miniband einträgst.', 'neu'],
     ['Hüfte aktivieren', 'Unter Mobility → Läufer gibt es dazu ein 6-Minuten-Programm mit Miniband – gut vor dem Laufen.', 'neu'],

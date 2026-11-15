@@ -3,8 +3,8 @@ const { test, expect } = require('./fixtures');
 // Rennen ohne feste Distanz: Wings for Life World Run (Ziel in km) und Pace Race (Ziel-Level).
 async function openRaces(page) {
   await page.evaluate(() => showArea('laufen'));
-  await page.click('[data-runtab="plan"]');
-  await page.click('[data-runsub="rennen"]');
+  await page.click('[data-runtab="woche"]');
+  await page.click('[data-runtab="rennen"]');
 }
 // 10 km in 55:00 vor einer Woche als aktuelle Form
 const setForm = page => page.evaluate(() => { results = [{ id: 'f', date: addDays(localDay(), -7), km: 10, time: 3300, dist: '10k' }]; persistResults(); });
@@ -112,7 +112,7 @@ test('Pace Race: Ziel-Level, Zeitlimit der Zielrunde, Level-Tempo und 1-km-Wiede
 
   // Ergebnis eines Pace Race nicht als Bestzeit übernehmen (Pausen verfälschen die Tempos)
   await page.evaluate(() => { races[0].date = addDays(localDay(), -3); persistRaces(); });
-  await page.click('[data-runsub="bestzeiten"]');
+  await page.click('[data-runtab="rennen"]'); await page.click('#sect-bests summary');
   await expect(page.locator('#bestsave')).toBeVisible();
   await expect(page.locator('#bestfrom')).toHaveCount(0);
   expect(await page.evaluate(() => missingResultHint())).toBe('');

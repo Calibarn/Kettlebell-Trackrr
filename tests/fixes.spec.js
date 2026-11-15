@@ -39,7 +39,7 @@ test('Testlauf: ein vergangenes Rennen ohne Ergebnis zählt nicht als neuer Wert
       { id: 'h', name: 'HM', date: addDays(localDay(), 7 * 20), dist: 'hm', prio: 'A', goal: null, km: null }]; persistRaces();
     results = [{ id: 'o', date: addDays(localDay(), -90), km: 10, time: 3000, dist: '10k' }]; persistResults();
     runLog = [{ id: 'r1', date: addDays(localDay(), -3), km: 8 }]; persistRunLog();
-    showArea('laufen'); runView.tab = 'plan'; runView.plan = 'woche'; renderRun();
+    showArea('laufen'); runView.tab = 'woche'; renderRun();
   });
   expect(await page.evaluate(() => seasonPlan().weeks[0].test)).toBe(true);
   await expect(page.locator('#runcontent')).toContainText('Wie lief Stadtlauf?');
@@ -61,7 +61,7 @@ test('Abhaken: ein nachgeholter Lauf lässt die Kraft am Zieltag stehen; alte �
     Object.assign(profile.week, { quality: 2, long: 0, group: 4, strength: [1, 3, 5], extraDay: null, track: true, strengthFixed: [] }); persistProfile();
     // Stand aus v52: Kraft am Mittwoch war für die Qualität ausgefallen
     weekPlan = { week: weekStart(localDay()), done: [], moved: { quality: 3 }, autoSkip: { quality: 'strength-3' } }; storeWeekPlan();
-    showArea('laufen'); runView.tab = 'plan'; runView.plan = 'woche'; renderRun();
+    showArea('laufen'); runView.tab = 'woche'; renderRun();
   });
   await expect(page.locator('#planschedule .skipped')).toHaveCount(0);
   await expect(page.locator('#planschedule .sched-strength', { hasText: 'Mi' })).toContainText('am selben Tag wie ein harter Lauf');

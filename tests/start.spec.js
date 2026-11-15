@@ -120,6 +120,10 @@ test.describe('Ergebnis nach dem Rennen', () => {
     await setRaces(page, [{ id: 'heute', name: 'Heutiger Lauf', date: await day(page, 0), dist: '10k', prio: 'B', goal: null }]);
     await expect(page.locator('#startresult')).toHaveCount(0); // am Renntag selbst noch nicht
     await setRaces(page, [{ id: 'hm', name: 'Berliner HM', date: await day(page, -1), dist: 'hm', prio: 'A', goal: 7140 }]);
+    // offen als kompakte Zeile, das Formular erst nach Antippen
+    await expect(page.locator('#startresult')).toHaveCount(0);
+    await expect(page.locator('#startpend [data-pendopen="res:hm"]')).toContainText('Wie lief Berliner HM?');
+    await page.click('[data-pendopen="res:hm"]');
     await expect(page.locator('#startresult')).toContainText('Wie lief Berliner HM?');
     await page.click('[data-ressave="hm"]');
     await expect(page.locator('#srestime [data-tpart="0"]')).toHaveAttribute('aria-invalid', 'true');
@@ -130,7 +134,7 @@ test.describe('Ergebnis nach dem Rennen', () => {
     expect(await page.evaluate(() => results.map(r => [r.race, r.dist, r.km, r.time, r.name]))).toEqual([['hm', 'hm', 21.0975, 7092, 'Berliner HM']]);
     // Tempos kommen jetzt aus dem Ergebnis, die Rennliste zeigt es
     expect(await page.evaluate(() => trainingPaces().ref.r.race)).toBe('hm');
-    await page.evaluate(() => { showArea('laufen'); }); await page.click('[data-runtab="plan"]'); await page.click('[data-runsub="rennen"]');
+    await page.evaluate(() => { showArea('laufen'); }); await page.click('[data-runtab="rennen"]');
     await expect(page.locator('#racelist')).toContainText('gelaufen: 1:58:12');
   });
 
@@ -139,16 +143,19 @@ test.describe('Ergebnis nach dem Rennen', () => {
       { id: 'p', name: 'Pace Race', date: await day(page, -1), dist: '10k', prio: 'A', goal: null, km: 12, fmt: 'pace' },
       { id: 'x', name: 'Stadtlauf', date: await day(page, -1), dist: '10k', prio: 'B', goal: null }]);
     // das neueste zuerst (vor 1 Tag: Pace Race und Stadtlauf), Wings for Life von vor 2 Tagen danach
+    const res = page.locator('#startpend [data-pendopen^="res:"]');
+    await expect(res).toHaveCount(3);
+    await expect(res.nth(2)).toContainText('Wie lief Wings for Life?');
+    await page.click('[data-pendopen="res:x"]'); await page.click('#startresult [data-resdns="x"]');
+    await page.click('[data-pendopen="res:p"]');
     await expect(page.locator('#startresult .skicker')).toContainText('gestern');
-    await expect(page.locator('#startresult .srowt b')).toHaveText(/Wie lief (Pace Race|Stadtlauf)\?/);
-    if (await page.locator('#startresult [data-resdns="x"]').count()) await page.click('#startresult [data-resdns="x"]');
     await expect(page.locator('#startresult .srowt b')).toHaveText('Wie lief Pace Race?');
     await page.fill('#sreslevel', '30');
     await page.click('#startresult [data-ressave="p"]');
     await expect(page.locator('#sreslevel')).toHaveAttribute('aria-invalid', 'true');
     await page.fill('#sreslevel', '11,753');
     await page.click('#startresult [data-ressave="p"]');
-    if (await page.locator('[data-resdns="x"]').count()) await page.click('[data-resdns="x"]');
+    await page.click('[data-pendopen="res:w"]');
     await expect(page.locator('#startresult .srowt b')).toHaveText('Wie lief Wings for Life?');
     await expect(page.locator('#startresult .skicker')).toContainText('vor 2 Tagen');
     await page.fill('#sreskm', '18,4');
@@ -160,7 +167,7 @@ test.describe('Ergebnis nach dem Rennen', () => {
     // bleibt nach dem Neuladen gültig, Rennliste zeigt Level und „nicht gelaufen“
     await page.reload();
     expect(await page.evaluate(() => [races.find(r => r.id === 'p').level, races.find(r => r.id === 'x').dns])).toEqual([11.753, true]);
-    await page.evaluate(() => { showArea('laufen'); }); await page.click('[data-runtab="plan"]'); await page.click('[data-runsub="rennen"]');
+    await page.evaluate(() => { showArea('laufen'); }); await page.click('[data-runtab="rennen"]');
     await expect(page.locator('#racelist')).toContainText('geschafft: Level 11,753');
     await expect(page.locator('#racelist')).toContainText('nicht gelaufen');
     await expect(page.locator('#racelist')).toContainText('gelaufen: 18,4 km in 1:44:38');
@@ -206,6 +213,8 @@ test.describe('Lauf nachtragen', () => {
   test('am Tag nach dem geplanten Lauf fragt die Startseite nach den km und trägt sie in den Umfang ein', async ({ page }) => {
     const wd = await yWd(page);
     await page.evaluate(d => { profile.week = Object.assign(profile.week, { group: d, quality: null, long: null, runner: 'runner' }); persistProfile(); runLog = []; persistRunLog(); showArea('start'); }, wd);
+    await expect(page.locator('#startrun')).toHaveCount(0);
+    await page.click('#startpend [data-pendopen]');
     await expect(page.locator('#startrun .srowt b')).toHaveText(/^\S+ \d\d\.\d\d\. · Laufgruppe$/);
     await page.click('[data-runsave]');
     await expect(page.locator('#srunkm')).toHaveAttribute('aria-invalid', 'true');
@@ -218,6 +227,7 @@ test.describe('Lauf nachtragen', () => {
   test('„Nicht gelaufen“ markiert die Einheit als entfallen; eine Wochensumme oder der Lauf-Einstieg fragen nicht', async ({ page }) => {
     const wd = await yWd(page);
     await page.evaluate(d => { profile.week = Object.assign(profile.week, { group: null, quality: null, long: d, runner: 'runner' }); persistProfile(); runLog = []; persistRunLog(); showArea('start'); }, wd);
+    await page.click('#startpend [data-pendopen]');
     await expect(page.locator('#startrun .srowt b')).toHaveText(/^\S+ \d\d\.\d\d\. · Longrun$/);
     await page.click('[data-runskip]');
     await expect(page.locator('#startrun')).toHaveCount(0);
@@ -235,27 +245,32 @@ test.describe('Lauf nachtragen', () => {
     // Longrun jede Woche am selben Wochentag, zuletzt vor 9 und 2 Tagen; das Rennen ist 40 Tage her; gemerkt ist ein Tag vor 12 Tagen
     await page.evaluate(([w, r, from]) => { profile.week = Object.assign(profile.week, { group: null, quality: null, long: w, extras: [], runner: 'runner' }); persistProfile(); runLog = []; persistRunLog();
       races = [{ id: 'alt', name: 'Herbstlauf', date: r, dist: '10k', prio: 'B', goal: null }]; persistRaces(); store(KEYS.runask, from); showArea('start'); }, [wd, await d(-40), await d(-12)]);
-    // neueste zuerst: Longrun vor 2 Tagen oben, eingeklappt der vor 9 Tagen und das Rennen
-    await expect(page.locator('#startrun .srowt b')).toContainText('Longrun');
-    await expect(page.locator('#startrun .skicker')).toContainText('vor 2 Tagen');
-    await expect(page.locator('#startmore summary')).toContainText('2 weitere offen');
-    await expect(page.locator('#startrun-1')).toBeHidden(); // eingeklappt
-    await page.click('#startmore summary');
-    await expect(page.locator('#startrun-1 .skicker')).toContainText('vor 9 Tagen');
-    await expect(page.locator('#startresult-2 .srowt b')).toHaveText('Wie lief Herbstlauf?');
-    // eintragen im eingeklappten Bereich: bleibt aufgeklappt, der Lauf zählt
-    await page.fill('#srunkm-1', '14');
-    await page.click('#startrun-1 [data-runsave]');
+    // neueste zuerst als kompakte Zeilen: Longrun vor 2 Tagen, Longrun vor 9 Tagen, das Rennen – Formular erst nach Antippen
+    const rows = page.locator('#startpend [data-pendopen]');
+    await expect(rows).toHaveCount(3);
+    await expect(rows.nth(0)).toContainText('Longrun'); await expect(rows.nth(0)).toContainText('vor 2 Tagen');
+    await expect(rows.nth(1)).toContainText('vor 9 Tagen');
+    await expect(rows.nth(2)).toContainText('Wie lief Herbstlauf?');
+    await expect(page.locator('#startcontent .sres')).toHaveCount(0);
+    await rows.nth(1).click();
+    await expect(page.locator('#startrun .skicker')).toContainText('vor 9 Tagen');
+    await page.fill('#srunkm', '14');
+    await page.click('#startrun [data-runsave]');
     expect(await page.evaluate(() => runLog.map(r => r.km))).toEqual([14]);
-    await expect(page.locator('#startmore')).toHaveAttribute('open', '');
-    await expect(page.locator('#startmore .sres')).toHaveCount(1);
+    await expect(rows).toHaveCount(2);
+    // ✕ schließt ein geöffnetes Formular wieder
+    await rows.nth(0).click(); await page.click('[data-pendclose]');
+    await expect(page.locator('#startcontent .sres')).toHaveCount(0);
     // nach dem Neuladen immer noch da (keine Frist)
     await page.reload(); await page.evaluate(() => showArea('start'));
+    await rows.nth(0).click();
     await expect(page.locator('#startrun .srowt b')).toContainText('Longrun');
     await page.click('#startrun [data-runskip]');
+    await page.click('[data-pendopen="res:alt"]');
     await expect(page.locator('#startresult .srowt b')).toHaveText('Wie lief Herbstlauf?');
     await page.click('[data-resdns="alt"]');
     await expect(page.locator('#startcontent .sres')).toHaveCount(0);
+    await expect(page.locator('#startpend')).toHaveCount(0);
     expect(await page.evaluate(() => load(KEYS.runask, null))).toBe(await d(0));
   });
   test('Zeit und Ø-Puls optional: Auswertung gegen Zone 2 und lockeres Tempo, bei Intervallen ohne Wertung', async ({ page }) => {
@@ -263,7 +278,7 @@ test.describe('Lauf nachtragen', () => {
     const setup = kind => page.evaluate(([w, k]) => { profile.week = Object.assign(profile.week, { group: null, quality: k === 'q' ? w : null, long: k === 'l' ? w : null, extras: [], runner: 'runner' });
       profile.hr = Object.assign({}, profile.hr, { max: 185, rest: 55, z: hrZonesFrom(185, 55) }); persistProfile(); // Zone 2: 133–145
       results = [{ id: 'r', date: addDays(localDay(), -40), km: 10, time: 3000, dist: '10k' }]; persistResults(); // locker 6:00–6:30 /km
-      races = []; persistRaces(); runLog = []; persistRunLog(); localStorage.removeItem(KEYS.runask); startFeedback = null; showArea('start'); }, [wd, kind]);
+      races = []; persistRaces(); runLog = []; persistRunLog(); localStorage.removeItem(KEYS.runask); startFeedback = null; showArea('start'); }, [wd, kind]).then(() => page.click('#startpend [data-pendopen]'));
     const fill = async (km, t, hr) => { await page.fill('#srunkm', km); for (const [i, v] of t.entries()) await page.fill(`#sruntime [data-tpart="${i}"]`, v); await page.fill('#srunhr', hr); await page.click('[data-runsave]'); };
     await setup('l');
     // ungültiger Puls wird markiert, nichts gespeichert
@@ -278,7 +293,7 @@ test.describe('Lauf nachtragen', () => {
     await page.click('[data-fbclose]');
     await expect(page.locator('#startfb')).toHaveCount(0);
     // in der Liste unter Umfang
-    await page.evaluate(() => { showArea('laufen'); }); await page.click('[data-runtab="umfang"]');
+    await page.evaluate(() => { showArea('laufen'); }); await page.click('[data-runtab="laeufe"]');
     await expect(page.locator('#runlist')).toContainText('1:24:00 · 6:00\u00a0/km · Ø\u00a0138\u00a0bpm · ✓ im Bereich');
     // Puls zu hoch bei passendem Tempo
     await setup('l');
@@ -327,15 +342,17 @@ test.describe('Lauf nachtragen', () => {
     expect(await page.evaluate(() => { runLog = [{ id: 'a', date: addDays(localDay(), -3), km: 8, sec: 2800, hr: 140, kind: 'easy' }]; const z = profile.hr.z; profile.hr.z = null; const e = paceRange(trainingPaces().easy); profile.hr.z = z; return e; })).toBe('6:00–6:30 /km');
     // über die Startseite: Hinweis beim Eintragen, die Tempos unter Laufen zeigen die Anpassung
     await page.evaluate(() => { runLog = []; persistRunLog(); showArea('start'); });
+    await page.click('#startpend [data-pendopen]');
     await page.fill('#srunkm', '12'); for (const [i, v] of ['1', '10', '00'].entries()) await page.fill(`#sruntime [data-tpart="${i}"]`, v); await page.fill('#srunhr', '141');
     await page.click('[data-runsave]');
     await expect(page.locator('#sfbeasy')).toHaveText('Lockeres Tempo angepasst: 6:00–6:30 /km → 5:50–6:20 /km – Puls in Zone 2 bei schnellerem Tempo. Die App rückt höchstens 10 s/km pro Lauf nach.');
     // Reiter „Laufen“ zeigt den neuen Stand sofort (ohne Unterreiter-Wechsel)
-    await page.evaluate(() => { runView.tab = 'plan'; runView.plan = 'woche'; });
+    await page.evaluate(() => { runView.tab = 'woche'; });
     await page.evaluate(() => showArea('laufen')); // wie der Reiter in der Leiste
     await expect(page.locator('#runcontent')).toContainText('an deine Läufe angepasst: 10 s/km schneller als aus der Bestzeit (6:00–6:30 /km), weil lockere Läufe mit Puls in Zone 2 schneller waren');
     // langsamer Lauf mit Puls in Zone 2 über die Startseite: Hinweis in der Auswertung
     await page.evaluate(() => { runLog = []; persistRunLog(); startFeedback = null; localStorage.removeItem(KEYS.runask); const wp = curWeekPlan(weekStart(addDays(localDay(), -1))); if (wp) { wp.done = []; storeWeekPlan(); } showArea('start'); });
+    await page.click('#startpend [data-pendopen]');
     await page.fill('#srunkm', '10'); for (const [i, v] of ['1', '07', '30'].entries()) await page.fill(`#sruntime [data-tpart="${i}"]`, v); await page.fill('#srunhr', '140');
     await page.click('[data-runsave]');
     await expect(page.locator('#sfbeasy')).toHaveText('Lockeres Tempo angepasst: 6:00–6:30 /km → 6:10–6:40 /km – Puls in Zone 2 erst bei langsamerem Tempo. Die App passt höchstens 10 s/km pro Lauf an.');
@@ -359,7 +376,7 @@ test.describe('Lauf nachtragen', () => {
   test('Umfang: Lauf eintragen mit Zeit, Puls und Art; Auswertung unter dem Formular', async ({ page }) => {
     await page.evaluate(() => { profile.hr = Object.assign({}, profile.hr, { max: 185, rest: 55, z: hrZonesFrom(185, 55) }); persistProfile();
       results = [{ id: 'r', date: addDays(localDay(), -40), km: 10, time: 3000, dist: '10k' }]; persistResults(); runLog = []; persistRunLog(); showArea('laufen'); });
-    await page.click('[data-runtab="umfang"]');
+    await page.click('[data-runtab="laeufe"]');
     await page.fill('#runkm', '10');
     for (const [i, v] of ['1', '02', '00'].entries()) await page.fill(`#runtime [data-tpart="${i}"]`, v);
     await page.fill('#runhr', '152'); await page.selectOption('#runkind', 'easy');
@@ -375,9 +392,8 @@ test.describe('Lauf nachtragen', () => {
   test('mehrere offene Läufe auf einmal als „nicht gelaufen“ markieren', async ({ page }) => {
     const wd = await page.evaluate(() => new Date(addDays(localDay(), -1) + 'T12:00:00').getDay());
     await page.evaluate(w => { profile.week = Object.assign(profile.week, { group: null, quality: null, long: w, extras: [], runner: 'runner' }); persistProfile(); runLog = []; persistRunLog(); races = []; persistRaces(); store(KEYS.runask, addDays(localDay(), -20)); showArea('start'); }, wd);
-    await page.click('#startmore summary');
     await page.click('[data-runskipall]');
-    await expect(page.locator('#startcontent .sres')).toHaveCount(0);
+    await expect(page.locator('#startpend')).toHaveCount(0);
     await expect(page.locator('#toast')).toContainText('3 Läufe nicht gelaufen');
   });
 });
@@ -391,7 +407,7 @@ test('Bestzeiten: eigene Reiter für Wings for Life (weiteste Strecke) und Pace 
       { id: 'r3', date: '2026-09-06', km: 21.0975, time: 7300, dist: 'hm', name: 'HM' }];
     persistResults(); bestView.group = 'hm'; showArea('laufen');
   });
-  await page.click('[data-runtab="plan"]'); await page.click('[data-runsub="bestzeiten"]');
+  await page.click('[data-runtab="rennen"]'); await page.click('#sect-bests summary');
   // keine eigenen Reiter „17,2 km“ / „18,4 km“
   await expect(page.locator('#bestgroups [data-bestgroup]')).toHaveText(['Halbmarathon', 'Wings for Life', 'Pace Race']);
   await page.click('[data-bestgroup="wfl"]');
@@ -457,6 +473,7 @@ test.describe('Weniger Tipps', () => {
     await page.evaluate(() => { races = []; persistRaces(); profile.week = Object.assign(profile.week, { quality: null, long: null, group: 3, strength: [1], extras: [], runner: 'runner' }); persistProfile();
       runLog = [{ id: 'g', date: '2026-10-28', km: 7.5, kind: 'group' }]; persistRunLog(); localStorage.removeItem(KEYS.runask); showArea('start'); });
     // Laufgruppe gestern: wie letztes Mal 7,5 km
+    await page.click('#startpend [data-pendopen]');
     await expect(page.locator('#startrun [data-runquick]')).toHaveText('✓ 7,5 km · wie letztes Mal');
     await page.click('#startrun [data-runquick]');
     expect(await page.evaluate(() => runLog.filter(r => r.date === '2026-11-04').map(r => [r.km, r.kind]))).toEqual([[7.5, 'group']]);
@@ -523,10 +540,14 @@ test.describe('Rennbereit?', () => {
         { id: 'm', name: 'Berlin', date: '2027-09-26', dist: 'marathon', prio: 'A', goal: 15300 }]; persistRaces();
       profile.week.runner = 'runner'; persistProfile(); showArea('start');
     });
-    const card = page.locator('#readycard'), row = n => card.locator('.srowt', { hasText: n });
+    const card = page.locator('#readycard'), row = n => card.locator('.srdyrow', { hasText: n });
     // nur A-Rennen
     await expect(row('Silvesterlauf')).toHaveCount(0);
-    await expect(row('Stadtlauf')).toContainText('in 84 Tagen · Ziel: ankommen');
+    // eine Zeile je Rennen; woran es hängt, steht nach dem Antippen
+    await expect(row('Stadtlauf').locator('summary')).toContainText('in 84 Tagen');
+    await expect(row('Stadtlauf').locator('.srdywhy')).toBeHidden();
+    await row('Stadtlauf').locator('summary').click();
+    await expect(row('Stadtlauf').locator('.srdywhy')).toHaveText('Ziel: ankommen');
     await expect(row('Stadtlauf').locator('.spill')).toHaveText('✓ bereit');
     await expect(row('Spandauer HM')).toContainText('längster Lauf 14/16 km · Ziel 2:05:00 · Prognose 1:52:32');
     await expect(row('Spandauer HM').locator('.spill')).toHaveText('noch nicht');
@@ -710,4 +731,21 @@ test('Warm-up an der harten Einheit: „▶ Warm-up“ in Heute dran startet den
   await page.evaluate(() => { addRun(localDay(), 8, { kind: 'quality' }); renderStart(); });
   await expect(card.locator('[data-warmgo]')).toHaveAttribute('data-warmgo', 'interval|cooldown');
   await expect(card.locator('[data-warmgo]')).toHaveText('▶ Cooldown');
+});
+
+test('Nachtragen: anders gelaufen als geplant – Art beim Eintragen ändern (Laufgruppe statt Intervall)', async ({ page }) => {
+  const wd = await page.evaluate(() => new Date(addDays(localDay(), -1) + 'T12:00:00').getDay());
+  await page.evaluate(w => { profile.week = Object.assign(profile.week, { group: null, quality: w, long: null, extras: [], strength: [], runner: 'runner' });
+    profile.hr = Object.assign({}, profile.hr, { max: 185, rest: 55, z: hrZonesFrom(185, 55) }); persistProfile();
+    races = []; persistRaces(); runLog = []; persistRunLog(); localStorage.removeItem(KEYS.runask); startFeedback = null; showArea('start'); }, wd);
+  await page.click('#startpend [data-pendopen]');
+  await expect(page.locator('#srunkind')).toHaveValue('quality');
+  await page.selectOption('#srunkind', 'group');
+  await page.fill('#srunkm', '8'); await page.fill('#srunhr', '140');
+  await page.click('[data-runsave]');
+  expect(await page.evaluate(() => runLog.map(r => [r.km, r.kind, r.hr]))).toEqual([[8, 'group', 140]]);
+  // Auswertung wie bei einem lockeren Lauf (Zone 2), Titel mit der gelaufenen Art
+  await expect(page.locator('#startfb')).toContainText('Laufgruppe');
+  await expect(page.locator('#startfb svg.chk')).toHaveCount(1);
+  await expect(page.locator('#startpend')).toHaveCount(0);
 });

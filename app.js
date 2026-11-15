@@ -957,6 +957,7 @@ function saveMeasureFromForm() {
 /* ---------- Profil-Oberfläche ---------- */
 const wdSelect = (id, cur, none) => `<select id="${id}">${none ? `<option value=""${cur === null ? ' selected' : ''}>${esc(none)}</option>` : ''}${WEEK_ORDER.map(d => `<option value="${d}"${d === cur ? ' selected' : ''}>${WD_LONG[d]}</option>`).join('')}</select>`;
 // Hinweise zur Woche: gleiche Tage, harte Tage direkt hintereinander
+const NO_LEGS = ['sun', 'core', 'sitcore', 'standcore', 'office']; // Kraftpläne ohne schwere Beinarbeit
 function weekWarnings(w = profile.week) {
   const out = [], next = d => d === null ? null : (d + 1) % 7;
   if (w.long === null) out.push(T('Ohne Longrun fehlt die wichtigste Einheit für Halbmarathon und Marathon. Fällt er nur einmal aus, besser in der Plan-Übersicht „Entfällt“ tippen.', 'Without a long run the most important session for half marathon and marathon is missing. If it is only skipped once, better tap “Skip” in the plan overview.'));
@@ -965,6 +966,9 @@ function weekWarnings(w = profile.week) {
   if (w.group !== null && w.quality !== null && w.group === w.quality) out.push(T('Laufgruppe und Qualitätseinheit liegen am selben Tag – die Laufgruppe ist als lockerer Lauf gedacht.', 'Running group and quality session are on the same day – the running group is meant as an easy run.'));
   if (w.quality !== null && w.long !== null && next(w.quality) === w.long) out.push(T(`Qualität am ${WD_LONG[w.quality]} direkt vor dem Longrun: zwei harte Tage hintereinander. Besser mindestens einen Tag Abstand.`, `Quality on ${WD_LONG[w.quality]} right before the long run: two hard days in a row. Better leave at least one day in between.`));
   { const p = w.quality !== null ? (w.quality + 6) % 7 : null; if (p !== null && w.strengthPlan[p] === 'gym' && w.gymHard.includes(p) && w.strength.includes(p)) out.push(T(`Qualität am ${WD_LONG[w.quality]} direkt nach hartem Training (${w.gymNames[p] || 'Gym/Kurs'}, ${WD_LONG[p]}) – der Plan legt dort nur einen lockeren Lauf hin. Besser die Qualität auf einen anderen Tag legen.`, `Quality on ${WD_LONG[w.quality]} right after a hard session (${w.gymNames[p] || 'gym/class'}, ${WD_LONG[p]}) – the plan only puts an easy run there. Better move the quality session to another day.`)); }
+  // Kraft zu Hause mit Beinen am Vortag (frei = zuletzt genutzter Plan, zählt mit); Oberkörper, Core, Büro und Kurse nicht – harte Kurse warnen oben
+  { const p = w.quality !== null ? (w.quality + 6) % 7 : null, k = p !== null && w.strength.includes(p) ? w.strengthPlan[p] : null;
+    if (p !== null && w.strength.includes(p) && k !== 'gym' && !NO_LEGS.includes(k)) out.push(T(`Qualität am ${WD_LONG[w.quality]} direkt nach Kraft (${WD[p]}${PLANS[k] ? ', ' + PLANS[k].tab : ''}) – die Beine sind dann selten frisch. Am Vortag besser Oberkörper oder Core – oder die Qualität auf einen anderen Tag.`, `Quality on ${WD_LONG[w.quality]} right after strength (${WD[p]}${PLANS[k] ? ', ' + PLANS[k].tab : ''}) – the legs are rarely fresh then. Better upper body or core the day before – or move the quality session.`)); }
   if (w.quality !== null && w.long !== null && next(w.long) === w.quality) out.push(T(`Qualität am ${WD_LONG[w.quality]} direkt nach dem Longrun – die Beine sind dann selten frisch.`, `Quality on ${WD_LONG[w.quality]} right after the long run – the legs are rarely fresh then.`));
   // zweite Qualität: nicht direkt neben Qualität oder Longrun; zwei Läufe am selben Tag vermeiden
   const hard = [[w.quality, T('Qualität', 'Quality')], [w.long, T('Longrun', 'Long run')]].concat(w.extras.filter(e => e.type === 'quality').map(e => [e.d, e.name || T('2. Qualität', '2nd quality')])).filter(([d]) => d !== null);
@@ -1248,14 +1252,17 @@ function loadChart() {
     <p class="tiny">${T('Balken: km je Woche, die laufende Woche heller. Fläche: Zielbereich der Woche (hell Erhalt, kräftig Aufbau). Orange: über der Obergrenze.', 'Bars: km per week, the current week lighter. Area: target range of the week (light maintain, strong build). Orange: above the upper limit.')}</p>`;
 }
 const dayLabel = d => `${WEEKDAY[new Date(d + 'T12:00:00').getDay()]} ${dateShort(d)}`;
+let runEdit = null, runAll = false; // Lauf bearbeiten (Antippen in „Letzte Läufe“), alle Läufe der 30 Tage zeigen
 function renderUmfang() {
-  const today = localDay(), cur = weekStart(today);
-  return `<div class="intro">${esc(tr(LOAD_INTRO))}</div>
+  const today = localDay(), cur = weekStart(today), e = runLog.find(r => r.id === runEdit) || null;
+  return `<div class="header">${e ? T('Lauf bearbeiten', 'Edit run') : T('Lauf eintragen', 'Add a run')}</div><div class="group"><div class="runadd"><input type="date" id="rundate" value="${e ? e.date : today}" max="${today}" aria-label="${T('Datum des Laufs', 'Date of the run')}"><input type="text" inputmode="decimal" autocomplete="off" id="runkm" placeholder="km" value="${e ? esc(kmText(e.km)) : ''}" aria-label="${T('Kilometer des Laufs', 'Kilometres of the run')}"><button type="button" class="btn small primary" id="runaddbtn">${e ? T('Speichern', 'Save') : T('Hinzufügen', 'Add')}</button></div>
+      <div class="runadd2"><span class="ra-time"><label>${T('Zeit (optional)', 'Time (optional)')}</label>${timeFields('runtime', e && e.sec ? e.sec : null, T('Zeit', 'Time'))}</span><span><label for="runhr">${T('Ø Puls', 'Avg HR')}</label><input type="text" inputmode="numeric" maxlength="3" autocomplete="off" id="runhr" placeholder="${T('optional', 'optional')}" value="${e && e.hr ? e.hr : ''}"></span>
+      <span><label for="runkind">${T('Art', 'Type')}</label><select id="runkind">${[['', T('nach Plan', 'from plan')], ['easy', T('Locker', 'Easy')], ['recovery', T('Regeneration', 'Recovery')], ['long', T('Longrun', 'Long run')], ['group', T('Laufgruppe', 'Running group')], ['quality', T('Intervall/Tempo', 'Intervals/tempo')]].map(([v, l]) => `<option value="${v}"${e && e.kind === v ? ' selected' : ''}>${l}</option>`).join('')}</select></span></div>
+      ${e ? `<div class="raceactions runeditact"><button type="button" class="btn small danger" data-rundel="${esc(e.id)}">${T('Löschen', 'Delete')}</button><button type="button" class="btn small" id="runcancel">${T('Abbrechen', 'Cancel')}</button></div>` : ''}<div id="runfb"></div></div>
+    <div class="header">${T('Letzte Läufe', 'Recent runs')}</div><div class="group" id="runlist"></div>
+    <div class="header">${T('Diese Woche · KW ', 'This week · wk ')}${isoWeek(cur)}</div><div class="group"><div class="panel" style="border:0;padding-top:12px" id="loadresult"></div></div>
     <div class="header">${T('Nächster langer Lauf', 'Next long run')}</div><div class="group"><div class="panel" style="border:0;padding-top:12px" id="longresult"></div></div>
-    <div class="header">${T('Lauf eintragen', 'Add a run')}</div><div class="group"><div class="runadd"><input type="date" id="rundate" value="${today}" max="${today}" aria-label="${T('Datum des Laufs', 'Date of the run')}"><input type="text" inputmode="decimal" autocomplete="off" id="runkm" placeholder="km" aria-label="${T('Kilometer des Laufs', 'Kilometres of the run')}"><button type="button" class="btn small primary" id="runaddbtn">${T('Hinzufügen', 'Add')}</button></div>
-      <div class="runadd2"><span class="ra-time"><label>${T('Zeit (optional)', 'Time (optional)')}</label>${timeFields('runtime', null, T('Zeit', 'Time'))}</span><span><label for="runhr">${T('Ø Puls', 'Avg HR')}</label><input type="text" inputmode="numeric" maxlength="3" autocomplete="off" id="runhr" placeholder="${T('optional', 'optional')}"></span>
-      <span><label for="runkind">${T('Art', 'Type')}</label><select id="runkind">${[['', T('nach Plan', 'from plan')], ['easy', T('Locker', 'Easy')], ['recovery', T('Regeneration', 'Recovery')], ['long', T('Longrun', 'Long run')], ['group', T('Laufgruppe', 'Running group')], ['quality', T('Intervall/Tempo', 'Intervals/tempo')]].map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select></span></div>
-      <div id="runfb"></div><div id="runlist"></div></div>
+
     <div class="group sectgroup">${sectHtml('umfang', 'sect-csv', '⇅', 'var(--accent)', T('Läufe aus CSV', 'Runs from CSV'), T('Import aus Uhr oder Tabelle, Vorlage zum Ausfüllen', 'import from a watch or spreadsheet, template to fill in'), `
       <button type="button" class="row" id="runcsvbtn"><span class="icon" style="background:var(--accent)">⇧</span><span class="txt"><b>${T('Läufe aus CSV importieren', 'Import runs from CSV')}</b><small>${T('Spalten Datum und km, z. B. aus Strava oder deiner Uhr', 'Columns date and km, e.g. from Strava or your watch')}</small></span><span class="chev"></span></button>
       <button type="button" class="row" id="runcsvtpl"><span class="icon" style="background:var(--blue)">⇩</span><span class="txt"><b>${T('CSV-Vorlage herunterladen', 'Download CSV template')}</b><small>${T('Zum Ausfüllen in Numbers, Excel oder Google Tabellen', 'To fill in with Numbers, Excel or Google Sheets')}</small></span><span class="chev"></span></button>
@@ -1263,7 +1270,6 @@ function renderUmfang() {
     <div id="runcsvresult"></div>
     <p class="footer">${T('Eine Zeile pro Lauf. Datum als 26.10.2026 oder 2026-10-26, km mit Komma oder Punkt. Läufe mit gleichem Datum und gleichen km werden übersprungen.', 'One line per run. Date as 26.10.2026 or 2026-10-26, km with comma or point. Runs with the same date and km are skipped.')}</p>
     <p class="footer">${T('Mit Datum rechnet die App die 30 Tage exakt und markiert Läufe, die mehr als 10 % über dem längsten der 30 Tage davor lagen. Wochen mit eingetragenen Läufen werden automatisch zusammengezählt.', 'With dates the app calculates the 30 days exactly and marks runs that were more than 10 % above the longest of the 30 days before. Weeks with entered runs are added up automatically.')}</p>`)}</div>
-    <div class="header">${T('Diese Woche · KW ', 'This week · wk ')}${isoWeek(cur)}</div><div class="group"><div class="panel" style="border:0;padding-top:12px" id="loadresult"></div></div>
     <div class="group sectgroup">${sectHtml('umfang', 'sect-weeks', '∑', '#5e5ce6', T('Wochensummen', 'Weekly totals'), T('für Wochen ohne einzelne Läufe', 'for weeks without single runs'), `<div style="padding:0 16px" id="kmweeks"></div><p class="footer">${T('Für Wochen ohne einzelne Läufe: km von Montag bis Sonntag und den längsten Lauf, z. B. aus deiner Uhr. Pausenwoche: 0. Alles bleibt nur auf diesem Gerät und ist im Backup enthalten.', 'For weeks without single runs: km from Monday to Sunday and the longest run, e.g. from your watch. Rest week: 0. Everything stays on this device only and is included in the backup.')}</p>`)}</div>
     <div class="header">${T('Verlauf · 8 Wochen', 'History · 8 weeks')}</div><div class="group"><div class="panel" style="border:0;padding-top:4px" id="loadchart"></div></div>
     <p class="footer">${esc(tr(LOAD_NOTE))}</p>`;
@@ -1283,7 +1289,8 @@ function renderLoad() {
   const recent = allRuns().filter(r => r.date >= addDays(today, -30) && r.date <= today).reverse();
   // Rennen aus dem Ergebnis: ohne Löschen – ein eingetragener Lauf am selben Tag ersetzt es
   if ($('runfb')) $('runfb').innerHTML = runFeedback ? feedbackCard(runFeedback) : '';
-  $('runlist').innerHTML = recent.length ? recent.map(r => { const sp = runSpike(r); return `<div class="row${r.race ? ' racerun' : ''}"><span class="dur">${dayLabel(r.date)}</span><span class="txt"><b>${kmText(r.km)} km</b>${r.race ? `<small>🏁 ${esc(r.name || T('Rennen', 'Race'))} · ${T('aus dem Ergebnis', 'from the result')}</small>` : ''}${r.sec || r.hr ? (() => { const v = runVerdict(runCheck(r)); return `<small>${esc(runStats(r).split(' · ').slice(1).join(' · '))}${v.short ? ` · <span class="${v.ok ? 'chkok' : 'chkwarn'}">${esc(v.short)}</span>` : ''}</small>`; })() : ''}${sp ? `<small class="spike">${T(`+${sp} % gegenüber dem längsten der 30 Tage davor`, `+${sp} % over the longest of the 30 days before`)}</small>` : ''}</span>${r.race ? '' : `<button type="button" class="btn small danger" data-rundel="${esc(r.id)}" aria-label="${T(`Lauf vom ${dateGerman(r.date)} löschen`, `Delete run of ${dateGerman(r.date)}`)}">${T('Löschen', 'Delete')}</button>`}</div>`; }).join('')
+  $('runlist').innerHTML = recent.length ? (runAll ? recent : recent.slice(0, 5)).map(r => { const sp = runSpike(r), tag = r.race ? 'div' : 'button'; return `<${tag}${r.race ? '' : ` type="button" data-runedit="${esc(r.id)}"`} class="row${r.race ? ' racerun' : ''}${r.id === runEdit ? ' editing' : ''}"><span class="dur">${dayLabel(r.date)}</span><span class="txt"><b>${kmText(r.km)} km</b>${r.race ? `<small>🏁 ${esc(r.name || T('Rennen', 'Race'))} · ${T('aus dem Ergebnis', 'from the result')}</small>` : ''}${r.sec || r.hr ? (() => { const v = runVerdict(runCheck(r)); return `<small>${esc(runStats(r).split(' · ').slice(1).join(' · '))}${v.short ? ` · <span class="${v.ok ? 'chkok' : 'chkwarn'}">${esc(v.short)}</span>` : ''}</small>`; })() : ''}${sp ? `<small class="spike">${T(`+${sp} % gegenüber dem längsten der 30 Tage davor`, `+${sp} % over the longest of the 30 days before`)}</small>` : ''}</span>${r.race ? '' : '<span class="chev"></span>'}</${tag}>`; }).join('')
+      + (recent.length > 5 ? `<button type="button" class="row morerow" data-runall><span class="txt"><small>${runAll ? T('Weniger anzeigen', 'Show fewer') : T(`Alle ${recent.length} Läufe der letzten 30 Tage`, `All ${recent.length} runs of the last 30 days`)}</small></span></button>` : '')
       + (recent.some(r => r.race) ? `<p class="footer">${T('Rennen zählen automatisch an Tagen ohne eingetragenen Lauf – trägst du für den Tag einen Lauf ein (z. B. mit den km deiner Uhr), zählt nur der.', 'Races count automatically on days without an entered run – if you enter a run for that day (e.g. with your watch’s km), only that one counts.')}</p>` : '')
     : `<div class="row"><span class="txt"><small>${T('Noch keine einzelnen Läufe in den letzten 30 Tagen.', 'No single runs in the last 30 days yet.')}</small></span></div>`;
   box.innerHTML = (L.n ? `<div class="metrics two">
@@ -1362,6 +1369,15 @@ function addRunFromForm() {
   if (!isDay(d) || d > today) { toast(T('Bitte ein Datum bis heute wählen.', 'Please choose a date up to today.')); return; }
   if (km === null || Number.isNaN(km) || km <= 0 || km > 300) { $('runkm').setAttribute('aria-invalid', 'true'); toast(T('Bitte die Kilometer des Laufs eingeben.', 'Please enter the kilometres of the run.')); return; }
   const ex = readRunExtras('runtime', 'runhr'); if (!ex) return;
+  // Bearbeiten: Datum, km, Zeit, Puls und Art des angetippten Laufs ersetzen (Zeit/Puls leer = entfernen)
+  const was = runEdit && runLog.find(r => r.id === runEdit);
+  if (was) {
+    const kind = $('runkind').value || was.kind || 'easy';
+    for (const k of ['sec', 'hr', 'kind']) delete was[k];
+    Object.assign(was, { date: d, km }, runExtra(Object.assign(ex, { kind })));
+    runLog.sort((a, b) => a.date.localeCompare(b.date)); persistRunLog(); runEdit = null; runFeedback = null;
+    renderRun(); toast(T(`✓ Lauf vom ${dayLabel(d)} gespeichert.`, `✓ Run of ${dayLabel(d)} saved.`)); return;
+  }
   // Art: gewählt, sonst die geplante Einheit des Tages, sonst locker
   const planned = plannedRunsOn(d)[0], kind = $('runkind').value || (planned ? runKindOf(planned) : 'easy');
   const run = addRun(d, km, Object.assign(ex, { kind }));
@@ -1890,6 +1906,7 @@ function raceFmtInfo(fmt, v) {
       + (paceCut(v) < f.p5 ? T(` – die Wiederholungen im Plan laufen erst mal in ${hms(f.p5)} /km.`, ` – the repeats in the plan start at ${hms(f.p5)} /km.`) : '.') : '');
 }
 // Zeilen der Wochenplanung; mit „Abhaken & nachholen“ zusätzlich Haken, Nachholen-Vorschlag und Rückgängig
+let schedPick = null;
 function schedRows(x) {
   const items = weekSchedule(x), track = !!curWeekPlan(x.week), today = dayIdx(new Date(localDay() + 'T12:00:00').getDay());
   return items.map(it => {
@@ -1898,8 +1915,9 @@ function schedRows(x) {
     const none = open && to === null && dayIdx(it.d) < today ? `<small class="moved">${T('kein passender Tag mehr frei – diese Woche einfach ausfallen lassen', 'no suitable day left – just skip it this week')}</small>` : '';
     const note = it.skip ? `<small>${T('entfällt diese Woche', 'skipped this week')}</small>` : none + (it.from !== undefined ? `<small class="moved">${T(`verschoben von ${WD[it.from]}`, `moved from ${WD[it.from]}`)} · <button type="button" class="linkbtn" data-unmove="${it.key}">${T('rückgängig', 'undo')}</button></small>` : '') + (it.detail ? `<small>${esc(it.detail)}</small>` : '');
     const check = track && !race ? `<button type="button" class="schedcheck" data-done="${it.key}" aria-pressed="${!!it.done}" aria-label="${esc(it.title)} ${T('erledigt', 'done')}">${it.done ? '✓' : ''}</button>` : '';
-    const btns = race ? '' : (to !== null ? `<button type="button" class="btn small" data-move="${it.key}" data-to="${to}">${T(`→ ${WD[to]}`, `→ ${WD[to]}`)}</button>` : '') + (it.done ? '' : `<button type="button" class="btn small" data-skip="${it.key}" data-week="${x.week}">${it.skip ? T('Wieder rein', 'Restore') : T('Entfällt', 'Skip')}</button>`);
-    return `<div class="row sched-${it.kind}${it.skip ? ' skipped' : ''}${it.done ? ' done' : ''}">${check}<span class="dur">${WD[it.d]}</span><span class="txt"><b>${esc(it.title)}</b>${note}${btns ? `<span class="schedbtns">${btns}</span>` : ''}</span></div>`;
+    // „Entfällt“ erst nach Antippen der Zeile; „Wieder rein“ und der Nachhol-Vorschlag bleiben sichtbar
+    const btns = race ? '' : (to !== null ? `<button type="button" class="btn small" data-move="${it.key}" data-to="${to}">${T(`→ ${WD[to]}`, `→ ${WD[to]}`)}</button>` : '') + (it.done || !(it.skip || schedPick === it.key) ? '' : `<button type="button" class="btn small" data-skip="${it.key}" data-week="${x.week}">${it.skip ? T('Wieder rein', 'Restore') : T('Entfällt', 'Skip')}</button>`);
+    return `<div class="row sched-${it.kind}${it.skip ? ' skipped' : ''}${it.done ? ' done' : ''}${race ? '' : ' schedpick'}"${race ? '' : ` data-schedpick="${it.key}"`}>${check}<span class="dur">${WD[it.d]}</span><span class="txt"><b>${esc(it.title)}</b>${note}${btns ? `<span class="schedbtns">${btns}</span>` : ''}</span></div>`;
   }).join('');
 }
 function renderPlanWeek(S) {
@@ -1920,7 +1938,7 @@ function renderPlanWeek(S) {
       <div class="metric"><span>${T('Woche', 'Week')}</span><b>${kmVal === null ? '?' : T('ca. ', 'approx. ') + kmVal + ' km'}</b><small>${x.cut ? T('Entlastungswoche', 'deload week') : x.phase === 'taper' ? T('reduziert', 'reduced') : T('höchstens +10 %', 'at most +10 %')}</small></div>
     </div>
     <div class="planrows" id="planschedule">${schedRows(x)}</div>
-    <p class="tiny">${T('Tage stellst du unter <b>Profil → Trainingswoche</b> ein. „Entfällt“ gilt nur für diese Woche.', 'Set the days under <b>Profile → Training week</b>. “Skip” applies to this week only.')}</p>
+    <p class="tiny">${T('Einheit antippen, wenn sie diese Woche entfällt. Tage stellst du unter <b>Profil → Trainingswoche</b> ein.', 'Tap a session if it’s skipped this week. Set the days under <b>Profile → Training week</b>.')}</p>
     ${recNote}${bs}
     ${S.hasData ? '' : `<p class="tiny">${T('Für Longrun und Wochen-km: unter <b>Umfang</b> deine Läufe oder Wochensummen der letzten Wochen eintragen.', 'For long run and weekly km: enter your runs or weekly totals of the last weeks under <b>Volume</b>.')}</p>`}
     ${!x.a && !x.bLong && x.long && x.km && x.long > 0.6 * x.km ? `<div class="alert due" id="planratio">${T(`Der Longrun ist ${Math.round(x.long / x.km * 100)} % deiner Wochen-km – für Qualität und lockere Läufe bleibt kaum etwas. Fehlen unter <b>Umfang</b> Läufe? Dann dort nachtragen, der Plan rechnet sofort neu.`, `The long run is ${Math.round(x.long / x.km * 100)} % of your weekly km – hardly anything is left for quality and easy runs. Are runs missing under <b>Volume</b>? Add them there, the plan recalculates immediately.`)}</div>` : ''}
@@ -1988,8 +2006,7 @@ function renderRaces() {
   const cur = e ? e.fmt || (e.km ? 'custom' : e.dist) : 'hm', fmt = cur === 'wfl' || cur === 'pace' ? cur : null;
   const list = races.length ? races.map(r => `<button type="button" class="row${r.date < today ? ' past' : ''}" data-raceedit="${esc(r.id)}"><span class="dur">${dateGerman(r.date)}</span><span class="txt"><b>${esc(r.name)} <span class="prio prio-${r.prio}">${prioText(r.prio)}</span></b><small>${esc(raceLabel(r))}${r.km ? T(` (geplant wie ${esc(SEASON.dist[r.dist].label)})`, ` (planned like ${esc(SEASON.dist[r.dist].label)})`) : ''}${esc(goalLine(r))}${r.date < today ? esc(pastText(r)) : r.prio === 'A' || (r.prio === 'M' && !inABlock(r)) ? '<br>' + esc(peakText(r)) : ''}</small></span><span class="chev"></span></button>`).join('')
     : `<div class="row"><span class="txt"><small>${T('Noch keine Rennen eingetragen.', 'No races entered yet.')}</small></span></div>`;
-  return `<div class="intro">${esc(SEASON.intro)}</div>
-    <div class="header">${e ? T('Rennen bearbeiten', 'Edit race') : T('Rennen eintragen', 'Add race')}</div><div class="group"><div class="raceform">
+  const form = `<div class="header">${e ? T('Rennen bearbeiten', 'Edit race') : T('Rennen eintragen', 'Add race')}</div><div class="group"><div class="raceform">
       <div class="field wide"><label for="racename">${T('Name', 'Name')}</label><input id="racename" type="text" maxlength="60" autocomplete="off" placeholder="${T('z. B. Berliner Halbmarathon', 'e.g. Berlin Half Marathon')}" value="${e ? esc(e.name) : ''}"></div>
       <div class="field"><label for="racedate">${T('Datum', 'Date')}</label><input id="racedate" type="date" value="${e ? e.date : ''}"></div>
       <div class="field"><label for="racedist">${T('Distanz', 'Distance')}</label><select id="racedist">${Object.entries(SEASON.dist).map(([k, d]) => opt(k, d.label, cur)).join('')}${opt('custom', T('Andere Distanz', 'Other distance'), cur)}${opt('wfl', 'Wings for Life World Run', cur)}${opt('pace', 'Pace Race', cur)}</select></div>
@@ -2000,8 +2017,10 @@ function renderRaces() {
       <div class="field wide${fmt ? ' hide' : ''}" id="racegoalfield"><label>${T('Zielzeit (optional)', 'Goal time (optional)')}</label>${timeFields('racegoal', e && !e.fmt && e.goal, T('Zielzeit', 'Goal time'))}</div>
       <div class="raceactions">${e ? `<button type="button" class="btn small danger" id="racedel">${T('Löschen', 'Delete')}</button><button type="button" class="btn small" id="racecancel">${T('Abbrechen', 'Cancel')}</button>` : ''}<button type="button" class="btn small primary" id="racesave">${e ? T('Speichern', 'Save') : T('Hinzufügen', 'Add')}</button></div>
     </div></div>
-    <p class="footer">${T('A = Hauptziel mit eigenem Block. B = Zwischenziel: eigener Block, wenn Platz ist – liegt es in der Vorbereitung aufs A-Rennen, läuft es dort mit (Woche davor etwas weniger, danach locker). C = Trainingslauf als harte Einheit. Antippen zum Bearbeiten.', 'A = main goal with its own block. B = intermediate goal: its own block if there is room – if it falls within the preparation for the A race, it runs along there (slightly less the week before, easy afterwards). C = training race as a hard session. Tap to edit.')}</p>
-    <div class="header">${T('Deine Rennen', 'Your races')}</div><div class="group" id="racelist">${list}</div>`;
+`;
+  const own = `<div class="header">${T('Deine Rennen', 'Your races')}</div><div class="group" id="racelist">${list}</div>
+    <p class="footer">${T('A = Hauptziel · B = Zwischenziel · C = Trainingslauf. Antippen zum Bearbeiten.', 'A = main goal · B = intermediate goal · C = training race. Tap to edit.')}</p>`;
+  return e ? form + own : own + form; // beim Bearbeiten das Formular oben
 }
 function saveRaceFromForm() {
   const name = $('racename').value.trim(), date = $('racedate').value, sel = $('racedist').value, prio = $('raceprio').value, goal = readTime('racegoal');
@@ -2059,6 +2078,12 @@ const paceLevels = () => races.filter(r => r.fmt === 'pace' && r.level !== undef
 const groupKm = g => SEASON.dist[g] ? SEASON.dist[g].km : Number(g.slice(2));
 const riegel = (t, from, to) => t * Math.pow(to / from, 1.06);
 let bestView = load(KEYS.bestview, null); if (!isObj(bestView)) bestView = {};
+// Zeile über der eingeklappten Bestzeiten-Liste unter „Rennen“: je Distanz die beste Zeit (höchstens drei)
+function bestsSummary() {
+  const gs = bestGroups().filter(g => g !== 'wfl' && g !== 'pace').slice(0, 3);
+  if (!gs.length) return T('Ergebnisse eintragen – daraus rechnet der Plan deine Tempos', 'Enter results – the plan derives your paces from them');
+  return gs.map(g => { const b = results.filter(r => !wflResult(r) && resultGroup(r) === g).sort((a, c) => a.time - c.time)[0]; return `${SEASON.dist[g] ? SEASON.dist[g].label : kmText(groupKm(g)) + ' km'} ${hms(b.time)}`; }).join(' · ');
+}
 function bestGroups() {
   const order = Object.keys(SEASON.dist), gs = [...new Set(results.filter(r => !wflResult(r)).map(resultGroup))];
   return gs.sort((a, b) => groupKm(a) - groupKm(b) || order.indexOf(a) - order.indexOf(b)).concat(results.some(wflResult) ? ['wfl'] : [], paceLevels().length ? ['pace'] : []);
@@ -2132,7 +2157,7 @@ function renderBests() {
     <div class="group" style="margin-top:12px"><details id="bestcalc"><summary class="row"><span class="txt"><b>${T('So wird gerechnet', 'How it is calculated')}</b><small>${T('Riegel-Formel mit deiner Bestzeit', 'Riegel formula with your best time')}</small></span><span class="chev"></span></summary><div class="panel">
       <p class="tiny">${T('Zeit₂ = Zeit₁ × (Distanz₂ ÷ Distanz₁)<sup>1,06</sup>', 'time₂ = time₁ × (distance₂ ÷ distance₁)<sup>1.06</sup>')}</p>
       <ul class="notes">${Object.entries(SEASON.dist).filter(([k]) => k !== g).map(([k, d]) => `<li>${esc(d.label)}: ${hms(pb.time)} × (${kmText(Math.round(d.km * 10000) / 10000)} ÷ ${kmText(km)})<sup>1,06</sup> = ${hms(pb.time)} × ${kmText(Math.round(Math.pow(d.km / km, 1.06) * 1000) / 1000)} ≈ <b>${hms(riegel(pb.time, km, d.km))}</b> (${paceText(riegel(pb.time, km, d.km), d.km)})</li>`).join('')}</ul>
-      <p class="tiny">${T('Für längere Distanzen meist zu optimistisch, wenn der Umfang dafür noch fehlt – beim Marathon eher 5–10 % Puffer. Mehr unter <b>Plan → Wissen → Zeiten &amp; Prognosen</b>.', 'Usually too optimistic for longer distances if the volume is still missing – for the marathon better 5–10 % buffer. More under <b>Plan → Knowledge → Times &amp; predictions</b>.')}</p>
+      <p class="tiny">${T('Für längere Distanzen meist zu optimistisch, wenn der Umfang dafür noch fehlt – beim Marathon eher 5–10 % Puffer. Mehr unter <b>Laufen → Wissen → Tempo &amp; Tipps</b>.', 'Usually too optimistic for longer distances if the volume is still missing – for the marathon better 5–10 % buffer. More under <b>Running → Knowledge → Pace &amp; tips</b>.')}</p>
     </div></details></div>
     <div class="header">${T('Ergebnisse', 'Results')} · ${esc(groupLabel(g))}</div><div class="group" id="bestlist">${list.slice().reverse().map(r => `<div class="row"><span class="dur">${dateGerman(r.date)}</span><span class="txt"><b>${hms(r.time)}${isPb.has(r.id) ? ' 🏆' : ''}</b><small>${paceText(r.time, r.km)}${r.name ? ' · ' + esc(r.name) : ''}</small></span><button type="button" class="btn small danger" data-bestdel="${esc(r.id)}" aria-label="${T(`Ergebnis vom ${dateGerman(r.date)} löschen`, `Delete result of ${dateGerman(r.date)}`)}">${T('Löschen', 'Delete')}</button></div>`).join('')}</div>`;
   return html;
@@ -2406,7 +2431,8 @@ function readyCard() {
   // A- und B-Rennen (Haupt- und Zwischenziel); C-Rennen = Trainingsläufe laufen ohne Bereitschafts-Prüfung mit
   const list = races.filter(r => (r.prio === 'A' || r.prio === 'M') && r.date >= today && !r.dns).sort((a, b) => a.date.localeCompare(b.date)).slice(0, 3);
   const when = raceWhen;
-  const rows = list.map(r => { const x = raceReady(r); return `<div class="srowt">${ico}<span class="txt"><b>${esc(r.name)}</b><small>${esc(when(r) + ' · ' + readyWhy(r, x))}</small></span><span class="spill ${x.ready ? 'yes' : 'no'}">${x.ready ? T('✓ bereit', '✓ ready') : T('noch nicht', 'not yet')}</span></div>`; }).join('');
+  // eine Zeile je Rennen; woran es hängt, steht nach dem Antippen
+  const rows = list.map(r => { const x = raceReady(r); return `<details class="srdyrow"><summary class="srowt">${ico}<span class="txt"><b>${esc(r.name)}</b><small>${esc(when(r))}</small></span><span class="spill ${x.ready ? 'yes' : 'no'}">${x.ready ? T('✓ bereit', '✓ ready') : T('noch nicht', 'not yet')}</span></summary><p class="sline srdywhy">${esc(readyWhy(r, x))}</p></details>`; }).join('');
   const earned = BADGES.filter(([k]) => isDay(got[k])), newest = earned.slice().sort((a, b) => got[b[0]].localeCompare(got[a[0]]) || b[1] - a[1])[0];
   const isNew = newest && got[newest[0]] >= addDays(today, -14), next = BADGES.find(([k]) => !isDay(got[k]));
   const head = newest ? `<span class="sbadge got">★ ${isNew ? T('Neu: ', 'New: ') : ''}${esc(newest[2])} ready</span>` : `<span class="sbadge open">☆ ${T('Nächstes', 'Next')}: ${esc(next[2])}</span>`;
@@ -2448,7 +2474,7 @@ function resultCard(r, i = 0) {
   const field = r.fmt === 'wfl' ? `<label for="sreskm${s}">${T('Geschafft bis km', 'Reached km')}</label><input id="sreskm${s}" data-wflkm="${s}" type="text" inputmode="decimal" autocomplete="off" placeholder="${T('z. B. 18,4', 'e.g. 18.4')}"><small class="tiny" id="sresinfo${s}">${T('Die Zeit rechnet die App aus dem Catcher Car.', 'The app takes the time from the Catcher Car.')}</small>`
     : r.fmt === 'pace' ? `<label for="sreslevel${s}">${T('Geschafftes Level', 'Level reached')}</label><input id="sreslevel${s}" type="text" inputmode="decimal" autocomplete="off" placeholder="${T('z. B. 11,753', 'e.g. 11.753')}">`
     : `<label>${T('Deine Zeit', 'Your time')}</label>${timeFields('srestime' + s, null, T('Zeit', 'Time'))}`;
-  return `<div class="scard sres" id="startresult${s}"><p class="skicker">${T('Ergebnis eintragen', 'Enter result')} · <b class="sago">${agoText(r.date)}</b></p>
+  return `<div class="scard sres" id="startresult${s}"><p class="skicker">${T('Ergebnis eintragen', 'Enter result')} · <b class="sago">${agoText(r.date)}</b>${i === 0 ? `<button type="button" class="linkbtn skclose" data-pendclose aria-label="${T('Schließen', 'Close')}">✕</button>` : ''}</p>
     <div class="srowt">${startIcon('laufen')}<span class="txt"><b>${T(`Wie lief ${esc(r.name)}?`, `How did ${esc(r.name)} go?`)}</b><small>${esc(dateGerman(r.date) + ' · ' + raceLabel(r))}</small></span></div>
     <div class="sresin">${field}</div>
     <div class="sresact"><button type="button" class="btn small" data-resdns="${esc(r.id)}">${T('Nicht gelaufen', 'Did not run')}</button><button type="button" class="btn small primary" data-ressave="${esc(r.id)}" data-i="${i}">${T('Speichern', 'Save')}</button></div></div>`;
@@ -2511,11 +2537,13 @@ function runSuggest(p) {
 }
 function runCard(p, i = 0) {
   const it = p.item, s = sfx(i), today = p.day === localDay(), when = dayLabel(p.day), ref = `${p.day}|${it.key}`;
-  return `<div class="scard sres" id="startrun${s}"><p class="skicker">${today ? T('Lauf eintragen · heute', 'Log run · today') : `${T('Lauf nachtragen', 'Log run')} · <b class="sago">${agoText(p.day)}</b>`}</p>
+  const kind = runKindOf(it), kinds = RUN_KIND_LABEL();
+  return `<div class="scard sres" id="startrun${s}"><p class="skicker">${today ? T('Lauf eintragen · heute', 'Log run · today') : `${T('Lauf nachtragen', 'Log run')} · <b class="sago">${agoText(p.day)}</b>`}${i === 0 && !today ? `<button type="button" class="linkbtn skclose" data-pendclose aria-label="${T('Schließen', 'Close')}">✕</button>` : ''}</p>
     <div class="srowt">${startIcon('laufen')}<span class="txt"><b>${esc(`${when} · ${it.title}`)}</b>${it.detail ? `<small>${esc(it.detail)}</small>` : ''}</span></div>
     <div class="sresin"><div class="sres2"><span><label for="srunkm${s}">${T('Gelaufen (km)', 'Ran (km)')}</label><input id="srunkm${s}" type="text" inputmode="decimal" autocomplete="off" placeholder="${T('z. B. 8,5', 'e.g. 8.5')}"></span>
       <span><label for="srunhr${s}">${T('Ø Puls (optional)', 'Avg HR (optional)')}</label><input id="srunhr${s}" type="text" inputmode="numeric" autocomplete="off" maxlength="3" placeholder="${T('z. B. 142', 'e.g. 142')}"></span></div>
-      <label>${T('Zeit (optional)', 'Time (optional)')}</label>${timeFields('sruntime' + s, null, T('Zeit', 'Time'))}</div>
+      <label>${T('Zeit (optional)', 'Time (optional)')}</label>${timeFields('sruntime' + s, null, T('Zeit', 'Time'))}
+      <label for="srunkind${s}">${T('Art – anders gelaufen? Hier ändern', 'Type – ran something else? Change it here')}</label><select id="srunkind${s}">${RUN_KIND_SET.map(k => `<option value="${k}"${k === kind ? ' selected' : ''}>${esc(kinds[k])}</option>`).join('')}</select></div>
     ${(sg => sg ? `<button type="button" class="btn primary squick" data-runquick="${esc(kmText(sg.km))}">✓ ${esc(kmText(sg.km))} km · ${esc(sg.why)}</button>` : '')(runSuggest(p))}
     <div class="sresact">${today || i === 91 ? `<button type="button" class="btn small" data-logcancel>${T('Abbrechen', 'Cancel')}</button>` : `<button type="button" class="btn small" data-runskip="${esc(ref)}">${T('Nicht gelaufen', 'Did not run')}</button>`}<button type="button" class="btn small${runSuggest(p) ? '' : ' primary'}" data-runsave="${esc(ref)}" data-i="${i}" data-kind="${runKindOf(it)}" data-title="${esc(`${when} · ${it.title}`)}">${T('Speichern', 'Save')}</button></div></div>`;
 }
@@ -2567,14 +2595,16 @@ function feedbackCard(f) {
 }
 /* Offene Einträge: Rennen zuerst, dann Läufe, jeweils das älteste zuerst. Der erste steht offen da, weitere sind eingeklappt
    (bleiben nach dem Speichern aufgeklappt, wenn sie es waren). */
-let startMoreOpen = false, logToday = null;
+let pendOpen = null, logToday = null;
+/* Offene Nachträge (Läufe der letzten Tage, Rennergebnisse) als kompakte Zeilen unter „Heute dran“; antippen öffnet das Formular
+   (darüber, mit ✕ zum Schließen). Neueste zuerst, am selben Tag das Rennen vor dem Lauf. */
+const pendKey = p => p.r ? 'res:' + p.r.id : `${p.day}|${p.item.key}`;
 function pendingHtml() {
-  // neueste zuerst; am selben Tag das Rennen vor dem Lauf
-  const list = pendingResults().map(r => ({ r, day: r.date })).concat(pendingRuns()).sort((a, b) => b.day.localeCompare(a.day) || (b.r ? 1 : 0) - (a.r ? 1 : 0)), card = (p, i) => p.r ? resultCard(p.r, i) : runCard(p, i);
+  const list = pendingResults().map(r => ({ r, day: r.date })).concat(pendingRuns()).sort((a, b) => b.day.localeCompare(a.day) || (b.r ? 1 : 0) - (a.r ? 1 : 0));
   if (!list.length) return '';
-  const runs = list.filter(p => !p.r).length;
-  return card(list[0], 0) + (list.length > 1 ? `<details class="smore" id="startmore"${startMoreOpen ? ' open' : ''}><summary class="scard"><span>${T(`${list.length - 1} weitere offen`, `${list.length - 1} more open`)}</span><span class="chev"></span></summary>
-    ${list.slice(1).map((p, i) => card(p, i + 1)).join('')}${runs > 1 ? `<div class="smoreact"><button type="button" class="btn small" data-runskipall>${T(`Alle ${runs} offenen Läufe: nicht gelaufen`, `All ${runs} open runs: did not run`)}</button></div>` : ''}</details>` : '');
+  const open = list.find(p => pendKey(p) === pendOpen), rest = list.filter(p => p !== open), runs = list.filter(p => !p.r).length;
+  const row = p => `<button type="button" class="srowt spend" data-pendopen="${esc(pendKey(p))}">${startIcon('laufen')}<span class="txt"><b>${esc(p.r ? T(`Wie lief ${p.r.name}?`, `How did ${p.r.name} go?`) : `${dayLabel(p.day)} · ${p.item.title}`)}</b><small>${esc(agoText(p.day))}</small></span><span class="spendgo">${p.r ? T('Ergebnis', 'Result') : T('Nachtragen', 'Log')}</span></button>`;
+  return (open ? open.r ? resultCard(open.r, 0) : runCard(open, 0) : '') + (rest.length ? `<div class="scard" id="startpend"><p class="skicker">${T('Offen', 'Open')} · ${rest.length}</p>${rest.map(row).join('')}${runs > 1 ? `<div class="smoreact"><button type="button" class="btn small" data-runskipall>${T(`Alle ${runs} offenen Läufe: nicht gelaufen`, `All ${runs} open runs: did not run`)}</button></div>` : ''}</div>` : '');
 }
 // Heute tauschen: „Heute stattdessen …“ unter Kraft/Kurs und Läufen öffnet die Auswahl (nur, was es heute nicht schon gibt)
 let swapOpen = null;
@@ -2651,7 +2681,7 @@ function renderStart() {
   const lt = logToday && items.find(it => it.key === logToday && RUN(it));
   const lp = logPick && plannedRunsOn(logPick.day).find(it => it.key === logPick.key);
   const syncPause = autoOn() && autoPaused ? `<div class="scard" id="syncresume"><div class="srowt">${startIcon('mehr')}<span class="txt"><b>${T('Sync pausiert', 'Sync paused')}</b><small>${T('Der Browser fragt wieder nach dem Zugriff auf die Sync-Datei.', 'The browser asks for access to the sync file again.')}</small></span><button type="button" class="btn small primary sgo" data-syncresume>${T('Fortsetzen', 'Resume')}</button></div></div>` : '';
-  $('startcontent').innerHTML = `${syncPause}${startFeedback ? feedbackCard(startFeedback) : ''}${lt ? runCard({ day: today, item: lt }, 90) : lp ? runCard({ day: logPick.day, item: lp }, 91) : ''}${pendingHtml()}<div class="scard"><p class="skicker">${T('Heute dran', 'On today')}</p>${rows}${addCtl(items)}</div>
+  $('startcontent').innerHTML = `${syncPause}${startFeedback ? feedbackCard(startFeedback) : ''}${lt ? runCard({ day: today, item: lt }, 90) : lp ? runCard({ day: logPick.day, item: lp }, 91) : ''}<div class="scard"><p class="skicker">${T('Heute dran', 'On today')}</p>${rows}${addCtl(items)}</div>${pendingHtml()}
     ${racePlanCard()}<div class="scard"><p class="skicker">${T('Diese Woche', 'This week')}</p>${weekStrip()}<div class="sweek">${week.map(([l, v, b]) => `<div><small>${esc(l)}</small><b>${esc(v)}</b>${b}</div>`).join('')}</div>${yearCard()}</div>${readyCard()}
     <button type="button" class="scard smorerow" data-go="mehr">${startIcon('mehr')}<span class="txt"><b>${T('Mehr', 'More')}</b><small>${esc(T('Neuigkeiten, Sync, Daten', 'News, sync, data') + ' · ' + bTxt)}</small></span><span class="chev"></span></button>`;
 }
@@ -2659,7 +2689,6 @@ $('startcontent').addEventListener('input', e => {
   const t = e.target; tpartJump(t); t.removeAttribute('aria-invalid'); if (t.closest && t.closest('.timein')) markTime(t.closest('.timein').id, false);
   if (t.dataset.wflkm !== undefined) { const km = kmNum(t.value); $('sresinfo' + t.dataset.wflkm).textContent = km >= 1 && km <= 100 ? T(`Catcher Car bei km ${kmText(km)} nach ${hms(carTime(km))} – das wird deine Zeit.`, `Catcher Car at km ${kmText(km)} after ${hms(carTime(km))} – that will be your time.`) : T('Die Zeit rechnet die App aus dem Catcher Car.', 'The app takes the time from the Catcher Car.'); }
 });
-$('startcontent').addEventListener('toggle', e => { if (e.target.id === 'startmore') startMoreOpen = e.target.open; }, true);
 $('startcontent').addEventListener('click', e => {
   const g = e.target.closest('[data-go]'); if (g) { showArea(g.dataset.go); return; }
   if (e.target.closest('[data-fbclose]')) { startFeedback = null; renderStart(); return; }
@@ -2695,6 +2724,8 @@ $('startcontent').addEventListener('click', e => {
     if (!(Number.isInteger(v) && v >= 50 && v <= 20000)) { $('yeargoal').setAttribute('aria-invalid', 'true'); toast(T('Bitte ein Ziel zwischen 50 und 20.000 km eintragen.', 'Please enter a goal between 50 and 20,000 km.')); return; }
     profile.yearKm[y] = v; yearEdit = false; persistProfile(); renderStart(); toast(T(`✓ Jahresziel ${y}: ${kmText(v)} km`, `✓ Year goal ${y}: ${kmText(v)} km`)); return; }
   const gd = e.target.closest('[data-gymdone]'); if (gd) { const d = localDay(); if (!gymDone(d)) putGymLog(getGymLog().concat({ d, n: gd.dataset.gymdone })); renderStart(); toast(T(`✓ ${gd.dataset.gymdone} abgehakt.`, `✓ ${gd.dataset.gymdone} checked off.`)); return; }
+  const po = e.target.closest('[data-pendopen]'); if (po) { pendOpen = po.dataset.pendopen; renderStart(); const c = document.querySelector('#startrun, #startresult'); if (c) { c.scrollIntoView({ block: 'nearest' }); const f = c.querySelector('input'); if (f) f.focus({ preventScroll: true }); } return; }
+  if (e.target.closest('[data-pendclose]')) { pendOpen = null; renderStart(); return; }
   const rs = e.target.closest('[data-ressave]'); if (rs) { saveStartResult(rs.dataset.ressave, Number(rs.dataset.i) || 0); return; }
   const skipRun = (day, key) => { const wk = weekStart(day); weekSkip[wk] = [...new Set((weekSkip[wk] || []).concat(key))]; };
   if (e.target.closest('[data-runskipall]')) { const l = pendingRuns(); l.forEach(p => skipRun(p.day, p.item.key)); store(KEYS.skip, weekSkip); renderStart(); toast(T(`Notiert: ${l.length} Läufe nicht gelaufen.`, `Noted: ${l.length} runs not run.`)); return; }
@@ -2703,15 +2734,17 @@ $('startcontent').addEventListener('click', e => {
   const ru = e.target.closest('[data-runsave]'), rk = e.target.closest('[data-runskip]');
   if (ru || rk) {
     const [day, key] = (ru || rk).dataset[ru ? 'runsave' : 'runskip'].split('|'), wk = weekStart(day), s = sfx(Number(ru && ru.dataset.i) || 0), f = 'srunkm' + s;
-    if (rk) { skipRun(day, key); store(KEYS.skip, weekSkip); renderStart(); toast(T(`Notiert: ${dayLabel(day)} nicht gelaufen.`, `Noted: ${dayLabel(day)} not run.`)); return; }
+    if (rk) { skipRun(day, key); store(KEYS.skip, weekSkip); pendOpen = null; renderStart(); toast(T(`Notiert: ${dayLabel(day)} nicht gelaufen.`, `Noted: ${dayLabel(day)} not run.`)); return; }
     const km = kmNum($(f).value);
     if (km === null || Number.isNaN(km) || km < 0.5 || km > 100) { $(f).setAttribute('aria-invalid', 'true'); toast(T('Bitte die km eintragen, z. B. 8,5.', 'Please enter the km, e.g. 8.5.')); return; }
     const sec = readTime('sruntime' + s), hrT = String($('srunhr' + s).value).trim(), hr = hrT === '' ? null : /^\d{2,3}$/.test(hrT) ? Number(hrT) : NaN;
     if (Number.isNaN(sec)) { markTime('sruntime' + s, true); toast(T('Bitte die Zeit prüfen (Minuten und Sekunden höchstens 59) – oder leer lassen.', 'Please check the time (minutes and seconds at most 59) – or leave it empty.')); return; }
     if (hr !== null && !(hr >= 40 && hr <= 230)) { $('srunhr' + s).setAttribute('aria-invalid', 'true'); toast(T('Bitte den Ø-Puls zwischen 40 und 230 eintragen – oder leer lassen.', 'Please enter an average HR between 40 and 230 – or leave it empty.')); return; }
     const easyBefore = (trainingPaces() || {}).easy;
-    const run = addRun(day, km, { sec: sec || undefined, hr: hr || undefined, kind: ru.dataset.kind }); const wp = curWeekPlan(wk); if (wp && !wp.done.includes(key)) { wp.done.push(key); storeWeekPlan(); }
-    if (run.sec || run.hr) startFeedback = { id: run.id, title: ru.dataset.title };
+    const kSel = $('srunkind' + s), kind = kSel && RUN_KIND_SET.includes(kSel.value) ? kSel.value : ru.dataset.kind;
+    const run = addRun(day, km, { sec: sec || undefined, hr: hr || undefined, kind }); const wp = curWeekPlan(wk); if (wp && !wp.done.includes(key)) { wp.done.push(key); storeWeekPlan(); }
+    if (run.sec || run.hr) startFeedback = { id: run.id, title: kind === ru.dataset.kind ? ru.dataset.title : `${dayLabel(day)} · ${RUN_KIND_LABEL()[kind]}` };
+    pendOpen = null;
     if (day === localDay()) logToday = null; if (logPick && logPick.day === day) logPick = null;
     const easyNow = (trainingPaces() || {}).easy, easyMoved = easyBefore && easyNow && easyNow[0] !== easyBefore[0];
     if (startFeedback && easyMoved) startFeedback.easy = [easyBefore, easyNow, !!(run.hr && profile.hr.z && run.hr > profile.hr.z[2] + 1)]; // Hinweis in der Auswertung (Toast wäre zu lang)
@@ -2722,7 +2755,7 @@ $('startcontent').addEventListener('click', e => {
   const k = a.dataset.startact;
   if (k === 'kraft') { if (!sessionActive() && a.dataset.startplan && a.dataset.startplan !== plan) setPlan(a.dataset.startplan); showArea('kraft'); if (!sessionActive()) $('btnMain').click(); return; }
   if (k === 'starter') { onStarter('go'); return; }
-  if (k === 'plan') { runView.tab = 'plan'; runView.plan = 'woche'; store(KEYS.run, runView); showArea('laufen'); renderRun(); }
+  if (k === 'plan') { runView.tab = 'woche'; store(KEYS.run, runView); showArea('laufen'); renderRun(); }
 });
 
 /* ---------- Lauf-Einstieg: für alle, die mit dem Laufen beginnen ----------
@@ -2799,12 +2832,6 @@ function renderStarter() {
       <div class="row"><span class="txt"><b>${T('Ich laufe schon regelmäßig', 'I already run regularly')}</b><small>${T('Zum Saisonplan mit Umfang, Rennen und Tempos. Umstellbar im Profil unter Trainingswoche.', 'Switch to the season plan with volume, races and paces. Changeable in Profile under Training week.')}</small></span><button type="button" class="btn small" data-starter="runner">${T('Wechseln', 'Switch')}</button></div></div>`;
 }
 function renderPlan() {
-  const sub = $('runsub');
-  sub.classList.remove('hide');
-  sub.innerHTML = [['woche', T('Übersicht', 'Overview')], ['rennen', T('Rennen', 'Races')], ['bestzeiten', T('Bestzeiten', 'Best times')], ['wissen', T('Wissen', 'Knowledge')]].map(([k, l]) => `<button role="tab" type="button" data-runsub="${k}" aria-selected="${runView.plan === k}">${l}</button>`).join('');
-  if (runView.plan === 'rennen') { $('runcontent').innerHTML = renderRaces(); if (raceEdit) syncRaceForm(false); return; }
-  if (runView.plan === 'bestzeiten') { $('runcontent').innerHTML = renderBests(); return; }
-  if (runView.plan === 'wissen') { $('runcontent').innerHTML = renderPlanGuide(); renderPace(); return; }
   if (runnerLevel() === 'beginner') { $('runcontent').innerHTML = renderStarter(); return; }
   const ask = runnerLevel() === null ? renderLevelAsk() : '';
   const S = seasonPlan();
@@ -3344,7 +3371,7 @@ function planIcs(S = seasonPlan()) {
     }
   }
   for (const r of races.filter(r => r.date >= today)) add(`kb-race-${r.id}`, r.date, addDays(r.date, 1), `🏁 ${r.name} (${raceLabel(r)})`,
-    [T(`${prioText(r.prio)}-Rennen`, `${prioText(r.prio)} race`), r.fmt ? goalInfo(r) : r.goal ? T(`Zielzeit ${hms(r.goal)} = ${paceText(r.goal, raceKm(r))}`, `Goal time ${hms(r.goal)} = ${paceText(r.goal, raceKm(r))}`) : '', T('Warm-up: Tagwerk → Laufen → Warm-up', 'Warm-up: Tagwerk → Running → Warm-up')].filter(Boolean).join('\n'));
+    [T(`${prioText(r.prio)}-Rennen`, `${prioText(r.prio)} race`), r.fmt ? goalInfo(r) : r.goal ? T(`Zielzeit ${hms(r.goal)} = ${paceText(r.goal, raceKm(r))}`, `Goal time ${hms(r.goal)} = ${paceText(r.goal, raceKm(r))}`) : '', T('Warm-up: Tagwerk → Start → ▶ Warm-up', 'Warm-up: Tagwerk → Start → ▶ Warm-up')].filter(Boolean).join('\n'));
   return ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Tagwerk//Laufplan//DE', 'CALSCALE:GREGORIAN', 'X-WR-CALNAME:' + T('Laufplan', 'Running plan'), ...ev, 'END:VCALENDAR'].map(icsFold).join('\r\n') + '\r\n';
 }
 function exportPlanIcs() {
@@ -3452,8 +3479,15 @@ let area = AREAS.includes(load(KEYS.area, 'kraft')) ? load(KEYS.area, 'kraft') :
 // Warm-up: Renntag (5 km bis Marathon) und Training (Intervall, Speed, Longrun) in einem Reiter; frühere Auswahl „Wettkampf“/„Training“ wird übernommen
 const WARMUPS = RUN_GUIDE.race.concat(RUN_GUIDE.training);
 let runView = load(KEYS.run, null); if (!isObj(runView)) runView = {};
-{ const old = runView.tab === 'training' ? runView.training : runView.tab === 'race' ? runView.race : null, tab = ['race', 'training'].includes(runView.tab) ? 'warmup' : runView.tab;
-  runView = { tab: ['warmup', 'abc', 'umfang', 'plan'].includes(tab) ? tab : 'plan', warmup: WARMUPS.some(w => w.id === (old || runView.warmup)) ? (old || runView.warmup) : '5k', plan: ['woche', 'rennen', 'bestzeiten', 'wissen'].includes(runView.plan) ? runView.plan : 'woche' }; }
+/* Laufen hat seit 1.4 eine Reiterzeile: Woche · Rennen (mit Bestzeiten) · Läufe · Wissen (Warm-up, Lauf-ABC, Tempo & Tipps).
+   Frühere Auswahl wird übernommen: Plan → Übersicht/Rennen/Bestzeiten/Wissen, Warm-up (auch „Wettkampf“/„Training“), Lauf-ABC, Umfang. */
+const RUN_TABS = ['woche', 'rennen', 'laeufe', 'wissen'], RUN_WISSEN = ['warmup', 'abc', 'tipps'];
+{ const t = runView.tab, p = runView.plan, old = t === 'training' ? runView.training : t === 'race' ? runView.race : null;
+  let tab = t, wissen = runView.wissen;
+  if (t === 'plan') { tab = p === 'rennen' || p === 'bestzeiten' ? 'rennen' : p === 'wissen' ? 'wissen' : 'woche'; if (p === 'wissen') wissen = 'tipps'; }
+  else if (['race', 'training', 'warmup', 'abc'].includes(t)) { tab = 'wissen'; wissen = t === 'abc' ? 'abc' : 'warmup'; }
+  else if (t === 'umfang') tab = 'laeufe';
+  runView = { tab: RUN_TABS.includes(tab) ? tab : 'woche', wissen: RUN_WISSEN.includes(wissen) ? wissen : 'warmup', warmup: WARMUPS.some(w => w.id === (old || runView.warmup)) ? (old || runView.warmup) : '5k' }; }
 function showArea(a, scroll = true) {
   area = a; store(KEYS.area, a);
   for (const x of AREAS) $('area-' + x).classList.toggle('hide', x !== a);
@@ -3480,22 +3514,21 @@ const stepRow = (dur, name, detail) => {
   return `<${has ? 'button type="button"' : 'div'} class="row" ${has ? `data-guide-name="${esc(name)}"` : ''}><span class="dur">${esc(tr(dur))}</span><span class="txt"><b>${esc(tr(name))}</b>${detail ? `<small>${esc(detail)}</small>` : ''}</span>${has ? '<span class="chev"></span>' : ''}</${has ? 'button' : 'div'}>`;
 };
 function renderRun() {
-  const tabs = [['plan', 'Plan'], ['warmup', 'Warm-up'], ['abc', T('Lauf-ABC', 'Drills')], ['umfang', T('Umfang', 'Volume')]];
+  const tabs = [['woche', T('Woche', 'Week')], ['rennen', T('Rennen', 'Races')], ['laeufe', T('Läufe', 'Runs')], ['wissen', T('Wissen', 'Knowledge')]];
   $('runtabs').innerHTML = tabs.map(([k, l]) => `<button role="tab" type="button" data-runtab="${k}" aria-selected="${runView.tab === k}">${l}</button>`).join('');
   const sub = $('runsub');
-  $('runsub').classList.remove('warmupsub');
-  if (runView.tab === 'plan') { renderPlan(); return; }
-  if (runView.tab === 'umfang') { sub.classList.add('hide'); $('runcontent').innerHTML = renderUmfang(); renderWeekRows(); renderLoad(); return; }
-  if (runView.tab === 'abc') {
-    sub.classList.add('hide');
+  sub.classList.toggle('hide', runView.tab !== 'wissen');
+  if (runView.tab === 'woche') { renderPlan(); return; }
+  if (runView.tab === 'rennen') { $('runcontent').innerHTML = renderRaces() + `<div class="group sectgroup">${sectHtml('rennen', 'sect-bests', '⏱', '#ff9f0a', T('Bestzeiten', 'Best times'), bestsSummary(), renderBests())}</div>`; if (raceEdit) syncRaceForm(false); return; }
+  if (runView.tab === 'laeufe') { $('runcontent').innerHTML = renderUmfang(); renderWeekRows(); renderLoad(); return; }
+  sub.innerHTML = [['warmup', 'Warm-up'], ['abc', T('Lauf-ABC', 'Drills')], ['tipps', T('Tempo & Tipps', 'Pace & tips')]].map(([k, l]) => `<button role="tab" type="button" data-runsub="${k}" aria-selected="${runView.wissen === k}">${l}</button>`).join('');
+  if (runView.wissen === 'tipps') { $('runcontent').innerHTML = renderPlanGuide(); renderPace(); return; }
+  if (runView.wissen === 'abc') {
     $('runcontent').innerHTML = `<div class="intro">${esc(RUN_GUIDE.abc.intro)}</div><div class="header">${T('Übungen', 'Exercises')}<button type="button" class="hdrbtn" data-routine="abc">${T('▶ Geführt', '▶ Guided')}</button></div><div class="group">${RUN_GUIDE.abc.drills.map(d => stepRow(...d)).join('')}</div><p class="footer">${T('Bei Beschwerden in Fuß oder Wade Sprungübungen (Hopserlauf, Seitgalopp) auslassen.', 'With foot or calf complaints skip the jumping drills (bounding skips, side gallop).')}</p>`;
     return;
   }
-  const cur = runCurrent(), btn = r => `<button role="tab" type="button" data-runsub="${r.id}" aria-selected="${r.id === cur.id}">${esc(r.label)}</button>`;
-  sub.classList.remove('hide');
-  sub.innerHTML = `<span class="sublabel">${T('Renntag', 'Race day')}</span>${RUN_GUIDE.race.map(btn).join('')}<span class="sublabel">Training</span>${RUN_GUIDE.training.map(btn).join('')}`;
-  sub.classList.add('warmupsub');
-  $('runcontent').innerHTML = `<div class="intro">${esc(cur.intro)}</div>
+  const cur = runCurrent(), o = r => `<option value="${r.id}"${r.id === cur.id ? ' selected' : ''}>${esc(r.label)}</option>`;
+  $('runcontent').innerHTML = `<div class="field wide warmpick"><label for="warmpick">${T('Warm-up für', 'Warm-up for')}</label><select id="warmpick"><optgroup label="Training">${RUN_GUIDE.training.map(o).join('')}</optgroup><optgroup label="${T('Renntag', 'Race day')}">${RUN_GUIDE.race.map(o).join('')}</optgroup></select></div>
     <div class="header">Warm-up<button type="button" class="hdrbtn" data-routine="warmup">${T('▶ Geführt', '▶ Guided')}</button></div><div class="group">${cur.warmup.map(x => stepRow(...x)).join('')}</div>
     <div class="header">Cooldown<button type="button" class="hdrbtn" data-routine="cooldown">${T('▶ Geführt', '▶ Guided')}</button></div><div class="group">${cur.cooldown.map(x => stepRow(...x)).join('')}</div>
     <p class="footer">${T('Zeiten sind Richtwerte. „Geführt“ startet einen Ablauf mit Countdown und Ansage; Strecken und Wiederholungen hakst du selbst ab. Am Wettkampftag nichts Neues ausprobieren – den Ablauf vorher im Training testen.', 'Times are guidelines. “Guided” starts a sequence with countdown and voice; you tick off distances and reps yourself. Try nothing new on race day – test the sequence in training first.')}</p>`;
@@ -3592,7 +3625,7 @@ function renderRoutine() {
   renderRoutineClock();
 }
 function stopRoutine() { rt = null; if (!running) keepAwake(false); }
-const runCurrent = () => runView.tab === 'warmup' ? WARMUPS.find(r => r.id === runView.warmup) || WARMUPS[0] : null;
+const runCurrent = () => runView.tab === 'wissen' && runView.wissen === 'warmup' ? WARMUPS.find(r => r.id === runView.warmup) || WARMUPS[0] : null;
 
 /* ---------- Anstrengung (1–10) & Notiz je Einheit ---------- */
 const RPE_TEXT = EN ? ['', 'very easy', 'very easy', 'easy', 'easy', 'moderate', 'challenging', 'hard', 'hard', 'very hard', 'maximal'] : ['', 'sehr leicht', 'sehr leicht', 'leicht', 'leicht', 'mittel', 'fordernd', 'hart', 'hart', 'sehr hart', 'maximal'];
@@ -3637,6 +3670,7 @@ function renderWeek() {
   $('weekrange').textContent = `${T('KW', 'Wk')} ${isoWeek(cur)} · ${dateShort(cur)}–${dateShort(addDays(cur, 6))}`;
   $('weekrpe').textContent = rated.length ? NUM1.format(rated.reduce((a, b) => a + b, 0) / rated.length) : '–';
   $('weekstreak').textContent = String(streak);
+  $('kweeksum').textContent = T(`Diese Woche ${now.length} · Serie ${streak} ${streak === 1 ? 'Woche' : 'Wochen'}`, `This week ${now.length} · streak ${streak} ${streak === 1 ? 'week' : 'weeks'}`);
   const weeks = Array.from({ length: 8 }, (_, i) => addDays(cur, (i - 7) * 7)), counts = weeks.map(x => (byWeek.get(x) || []).length);
   // Kompaktes Diagramm: schmale viewBox, damit die Beschriftung auf dem Handy lesbar bleibt
   const max = Math.max(2, ...counts), wd = 360, base = 112, l = 4, step = (wd - l * 2) / 8, bw = Math.min(30, step * 0.62);
@@ -3778,7 +3812,8 @@ function tpartJump(t) { if (t.dataset && t.dataset.tpart && t.value.length === 2
 $('tabbar').addEventListener('click', e => { const b = e.target.closest('[data-area]'); if (b) showArea(b.dataset.area); });
 $('livepill').addEventListener('click', () => showArea('kraft'));
 $('runtabs').addEventListener('click', e => { const b = e.target.closest('[data-runtab]'); if (!b) return; runView.tab = b.dataset.runtab; store(KEYS.run, runView); renderRun(); });
-$('runsub').addEventListener('click', e => { const b = e.target.closest('[data-runsub]'); if (!b) return; runView[runView.tab] = b.dataset.runsub; store(KEYS.run, runView); renderRun(); });
+$('runsub').addEventListener('click', e => { const b = e.target.closest('[data-runsub]'); if (!b) return; runView.wissen = b.dataset.runsub; store(KEYS.run, runView); renderRun(); });
+$('runcontent').addEventListener('change', e => { if (e.target.id !== 'warmpick') return; runView.warmup = e.target.value; store(KEYS.run, runView); renderRun(); });
 $('mobtabs').addEventListener('click', e => { const b = e.target.closest('[data-mobtab]'); if (!b) return; mobView.tab = b.dataset.mobtab; store(KEYS.mob, mobView); renderMobility(); });
 $('mobsub').addEventListener('click', e => { const b = e.target.closest('[data-mobsub]'); if (!b) return; mobView[mobView.tab] = b.dataset.mobsub; store(KEYS.mob, mobView); renderMobility(); });
 // Laufwochen: bei jeder Eingabe speichern und nur Ergebnis und Diagramm neu zeichnen (Fokus bleibt im Feld)
@@ -3802,7 +3837,7 @@ $('runcontent').addEventListener('click', e => {
   if (e.target.closest('#runcsvtpl')) { download(T('laeufe-vorlage.csv', 'runs-template.csv'), RUN_CSV_TEMPLATE, 'text/csv;charset=utf-8'); return; }
   const lv = e.target.closest('[data-level]'); if (lv) { setRunnerLevel(lv.dataset.level); toast(lv.dataset.level === 'beginner' ? T('Lauf-Einstieg gestartet – viel Spaß!', 'Running starter started – enjoy!') : T('Saisonplan aktiv.', 'Season plan active.')); return; }
   const st = e.target.closest('[data-starter]'); if (st) { onStarter(st.dataset.starter); return; }
-  const go = e.target.closest('[data-runsub-go]'); if (go) { runView.plan = go.dataset.runsubGo; store(KEYS.run, runView); renderRun(); return; }
+  const go = e.target.closest('[data-runsub-go]'); if (go) { runView.tab = go.dataset.runsubGo; store(KEYS.run, runView); renderRun(); return; }
   if (e.target.closest('#racesave')) { saveRaceFromForm(); return; }
   if (e.target.closest('#planics')) { exportPlanIcs(); return; }
   if (e.target.closest('#icsremind')) { icsRemind.on = !icsRemind.on; store(KEYS.icsremind, icsRemind); renderRun(); toast(icsRemind.on ? T(`Erinnerung um ${icsRemind.time} – gilt für den nächsten Export.`, `Reminder at ${icsRemind.time} – applies to the next export.`) : T('Erinnerung aus – gilt für den nächsten Export.', 'Reminder off – applies to the next export.')); return; }
@@ -3810,7 +3845,8 @@ $('runcontent').addEventListener('click', e => {
   const bg = e.target.closest('[data-bestgroup]'); if (bg) { bestView.group = bg.dataset.bestgroup; store(KEYS.bestview, bestView); renderRun(); return; }
   const ld = e.target.closest('[data-leveldel]'); if (ld) { const r = races.find(x => x.id === ld.dataset.leveldel); if (r && r.level !== undefined) { const v = r.level; delete r.level; persistRaces(); renderRun(); toastUndo(T('Ergebnis gelöscht.', 'Result deleted.'), () => { r.level = v; persistRaces(); renderRun(); }); } return; }
   const bd = e.target.closest('[data-bestdel]'); if (bd) { const old = results.find(r => r.id === bd.dataset.bestdel); if (old) { results = results.filter(r => r !== old); persistResults(); renderRun(); toastUndo(T('Ergebnis gelöscht.', 'Result deleted.'), () => { results.push(old); persistResults(); renderRun(); }); } return; }
-  const sk = e.target.closest('[data-skip]'); if (sk) { toggleSkip(sk.dataset.week, sk.dataset.skip); renderRun(); return; }
+  const sk = e.target.closest('[data-skip]'); if (sk) { schedPick = null; toggleSkip(sk.dataset.week, sk.dataset.skip); renderRun(); return; }
+  const spk = e.target.closest('[data-schedpick]'); if (spk && !e.target.closest('button')) { schedPick = schedPick === spk.dataset.schedpick ? null : spk.dataset.schedpick; renderRun(); return; }
   const dn = e.target.closest('[data-done]'), wp = curWeekPlan(weekStart(localDay()));
   if (dn && wp) { const k = dn.dataset.done; wp.done = wp.done.includes(k) ? wp.done.filter(x => x !== k) : wp.done.concat(k); storeWeekPlan(); renderRun(); return; }
   const mv = e.target.closest('[data-move]');
@@ -3829,9 +3865,12 @@ $('runcontent').addEventListener('click', e => {
   if (e.target.closest('#racecancel')) { raceEdit = null; renderRun(); return; }
   if (e.target.closest('#racedel')) { const old = raceEdit && races.find(r => r.id === raceEdit); if (old) { races = races.filter(r => r !== old); persistRaces(); raceEdit = null; renderRun(); toastUndo(T('Rennen gelöscht.', 'Race deleted.'), () => { races.push(old); persistRaces(); renderRun(); }); } return; }
   const re = e.target.closest('[data-raceedit]'); if (re) { raceEdit = re.dataset.raceedit; renderRun(); $('racename').focus(); window.scrollTo({ top: 0 }); return; }
+  const ed = e.target.closest('[data-runedit]'); if (ed) { runEdit = ed.dataset.runedit; runFeedback = null; renderRun(); $('runkm').focus(); window.scrollTo({ top: 0 }); return; }
+  if (e.target.closest('#runcancel')) { runEdit = null; renderRun(); return; }
+  if (e.target.closest('[data-runall]')) { runAll = !runAll; renderLoad(); return; }
   const d = e.target.closest('[data-rundel]');
-  if (d) { const old = runLog.find(r => r.id === d.dataset.rundel); if (!old) return; deleteRun(old.id); renderWeekRows(); renderLoad();
-    toastUndo(T('Lauf gelöscht.', 'Run deleted.'), () => { runLog.push(old); runLog.sort((a, b) => a.date.localeCompare(b.date)); persistRunLog(); renderWeekRows(); renderLoad(); }); }
+  if (d) { const old = runLog.find(r => r.id === d.dataset.rundel); if (!old) return; deleteRun(old.id); runEdit = null; renderRun();
+    toastUndo(T('Lauf gelöscht.', 'Run deleted.'), () => { runLog.push(old); runLog.sort((a, b) => a.date.localeCompare(b.date)); persistRunLog(); renderRun(); }); }
 });
 $('runcontent').addEventListener('keydown', e => { if (e.target.id === 'runkm' && e.key === 'Enter') { e.preventDefault(); addRunFromForm(); } if ((e.target.id === 'racename' || e.target.closest('#racegoal')) && e.key === 'Enter') { e.preventDefault(); saveRaceFromForm(); } });
 function onStarter(a) {
@@ -4003,7 +4042,7 @@ setupDlg.addEventListener('click', e => {
     setupNext();
   }
 });
-(() => { const sub = document.querySelector('#area-profil .subtitle'); if (sub) sub.insertAdjacentHTML('afterend', `<button type="button" class="btn small" id="setupstart" style="margin:0 0 12px">${T('Einrichtung: Fragen von vorn', 'Setup: questions from the start')}</button>`); })();
+(() => { const sub = document.querySelector('#t-profil'); if (sub) sub.insertAdjacentHTML('afterend', `<button type="button" class="btn small" id="setupstart" style="margin:0 0 12px">${T('Einrichtung: Fragen von vorn', 'Setup: questions from the start')}</button>`); })();
 $('setupstart').addEventListener('click', openSetup);
 if (setupWanted()) setTimeout(() => { if (!document.querySelector('dialog[open]')) openSetup(); }, splashLeft() + 200);
 else if (CHANGELOG.length && notesOpt.auto !== false && notesOpt.seen !== noteStamp(CHANGELOG[0])) setTimeout(() => { if (!document.querySelector('dialog[open]')) openNotes(false); }, splashLeft() + 300); renderMobility();

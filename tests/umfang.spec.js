@@ -5,7 +5,7 @@ const { test, expect, openSect } = require('./fixtures');
 const weeksAgo = page => page.evaluate(() => [0, 1, 2, 3, 4, 5, 6].map(i => addDays(weekStart(localDay()), -7 * i)));
 async function openUmfang(page) {
   await page.evaluate(() => showArea('laufen'));
-  await page.click('[data-runtab="umfang"]');
+  await page.click('[data-runtab="laeufe"]');
   await expect(page.locator('#runsub')).toBeHidden();
   await openSect(page, 'sect-weeks'); // Wochensummen sind aufklappbar
 }
@@ -45,7 +45,7 @@ test('Umfang mit Wochensummen: Schnitt, Zielbereich, langer Lauf – bleibt gesp
 
   await page.reload();
   await page.evaluate(() => showArea('laufen'));
-  await expect(page.locator('[data-runtab="umfang"]')).toHaveAttribute('aria-selected', 'true');
+  await expect(page.locator('[data-runtab="laeufe"]')).toHaveAttribute('aria-selected', 'true');
   await expect(page.locator(field(w[2]))).toHaveValue('15');
   await expect(page.locator(field(w[0]))).toHaveValue('21');
 });
@@ -72,8 +72,9 @@ test('Umfang mit einzelnen Läufen: Wochen werden summiert, 30 Tage taggenau, Sp
   await expect(page.locator('#runkm')).toHaveAttribute('aria-invalid', 'true');
   expect(await page.evaluate(() => runLog.length)).toBe(4);
 
-  // Löschen: Wochenwert fällt auf die (leere) Wochensumme zurück, Feld wird wieder editierbar
-  await page.locator('#runlist [data-rundel]').first().click();
+  // Löschen (Lauf antippen → Löschen): Wochenwert fällt auf die (leere) Wochensumme zurück, Feld wird wieder editierbar
+  await page.locator('#runlist [data-runedit]').first().click();
+  await page.click('#runcontent [data-rundel]');
   await expect(page.locator('#runlist .row')).toHaveCount(2);
   await expect(page.locator(field(w[0]))).toBeEnabled();
   await expect(page.locator('#longresult b')).toHaveText('höchstens 13,2 km');
@@ -181,8 +182,8 @@ test('Umfang zeigt Rennen aus dem Ergebnis ohne Löschen; Ergebnis speichern mel
   await expect(page.locator('#toast')).toContainText('21,1 km im Umfang');
   await openUmfang(page);
   await expect(page.locator('#runlist .racerun')).toContainText('Stadt-HM · aus dem Ergebnis');
-  await expect(page.locator('#runlist .racerun [data-rundel]')).toHaveCount(0);
-  await expect(page.locator('#runlist [data-rundel]')).toHaveCount(1);
+  await expect(page.locator('#runlist .racerun[data-runedit]')).toHaveCount(0); // Rennen: nicht hier bearbeiten oder löschen
+  await expect(page.locator('#runlist [data-runedit]')).toHaveCount(1);
 });
 
 test('Zeit, Ø-Puls und Art des Laufs bleiben beim Import einer Sicherung erhalten, Ungültiges fällt weg', async ({ page }) => {
@@ -196,6 +197,7 @@ test('Lauf löschen ohne Rückfrage, „Rückgängig“ im Hinweis holt ihn zur�
   page.removeAllListeners('dialog'); const dialogs = []; page.on('dialog', d => { dialogs.push(d.type()); d.dismiss(); });
   await page.evaluate(() => { runLog = [{ id: 'a', date: addDays(localDay(), -2), km: 8, hr: 140 }]; persistRunLog(); });
   await openUmfang(page);
+  await page.click('[data-runedit="a"]');
   await page.click('[data-rundel="a"]');
   expect(await page.evaluate(() => runLog.length)).toBe(0);
   await expect(page.locator('#toast')).toContainText('Lauf gelöscht.');
@@ -203,4 +205,36 @@ test('Lauf löschen ohne Rückfrage, „Rückgängig“ im Hinweis holt ihn zur�
   expect(await page.evaluate(() => runLog.map(r => [r.id, r.km, r.hr]))).toEqual([['a', 8, 140]]);
   await expect(page.locator('#toast')).toContainText('Wiederhergestellt');
   expect(dialogs).toEqual([]);
+});
+
+test('Läufe: Lauf antippen → Art, km, Zeit und Puls ändern oder löschen; Liste zeigt die neuesten 5, „Alle“ klappt auf', async ({ page }) => {
+  // z. B. Dienstag war Laufgruppe statt Intervall
+  await page.evaluate(() => { runLog = [1, 3, 5, 7, 9, 11, 13].map(n => ({ id: 'r' + n, date: addDays(localDay(), -n), km: 6 + n / 10, kind: 'easy' })); runLog.push({ id: 'q', date: addDays(localDay(), -2), km: 9, kind: 'quality' });
+    runLog.sort((a, b) => a.date.localeCompare(b.date)); persistRunLog(); runWeeks = []; persistRunWeeks(); });
+  await openUmfang(page);
+  await expect(page.locator('#runlist [data-runedit]')).toHaveCount(5);
+  await expect(page.locator('#runlist [data-rundel]')).toHaveCount(0); // keine roten Knöpfe in der Liste
+  await page.click('#runlist [data-runall]');
+  await expect(page.locator('#runlist [data-runedit]')).toHaveCount(8);
+  await page.click('#runlist [data-runall]');
+  await expect(page.locator('#runlist [data-runedit]')).toHaveCount(5);
+  // bearbeiten: Formular oben mit den Werten des Laufs
+  await page.click('[data-runedit="q"]');
+  await expect(page.locator('#runcontent .header').first()).toHaveText('Lauf bearbeiten');
+  await expect(page.locator('#runkm')).toHaveValue('9');
+  await expect(page.locator('#runkind')).toHaveValue('quality');
+  await expect(page.locator('#runaddbtn')).toHaveText('Speichern');
+  await expect(page.locator('#runlist .row.editing')).toHaveCount(1);
+  await page.selectOption('#runkind', 'group'); await page.fill('#runkm', '8,5'); await page.fill('#runhr', '139');
+  await page.click('#runaddbtn');
+  expect(await page.evaluate(() => { const r = runLog.find(x => x.id === 'q'); return [runLog.length, r.km, r.kind, r.hr, r.date === addDays(localDay(), -2)]; })).toEqual([8, 8.5, 'group', 139, true]);
+  await expect(page.locator('#toast')).toContainText('gespeichert');
+  await expect(page.locator('#runcontent .header').first()).toHaveText('Lauf eintragen');
+  await expect(page.locator('#runkm')).toHaveValue('');
+  // Abbrechen ändert nichts
+  await page.click('[data-runedit="q"]'); await page.fill('#runkm', '20'); await page.click('#runcancel');
+  expect(await page.evaluate(() => runLog.find(x => x.id === 'q').km)).toBe(8.5);
+  // Puls leeren entfernt ihn
+  await page.click('[data-runedit="q"]'); await page.fill('#runhr', ''); await page.click('#runaddbtn');
+  expect(await page.evaluate(() => 'hr' in runLog.find(x => x.id === 'q'))).toBe(false);
 });

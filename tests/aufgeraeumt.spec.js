@@ -1,18 +1,31 @@
 const { test, expect, openSect } = require('./fixtures');
 
 // Aufräum-Update: Warm-up-Reiter, Overlays, Sync als Sicherung, Skizzenfarben, Struktur
-test('Laufen: ein Reiter „Warm-up“ mit Renntag und Training; alte Auswahl wird übernommen', async ({ page }) => {
+test('Laufen: eine Reiterzeile Woche · Rennen · Läufe · Wissen; alte Auswahl wird übernommen', async ({ page }) => {
+  // ganz alter Stand „Training/Longrun“ → Wissen → Warm-up, Longrun
   await page.evaluate(() => localStorage.setItem(KEYS.run, JSON.stringify({ tab: 'training', race: '10k', training: 'long' })));
   await page.reload();
   await page.evaluate(() => showArea('laufen'));
-  await expect(page.locator('#runtabs button')).toHaveText(['Plan', 'Warm-up', 'Lauf-ABC', 'Umfang']);
-  await expect(page.locator('#runtabs [aria-selected="true"]')).toHaveText('Warm-up');
-  await expect(page.locator('#runsub button')).toHaveText(['5 km', '10 km', 'HM', 'Marathon', 'Intervall', 'Speed', 'Longrun']);
-  await expect(page.locator('#runsub [aria-selected="true"]')).toHaveText('Longrun');
-  await page.click('[data-runsub="hm"]');
-  await expect(page.locator('#runcontent .intro')).toContainText('Halbmarathon');
+  await expect(page.locator('#runtabs button')).toHaveText(['Woche', 'Rennen', 'Läufe', 'Wissen']);
+  await expect(page.locator('#runtabs [aria-selected="true"]')).toHaveText('Wissen');
+  await expect(page.locator('#runsub button')).toHaveText(['Warm-up', 'Lauf-ABC', 'Tempo & Tipps']);
+  await expect(page.locator('#runsub [aria-selected="true"]')).toHaveText('Warm-up');
+  await expect(page.locator('#warmpick')).toHaveValue('long');
+  await expect(page.locator('#warmpick option')).toHaveText(['Intervall', 'Speed', 'Longrun', '5 km', '10 km', 'HM', 'Marathon']);
+  await page.selectOption('#warmpick', 'hm');
   await page.reload();
-  expect(await page.evaluate(() => runView)).toMatchObject({ tab: 'warmup', warmup: 'hm' });
+  expect(await page.evaluate(() => runView)).toMatchObject({ tab: 'wissen', wissen: 'warmup', warmup: 'hm' });
+  // Stand bis 1.4: Plan → Bestzeiten → Rennen, Umfang → Läufe, Lauf-ABC → Wissen
+  for (const [old, tab, wissen] of [[{ tab: 'plan', plan: 'bestzeiten' }, 'rennen'], [{ tab: 'plan', plan: 'wissen' }, 'wissen', 'tipps'], [{ tab: 'umfang' }, 'laeufe'], [{ tab: 'abc' }, 'wissen', 'abc'], [{ tab: 'plan', plan: 'woche' }, 'woche']]) {
+    await page.evaluate(o => localStorage.setItem(KEYS.run, JSON.stringify(o)), old);
+    await page.reload();
+    expect(await page.evaluate(() => runView)).toMatchObject(wissen ? { tab, wissen } : { tab });
+  }
+  // Läufe: Eintragen oben, Bestzeiten unter Rennen zum Aufklappen
+  await page.evaluate(() => showArea('laufen'));
+  await page.click('[data-runtab="rennen"]');
+  await expect(page.locator('#sect-bests')).not.toHaveAttribute('open', '');
+  await expect(page.locator('#sect-bests summary')).toContainText('Bestzeiten');
 });
 
 test('Overlay offen: Seite dahinter scrollt nicht, beim Schließen geht es an derselben Stelle weiter', async ({ page }) => {
@@ -68,15 +81,15 @@ test('Struktur: Wochenübersicht bei Kraft, Hinweise in der Anleitung, Rechenweg
   await expect(page.locator('#manualguide')).toContainText('Belastung & Technik');
   await expect(page.locator('#manualguide')).toContainText('Laufen & Beschwerden');
   await expect(page.locator('#fold-settings summary')).toContainText('Übungen & Varianten');
-  await page.evaluate(() => { results = [{ id: 'x', date: '2026-06-01', km: 10, time: 3305, dist: '10k' }]; persistResults(); showArea('laufen'); runView.tab = 'plan'; runView.plan = 'bestzeiten'; renderRun(); });
+  await page.evaluate(() => { results = [{ id: 'x', date: '2026-06-01', km: 10, time: 3305, dist: '10k' }]; persistResults(); showArea('laufen'); runView.tab = 'rennen'; renderRun(); document.getElementById('sect-bests').open = true; });
   await page.evaluate(() => { document.querySelector('#bestcalc').open = true; });
   await expect(page.locator('#bestcalc')).toContainText('≈ 2:01:32');
   await expect(page.locator('#bestcalc')).toContainText('≈ 4:13:24');
 });
 
-test('Neu eingerichtet: Laufen startet auf „Plan“, Körpermaße ist zugeklappt', async ({ page }) => {
+test('Neu eingerichtet: Laufen startet auf „Woche“, Körpermaße ist zugeklappt', async ({ page }) => {
   await page.evaluate(() => showArea('laufen'));
-  await expect(page.locator('#runtabs [aria-selected="true"]')).toHaveText('Plan');
+  await expect(page.locator('#runtabs [aria-selected="true"]')).toHaveText('Woche');
   await page.evaluate(() => showArea('profil'));
   await expect(page.locator('#sect-measure')).not.toHaveAttribute('open', '');
 });
