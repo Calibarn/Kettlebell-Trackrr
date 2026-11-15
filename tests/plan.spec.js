@@ -14,10 +14,12 @@ const plan = (page, today, opt = {}) => page.evaluate(([t, o]) => {
   const S = seasonPlan(t, o);
   return { warn: S.warn, weeks: S.weeks.map(x => ({ week: x.week, phase: x.cut ? 'cut' : x.phase, long: x.long, km: x.km, a: x.a && x.a.id, b: x.b.map(r => r.id) })) };
 }, [today, opt]);
+// Laufen hat eine Reiterzeile: Woche · Rennen (mit Bestzeiten zum Aufklappen) · Läufe · Wissen (Warm-up, Lauf-ABC, Tempo & Tipps)
 async function openPlan(page, sub) {
   await page.evaluate(() => showArea('laufen'));
-  await page.click('[data-runtab="plan"]');
-  if (sub) await page.click(`[data-runsub="${sub}"]`);
+  if (!sub || sub === 'woche') await page.click('[data-runtab="woche"]');
+  else if (sub === 'wissen') { await page.click('[data-runtab="wissen"]'); await page.click('[data-runsub="tipps"]'); }
+  else { await page.click('[data-runtab="rennen"]'); if (sub === 'bestzeiten') await page.click('#sect-bests summary'); }
 }
 
 test('Saison: Blöcke rückwärts ab jedem A-Rennen, Erholung, B-Rennen ohne eigenen Block', async ({ page }) => {
@@ -78,11 +80,11 @@ test('Übersicht: diese Woche mit Phase, Countdown und Grenzen aus dem Umfang', 
   await openPlan(page);
   await expect(page.locator('#runcontent')).toContainText('Noch kein A-Rennen geplant');
   await page.click('[data-runsub-go="rennen"]');
-  await expect(page.locator('[data-runsub="rennen"]')).toHaveAttribute('aria-selected', 'true');
+  await expect(page.locator('[data-runtab="rennen"]')).toHaveAttribute('aria-selected', 'true');
 
   const date = await page.evaluate(() => addDays(localDay(), 7 * 20));
   await setRaces(page, [{ id: 'h', name: 'Mein HM', date, dist: 'hm', prio: 'A', goal: 7140 }]);
-  await page.click('[data-runsub="woche"]');
+  await page.click('[data-runtab="woche"]');
   await expect(page.locator('#planweek')).toContainText('Mein HM');
   await expect(page.locator('#planweek')).toContainText('Ziel 1:59:00 = 5:38 /km');
   await expect(page.locator('#planweek .metric b')).toHaveText(['?', '?']);
@@ -181,12 +183,12 @@ test('Zielzeit bestimmt Ziel-Longrun und Wochenspitze, Tempo steht bei den Tempo
   await setRaces(page, [{ id: 'h', name: 'Mein HM', date, dist: 'hm', prio: 'A', goal: null }]);
   await openPlan(page);
   await expect(page.locator('#planpeaks')).toContainText('Longrun bis 20 km, Woche bis 45 km (Standard) – Zielzeit eintragen');
-  await page.click('[data-runsub="rennen"]');
+  await page.click('[data-runtab="rennen"]');
   await page.click('[data-raceedit]');
   await fillTime(page, 'racegoal', '1', '50', '00');
   await page.click('#racesave');
   await expect(page.locator('#racelist')).toContainText('Longrun bis 21 km, Woche bis 52 km');
-  await page.click('[data-runsub="woche"]');
+  await page.click('[data-runtab="woche"]');
   await expect(page.locator('#planpeaks')).toContainText('Longrun bis 21 km, Woche bis 52 km – aus der Zielzeit 1:50:00');
 });
 
@@ -250,12 +252,12 @@ test('Eigene Distanz: 20 km werden wie ein Halbmarathon geplant, aber mit 20 km 
   await page.evaluate(dd => { races.push({ id: 'a', name: 'HM', date: dd, dist: 'hm', prio: 'A', goal: null, km: null }); persistRaces(); }, d);
   const bDate = await page.evaluate(() => addDays(localDay(), 7 * 3));
   await page.evaluate(bd => { races.find(r => r.km === 20).date = bd; persistRaces(); }, bDate);
-  await page.click('[data-runsub="woche"]');
+  await page.click('[data-runtab="woche"]');
   const ics = (await page.evaluate(() => planIcs())).replace(/\r\n /g, '');
   expect(ics).toContain('Lauf in den Tropen (20 km)');
 
   // Renntempo-Rechner mit eigener Distanz
-  await page.click('[data-runsub="wissen"]');
+  await page.click('[data-runtab="wissen"]'); await page.click('[data-runsub="tipps"]');
   await page.selectOption('#pcdist', 'custom');
   await fillTime(page, 'pctime', '1', '55', '00');
   await expect(page.locator('#pcout')).toContainText('Distanz in km eingeben');
@@ -347,7 +349,7 @@ test('Erholung: in der Rennwoche und in den Erholungswochen steht, wie lange die
   await openPlan(page);
   const raceDay = await page.evaluate(() => addDays(weekStart(localDay()), 6));
   await setRaces(page, [{ id: 'h', name: 'Mein HM', date: raceDay, dist: 'hm', prio: 'A', goal: null }]);
-  await page.click('[data-runsub="woche"]');
+  await page.click('[data-runtab="woche"]');
   await expect(page.locator('#planweek')).toContainText('Nach dem Halbmarathon: etwa 10–14 Tage');
   // Halbmarathon letzte Woche, Marathon später: diese Woche ist Erholung
   const [past, later] = await page.evaluate(() => [addDays(weekStart(localDay()), -2), addDays(localDay(), 7 * 30)]);
@@ -364,7 +366,7 @@ test('Erholung: in der Rennwoche und in den Erholungswochen steht, wie lange die
   await setRaces(page, [{ id: 'h', name: 'Mein HM', date: old, dist: 'hm', prio: 'A', goal: null }]);
   await page.evaluate(() => renderRun());
   await expect(page.locator('#planrecover')).toHaveCount(0);
-  await page.click('[data-runsub="wissen"]');
+  await page.click('[data-runtab="wissen"]'); await page.click('[data-runsub="tipps"]');
   await expect(page.locator('#runcontent')).toContainText('Erholung nach dem Rennen');
 });
 
@@ -372,7 +374,7 @@ test('Trainingstempos: aus der besten Leistung der letzten 12 Monate, im Plan be
   await openPlan(page);
   const later = await page.evaluate(() => addDays(localDay(), 7 * 20));
   await setRaces(page, [{ id: 'h', name: 'Mein HM', date: later, dist: 'hm', prio: 'A', goal: null }]);
-  await page.click('[data-runsub="woche"]');
+  await page.click('[data-runtab="woche"]');
   await expect(page.locator('#runcontent')).toContainText('Unter Bestzeiten ein Ergebnis der letzten 12 Monate eintragen');
   // 10 km in 50:00 vor einem Monat, ältere schnellere Zeit zählt nicht mehr
   await page.evaluate(() => { results = [{ id: 'a', date: addDays(localDay(), -30), km: 10, time: 3000, dist: '10k' }, { id: 'o', date: addDays(localDay(), -400), km: 10, time: 2700, dist: '10k' }]; persistResults(); renderRun(); });
@@ -392,7 +394,7 @@ test('Aktuelle Form statt Zielzeit, Testläufe alle 8 Wochen ohne Ergebnis', asy
   await setRaces(page, [{ id: 'h', name: 'Mein HM', date: later, dist: 'hm', prio: 'A', goal: 6000 }]);
   await page.evaluate(() => { runLog = [{ id: 'r1', date: addDays(localDay(), -3), km: 8 }]; persistRunLog(); });
   // ohne Ergebnis (und 5 km sind machbar): diese Woche ist Testlauf, Renntempo notfalls aus der Zielzeit
-  await page.click('[data-runsub="woche"]');
+  await page.click('[data-runtab="woche"]');
   await expect(page.locator('#planschedule .sched-quality')).toContainText('Testlauf 5 km');
   expect(await page.evaluate(() => hms(racePace(races[0])))).toBe('4:44');
   // neuestes Ergebnis 4 % langsamer als das beste → das beste zählt; nur 2 % langsamer → das neueste zählt
@@ -420,7 +422,7 @@ test('Aktuelle Form statt Zielzeit, Testläufe alle 8 Wochen ohne Ergebnis', asy
 test('Kalender-Export: Erinnerung am Trainingstag optional, Uhrzeit wählbar', async ({ page }) => {
   await openPlan(page);
   await setRaces(page, [{ id: 'h', name: 'HM', date: await page.evaluate(() => addDays(localDay(), 7 * 20)), dist: 'hm', prio: 'A', goal: null, km: null }]);
-  await page.click('[data-runsub="woche"]');
+  await page.click('[data-runtab="woche"]');
   expect(await page.evaluate(() => planIcs().includes('BEGIN:VALARM'))).toBe(false); // Standard: aus
   await expect(page.locator('#icstime')).toBeDisabled();
   await page.click('#icsremind');

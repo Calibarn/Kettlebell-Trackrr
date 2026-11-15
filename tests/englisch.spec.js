@@ -46,13 +46,14 @@ test.describe('Gerät auf Englisch', () => {
     await page.evaluate(() => document.querySelectorAll('dialog[open]').forEach(d => d.close()));
     const views = await page.evaluate(() => {
       const out = [];
-      for (const tab of ['plan', 'warmup', 'abc', 'umfang']) out.push(['laufen', tab]);
+      for (const tab of ['woche', 'rennen', 'laeufe', 'wissen']) out.push(['laufen', tab]);
       return out;
     });
     for (const [a, tab] of views) {
       await page.evaluate(([aa, t]) => { showArea(aa); runView.tab = t; renderRun(); }, [a, tab]);
-      for (let i = 0; i < await page.locator('#runsub button:visible').count(); i++) {
-        await page.locator('#runsub button:visible').nth(i).click();
+      const n = await page.locator('#runsub button:visible').count();
+      for (let i = 0; i < Math.max(1, n); i++) {
+        if (n) await page.locator('#runsub button:visible').nth(i).click();
         await page.evaluate(() => document.querySelectorAll('details').forEach(d => { delete d.dataset.acc; d.open = true; }));
         expect(await germanLines(page), tab + ' ' + i).toEqual([]);
       }

@@ -525,7 +525,7 @@ const SEASON_GUIDE = [
     'Der Exponent 1,06 bildet ab, dass man auf längeren Strecken langsamer wird. Die Formel stammt aus Daten gut trainierter Läufer: Für den Marathon ist sie bei weniger als etwa 50 km pro Woche meist zu optimistisch – eher 5–10 % Puffer einplanen. Am verlässlichsten ist eine Prognose aus einer Bestzeit über eine ähnliche Distanz.',
     'Eigene Distanz (z. B. 20 km): Für Plan und Trainingsstufe zählt die nächstliegende Kategorie (bis 7,5 km → 5 km, bis 15 km → 10 km, bis 30 km → Halbmarathon, darüber Marathon). Die Zielzeit wird dafür per Riegel auf diese Distanz umgerechnet; Pace und Zwischenzeiten rechnet die App mit den echten km.',
     'Renntempo in den Einheiten („im HM-Tempo“) kommt aus deiner aktuellen Form, nicht aus der Zielzeit – nur solange noch kein Ergebnis eingetragen ist, aus der Zielzeit.',
-    'Trainingstempos (Plan → Übersicht): Grundlage ist dein neuestes Ergebnis, solange es höchstens 3 % langsamer ist als dein bestes der letzten 12 Monate (sonst das beste), per Riegel auf 10 km umgerechnet. Locker = 10-km-Pace + 60–90 s/km, Schwelle = Renntempo für 15 km bis Halbmarathon (etwa eine Stunde haltbar), Intervall ≈ 5-km-Renntempo, Marathontempo per Riegel. Beispiel 10 km in 50:00: locker 6:00–6:30, Schwelle 5:05–5:15, Intervall 4:48, Marathon 5:27 /km.',
+    'Trainingstempos (Laufen → Woche): Grundlage ist dein neuestes Ergebnis, solange es höchstens 3 % langsamer ist als dein bestes der letzten 12 Monate (sonst das beste), per Riegel auf 10 km umgerechnet. Locker = 10-km-Pace + 60–90 s/km, Schwelle = Renntempo für 15 km bis Halbmarathon (etwa eine Stunde haltbar), Intervall ≈ 5-km-Renntempo, Marathontempo per Riegel. Beispiel 10 km in 50:00: locker 6:00–6:30, Schwelle 5:05–5:15, Intervall 4:48, Marathon 5:27 /km.',
     'Fortschritt kommt über Testläufe: Ist dein letztes Ergebnis oder Rennen 8 Wochen her, macht der Plan in der nächsten passenden Woche (Basis, Grundlage oder Aufbau) die Qualitätseinheit zum 5-km-Testlauf. Ergebnis unter Bestzeiten eintragen – B- und C-Rennen zählen genauso.',
     'Einen Testlauf gibt es erst, wenn 5 km machbar sind: in der laufenden Woche, wenn dein längster Lauf der letzten 30 Tage mindestens 5 km war, später, wenn der geplante Longrun der Woche so lang ist. Im Lauf-Einstieg nie.',
     'Die Tempos sind Richtwerte. Bei Hitze, Wind, Hügeln oder müden Beinen gilt das Gefühl bzw. die Herzfrequenz-Zone, nicht die Uhr.',
@@ -565,7 +565,7 @@ const SEASON_GUIDE = [
     'Wetter checken, Wegwerfschicht für den Startblock.',
     'Gels, Uhr laden, Herzfrequenzgurt, Pflaster und Vaseline für Scheuerstellen.',
     'Anreise und Startblock planen, Zeitpuffer für Toilette und Warm-up einrechnen.',
-    'Warm-up für die Distanz unter Laufen → Warm-up ansehen und vorher einmal im Training testen.',
+    'Warm-up für die Distanz unter Laufen → Wissen → Warm-up ansehen und vorher einmal im Training testen.',
     'Die Nacht vor der Nacht vor dem Rennen ist für den Schlaf wichtiger als die letzte.'
   ] },
   { title: 'Erholung nach dem Rennen', sub: 'wie lange, was hilft', items: [

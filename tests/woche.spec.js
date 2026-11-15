@@ -8,7 +8,7 @@ async function setup(page, opt = {}) {
   await page.evaluate(o => {
     races = [{ id: 'h', name: 'HM', date: '2027-03-21', dist: 'hm', prio: 'A', goal: null, km: null }]; persistRaces();
     Object.assign(profile.week, { quality: 2, long: 0, group: 4, strength: [1, 3, 5], extraDay: null, track: o.track !== false, strengthFixed: o.fixed || [] }); persistProfile();
-    showArea('laufen'); runView.tab = 'plan'; runView.plan = 'woche'; renderRun();
+    showArea('laufen'); runView.tab = 'woche'; renderRun();
   }, opt);
 }
 const row = (page, kind, day) => page.locator(`#planschedule .row.sched-${kind}`, { hasText: day });
@@ -59,7 +59,7 @@ test('nur die laufende Woche: in der nächsten Woche ist alles wieder frei', asy
   await page.click('[data-done="strength-1"]');
   await page.clock.setFixedTime(new Date('2026-11-11T10:00:00+01:00'));
   await page.reload();
-  await page.evaluate(() => { showArea('laufen'); runView.tab = 'plan'; runView.plan = 'woche'; renderRun(); });
+  await page.evaluate(() => { showArea('laufen'); runView.tab = 'woche'; renderRun(); });
   await expect(page.locator('#planschedule [data-unmove]')).toHaveCount(0);
   await expect(page.locator('[data-done="strength-1"]')).toHaveAttribute('aria-pressed', 'false');
 });

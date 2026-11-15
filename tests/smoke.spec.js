@@ -9,7 +9,7 @@ test('Rundgang: alle Bereiche öffnen, kurz trainieren, Lauf eintragen, Sicherun
   await forward(page, 4 * 60 + 25);
   await expect(page.locator('#phase-badge')).toHaveText(/Arbeit|Pause/);
   await page.evaluate(() => { showArea('laufen'); });
-  await page.click('[data-runtab="umfang"]');
+  await page.click('[data-runtab="laeufe"]');
   await page.fill('#runkm', '5');
   await page.click('#runaddbtn');
   await expect(page.locator('#runlist')).toContainText('5 km');

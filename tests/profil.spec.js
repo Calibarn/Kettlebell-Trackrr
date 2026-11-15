@@ -27,7 +27,7 @@ test('Herzfrequenz: Zonen nach Karvonen, manuell anpassbar, im Plan als bpm', as
   await page.evaluate(d => { races = [{ id: 'h', name: 'HM', date: d, dist: 'hm', prio: 'A', goal: null }]; persistRaces(); }, date);
   await page.reload();
   await page.evaluate(() => { showArea('laufen'); });
-  await page.click('[data-runtab="plan"]');
+  await page.click('[data-runtab="woche"]');
   await expect(page.locator('#planschedule')).toContainText('Zone 2 (136–148 bpm)');
 });
 
@@ -53,7 +53,7 @@ test('Trainingswoche: Tage aus dem Profil im Plan und im Kalender, Hinweise bei 
 
   await page.reload();
   await page.evaluate(() => showArea('laufen'));
-  await page.click('[data-runtab="plan"]');
+  await page.click('[data-runtab="woche"]');
   await expect(page.locator('#planschedule .dur')).toHaveText(['Mo', 'Mo', 'Do', 'Sa', 'So']);
   await expect(page.locator('#planschedule')).not.toContainText('Laufgruppe');
   await expect(page.locator('#planschedule')).toContainText('Blaze');
@@ -162,7 +162,7 @@ test('Trainingswoche: Einheiten dauerhaft abschalten oder nur diese Woche „Ent
   await page.reload();
   expect(await page.evaluate(() => profile.week.quality)).toBeNull();
   await page.evaluate(() => showArea('laufen'));
-  await page.click('[data-runtab="plan"]');
+  await page.click('[data-runtab="woche"]');
   await expect(page.locator('#planschedule')).not.toContainText('Qualität');
 
   // nur diese Woche: Laufgruppe entfällt
@@ -180,7 +180,7 @@ test('Trainingswoche: Einheiten dauerhaft abschalten oder nur diese Woche „Ent
   expect(JSON.parse(await page.evaluate(() => backupJson())).weekSkip[thisWeek]).toEqual(['group']);
   await page.reload();
   await page.evaluate(() => showArea('laufen'));
-  await page.click('[data-runsub="woche"]');
+  await page.click('[data-runtab="woche"]');
   await page.click('#planschedule [data-skip="group"]');
   await expect(page.locator('#planschedule .row.skipped')).toHaveCount(0);
 });
@@ -225,10 +225,10 @@ test('Weitere Einheiten: mehrere, mit Art – lockerer Lauf, zweite Qualität, A
   // Startseite fragt am Tag danach auch nach dem lockeren Lauf
   const wd = await page.evaluate(() => new Date(addDays(localDay(), -1) + 'T12:00:00').getDay());
   await page.evaluate(d => { races = []; persistRaces(); Object.assign(profile.week, { quality: null, long: null, group: null, extras: [{ d, type: 'easy', name: 'Regeneration' }], runner: 'runner' }); persistProfile(); runLog = []; persistRunLog(); showArea('start'); }, wd);
-  await expect(page.locator('#startrun .srowt b')).toHaveText(/· Regeneration$/);
+  await expect(page.locator('#startpend [data-pendopen] b')).toHaveText(/· Regeneration$/);
   // Art „Regenerationslauf“: zählt als lockerer Lauf, eigener Name und Hinweis
   await page.evaluate(d => { profile.week.extras = [{ d, type: 'recovery', name: '' }]; persistProfile(); renderStart(); }, wd);
-  await expect(page.locator('#startrun .srowt b')).toHaveText(/· Regenerationslauf$/);
+  await expect(page.locator('#startpend [data-pendopen] b')).toHaveText(/· Regenerationslauf$/);
   const rec = await page.evaluate(d => { races = [{ id: 'h', name: 'HM', date: d, dist: 'hm', prio: 'A', goal: 7140 }]; const S = seasonPlan(localDay(), { L0: 14, W0: 30 }); const x = S.weeks.find(w => w.phase === 'base'), it = weekSchedule(x).find(i => i.key === 'x0'); races = []; return it && [it.kind, it.title, it.detail, RUN(it), HARD(it)]; }, date);
   expect(rec).toEqual(['easy', 'Regenerationslauf', 'sehr locker, 20–40 Min., Zone 1', true, false]);
   await openProfil(page); await page.evaluate(() => renderProfile()); await openSect(page, 'sect-week');

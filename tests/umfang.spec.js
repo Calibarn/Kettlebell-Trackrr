@@ -5,7 +5,7 @@ const { test, expect, openSect } = require('./fixtures');
 const weeksAgo = page => page.evaluate(() => [0, 1, 2, 3, 4, 5, 6].map(i => addDays(weekStart(localDay()), -7 * i)));
 async function openUmfang(page) {
   await page.evaluate(() => showArea('laufen'));
-  await page.click('[data-runtab="umfang"]');
+  await page.click('[data-runtab="laeufe"]');
   await expect(page.locator('#runsub')).toBeHidden();
   await openSect(page, 'sect-weeks'); // Wochensummen sind aufklappbar
 }
@@ -45,7 +45,7 @@ test('Umfang mit Wochensummen: Schnitt, Zielbereich, langer Lauf – bleibt gesp
 
   await page.reload();
   await page.evaluate(() => showArea('laufen'));
-  await expect(page.locator('[data-runtab="umfang"]')).toHaveAttribute('aria-selected', 'true');
+  await expect(page.locator('[data-runtab="laeufe"]')).toHaveAttribute('aria-selected', 'true');
   await expect(page.locator(field(w[2]))).toHaveValue('15');
   await expect(page.locator(field(w[0]))).toHaveValue('21');
 });
