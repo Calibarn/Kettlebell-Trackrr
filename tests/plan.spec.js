@@ -524,3 +524,44 @@ test('A/B/C im Formular: Auswahl A – Hauptziel, B – Zwischenziel, C – Trai
   await expect(page.locator('#raceprio')).toHaveValue('M');
   expect(await page.evaluate(() => { showArea('start'); return [...document.querySelectorAll('#readycard .srowt b')].map(b => b.textContent); })).toEqual(['Zwischen']);
 });
+
+test('Rennplan: ab Beginn des Taperings auf der Startseite – Abschnitte mit Tempo-Bereich und Pulsgrenze, C-Rennen im Tapering locker', async ({ page }) => {
+  // 10 km in 55:00 → HM-Prognose 2:01:21; max. HF 184, Ruhepuls 60
+  const d = await page.evaluate(() => {
+    const t = localDay();
+    results = [{ id: 'a', date: addDays(t, -30), km: 10, time: 3300, dist: '10k' }]; persistResults();
+    profile.hr = Object.assign({}, profile.hr, { max: 184, rest: 60, z: hrZonesFrom(184, 60) }); persistProfile();
+    return [addDays(t, 20), addDays(t, 6), addDays(t, 3)];
+  });
+  // HM: Tapering beginnt eine Woche vor der Rennwoche – in 20 Tagen noch kein Plan
+  await setRaces(page, [{ id: 'h', name: 'Mein HM', date: d[0], dist: 'hm', prio: 'A', goal: 7199 }]);
+  await page.evaluate(() => { showArea('start'); renderStart(); });
+  await expect(page.locator('#raceplan')).toHaveCount(0);
+  await setRaces(page, [{ id: 'h', name: 'Mein HM', date: d[1], dist: 'hm', prio: 'A', goal: 7199 }, { id: 'c', name: 'Mein 10er', date: d[2], dist: '10k', prio: 'B', goal: null }]);
+  await page.evaluate(() => renderStart());
+  const card = page.locator('#raceplan');
+  await expect(card.locator('.rprace')).toHaveCount(2);
+  // C-Rennen kurz vor dem A-Rennen (auch in derselben Woche): Tapering, locker in Zone 2
+  const c = card.locator('.rprace').nth(0), h = card.locator('.rprace').nth(1);
+  await expect(c).toContainText('Locker mitlaufen');
+  await expect(c).toContainText('Es fällt ins Tapering vor Mein HM');
+  await expect(c.locator('.rpsegs li')).toHaveText([/km 0–10\s*6:30–7:00 \/km · Puls ≤ 146/]);
+  // Ziel schneller als die Form → Plan auf die Prognose; ruhiger Start, Mitte gleicht aus, Schluss frei
+  await expect(h).toContainText('Plan auf 2:01:21 · Ø 5:45 /km');
+  await expect(h).toContainText('Ziel 1:59:59 gibt deine Form noch nicht her');
+  await expect(h.locator('.rpsegs li')).toHaveText([/km 0–5\s*5:50–6:00 \/km · Puls ≤ 162/, /km 5–15\s*5:37–5:47 \/km · Puls ≤ 168/, /km 15–18\s*5:37–5:47 \/km · Puls ≤ 172/, /km 18–21,1\s*schneller als 5:47 \/km/]);
+  await card.locator('.rpwatch summary').click();
+  await expect(card.locator('.rpwatch')).toContainText('je Abschnitt eine Distanz und den Tempo-Bereich als Warnung');
+  const x = await page.evaluate(() => {
+    const t = localDay(), sum = p => p.segs.reduce((a, s) => a + (s.pace[0] === null ? s.pace[1] - 10 : (s.pace[0] + s.pace[1]) / 2) * (s.to - s.from), 0);
+    const hm = racePlan(races.find(r => r.id === 'h'));
+    const ma = { id: 'm', name: 'M', date: addDays(t, 30), dist: 'marathon', prio: 'A', goal: 15600 };
+    const pr = { id: 'p', name: 'P', date: addDays(t, 2), dist: '5k', prio: 'A', km: 10, fmt: 'pace', goal: null };
+    races = races.concat(ma); const mp = racePlan(ma);
+    const out = { diff: Math.abs(sum(hm) - hm.time), from: racePlanFrom(ma) === addDays(weekStart(ma.date), -14), mGoal: hms(mp.time), mKm: mp.segs.map(s => s.from), mHr: mp.segs.map(s => s.hr), pace: racePlan(pr) };
+    profile.hr = Object.assign({}, profile.hr, { z: null }); out.noHr = racePlan(ma).segs.every(s => s.hr === null);
+    return out;
+  });
+  expect(x.diff).toBeLessThan(30);
+  expect(x).toMatchObject({ from: true, mGoal: '4:20:00', mKm: [0, 5, 30, 37], mHr: [153, 159, 166, null], pace: null, noHr: true });
+});

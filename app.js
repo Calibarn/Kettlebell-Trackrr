@@ -1953,8 +1953,9 @@ function raceClash(c) {
   for (const o of races) {
     if (o.id === c.id || o.prio !== 'A' || !SEASON.dist[o.dist]) continue;
     const ow = weekStart(o.date), gap = weeksBetween(ow, cw), rec = SEASON.dist[o.dist].recover.length, tap = SEASON.dist[c.dist].phases.taper;
-    if (gap >= 0 && gap <= rec) return { o, kind: 'recover', n: rec };
     const g2 = -gap, tapO = SEASON.dist[o.dist].phases.taper, recC = SEASON.dist[c.dist].recover.length;
+    if (gap === 0 && c.date < o.date) return { o, kind: 'before', n: tapO }; // gleiche Woche, aber davor: Rennwoche = letzte Tapering-Woche
+    if (gap >= 0 && gap <= rec) return { o, kind: 'recover', n: rec };
     if (c.prio === 'A' && gap > 0 && gap < tap) return { o, kind: 'taper', n: tap }; // das andere liegt im Tapering dieses Rennens
     if (g2 > 0 && g2 < tapO) return { o, kind: 'before', n: tapO }; // dieses Rennen liegt im Tapering des anderen
     if (c.prio === 'A' && g2 > 0 && g2 <= recC) return { o, kind: 'after', n: recC }; // das andere liegt in der Erholung nach diesem
@@ -2313,12 +2314,98 @@ function badgesNow(today = localDay()) {
   if (changed) store(KEYS.badges, got);
   return got;
 }
+const raceWhen = r => { const n = daysTo(r.date); return n === 0 ? T('heute', 'today') : n === 1 ? T('morgen', 'tomorrow') : T(`in ${n} Tagen`, `in ${n} days`); };
+/* Rennplan zum Eintragen in die Uhr: Abschnitte mit Tempo-Bereich und Pulsgrenze.
+   Ab wann (bis zum Renntag): A-Rennen und B mit eigenem Block ab Beginn des Taperings (5/10 km: Rennwoche, HM: 1 Woche davor,
+   Marathon: 2 Wochen davor) – dann kommt kein Testlauf mehr, die Werte bleiben stehen. B im A-Block ab der Woche davor,
+   C-Rennen 7 Tage vorher. Pace Race (Runden mit Zeitlimit) ohne Plan.
+   Tempo: Plan auf die Prognose aus der Form (Riegel); mit Zielzeit auf die langsamere von beiden – ein Ziel, das die Form noch nicht
+   hergibt, rächt sich hinten raus. Start etwas ruhiger, die Mitte gleicht das aus (Schluss mit 5 s/km schneller gerechnet).
+   Puls (mit Zonen im Profil): Obergrenze als Anteil der Herzfrequenzreserve, zwischen den Zonengrenzen gerechnet – Richtwerte als Bremse.
+   C-Rennen im Tapering/in der Erholung des A-Rennens, zu dicht dran oder deutlich länger als der Longrun: locker, Zone 2. */
+const RP = {
+  '5k': { cut: [1, 4], start: [0, 10], hr: {} },
+  '10k': { cut: [2, 8], start: [5, 15], hr: { start: 0.87 } },
+  hm: { cut: [5, 15, 18], start: [5, 15], hr: { start: 0.82, mid: 0.87, hold: 0.9 } },
+  marathon: { cut: [5, 30, 37], start: [10, 20], hr: { start: 0.75, mid: 0.8, hold: 0.85 } }
+};
+const ownBlock = r => r.prio === 'A' || (r.prio === 'M' && !inABlock(r));
+const racePlanFrom = r => ownBlock(r) ? addDays(weekStart(r.date), -7 * (SEASON.dist[r.dist].phases.taper - 1)) : r.prio === 'M' ? addDays(weekStart(r.date), -7) : addDays(r.date, -7);
+// Puls bei Anteil f der Herzfrequenzreserve: Zone 1–5 beginnen bei 50/60/70/80/90 % – dazwischen linear (auch bei eigenen Zonen)
+function hrAt(f) {
+  const z = profile.hr.z; if (!Array.isArray(z) || z.length !== 5 || z.some(v => !Number.isFinite(v))) return null;
+  const i = Math.min(3, Math.max(0, Math.floor((f - 0.5) / 0.1 + 1e-9)));
+  return Math.round(z[i] + (f - 0.5 - 0.1 * i) / 0.1 * (z[i + 1] - z[i]));
+}
+function racePlan(r, today = localDay()) {
+  if (r.fmt === 'pace' || !SEASON.dist[r.dist]) return null;
+  const km = raceKm(r), tp = trainingPaces(today), z = profile.hr.z, wfl = r.fmt === 'wfl';
+  // locker statt voll?
+  let easy = null;
+  if (!ownBlock(r)) {
+    const k = r.prio === 'A' ? null : raceClash(r);
+    if (k) easy = raceClashText(r, k);
+    else {
+      const x = seasonPlan(today).weeks.find(w => w.b.includes(r));
+      if (x && x.phase === 'taper') easy = T('Liegt im Tapering deines A-Rennens – locker mitlaufen, nicht auf Zeit.', 'Falls into the taper of your A race – run it easy, not for time.');
+      else if (x && x.phase === 'recover') easy = T('Liegt in der Erholung nach deinem A-Rennen – locker mitlaufen, nicht auf Zeit.', 'Falls into the recovery after your A race – run it easy, not for time.');
+      else if (x && x.bSpike) easy = T(`Deutlich länger als dein Longrun zu der Zeit (ca. ${x.bSpike} km) – locker mitlaufen, nicht auf Zeit.`, `Clearly longer than your long run at that time (about ${x.bSpike} km) – run it easy, not for time.`);
+    }
+  }
+  if (easy) return { r, km, easy, segs: [{ from: 0, to: km, kind: 'easy', pace: tp ? tp.easy : null, hr: z ? z[2] - 1 : null }] };
+  const pred = tp ? riegel(tp.ref.t10, 10, km) : null, goal = wfl ? carTime(km) : r.goal || null;
+  const time = pred && goal ? Math.max(pred, goal) : pred || goal;
+  if (!time) return { r, km, none: true };
+  const def = RP[r.dist], f = km / SEASON.dist[r.dist].km, cuts = [];
+  for (const c of def.cut) { const v = Math.max((cuts.at(-1) || 0) + 1, Math.round(c * f)); if (v >= km) break; cuts.push(v); }
+  const b = [0, ...cuts, km], n = b.length - 1, P = time / km;
+  const kind = i => n === 1 ? 'mid' : i === 0 ? 'start' : i === n - 1 ? (wfl ? 'wfl' : 'end') : i === 1 ? 'mid' : 'hold';
+  const len = i => b[i + 1] - b[i], so = (def.start[0] + def.start[1]) / 2, eo = wfl ? 0 : 5;
+  const midLen = b.slice(0, -1).reduce((a, _, i) => a + (['mid', 'hold'].includes(kind(i)) ? len(i) : 0), 0);
+  // Mitte gleicht den ruhigeren Start und den schnelleren Schluss aus, damit die Endzeit stimmt
+  const Pm = midLen && n > 1 ? P - (len(0) * so - (kind(n - 1) === 'end' ? len(n - 1) * eo : 0)) / midLen : P;
+  const segs = b.slice(0, -1).map((from, i) => {
+    const k = kind(i), cap = def.hr[k], s = { from, to: b[i + 1], kind: k, hr: cap && z ? hrAt(cap) : null };
+    s.pace = k === 'start' ? [P + def.start[0], P + def.start[1]] : k === 'end' ? [null, Pm + 5] : [Pm - 5, Pm + 5];
+    s.pace = s.pace.map(v => v === null ? null : Math.round(v));
+    return s;
+  });
+  return { r, km, time, pred, goal, segs };
+}
+function racePlanHtml(p) {
+  const r = p.r, kmR = v => kmText(Math.round(v * 10) / 10), note = {
+    start: T('ruhig anlaufen – nicht mitreißen lassen', 'start calmly – don’t get carried away'), mid: T('Zieltempo, gleichmäßig', 'goal pace, steady'),
+    hold: T('Tempo halten – ab hier wird’s zäh', 'hold the pace – this is where it gets tough'), end: T('frei – wenn noch was geht, jetzt', 'free – if there’s anything left, now'),
+    wfl: T('Tempo halten, bis das Catcher Car kommt', 'hold the pace until the Catcher Car comes'), easy: T('Gesprächstempo, nicht auf Zeit', 'conversational pace, not for time') };
+  let head;
+  if (p.none) head = T('Für den Rennplan unter <b>Bestzeiten</b> ein Ergebnis oder beim Rennen eine Zielzeit eintragen.', 'For the race plan enter a result under <b>Best times</b> or a goal time for the race.');
+  else if (p.easy) head = `<b>${T('Locker mitlaufen', 'Run it easy')}</b> · ${esc(p.easy)}`;
+  else {
+    const why = r.fmt === 'wfl' ? (p.pred && p.pred > p.goal ? T(`Deine Form reicht noch nicht ganz bis ${kmText(p.km)} km – Plan auf dein Formtempo.`, `Your form doesn’t quite reach ${kmText(p.km)} km yet – plan at your form pace.`) : T(`So eingeteilt, dass dich das Catcher Car erst bei ${kmText(p.km)} km einholt.`, `Paced so the Catcher Car only catches you at ${kmText(p.km)} km.`))
+      : p.pred && p.goal ? (p.pred > p.goal ? T(`Ziel ${hms(p.goal)} gibt deine Form noch nicht her (Prognose ${hms(p.pred)}) – der Plan läuft auf die Prognose, sonst wird’s hinten raus zäh.`, `Your form doesn’t support the goal ${hms(p.goal)} yet (prediction ${hms(p.pred)}) – the plan uses the prediction, otherwise the end gets tough.`) : T(`Auf dein Ziel – die Form gibt ${hms(p.pred)} her, das ist Reserve für den Schluss.`, `At your goal – your form supports ${hms(p.pred)}, that’s reserve for the end.`))
+      : p.pred ? T('Prognose aus deiner aktuellen Form.', 'Prediction from your current form.') : T('Aus deiner Zielzeit – mit einem Ergebnis unter Bestzeiten rechnet der Plan mit deiner Form.', 'From your goal time – with a result under Best times the plan uses your form.');
+    head = `<b>${T(`Plan auf ${hms(p.time)} · Ø ${hms(p.time / p.km)} /km`, `Plan for ${hms(p.time)} · avg ${hms(p.time / p.km)} /km`)}</b> · ${why}`;
+  }
+  const segs = p.segs ? `<ol class="rpsegs">${p.segs.map(s => `<li><span class="rpkm">km ${kmR(s.from)}–${kmR(s.to)}</span><span class="rpval"><span><b>${s.pace ? s.pace[0] === null ? T(`schneller als ${hms(s.pace[1])}`, `faster than ${hms(s.pace[1])}`) : `${hms(s.pace[0])}–${hms(s.pace[1])}` : T('nach Gefühl', 'by feel')}${s.pace ? ' /km' : ''}</b>${s.hr ? ` · <b>${T('Puls', 'HR')} ≤ ${s.hr}</b>` : ''}</span><small>${esc(note[s.kind])}</small></span></li>`).join('')}</ol>` : '';
+  return `<div class="rprace"><p class="rptitle"><b>${esc(r.name)}</b> <span class="prio prio-${r.prio}">${prioText(r.prio)}</span><small>${esc(raceWhen(r))} · ${esc(raceLabel(r))}</small></p><p class="rphead">${head}</p>${segs}</div>`;
+}
+function racePlanCard(today = localDay()) {
+  if (!mod('laufen')) return '';
+  const list = races.filter(r => !r.dns && r.date >= today && r.fmt !== 'pace' && SEASON.dist[r.dist] && racePlanFrom(r) <= today).sort((a, b) => a.date.localeCompare(b.date)).slice(0, 2);
+  const plans = list.map(r => racePlan(r, today)).filter(Boolean); if (!plans.length) return '';
+  const hasHr = plans.some(p => p.segs && p.segs.some(s => s.hr)), hrHint = !profile.hr.z ? `<p>${T('Mit deiner max. HF unter Profil → Herzfrequenz kommen Pulsgrenzen dazu.', 'With your max HR under Profile → Heart rate, HR limits are added.')}</p>` : '';
+  return `<div class="scard" id="raceplan"><p class="skicker">${T('Rennplan', 'Race plan')}</p>${plans.map(racePlanHtml).join('')}
+    <details class="rpwatch"><summary>${T('Auf die Uhr übertragen', 'Put it on your watch')} ▾</summary>
+    <p>${T('Ein eigenes Lauftraining anlegen: je Abschnitt eine Distanz und den Tempo-Bereich als Warnung.', 'Create a custom running workout: one distance per section and the pace range as an alert.')}${hasHr ? ' ' + T('Der Puls ist die Bremse: Liegt er über der Grenze, ans langsame Ende des Bereichs.', 'Heart rate is the brake: if it is above the limit, go to the slow end of the range.') : ''}</p>
+    <p>${T('Die Uhr misst meist etwas mehr als die vermessene Strecke (Kurven, Hochhäuser) – für die Zielzeit eher in der schnelleren Hälfte bleiben.', 'Your watch usually measures a bit more than the measured course (corners, tall buildings) – for your goal time stay in the faster half.')}</p>
+    <p>${T('Stand heute – ändert sich nur, wenn du ein neues Ergebnis oder eine andere Zielzeit einträgst. Puls und Tempo sind Richtwerte; bei Hitze oder Wind langsamer.', 'As of today – changes only if you enter a new result or another goal time. HR and pace are guidelines; slower in heat or wind.')}</p>${hrHint}</details></div>`;
+}
 function readyCard() {
   if (!mod('laufen')) return '';
   const today = localDay(), got = badgesNow(today), ico = startIcon('laufen');
   // A- und B-Rennen (Haupt- und Zwischenziel); C-Rennen = Trainingsläufe laufen ohne Bereitschafts-Prüfung mit
   const list = races.filter(r => (r.prio === 'A' || r.prio === 'M') && r.date >= today && !r.dns).sort((a, b) => a.date.localeCompare(b.date)).slice(0, 3);
-  const when = r => { const n = daysTo(r.date); return n === 0 ? T('heute', 'today') : n === 1 ? T('morgen', 'tomorrow') : T(`in ${n} Tagen`, `in ${n} days`); };
+  const when = raceWhen;
   const rows = list.map(r => { const x = raceReady(r); return `<div class="srowt">${ico}<span class="txt"><b>${esc(r.name)}</b><small>${esc(when(r) + ' · ' + readyWhy(r, x))}</small></span><span class="spill ${x.ready ? 'yes' : 'no'}">${x.ready ? T('✓ bereit', '✓ ready') : T('noch nicht', 'not yet')}</span></div>`; }).join('');
   const earned = BADGES.filter(([k]) => isDay(got[k])), newest = earned.slice().sort((a, b) => got[b[0]].localeCompare(got[a[0]]) || b[1] - a[1])[0];
   const isNew = newest && got[newest[0]] >= addDays(today, -14), next = BADGES.find(([k]) => !isDay(got[k]));
@@ -2556,7 +2643,7 @@ function renderStart() {
   const lp = logPick && plannedRunsOn(logPick.day).find(it => it.key === logPick.key);
   const syncPause = autoOn() && autoPaused ? `<div class="scard" id="syncresume"><div class="srowt">${startIcon('mehr')}<span class="txt"><b>${T('Sync pausiert', 'Sync paused')}</b><small>${T('Der Browser fragt wieder nach dem Zugriff auf die Sync-Datei.', 'The browser asks for access to the sync file again.')}</small></span><button type="button" class="btn small primary sgo" data-syncresume>${T('Fortsetzen', 'Resume')}</button></div></div>` : '';
   $('startcontent').innerHTML = `${syncPause}${startFeedback ? feedbackCard(startFeedback) : ''}${lt ? runCard({ day: today, item: lt }, 90) : lp ? runCard({ day: logPick.day, item: lp }, 91) : ''}${pendingHtml()}<div class="scard"><p class="skicker">${T('Heute dran', 'On today')}</p>${rows}${addCtl(items)}</div>
-    <div class="scard"><p class="skicker">${T('Diese Woche', 'This week')}</p>${weekStrip()}<div class="sweek">${week.map(([l, v, b]) => `<div><small>${esc(l)}</small><b>${esc(v)}</b>${b}</div>`).join('')}</div>${yearCard()}</div>${readyCard()}
+    ${racePlanCard()}<div class="scard"><p class="skicker">${T('Diese Woche', 'This week')}</p>${weekStrip()}<div class="sweek">${week.map(([l, v, b]) => `<div><small>${esc(l)}</small><b>${esc(v)}</b>${b}</div>`).join('')}</div>${yearCard()}</div>${readyCard()}
     <button type="button" class="scard smorerow" data-go="mehr">${startIcon('mehr')}<span class="txt"><b>${T('Mehr', 'More')}</b><small>${esc(T('Neuigkeiten, Sync, Daten', 'News, sync, data') + ' · ' + bTxt)}</small></span><span class="chev"></span></button>`;
 }
 $('startcontent').addEventListener('input', e => {

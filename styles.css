@@ -650,3 +650,21 @@ html[data-os=android] .infoi{border-color:var(--accent-ink);color:var(--accent-i
 #syncauto.dim .icon{opacity:.45}
 #syncauto.dim b,#syncauto.dim .val{color:var(--label3)}
 #syncauto.dim small{-webkit-line-clamp:4}
+/* Rennplan (Startseite): Abschnitte zum Eintragen in die Uhr */
+.rprace{padding:6px 0 4px}
+.rprace+.rprace{border-top:.5px solid var(--sep);margin-top:4px}
+.rptitle{margin:4px 0 2px;display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 8px}
+.rptitle b{font-weight:600}
+.rptitle small{flex-basis:100%;font-size:13px;color:var(--label2)}
+.rphead{margin:6px 0;font-size:14px;color:var(--label2);line-height:1.35}
+.rphead b{color:var(--label);font-weight:600}
+.rpsegs{list-style:none;margin:0;padding:0}
+.rpsegs li{display:flex;gap:12px;padding:8px 0;border-top:.5px solid var(--sep)}
+.rpkm{flex:none;width:84px;font-size:13px;white-space:nowrap;color:var(--label2);font-variant-numeric:tabular-nums;padding-top:2px}
+.rpval{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;font-variant-numeric:tabular-nums}
+.rpval b{font-weight:600}
+.rpval small{font-size:13px;color:var(--label2)}
+.rpwatch{border-top:.5px solid var(--sep);padding:4px 0}
+.rpwatch summary{list-style:none;min-height:40px;display:flex;align-items:center;font-size:14px;color:var(--accent);cursor:pointer}
+.rpwatch summary::-webkit-details-marker{display:none}
+.rpwatch p{margin:4px 0 8px;font-size:13px;color:var(--label2);line-height:1.4}
