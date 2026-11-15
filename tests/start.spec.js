@@ -603,7 +603,7 @@ test('Heute tauschen: „Heute stattdessen …“ – Kraft zu Hause statt Kurs 
   // bleibt nach dem Neuladen, steht im Backup
   await page.reload();
   await expect(page.locator('#startcontent .scard', { hasText: 'Heute dran' })).toContainText('heute statt Hyrox');
-  expect(await page.evaluate(() => JSON.parse(backupJson()).daySwap[localDay()])).toEqual({ from: `strength-${new Date().getDay()}`, to: 'kraft', plan: 'run' });
+  expect(await page.evaluate(() => JSON.parse(backupJson()).daySwap[localDay()])).toEqual({ from: `strength-${wd}`, to: 'kraft', plan: 'run' }); // Wochentag aus dem Browser (Zeitzone der App), nicht aus Node
   // zurücknehmen, dann locker laufen
   await page.locator('[data-swapundo]').click();
   await expect(card).toContainText('Kurs · Hyrox');
