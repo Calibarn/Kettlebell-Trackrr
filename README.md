@@ -5,7 +5,7 @@ Mein persönlicher Trainings-Begleiter als Web-App für iPhone und Android – K
 ## Bereiche
 
 - **Kraft** (mit Timer und Verlauf)
-  - Ganzkörper (Zirkel), Tabata (komplett automatisch, mit Kettlebell, Band oder Körpergewicht), Läufer (Sätze mit Progression), Oberkörper (z. B. nach dem Longrun), Core (EMOM im Knien), Finisher (EMOM im Grätschsitz) und Stand-Core (EMOM im Stehen), alle drei fest mit Kettlebell, Büro (Haltung & Rücken)
+  - Ganzkörper (Zirkel), Tabata (komplett automatisch, mit Kettlebell, Band oder Körpergewicht), Läufer (Sätze mit Progression), Oberkörper (z. B. nach dem Longrun), Core (EMOM im Knien), Finisher (EMOM im Grätschsitz) und Stand-Core (EMOM im Stehen), alle drei fest mit Kettlebell, Miniband (Beine fürs Laufen, nur mit Miniband im Profil), Büro (Haltung & Rücken)
   - Geräte je Plan (z. B. Ganzkörper: Kettlebell + Körpergewicht, Tabata: Kettlebell, Läufer: Band), darunter „Du brauchst“ (Gewichte, Bänder, Matte …); Urlaub von–bis im Profil: nur Körpergewicht. Kettlebell, Bänder und Körpergewicht wählen – je Übung wird automatisch die wirksamste Variante aus der Auswahl genommen (Rangfolge mit Begründung in `data.js`, `BEST`). Ohne Auswahl gilt Körpergewicht. Die Auswahl wird gemerkt.
   - Gewicht je Übung (vorbelegt 12 kg) und Bandstärke unter „Übungen, Geräte & Gewichte“
   - Ton-Countdown und Sprachansagen (nächste Übung, Seitenwechsel, Rundenende), automatische Aufwärm-/Cooldown-Abläufe, Zeitübungen, Swing-EMOM

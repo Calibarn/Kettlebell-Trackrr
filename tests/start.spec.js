@@ -675,7 +675,7 @@ test('Heute tauschen: Laufgruppe fällt aus → Intervall oder Testlauf; die reg
   expect(s2.find(i => i[0] === 1)).toEqual([1, 'quality2', 'Testlauf 5 km', false]);
   expect(s2.find(i => i[0] === 4)[3]).toBe(true);
   // Auswahl heute: Testlauf nur, wenn 5 km schon machbar sind (längster Lauf 8 km)
-  await page.evaluate(() => { setSwap(weekStart(localDay()), null); const wd = new Date().getDay(); profile.week.group = wd; profile.week.quality = (wd + 3) % 7; persistProfile(); renderAll(); showArea('start'); });
+  await page.evaluate(() => { setSwap(weekStart(localDay()), null); const wd = new Date().getDay(); profile.week.group = wd; profile.week.quality = (wd + 3) % 7; profile.week.long = (wd + 5) % 7; profile.week.strength = [(wd + 2) % 7]; persistProfile(); renderAll(); showArea('start'); });
   const card = page.locator('#startcontent .scard', { hasText: 'Heute dran' });
   await card.locator('[data-swapopen]').click();
   await expect(card.locator('[data-swap]')).toHaveText(['Intervall/Tempo', 'Testlauf 5 km', 'Kraft', 'Mobility', 'Ruhetag']);

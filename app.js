@@ -70,7 +70,7 @@ let stages = load(KEYS.stage, {}); if (!isObj(stages)) stages = {};
 // Wochentage wie Date.getDay(): 0 = Sonntag. Angezeigt wird Montag bis Sonntag.
 const WD = EN ? ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] : ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'], WD_LONG = EN ? ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] : ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'], WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0];
 // Neu eingerichtet: keine Kettlebell und keine Bänder – was du besitzt, trägst du im Profil ein
-const PROFILE_DEFAULT = { hr: { max: null, rest: null, z: null }, kit: { kb: [], kbDefault: KB_DEFAULT, db: [], dbDefault: DB_DEFAULT, bands: [] },
+const PROFILE_DEFAULT = { hr: { max: null, rest: null, z: null }, kit: { kb: [], kbDefault: KB_DEFAULT, db: [], dbDefault: DB_DEFAULT, bands: [], mini: false },
   week: { group: 3, quality: 2, long: 0, strength: [4, 6], extras: [] } };
 const HR_PCT = [0.5, 0.6, 0.7, 0.8, 0.9]; // Karvonen: Anteil der Herzfrequenzreserve, ab dem Zone 1–5 beginnt
 const isWd = v => Number.isInteger(v) && v >= 0 && v <= 6;
@@ -104,7 +104,7 @@ function normProfile(p) {
     yearKm: isObj(p.yearKm) ? Object.fromEntries(Object.entries(p.yearKm).filter(([y, v]) => /^\d{4}$/.test(y) && Number.isInteger(v) && v >= 50 && v <= 20000)) : {},
     hr: { max: okNum(hr.max, 100, 230) ? Math.round(hr.max) : null, rest: okNum(hr.rest, 30, 120) ? Math.round(hr.rest) : null, z: okZones(hr.z) ? hr.z.map(Math.round) : null },
     kit: { kb, kbDefault: kb.includes(kit.kbDefault) ? kit.kbDefault : kb.includes(KB_DEFAULT) ? KB_DEFAULT : (kb.length ? kb[0] : KB_DEFAULT),
-      db, dbDefault: db.includes(kit.dbDefault) ? kit.dbDefault : db.includes(DB_DEFAULT) ? DB_DEFAULT : (db.length ? db[0] : DB_DEFAULT), bands,
+      db, dbDefault: db.includes(kit.dbDefault) ? kit.dbDefault : db.includes(DB_DEFAULT) ? DB_DEFAULT : (db.length ? db[0] : DB_DEFAULT), bands, mini: kit.mini === true,
       // Urlaub von–bis: alle Pläne nur mit Körpergewicht vorgewählt (im Urlaub dazugeschaltete Geräte gelten nur für den Urlaub)
       vacation: isObj(kit.vacation) && isDay(kit.vacation.from) && isDay(kit.vacation.to) && kit.vacation.from <= kit.vacation.to
         ? { from: kit.vacation.from, to: kit.vacation.to, gear: isObj(kit.vacation.gear) ? { kb: kit.vacation.gear.kb === true, db: kit.vacation.gear.db === true, band: kit.vacation.gear.band === true, bw: kit.vacation.gear.bw !== false } : { kb: false, db: false, band: false, bw: true } } : null },
@@ -152,12 +152,15 @@ const slotKey = (pk, sl) => pk + '.' + sl.id;
 function validKg(v) { const n = Number(v); return v !== undefined && v !== null && v !== '' && Number.isFinite(n) && n >= 0 && n <= 60 ? n : KB_DEFAULT; }
 // Gewählte Geräte in der Rangfolge der Wirksamkeit; gibt es keine passende Variante, bleibt Körpergewicht (geht immer)
 // Nur Geräte, die im Profil eingetragen sind (Körpergewicht geht immer)
-const owns = g => g === 'bw' || (g === 'kb' ? profile.kit.kb.length > 0 : g === 'db' ? profile.kit.db.length > 0 : g === 'band' ? profile.kit.bands.length > 0 : false);
+const owns = g => g === 'bw' || (g === 'kb' ? profile.kit.kb.length > 0 : g === 'db' ? profile.kit.db.length > 0 : g === 'band' ? profile.kit.bands.length > 0 : g === 'mini' ? profile.kit.mini === true : false);
 // Reine Kettlebell-Pläne nur mit Kettlebell im Profil – und im Urlaub nur, wenn sie dort dazugeschaltet ist
 // Hotel nur im Urlaub; Kettlebell-Pläne nur mit Kettlebell (im Urlaub nur, wenn sie für den Urlaub dazugeschaltet ist)
-const planOwned = pk => PLANS[pk].vacationOnly ? !!vacation() : !PLANS[pk].kbOnly || (owns('kb') && (!vacation() || vacation().gear.kb));
+// Miniband-Plan nur mit Miniband im Profil (das kleine Band darf auch in den Urlaub)
+const planOwned = pk => PLANS[pk].vacationOnly ? !!vacation() : PLANS[pk].miniOnly ? owns('mini') : !PLANS[pk].kbOnly || (owns('kb') && (!vacation() || vacation().gear.kb));
+const miniLevel = () => { const c = choices['mini.cfg']; return isObj(c) && MINI_LEVELS.includes(c.level) ? c.level : 'Medium'; };
 function availableGears(sl, pk) {
   if (pk && PLANS[pk].kbOnly) return ['kb'];
+  if (pk && PLANS[pk].miniOnly) return ['bw'];
   const pg = planGear(pk || plan), act = ['kb', 'db', 'band', 'bw'].filter(g => pg[g] && owns(g)); if (!act.length) act.push('bw');
   return (sl.order || ['kb', 'db', 'band', 'bw']).filter(g => sl.v[g] && act.includes(g));
 }
@@ -170,25 +173,27 @@ function resolve(pk, sl) {
   if (!avail.length) avail.push(g);
   const [name, reps, baseNote] = sl.v[g];
   // Körpergewicht in drei Stufen (nicht bei Übungen mit eigenen Stufen); mittel = wie beschrieben
-  const lvls = g === 'bw' && !sl.stages && BW_LEVELS[name] ? BW_LEVELS[name] : null, lvl = lvls && ['leicht', 'schwer'].includes(c.lvl) ? c.lvl : 'mittel';
+  const mini = PLANS[pk].miniOnly ? miniLevel() : null;
+  const lvls = g === 'bw' && !sl.stages && !mini && BW_LEVELS[name] ? BW_LEVELS[name] : null, lvl = lvls && ['leicht', 'schwer'].includes(c.lvl) ? c.lvl : 'mittel';
   const note = lvls && lvl !== 'mittel' ? tr(lvls[lvl === 'leicht' ? 0 : 1]) : baseNote;
   // Gewicht je Übung: Kettlebell (kg) und Kurzhantel (dbkg, je Hantel) getrennt gespeichert
   const kk = g === 'db' ? 'dbkg' : 'kg', bo = bandOptions(), kg = c[kk] === undefined || c[kk] === null ? (g === 'db' ? profile.kit.dbDefault : profile.kit.kbDefault) : validKg(c[kk]);
   const band = bo.includes(String(c.band)) ? String(c.band) : bo.includes(sl.band || '20') ? (sl.band || '20') : bo[0];
-  const gearText = (g === 'kb' ? (kg > 0 ? `Kettlebell ${kgText(kg)} kg` : T('Kettlebell ohne Gewicht', 'Kettlebell without weight')) : g === 'db' ? dbText(kg, dbPair(name)) : g === 'band' ? bandLabel(band) : T('Körpergewicht', 'Body weight') + (lvls && lvl !== 'mittel' ? ' · ' + LVL_LABEL[lvl] : '')) + (fallback ? T(' (Ersatz)', ' (substitute)') : '');
-  const cfg = g === 'kb' || g === 'db' ? g + ':' + kg : g === 'band' ? 'band:' + band : 'bw' + (lvl !== 'mittel' ? ':' + lvl : '');
-  return { slot: sl, g, name, reps, note, kg, band, gearText, cfg, avail, auto, fallback, lvls, lvl };
+  const gearText = mini ? `Miniband ${mini}` : (g === 'kb' ? (kg > 0 ? `Kettlebell ${kgText(kg)} kg` : T('Kettlebell ohne Gewicht', 'Kettlebell without weight')) : g === 'db' ? dbText(kg, dbPair(name)) : g === 'band' ? bandLabel(band) : T('Körpergewicht', 'Body weight') + (lvls && lvl !== 'mittel' ? ' · ' + LVL_LABEL[lvl] : '')) + (fallback ? T(' (Ersatz)', ' (substitute)') : '');
+  const cfg = mini ? 'mini:' + mini : g === 'kb' || g === 'db' ? g + ':' + kg : g === 'band' ? 'band:' + band : 'bw' + (lvl !== 'mittel' ? ':' + lvl : '');
+  const hide = fallback && !sl.v.bw; // keine Variante mit den gewählten Geräten und keine ohne Gerät: ausblenden
+  return { slot: sl, g, name, reps, note, kg, band, gearText, cfg, avail, auto, fallback, lvls, lvl, hide };
 }
 function stageOf(pk, sl) { if (!sl.stages) return null; const s = stages[slotKey(pk, sl)]; return sl.stages.includes(s) ? s : sl.stages[0]; }
 /* Reihenfolge nach Position: erst alles im Stehen, dann Knien/Sitzen/Vierfüßler, zum Schluss liegend – nicht ständig hinlegen und aufstehen.
    Innerhalb einer Position bleibt die geplante Reihenfolge (Muskelgruppen wechseln weiter ab). Hängt von der gewählten Variante ab.
    Nicht im Sätze-Plan (Läufer): dort gelten Blöcke und „Zuletzt“ je Platz. */
-const POSE_KNEEL = ['Bird Dog', 'Brustwirbel-Rotation im Vierfüßlerstand', 'Clean & Press im halben Kniestand', 'Pullover im Kniestand', 'Übergabe im Grätschsitz', 'Wrestler-Halo'];
-const POSE_LIE = ['Clamshells', 'Clamshells mit Band', 'Dead Bug', 'Dead Bug mit Band', 'Dead Bug mit Kettlebell', 'Dead Bug mit Kurzhantel', 'Floor Press', 'Floor Press mit Kurzhanteln', 'Pullover mit Kurzhantel', 'Squeeze Press mit Kurzhanteln', 'Hüftheben', 'Hüftheben mit Band', 'Kettlebell-Pullover',
+const POSE_KNEEL = ['Fire Hydrant mit Miniband', 'Kickback mit Miniband', 'Bird Dog', 'Brustwirbel-Rotation im Vierfüßlerstand', 'Clean & Press im halben Kniestand', 'Pullover im Kniestand', 'Übergabe im Grätschsitz', 'Wrestler-Halo'];
+const POSE_LIE = ['Clamshells', 'Clamshells mit Band', 'Clamshells mit Miniband', 'Hüftheben mit Miniband', 'Dead Bug', 'Dead Bug mit Band', 'Dead Bug mit Kettlebell', 'Dead Bug mit Kurzhantel', 'Floor Press', 'Floor Press mit Kurzhanteln', 'Pullover mit Kurzhantel', 'Squeeze Press mit Kurzhanteln', 'Hüftheben', 'Hüftheben mit Band', 'Kettlebell-Pullover',
   'Schwimmer in Bauchlage', 'Seitstütz', 'Squeeze Press am Boden', 'Unterarmstütz', 'Y-T-W in Bauchlage'];
 const poseOf = name => POSE_LIE.includes(name) ? 2 : POSE_KNEEL.includes(name) ? 1 : 0;
 const exList = (pk = plan) => {
-  const l = PLANS[pk].slots.map(sl => resolve(pk, sl));
+  const l = PLANS[pk].slots.map(sl => resolve(pk, sl)).filter(x => !x.hide);
   return isSets(pk) ? l : l.map((x, i) => [x, i]).sort((a, b) => poseOf(a[0].name) - poseOf(b[0].name) || a[1] - b[1]).map(a => a[0]);
 };
 const isSets = (pk = plan) => PLANS[pk].mode === 'sets';
@@ -622,11 +627,12 @@ function planNeeds(pk = plan) {
   const bands = [...new Set(ex.filter(x => x.g === 'band').map(x => x.band))];
   const names = ex.map(x => x.name).concat((PLANS[pk].warmup || []).concat(PLANS[pk].cooldown || []).map(w => w[1]));
   const has = list => names.some(n => list.includes(n)), bulg = ex.some(x => x.slot.stages && /^Bulgarian/.test(stageOf(pk, x.slot) || ''));
-  return [kgs.length ? `Kettlebell ${kgs.map(k => kgText(k)).join(' + ')} kg` : '', dbs.length ? T('Kurzhanteln ', 'Dumbbells ') + dbNeed : '', bands.length ? bands.map(b => bandLabel(b)).join(', ') : '',
+  return [PLANS[pk].miniOnly ? `Miniband ${miniLevel()}` : '', kgs.length ? `Kettlebell ${kgs.map(k => kgText(k)).join(' + ')} kg` : '', dbs.length ? T('Kurzhanteln ', 'Dumbbells ') + dbNeed : '', bands.length ? bands.map(b => bandLabel(b)).join(', ') : '',
     has(PREP.mat) ? T('Matte', 'Mat') : '', has(PREP.support) || bulg ? T('Stuhl, Bank oder Sofa', 'Chair, bench or sofa') : '', has(PREP.towel) ? T('Handtuch', 'Towel') : ''].filter(Boolean);
 }
 const needsLine = () => { const n = planNeeds(); return n.length ? `<p class="needs"><b>${T('Du brauchst', 'You need')}:</b> ${esc(n.join(' · '))}</p>` : ''; };
 function renderGear() {
+  if (PLANS[plan].miniOnly) { const ml = miniLevel(); $('gearbar').innerHTML = `<span class="lbl">${T('Band-Stärke für alle Übungen', 'Band strength for all exercises')}</span>` + MINI_LEVELS.map(l => `<button class="chip" type="button" data-minilevel="${l}" aria-pressed="${l === ml}">${l}</button>`).join('') + needsLine(); return; }
   if (PLANS[plan].kbOnly) { $('gearbar').innerHTML = `<span class="lbl">${T(`${esc(PLANS[plan].tab)} ist fest mit Kettlebell – die Geräte-Auswahl gilt hier nicht.`, `${esc(tr(PLANS[plan].tab))} is kettlebell only – the equipment choice does not apply here.`)}</span>` + needsLine(); return; }
   const pg = planGear();
   const vac = vacation();
@@ -825,7 +831,7 @@ function renderSettings() {
   }).join('');
   const tbRows = isTabata() ? (() => { const c = tabataCfg(); return `<div class="srow"><div class="sname"><b>${T('Runden (Zirkel)', 'Rounds (circuit)')}</b><small>${T('alle Übungen hintereinander · Empfehlung: 3', 'all exercises in a row · recommended: 3')}</small></div><select data-tabata="rounds" aria-label="${T('Runden', 'Rounds')}">${TABATA_ROUNDS.map(v => `<option value="${v}" ${v === c.rounds ? 'selected' : ''}>${v} ${T('Runden', 'rounds')}</option>`).join('')}</select><span class="param">20″ / 10″</span></div><div class="srow"><div class="sname"><b>${T('Pause zwischen Runden', 'Rest between rounds')}</b><small>${T('Empfehlung: 60 Sek.', 'Recommended: 60 sec')}</small></div><select data-tabata="blockRest" aria-label="${T('Pause zwischen Runden', 'Rest between rounds')}">${TABATA_RESTS.map(v => `<option value="${v}" ${v === c.blockRest ? 'selected' : ''}>${v} ${T('Sek.', 'sec')}</option>`).join('')}</select><span class="param">${Math.round(phaseSecs('tabata', 1) / 60)} ${T('Min.', 'min')}</span></div>`; })() : '';
   const emRows = isEmomPlan() ? (() => { const c = emomCfg(), n = PLANS[pk].slots.length, d = emomDefault(pk); return `<div class="srow"><div class="sname"><b>${T('Runden', 'Rounds')}</b><small>${T(`Empfehlung zum Einstieg: ${d} (${d * n} Min.)`, `Recommended to start: ${d} (${d * n} min)`)}</small></div><select data-icfg="rounds" aria-label="${T('Runden', 'Rounds')}">${emomRounds(pk).map(v => `<option value="${v}" ${v === c.rounds ? 'selected' : ''}>${T(`${v} Runden · ${v * n} Min.`, `${v} rounds · ${v * n} min`)}</option>`).join('')}</select><span class="param">${T('1 Übung je Min.', '1 exercise per min')}</span></div>`; })() : '';
-  const info = PLANS[pk].kbOnly ? T('Dieser Plan ist fest auf Kettlebell – die Geräte-Auswahl gilt hier nicht. Das Gewicht stellst du je Übung ein.', 'This plan is kettlebell only – the equipment choice does not apply here. You set the weight per exercise.') : T('Die App wählt je Übung automatisch die wirksamste Variante aus den Geräten, die oben für diesen Plan gewählt sind; du kannst sie hier je Übung überschreiben.', 'For each exercise the app automatically picks the most effective variant for the equipment chosen above for this plan; you can override it here per exercise.');
+  const info = PLANS[pk].miniOnly ? T('Dieser Plan ist fest mit Miniband – die Band-Stärke wählst du oben für alle Übungen.', 'This plan is mini band only – choose the band strength above for all exercises.') : PLANS[pk].kbOnly ? T('Dieser Plan ist fest auf Kettlebell – die Geräte-Auswahl gilt hier nicht. Das Gewicht stellst du je Übung ein.', 'This plan is kettlebell only – the equipment choice does not apply here. You set the weight per exercise.') : T('Die App wählt je Übung automatisch die wirksamste Variante aus den Geräten, die oben für diesen Plan gewählt sind; du kannst sie hier je Übung überschreiben.', 'For each exercise the app automatically picks the most effective variant for the equipment chosen above for this plan; you can override it here per exercise.');
   $('settings').innerHTML = tbRows + emRows + `<p class="tiny">${T(`Gilt für „${esc(PLANS[pk].tab)}“.`, `Applies to “${esc(tr(PLANS[pk].tab))}”.`)} ${info} ${T('Einheiten mit anderen Varianten oder Gewichten zählen nicht in den Bestwert.', 'Sessions with other variants or weights do not count towards the best.')} ${T('Übungsnamen antippen für Anleitung, Skizze und Stufen.', 'Tap an exercise name for instructions, sketch and levels.')}</p>${rows}
   ${owns('kb') ? `<div class="srow"><div class="sname"><b>${T('Alle Kettlebell-Übungen', 'All kettlebell exercises')}</b><small>${T('dieses Plans auf ein Gewicht setzen', 'of this plan set to one weight')}</small></div>${kgParam('id="allkg"', profile.kit.kbDefault, T('Gewicht für alle Kettlebell-Übungen', 'Weight for all kettlebell exercises'))}<button class="btn small" type="button" id="allkgbtn">${T('Übernehmen', 'Apply')}</button></div>` : ''}
   ${owns('db') && !PLANS[pk].kbOnly && PLANS[pk].slots.some(sl => sl.v.db) ? `<div class="srow"><div class="sname"><b>${T('Alle Kurzhantel-Übungen', 'All dumbbell exercises')}</b><small>${T('dieses Plans auf ein Gewicht je Hantel setzen', 'of this plan set to one weight per dumbbell')}</small></div>${kgParam('id="alldbkg"', profile.kit.dbDefault, T('Gewicht für alle Kurzhantel-Übungen', 'Weight for all dumbbell exercises'), profile.kit.db)}<button class="btn small" type="button" id="alldbkgbtn">${T('Übernehmen', 'Apply')}</button></div>` : ''}
@@ -1036,7 +1042,8 @@ function renderProfile() {
     <p class="tiny">${T('Widerstandsbänder (Zugkraft)', 'Resistance bands (pull force)')}</p><div class="chips">${bandChips}</div>
     <div class="kitadd"><input type="text" inputmode="numeric" autocomplete="off" id="bandnew" placeholder="${T('Stärke in kg, z. B. 40', 'Strength in kg, e.g. 40')}" aria-label="${T('Band hinzufügen', 'Add band')}"><button type="button" class="btn small" id="bandadd">${T('Hinzufügen', 'Add')}</button></div>
     <p class="tiny">${T('In den Übungen stehen die Bänder einzeln und je zwei kombiniert zur Auswahl.', 'In the exercises the bands are available singly and combined in pairs.')}</p>
-    <p class="tiny">${T('Kraft bietet nur an, was hier eingetragen ist: ohne Kettlebell keine Kettlebell-Übungen und keine reinen Kettlebell-Pläne (AMRAP, Core, Finisher), ohne Kurzhanteln keine Hantel-Übungen, ohne Bänder keine Band-Übungen.', 'Strength only offers what is entered here: without a kettlebell no kettlebell exercises and no kettlebell-only plans (AMRAP, Core, Finisher), without dumbbells no dumbbell exercises, without bands no band exercises.')}</p>
+    <p class="tiny">${T('Miniband (kurze Gummischlaufe für Beine und Hüfte)', 'Mini band (short rubber loop for legs and hips)')}</p><div class="chips"><button type="button" class="chip" id="minitoggle" aria-pressed="${k.mini === true}">${k.mini ? T('Vorhanden', 'Have one') : T('Nicht vorhanden', 'None')}</button></div>
+    <p class="tiny">${T('Kraft bietet nur an, was hier eingetragen ist: ohne Kettlebell keine Kettlebell-Übungen und keine reinen Kettlebell-Pläne (AMRAP, Core, Finisher, Stand-Core), ohne Kurzhanteln keine Hantel-Übungen, ohne Bänder keine Band-Übungen, ohne Miniband kein Miniband-Plan.', 'Strength only offers what is entered here: without a kettlebell no kettlebell exercises and no kettlebell-only plans (AMRAP, Core, Finisher, Standing core), without dumbbells no dumbbell exercises, without bands no band exercises, without a mini band no mini band plan.')}</p>
     <p class="tiny" style="margin-top:14px"><b>${T('Urlaub', 'Holiday')}</b> – ${vacStatus()}</p>
     <div class="raceform" style="padding:0"><div class="field"><label for="vacfrom">${T('Von', 'From')}</label><input id="vacfrom" type="date" value="${k.vacation ? k.vacation.from : ''}"></div><div class="field"><label for="vacto">${T('Bis', 'Until')}</label><input id="vacto" type="date" value="${k.vacation ? k.vacation.to : ''}"></div>
       ${k.vacation ? `<div class="raceactions"><button type="button" class="btn small danger" id="vacclear">${T('Urlaub löschen', 'Delete holiday')}</button></div>` : ''}</div>
@@ -1084,6 +1091,7 @@ function onProfileClick(e) {
     if (!okNum(max, 100, 230) || !okNum(rest, 30, 120) || rest >= max) { toast(T('Bitte maximale HF (100–230) und Ruhe-HF (30–120) eingeben.', 'Please enter max HR (100–230) and resting HR (30–120).')); return; }
     profile.hr = { max, rest, z: hrZonesFrom(max, rest) }; profileChanged('hr'); toast(T('Zonen berechnet.', 'Zones calculated.')); return;
   }
+  if (t.id === 'minitoggle') { profile.kit.mini = !profile.kit.mini; profileChanged('kit'); toast(profile.kit.mini ? T('Miniband eingetragen.', 'Mini band added.') : T('Miniband entfernt.', 'Mini band removed.')); return; }
   if (t.id === 'kbadd' || t.id === 'dbadd') { // Kettlebell bzw. Kurzhantel (Gewicht je Hantel)
     const g = t.id.slice(0, 2), v = kmNum($(g + 'new').value);
     if (v === null || Number.isNaN(v) || v < 0.5 || v > 60) { toast(T('Bitte ein Gewicht zwischen 0,5 und 60 kg eingeben.', 'Please enter a weight between 0.5 and 60 kg.')); return; }
@@ -3530,6 +3538,11 @@ function renderAudioRows() {
 window.addEventListener('resize', () => fitTabs());
 $('tabs').addEventListener('click', e => { const b = e.target.closest('[data-plan]'); if (b) setPlan(b.dataset.plan); });
 $('gearbar').addEventListener('click', e => {
+  const ml = e.target.closest('[data-minilevel]');
+  if (ml) {
+    if (settingsLocked()) { alert(T('Bitte das laufende Training zuerst beenden oder zurücksetzen – sonst passt das Ergebnis nicht mehr zu den Übungen.', 'Please finish or reset the current workout first – otherwise the result no longer matches the exercises.')); return; }
+    choices['mini.cfg'] = { level: ml.dataset.minilevel }; store(KEYS.choice, choices); renderAll(); toast(T(`Band-Stärke: ${ml.dataset.minilevel}`, `Band strength: ${ml.dataset.minilevel}`)); return;
+  }
   const b = e.target.closest('[data-gear]'); if (!b) return;
   if (settingsLocked()) { alert(T('Bitte das laufende Training zuerst beenden oder zurücksetzen – sonst passt das Ergebnis nicht mehr zu den Übungen.', 'Please finish or reset the current workout first – otherwise the result no longer matches the exercises.')); return; }
   const k = b.dataset.gear, label = { kb: 'Kettlebell', db: T('Kurzhanteln', 'Dumbbells'), band: T('Bänder', 'Bands'), bw: T('Körpergewicht', 'Body weight') }[k];

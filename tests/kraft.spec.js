@@ -10,10 +10,10 @@ test('Geräte-Auswahl: ein Gerät → nur dieses Gerät, nichts gewählt → Kö
     const out = {};
     for (const g of ['kb', 'band', 'bw']) {
       gear = { kb: g === 'kb', band: g === 'band', bw: g === 'bw' };
-      out[g] = PLAN_ORDER.filter(pk => !PLANS[pk].kbOnly && !PLANS[pk].vacationOnly).flatMap(pk => exList(pk).map(x => x.g));
+      out[g] = PLAN_ORDER.filter(pk => !PLANS[pk].kbOnly && !PLANS[pk].miniOnly && !PLANS[pk].vacationOnly).flatMap(pk => exList(pk).map(x => x.g));
     }
     gear = { kb: false, band: false, bw: false }; ensureGear();
-    out.none = PLAN_ORDER.filter(pk => !PLANS[pk].kbOnly && !PLANS[pk].vacationOnly).flatMap(pk => exList(pk).map(x => x.g));
+    out.none = PLAN_ORDER.filter(pk => !PLANS[pk].kbOnly && !PLANS[pk].miniOnly && !PLANS[pk].vacationOnly).flatMap(pk => exList(pk).map(x => x.g));
     return out;
   });
   for (const g of ['kb', 'band', 'bw']) expect(new Set(result[g])).toEqual(new Set([g]));
@@ -431,4 +431,37 @@ test('Finisher: Rumpf im Grätschsitz als EMOM, 3 Runden = 12 Min., Runden 2–4
   expect(await page.evaluate(() => Math.round(phaseSecs('sitcore', 1) / 60))).toBe(8);
   // andere EMOM-Pläne behalten ihre Runden (Core: 4–6)
   expect(await page.evaluate(() => [emomCfg('core').rounds, emomRounds('core')])).toEqual([5, [4, 5, 6]]);
+});
+
+test('Miniband: Plan nur mit Miniband im Profil, Band-Stärke für alle Übungen, Reihenfolge Stehen → Vierfüßler → Liegen', async ({ page }) => {
+  await expect(page.locator('#tabs button', { hasText: 'Miniband' })).toHaveCount(0);
+  await page.evaluate(() => showArea('profil'));
+  await openSect(page, 'sect-kit');
+  await page.click('#minitoggle');
+  await expect(page.locator('#minitoggle')).toHaveAttribute('aria-pressed', 'true');
+  await page.evaluate(() => showArea('kraft'));
+  await page.locator('#tabs button', { hasText: 'Miniband' }).click();
+  const names = await page.evaluate(() => exList().map(x => x.name));
+  expect(names.slice(0, 5)).toEqual(['Seitliches Gehen mit Miniband', 'Monster Walk', 'Kniebeugen mit Miniband', 'Knieheben mit Miniband', 'Beinheben seitlich mit Miniband']);
+  expect(names.slice(5)).toEqual(['Fire Hydrant mit Miniband', 'Kickback mit Miniband', 'Hüftheben mit Miniband', 'Clamshells mit Miniband']);
+  expect(await page.evaluate(() => [...new Set(exList().map(x => x.gearText + '|' + x.cfg))])).toEqual(['Miniband Medium|mini:Medium']);
+  await expect(page.locator('#gearbar [data-minilevel]')).toHaveCount(5);
+  await expect(page.locator('#gearbar .needs')).toContainText('Miniband Medium');
+  await page.click('#gearbar [data-minilevel="Heavy"]');
+  expect(await page.evaluate(() => [...new Set(exList().map(x => x.cfg))])).toEqual(['mini:Heavy']);
+  await expect(page.locator('#gearbar [data-minilevel="Heavy"]')).toHaveAttribute('aria-pressed', 'true');
+  // bleibt nach dem Neuladen; Miniband wieder entfernen → Plan weg
+  await page.reload();
+  expect(await page.evaluate(() => [profile.kit.mini, miniLevel()])).toEqual([true, 'Heavy']);
+  await page.evaluate(() => { profile.kit.mini = false; persistProfile(); renderAll(); showArea('kraft'); });
+  await expect(page.locator('#tabs button', { hasText: 'Miniband' })).toHaveCount(0);
+});
+
+test('Geräte: Übungen ohne Variante für die gewählten Geräte (und ohne Körpergewicht) werden ausgeblendet', async ({ page }) => {
+  const r = await page.evaluate(() => {
+    PLANS.office.slots.push({ id: 'kbx', v: { kb: ['Kettlebell-Swing', '15', ''] } });
+    setPlanGear('office', { kb: false, db: false, band: false, bw: true }); setPlan('office'); const n = exList().map(x => x.name);
+    PLANS.office.slots.pop(); return n;
+  });
+  expect(r).not.toContain('Kettlebell-Swing');
 });
