@@ -419,7 +419,8 @@ const RUN_GUIDE = {
 const WFL = { head: 1800, every: 1800, kmh: [14, 15, 16, 17, 18, 22, 26, 30, 34] };
 const PACE_RACE = { cut: [480, 420, 390, 375, 360], step: 10, rest: 60, levels: 28 };
 
-/* Laufen → Plan: Vorbereitung auf A-Rennen. B-Rennen laufen im Plan mit, ohne eigenen Block.
+/* Laufen → Plan: Vorbereitung auf A-Rennen (und B-Rennen außerhalb eines A-Blocks). B-Rennen im A-Block und C-Rennen laufen im Plan mit,
+   ohne eigenen Block (im Code: B = prio 'M', C = prio 'B').
    phases: Wochen je Phase, die Rennwoche zählt zum Tapering. longPeak/weekPeak: Ziel-Longrun bzw. Wochen-km am Ende der
    spezifischen Phase für Hobbyläufer mit 3–4 Läufen pro Woche. taper/recover: Anteil der Spitzenwerte je Woche
    (long 0 = kein Longrun). Steigerung höchstens 10 % pro Woche, nach drei Aufbauwochen eine Entlastungswoche. */
@@ -486,12 +487,13 @@ const SEASON = {
     taper: 'kürzer und locker',
     recover: 'locker, höchstens 60–75 Min.'
   },
-  bRace: 'B-Rennen: 2–3 lockere Tage davor, das Rennen ersetzt die Qualitätseinheit (ab Halbmarathon auch den Longrun). Danach 2–4 Tage locker.',
+  bRace: 'C-Rennen (Trainingslauf): 2–3 lockere Tage davor, das Rennen ersetzt die Qualitätseinheit (ab Halbmarathon auch den Longrun). Danach 2–4 Tage locker.',
+  mRace: 'B-Rennen (Zwischenziel) im A-Block: In der Woche davor etwas weniger Umfang, das Rennen ersetzt die Qualität (ab Halbmarathon auch den Longrun) – voll laufen. Ab 15 km folgt eine lockere Woche ohne Qualität, dann geht es mit dem A-Plan weiter.',
   bInTaper: 'Fällt ins Tapering vor dem A-Rennen: nur locker mitlaufen, nicht auf Zeit.',
   bInRecover: 'Fällt in die Erholung nach dem A-Rennen: nur locker mitlaufen, nicht auf Zeit – zwei harte Rennen so kurz hintereinander kosten mehr, als sie bringen.',
   // Erholung nach dem A-Rennen (Faustregeln, je härter das Rennen, desto länger)
   recoverNote: { '5k': 'Nach 5 km: etwa 2–3 Tage aktive Erholung – gehen, locker radeln oder kurz und ruhig laufen.', '10k': 'Nach 10 km: etwa 4–6 Tage locker bewegen, danach den Umfang langsam wieder steigern.', hm: 'Nach dem Halbmarathon: etwa 10–14 Tage ausreichend Ruhe und nur leichtes Training, kein Tempo.', marathon: 'Nach dem Marathon: etwa 3–4 Wochen – Erholung zuerst, dann schrittweise zurück zu Umfang und Tempo.' },
-  intro: 'Trag deine A-Rennen mit Datum und Distanz ein – dafür baut der Plan je einen Block aus Grundlage, Aufbau, spezifischer Phase und Tapering. B-Rennen laufen ohne eigenen Block mit. Longrun und Wochen-km rechnet der Plan aus deinem Umfang: höchstens 10 % mehr pro Woche, jede 4. Woche Entlastung.',
+  intro: 'Trag deine Rennen mit Datum und Distanz ein: A = Hauptziel, B = Zwischenziel, C = Trainingslauf. Für jedes A-Rennen baut der Plan einen Block aus Grundlage, Aufbau, spezifischer Phase und Tapering; ein B-Rennen bekommt einen eigenen Block, wenn Platz ist, sonst läuft es im A-Block mit. C-Rennen laufen ohne eigenen Block mit. Longrun und Wochen-km rechnet der Plan aus deinem Umfang: höchstens 10 % mehr pro Woche, jede 4. Woche Entlastung.',
   note: 'Richtwerte für Hobbyläufer, kein Ersatz für Trainerin oder Arzt. Schmerzen, die am nächsten Tag noch da sind: Umfang halten statt steigern, bei anhaltenden Beschwerden abklären lassen.'
 };
 
@@ -507,7 +509,8 @@ const SEASON_GUIDE = [
     'Qualitätseinheit: In Basis, Grundlage und Aufbau Schwellen-Intervalle (kontrolliert hart, dazu kurze Steigerungen) – das bringt viel bei wenig Erholungsbedarf. Harte Intervalle im 5-km-Tempo erst in der spezifischen Phase kurz vor dem Rennen: bei 5 km die letzten 2, bei 10 km die letzten 3 Wochen vor dem Tapering. HM und Marathon üben dort Renntempo.',
     'Liegen zwei A-Rennen dicht beieinander, wird der zweite Block vorne gekürzt – zuerst die Grundlage. Wird er kürzer als die Mindestdauer (5/10 km 6 Wochen, HM 8, Marathon 12), bereitet der Plan beide zusammen vor: In den Wochen davor gilt jede zweite Qualitätseinheit schon dem späteren Rennen (⇄ im Saisonplan), Longrun und Wochen-km richten sich nach dem längeren Rennen. Sind beide von derselben Art (z. B. Halbmarathon und Wings for Life über 20 km), zählt die Vorbereitung einfach für beide.',
     'Es bleibt bei einer Qualitätseinheit pro Woche, und die Erholung nach dem ersten Rennen fällt nicht weg. Hat das frühere Rennen selbst nur einen gekürzten Block, bleibt der ihm – dann warnt der Plan, dass für das spätere kein Platz ist.',
-    'Zu dicht sind zwei A-Rennen, wenn das zweite in die Erholung nach dem ersten fällt oder das erste ins Tapering vor dem zweiten – etwa Halbmarathon und eine Woche später Marathon. Das zeigen Plan und Rennformular als Warnung: Eines davon als B-Rennen eintragen. Ein B-Rennen in der Erholung oder im Tapering läuft nur locker mit.',
+    'Zu dicht sind zwei A-Rennen, wenn das zweite in die Erholung nach dem ersten fällt oder das erste ins Tapering vor dem zweiten – etwa Halbmarathon und eine Woche später Marathon. Das zeigen Plan und Rennformular als Warnung: Eines davon als B-Rennen (Zwischenziel) eintragen. Ein B- oder C-Rennen in der Erholung oder im Tapering läuft nur locker mit.',
+    'A gewinnt immer: Ein B-Rennen (Zwischenziel) mitten in der Vorbereitung aufs A-Rennen bekommt keinen eigenen Block. In der Woche davor gibt es etwas weniger Umfang (Longrun ca. 75 %), das Rennen läufst du voll, ab 15 km folgt eine lockere Woche (keine Qualität, Longrun ca. 60 %). Liegt das B-Rennen außerhalb der A-Vorbereitung – etwa ein Halbmarathon im Frühjahr vor dem Herbstmarathon –, bekommt es einen eigenen Block wie ein A-Rennen.',
     'Nach jedem A-Rennen folgt Erholung (5/10 km 1 Woche, HM 2, Marathon 3), danach Basis bis zum nächsten Block.',
     'Longrun und Wochen-km wachsen höchstens 10 % pro Woche, ausgehend von deinem Umfang. Nach drei Aufbauwochen folgt eine Entlastungswoche.',
     'Ziel-Longrun und Wochenspitze richten sich nach der Zielzeit: Marathon unter 3:30 → 32 km und 70 km/Woche, unter 4:00 → 32 und 62, unter 4:45 → 30 und 55, sonst 28 und 45. Halbmarathon unter 1:40 → 22 und 60, unter 1:55 → 21 und 52, unter 2:15 → 20 und 45, sonst 18 und 35. 10 km unter 42 Min. → 18 und 50, unter 50 → 16 und 40, unter 60 → 14 und 32, sonst 12 und 25. 5 km unter 21 Min. → 15 und 45, unter 25 → 14 und 35, unter 30 → 12 und 28, sonst 10 und 20.',
@@ -523,7 +526,7 @@ const SEASON_GUIDE = [
     'Eigene Distanz (z. B. 20 km): Für Plan und Trainingsstufe zählt die nächstliegende Kategorie (bis 7,5 km → 5 km, bis 15 km → 10 km, bis 30 km → Halbmarathon, darüber Marathon). Die Zielzeit wird dafür per Riegel auf diese Distanz umgerechnet; Pace und Zwischenzeiten rechnet die App mit den echten km.',
     'Renntempo in den Einheiten („im HM-Tempo“) kommt aus deiner aktuellen Form, nicht aus der Zielzeit – nur solange noch kein Ergebnis eingetragen ist, aus der Zielzeit.',
     'Trainingstempos (Plan → Übersicht): Grundlage ist dein neuestes Ergebnis, solange es höchstens 3 % langsamer ist als dein bestes der letzten 12 Monate (sonst das beste), per Riegel auf 10 km umgerechnet. Locker = 10-km-Pace + 60–90 s/km, Schwelle = Renntempo für 15 km bis Halbmarathon (etwa eine Stunde haltbar), Intervall ≈ 5-km-Renntempo, Marathontempo per Riegel. Beispiel 10 km in 50:00: locker 6:00–6:30, Schwelle 5:05–5:15, Intervall 4:48, Marathon 5:27 /km.',
-    'Fortschritt kommt über Testläufe: Ist dein letztes Ergebnis oder Rennen 8 Wochen her, macht der Plan in der nächsten passenden Woche (Basis, Grundlage oder Aufbau) die Qualitätseinheit zum 5-km-Testlauf. Ergebnis unter Bestzeiten eintragen – B-Rennen zählen genauso.',
+    'Fortschritt kommt über Testläufe: Ist dein letztes Ergebnis oder Rennen 8 Wochen her, macht der Plan in der nächsten passenden Woche (Basis, Grundlage oder Aufbau) die Qualitätseinheit zum 5-km-Testlauf. Ergebnis unter Bestzeiten eintragen – B- und C-Rennen zählen genauso.',
     'Einen Testlauf gibt es erst, wenn 5 km machbar sind: in der laufenden Woche, wenn dein längster Lauf der letzten 30 Tage mindestens 5 km war, später, wenn der geplante Longrun der Woche so lang ist. Im Lauf-Einstieg nie.',
     'Die Tempos sind Richtwerte. Bei Hitze, Wind, Hügeln oder müden Beinen gilt das Gefühl bzw. die Herzfrequenz-Zone, nicht die Uhr.',
     'Herzfrequenz-Zonen (Karvonen): Ruhe-HF + Anteil × (max. HF − Ruhe-HF), Zone 1 ab 50 %, Zone 2 ab 60 %, Zone 3 ab 70 %, Zone 4 ab 80 %, Zone 5 ab 90 %. Beispiel: max. 184, Ruhe 60 → Zone 2 ab 60 + 0,6 × 124 = 134 bpm.'
@@ -890,6 +893,7 @@ const CHANGELOG = [
   { id: '2026-11-15', date: '2026-11-15', version: '1.4', title: 'Miniband', items: [
     ['Miniband', 'Neuer Kraft-Plan „Miniband · Beine fürs Laufen“ für die kurzen Gummibänder: Seitliches Gehen, Monster Walk, Kniebeugen, Knieheben, Beinheben seitlich, Fire Hydrant, Kickback, Hüftheben und Clamshells – Gesäß und Hüfte, die beim Laufen Becken und Knie stabil halten. Die Band-Stärke (Light bis XX-Heavy) wählst du einmal für den Plan. Erscheint, sobald du unter Profil → Geräte ein Miniband einträgst.', 'neu'],
     ['Hüfte aktivieren', 'Unter Mobility → Läufer gibt es dazu ein 6-Minuten-Programm mit Miniband – gut vor dem Laufen.', 'neu'],
+    ['A-, B- und C-Rennen', 'Rennen haben jetzt drei Stufen: A = Hauptziel (gewinnt immer), B = Zwischenziel, C = Trainingslauf – dein bisheriges „B“ heißt jetzt „C“. Ein B-Rennen bekommt einen eigenen Block, wenn genug Abstand zum A-Rennen ist (etwa der Halbmarathon im Frühjahr vor dem Herbstmarathon). Liegt es mitten in der A-Vorbereitung, läuft es dort mit: Woche davor etwas weniger, Rennen voll laufen, ab 15 km danach eine lockere Woche. „Rennbereit?“ prüft jetzt A- und B-Rennen.', 'neu'],
     ['Finisher mit Plank', 'Der Finisher endet jetzt mit einem richtigen Plank (Unterarmstütz, 40 Sek., ohne Kugel). 3 Runden = 15 Minuten; ältere Finisher-Einheiten erscheinen im Verlauf als „anderer Aufbau“.', 'neu'],
     ['Nur, was zu deinen Geräten passt', 'Gibt es eine Übung mit den gewählten Geräten nicht und auch nicht ohne Gerät, wird sie ausgeblendet statt durch eine andere ersetzt.', 'neu']
   ] },
@@ -957,7 +961,7 @@ const CHANGELOG = [
     ['Lauf-Einstieg', 'Neu beim Laufen? Im Profil unter Trainingswoche das Laufniveau „Einsteiger“ wählen (oder die Frage in Plan → Übersicht beantworten): 9 Wochen mit je 3 Einheiten aus Laufen und Gehen bis zu 30 Minuten am Stück – geführt mit Ansagen, ohne Testlauf und ohne Tempovorgaben. Nach drei Einheiten weiter oder die Woche wiederholen.'],
     ['Laufen', 'Plan → Übersicht zeigt deine Tempos für locker, Schwelle, Intervall und Marathon – aus deiner aktuellen Form: dem neuesten Ergebnis, solange es höchstens 3 % langsamer ist als das beste der letzten 12 Monate. Die Wochenplanung schreibt sie zu den passenden Einheiten.'],
     ['Renntempo', 'Auch das Renntempo in den Einheiten kommt aus deiner Form statt aus der Zielzeit.'],
-    ['Testlauf', 'Alle 8 Wochen ohne Ergebnis oder Rennen plant der Plan einen 5-km-Testlauf statt der Qualitätseinheit ein – aber erst, wenn 5 km machbar sind (längster Lauf der letzten 30 Tage bzw. geplanter Longrun mindestens 5 km). Ergebnis unter Bestzeiten eintragen – B-Rennen zählen genauso.'],
+    ['Testlauf', 'Alle 8 Wochen ohne Ergebnis oder Rennen plant der Plan einen 5-km-Testlauf statt der Qualitätseinheit ein – aber erst, wenn 5 km machbar sind (längster Lauf der letzten 30 Tage bzw. geplanter Longrun mindestens 5 km). Ergebnis unter Bestzeiten eintragen – B- und C-Rennen zählen genauso.'],
     ['Abhaken', 'Optional unter Profil → Trainingswoche: Einheiten im Plan abhaken und Verpasstes mit einem Tipp auf den nächsten passenden Tag derselben Woche legen. Gilt nur für die laufende Woche.'],
     ['Kraft & Laufen', 'Kraft und Laufen dürfen am selben Tag liegen: Ein nachgeholter Lauf rückt auch auf einen Krafttag, die Kraft bleibt – mit dem Hinweis, sie nach dem Lauf zu machen (nach Qualität oder Longrun ohne schwere Beinübungen). Verpasste Kraft lässt sich auch zu einem lockeren Lauf legen. An festen Krafttagen (im Profil wählbar) kommt kein Lauf dazu.'],
     ['Kalender', 'Der Plan-Export kann jetzt eine Erinnerung am Trainingstag mitbringen (Uhrzeit wählbar, Standard aus) – der Kalender meldet sich, auch wenn die App zu ist.'],

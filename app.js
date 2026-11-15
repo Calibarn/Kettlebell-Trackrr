@@ -1373,7 +1373,7 @@ function addRunFromForm() {
 
 /* ---------- Laufen → Plan: Rennen und Saisonplan ---------- */
 const validRace = e => isObj(e) && typeof e.id === 'string' && typeof e.name === 'string' && e.name.length <= 60 && isDay(e.date)
-  && Object.prototype.hasOwnProperty.call(SEASON.dist, e.dist) && (e.prio === 'A' || e.prio === 'B')
+  && Object.prototype.hasOwnProperty.call(SEASON.dist, e.dist) && ['A', 'M', 'B'].includes(e.prio)
   && (e.goal === null || e.goal === undefined || (Number.isInteger(e.goal) && e.goal >= 60 && e.goal <= 86400))
   && (e.km === null || e.km === undefined || okNum(e.km, 1, 100))
   && (e.fmt === undefined || (e.fmt === 'wfl' && okNum(e.km, 1, 100)) || (e.fmt === 'pace' && Number.isInteger(e.km) && e.km >= 1 && e.km <= PACE_RACE.levels))
@@ -1404,7 +1404,10 @@ const raceLabel = r => r.fmt === 'wfl' ? T(`Wings for Life, Ziel ${kmText(r.km)}
 const planKey = r => r.fmt === 'pace' ? 'pace' : r.dist;
 const racesLoaded = loadList(KEYS.races, validRace);
 let races = racesLoaded.ok; const racesKeep = racesLoaded.keep;
-const sortRaces = () => races.sort((a, b) => a.date.localeCompare(b.date) || a.prio.localeCompare(b.prio));
+/* Prioritäten: A = Hauptziel (gewinnt immer), B = Zwischenziel, C = Trainingslauf. Gespeichert wird B als 'M' und C als 'B' –
+   so behalten ältere Einträge, Backups und Sync-Dateien ihre Bedeutung (früher gab es nur A und B = Trainingslauf). */
+const PRIO_SHOW = { A: 'A', M: 'B', B: 'C' }, prioText = p => PRIO_SHOW[p] || p, PRIO_RANK = { A: 0, M: 1, B: 2 };
+const sortRaces = () => races.sort((a, b) => a.date.localeCompare(b.date) || (PRIO_RANK[a.prio] ?? 9) - (PRIO_RANK[b.prio] ?? 9));
 function persistRaces() { sortRaces(); if (!store(KEYS.races, races.concat(racesKeep))) toast(T('Speichern im Browser nicht möglich – bitte Backup exportieren.', 'Saving in the browser failed – please export a backup.')); renderBackupBanner(); }
 sortRaces();
 // Zeit in drei Feldern (Std/Min/Sek): auf dem iPhone reicht der Ziffernblock, der hat keinen Doppelpunkt
@@ -1436,11 +1439,23 @@ function peaks(r) {
 }
 const weeksBetween = (a, b) => Math.round((new Date(b + 'T12:00:00') - new Date(a + 'T12:00:00')) / 6048e5);
 
-// Saisonplan ab der laufenden Woche bis zum letzten A-Rennen.
+// A gewinnt: Ein B-Rennen (gespeichert 'M') läuft im Block eines A-Rennens mit, wenn es selbst oder seine Erholung in dessen
+// Vorbereitung, Tapering oder Erholung fällt – sonst bekommt es einen eigenen Block wie ein A-Rennen.
+function inABlock(m) {
+  const dm = SEASON.dist[m.dist]; if (!dm) return false;
+  const mw = weekStart(m.date), mEnd = addDays(mw, 7 * dm.recover.length);
+  return races.some(a => {
+    const d = a.prio === 'A' && SEASON.dist[a.dist]; if (!d) return false;
+    const aw = weekStart(a.date), ph = d.phases, from = addDays(aw, -7 * (ph.base + ph.build + ph.spec + ph.taper - 1)), to = addDays(aw, 7 * d.recover.length);
+    return mEnd >= from && mw <= to;
+  });
+}
+const planTargets = () => races.filter(r => SEASON.dist[r.dist] && (r.prio === 'A' || (r.prio === 'M' && !inABlock(r))));
+// Saisonplan ab der laufenden Woche bis zum letzten A-Rennen (bzw. B-Rennen mit eigenem Block).
 // start/L0/W0 nur für Tests überschreibbar; sonst aus Umfang: längster Lauf der 30 Tage und Schnitt der 4 Wochen.
 function seasonPlan(today = localDay(), opt = {}) {
   const start = weekStart(today), D = k => SEASON.dist[k];
-  const A = races.filter(r => r.prio === 'A');
+  const A = planTargets();
   const prev = A.filter(r => weekStart(r.date) < start).at(-1) || null, next = A.filter(r => weekStart(r.date) >= start);
   const warn = [], note = [], mix = [];
   if (!next.length) return { weeks: [], warn, note, races: next };
@@ -1489,7 +1504,7 @@ function seasonPlan(today = localDay(), opt = {}) {
     else if (n) note.push(T(`${r.name} kommt ${gap} Wochen nach ${last.name}: Der Plan bereitet beide zusammen vor. Vorher gilt jede zweite Qualitätseinheit schon ${r.name} (${n} × ⇄ im Saisonplan), Longrun und Wochen-km richten sich nach dem längeren Rennen. Nach der Erholung bleiben ${wk(avail)} gezielt für ${r.name}.`, `${r.name} comes ${gap} weeks after ${last.name}: the plan prepares both together. Before that every second quality session is already for ${r.name} (${n} × ⇄ in the season plan), long run and weekly km follow the longer race. After recovery ${wk(avail)} remain targeted at ${r.name}.`));
     else warn.push(T(`${r.name} kommt ${gap} Wochen nach ${last.name}: Nach der Erholung bleiben nur ${wk(avail)} für ${r.name}, davor ist kein Platz für eigene Einheiten. Besser eines der Rennen als B-Rennen eintragen – dann bekommt das andere einen richtigen Block.`, `${r.name} comes ${gap} weeks after ${last.name}: after recovery only ${wk(avail)} remain for ${r.name}, before that there is no room for its own sessions. Better enter one of the races as a B race – then the other gets a proper block.`));
   }
-  for (const r of races.filter(x => x.prio === 'B')) { const i = idx(weekStart(r.date)); if (i >= 0 && i < n) weeks[i].b.push(r); }
+  for (const r of races.filter(x => x.prio === 'B' || (x.prio === 'M' && inABlock(x)))) { const i = idx(weekStart(r.date)); if (i >= 0 && i < n) weeks[i].b.push(r); }
 
   // Vorwärts: Longrun (L) und Wochen-km (W) mit höchstens +10 % pro Woche und Entlastung nach drei Aufbauwochen
   const R = longestIn(today), Ld = loadFor(start);
@@ -1528,6 +1543,16 @@ function seasonPlan(today = localDay(), opt = {}) {
       warn.push(T(`${b.name} (${raceLabel(b)}): deutlich länger als dein Longrun zu der Zeit (ca. ${Math.round(planned)} km). Locker laufen, nicht auf Zeit – und die Longruns davor möglichst heranführen.`, `${b.name} (${raceLabel(b)}): clearly longer than your long run at that time (about ${Math.round(planned)} km). Run it easy, not for time – and build the long runs up to it if possible.`));
     }
   }
+  // B-Rennen im A-Block: Woche davor etwas weniger (Longrun ca. 75 %, Wochen-km ca. 85 %), ab 15 km danach eine lockere Woche
+  // (keine Qualität, Longrun ca. 60 %, Wochen-km ca. 70 %). Im Tapering oder in der Erholung des A-Rennens nur locker mit.
+  const free = y => y && !y.a && !y.b.length && ['basis', 'base', 'build', 'spec'].includes(y.phase);
+  weeks.forEach((x, i) => {
+    const m = x.b.find(b => b.prio === 'M'); if (!m || x.a || x.bSpike || ['taper', 'recover'].includes(x.phase)) return;
+    x.mRace = m;
+    const pre = weeks[i - 1], post = weeks[i + 1];
+    if (free(pre)) { pre.mPre = m; if (pre.long) pre.long *= 0.75; if (pre.km) pre.km *= 0.85; }
+    if (free(post) && raceKm(m) >= 15) { post.mPost = m; if (post.long) post.long *= 0.6; if (post.km) post.km *= 0.7; }
+  });
   // Machbarkeit: erreicht der Longrun vor dem Tapering das Ziel?
   for (const r of next) {
     const pk = peaks(r), i0 = weeks.findIndex(x => x.target === r && x.phase === 'taper');
@@ -1666,7 +1691,9 @@ function weekLongNote(x) {
   if (x.a) return T('kein Longrun – Rennwoche', 'no long run – race week');
   if (x.bLong) return T(`${x.bRace.name} ersetzt den Longrun`, `${x.bRace.name} replaces the long run`);
   if (x.noLong) return T('kein Longrun', 'no long run');
-  const t = SEASON.long[x.phase]; return hrize(withPace(typeof t === 'string' ? t : t[planKey(x.target)] || t[x.target.dist], x.target)) + easyPace();
+  if (x.mPost) return hrize(T(`kürzer und locker – Erholung nach ${x.mPost.name}`, `shorter and easy – recovery after ${x.mPost.name}`)) + easyPace();
+  const t = SEASON.long[x.phase];
+  if (x.mPre) return T(`etwas kürzer – nächste Woche ${x.mPre.name}. `, `a little shorter – ${x.mPre.name} next week. `) + hrize(withPace(typeof t === 'string' ? t : t[planKey(x.target)] || t[x.target.dist], x.target)) + easyPace(); return hrize(withPace(typeof t === 'string' ? t : t[planKey(x.target)] || t[x.target.dist], x.target)) + easyPace();
 }
 // Fester Kraft-Plan eines Wochentags (nur, wenn die Geräte dafür eingetragen sind), sonst null
 // Im Urlaub ist jeder Krafttag ein Hotel-Tag (auch ein Kurs-Tag); „Gym/Kurs“ hat keinen App-Plan
@@ -1683,6 +1710,7 @@ const dayIdx = d => WEEK_ORDER.indexOf(d);
 function bRole(x) {
   const b = x.bRace, a = x.target;
   if (x.bSpike || x.phase === 'recover' || x.phase === 'taper') return T(' · locker, nicht auf Zeit', ' · easy, not for time');
+  if (b.prio === 'M') return x.bLong ? T(' · Zwischenziel – ersetzt Qualität und Longrun, voll laufen', ' · intermediate goal – replaces quality session and long run, race it') : T(' · Zwischenziel – ersetzt die Qualität, voll laufen', ' · intermediate goal – replaces the quality session, race it');
   const bk = raceKm(b), ak = a ? raceKm(a) : null, an = a ? a.name : '';
   if (b.fmt === 'pace') return T(' · ersetzt die Qualität – zählt wie eine Intervalleinheit', ' · replaces the quality session – counts like an interval session');
   const CAT = ['5k', '10k', 'hm', 'marathon'], cb = CAT.indexOf(distForKm(bk)), short = ak && cb <= 1 && cb < CAT.indexOf(distForKm(ak)); // 5/10 km vor einem längeren A-Rennen
@@ -1696,10 +1724,10 @@ function weekSchedule(x) {
   const add = (d, kind, title, detail, extra = {}) => out.push(Object.assign({ d, kind, title, detail, plan: kind === 'strength' ? dayPlan(d) : null }, extra));
   const before = (d, gap = 1) => dayIdx(d) <= rd - gap;
   if (x.a) add(new Date(x.a.date + 'T12:00:00').getDay(), 'race', T(`Rennen: ${x.a.name}`, `Race: ${x.a.name}`), raceLabel(x.a) + goalLine(x.a));
-  if (x.bRace) add(new Date(x.bRace.date + 'T12:00:00').getDay(), 'brace', T(`B-Rennen: ${x.bRace.name}`, `B race: ${x.bRace.name}`), raceLabel(x.bRace) + goalLine(x.bRace) + bRole(x));
+  if (x.bRace) add(new Date(x.bRace.date + 'T12:00:00').getDay(), 'brace', T(`${prioText(x.bRace.prio)}-Rennen: ${x.bRace.name}`, `${prioText(x.bRace.prio)} race: ${x.bRace.name}`), raceLabel(x.bRace) + goalLine(x.bRace) + bRole(x));
   const hg = w.quality !== null && x.phase !== 'recover' ? hardGymBefore(w.quality, x.week) : null;
   if (hg && (!x.a || before(w.quality, 2)) && !x.bRace) add(w.quality, 'quality', T('Locker laufen', 'Easy run'), hrize(T(`locker, Zone 2 – gestern ${hg} (hart), daher heute keine Qualität`, `easy, Zone 2 – ${hg} yesterday (hard), so no quality today`)) + easyPace(), { easy: true, afterHard: hg });
-  else if (w.quality !== null && (!x.a || before(w.quality, 2)) && !x.bRace) add(w.quality, 'quality', x.phase === 'recover' ? T('Locker laufen', 'Easy run') : x.test ? T('Testlauf 5 km', 'Time trial 5 km') : T('Qualität', 'Quality'), x.test ? T('nach 15 Min. Einlaufen 5 km so schnell, wie du gleichmäßig durchhalten kannst – danach unter Bestzeiten eintragen, dann passen die Tempos', 'after a 15 min warm-up run 5 km as fast as you can hold evenly – then enter it under Best times so the paces update') : weekKey(x), { easy: x.phase === 'recover', test: !!x.test && x.phase !== 'recover' });
+  else if (w.quality !== null && (!x.a || before(w.quality, 2)) && !x.bRace) add(w.quality, 'quality', x.phase === 'recover' || x.mPost ? T('Locker laufen', 'Easy run') : x.test ? T('Testlauf 5 km', 'Time trial 5 km') : T('Qualität', 'Quality'), x.mPost ? hrize(T(`locker, Zone 2 – Erholung nach ${x.mPost.name}`, `easy, Zone 2 – recovery after ${x.mPost.name}`)) + easyPace() : x.test ? T('nach 15 Min. Einlaufen 5 km so schnell, wie du gleichmäßig durchhalten kannst – danach unter Bestzeiten eintragen, dann passen die Tempos', 'after a 15 min warm-up run 5 km as fast as you can hold evenly – then enter it under Best times so the paces update') : weekKey(x) + (x.mPre ? T(` · etwas kürzer, nächste Woche ${x.mPre.name}`, ` · a little shorter, ${x.mPre.name} next week`) : ''), { easy: x.phase === 'recover' || !!x.mPost, test: !!x.test && x.phase !== 'recover' && !x.mPost });
   if (w.group !== null && (!x.a || before(w.group))) add(w.group, 'group', T('Laufgruppe', 'Running group'), hrize(x.a ? T('ganz locker, Zone 2', 'very easy, Zone 2') : T('locker, Zone 2', 'easy, Zone 2')) + easyPace());
   if (!x.a && !x.bLong && w.long !== null) {
     const sug = kmRound(x.long), own = x.noLong ? null : longSet[x.week] || null, lv = own || sug;
@@ -1712,7 +1740,7 @@ function weekSchedule(x) {
     if (x.a && !before(e.d, e.type === 'quality' ? 2 : 1)) return;
     if (e.type === 'easy') add(e.d, 'easy', extraTitle(e), hrize(T('locker, Zone 2', 'easy, Zone 2')) + easyPace(), { key });
     else if (e.type === 'recovery') add(e.d, 'easy', extraTitle(e), recoveryDetail(), { key, recovery: true });
-    else if (e.type === 'quality') { const hq = hardGymBefore(e.d, x.week); if (['recover', 'taper'].includes(x.phase) || x.bRace || x.test || hq) add(e.d, 'quality2', e.name || T('Lockerer Lauf', 'Easy run'), hrize(hq ? T(`locker statt Tempo, Zone 2 – gestern ${hq} (hart)`, `easy instead of speed, Zone 2 – ${hq} yesterday (hard)`) : T('locker statt Tempo, Zone 2', 'easy instead of speed, Zone 2')) + easyPace(), { key, easy: true }); else add(e.d, 'quality2', e.name || T('Qualität 2', 'Quality 2'), weekKey(x, true), { key }); }
+    else if (e.type === 'quality') { const hq = hardGymBefore(e.d, x.week); if (['recover', 'taper'].includes(x.phase) || x.bRace || x.mPost || x.test || hq) add(e.d, 'quality2', e.name || T('Lockerer Lauf', 'Easy run'), hrize(hq ? T(`locker statt Tempo, Zone 2 – gestern ${hq} (hart)`, `easy instead of speed, Zone 2 – ${hq} yesterday (hard)`) : T('locker statt Tempo, Zone 2', 'easy instead of speed, Zone 2')) + easyPace(), { key, easy: true }); else add(e.d, 'quality2', e.name || T('Qualität 2', 'Quality 2'), weekKey(x, true), { key }); }
     else add(e.d, 'extra', extraTitle(e), '', { key });
   });
   const skip = weekSkip[x.week] || [], wp = curWeekPlan(x.week);
@@ -1881,7 +1909,7 @@ function renderPlanWeek(S) {
   const kmVal = kmRound(x.km);
   // Rennwoche und Erholungswochen: wie lange die Erholung nach dieser Distanz etwa dauert
   const rec = x.a || (x.phase === 'recover' ? x.target : null), recNote = rec && SEASON.recoverNote[rec.dist] ? `<div class="alert">${esc(SEASON.recoverNote[rec.dist])}</div>` : '';
-  const bs = x.b.map(b => `<div class="alert"><b>${esc(b.name)}</b> (${esc(raceLabel(b))}, ${dayLabel(b.date)}): ${esc(x.phase === 'taper' ? SEASON.bInTaper : x.phase === 'recover' ? SEASON.bInRecover : SEASON.bRace)}</div>`).join('');
+  const bs = x.b.map(b => `<div class="alert"><b>${esc(b.name)}</b> (${esc(raceLabel(b))}, ${dayLabel(b.date)}): ${esc(x.phase === 'taper' ? SEASON.bInTaper : x.phase === 'recover' ? SEASON.bInRecover : b.prio === 'M' ? SEASON.mRace : SEASON.bRace)}</div>`).join('');
   return `<div class="header">${T('Diese Woche · KW ', 'This week · wk ')}${isoWeek(x.week)}</div><div class="group"><div class="panel" style="border:0;padding-top:12px" id="planweek">
     <div class="phasebadge ph-${phaseKey(x)}">${esc(pl)}</div>
     <p class="loadstatus">${wk === 0 ? T(`Rennwoche: <b>${esc(nxt.name)}</b> am ${dayLabel(nxt.date)}`, `Race week: <b>${esc(nxt.name)}</b> on ${dayLabel(nxt.date)}`) : T(`Noch ${wk} ${wk === 1 ? 'Woche' : 'Wochen'} bis <b>${esc(nxt.name)}</b> (${esc(raceLabel(nxt))}, ${dateGerman(nxt.date)})`, `${wk} ${wk === 1 ? 'week' : 'weeks'} to <b>${esc(nxt.name)}</b> (${esc(raceLabel(nxt))}, ${dateGerman(nxt.date)})`)}${esc(goalLine(nxt))}</p>
@@ -1902,7 +1930,7 @@ function renderPlanWeek(S) {
 function renderPlanSeason(S) {
   const SHOW = 8, row = (x, i) => {
     const [pl] = SEASON.phase[phaseKey(x)], lv = kmRound(x.long), kv = kmRound(x.km);
-    const marks = (x.a ? [`🏁 ${esc(x.a.name)} · A`] : []).concat(x.b.map(b => `${esc(b.name)} · B`), x.test ? [`⏱ ${T('Testlauf', 'Time trial')}`] : [], mixFor(x) ? [`⇄ ${esc(x.with.name)}`] : []).join(' · ');
+    const marks = (x.a ? [`🏁 ${esc(x.a.name)} · A`] : []).concat(x.b.map(b => `${esc(b.name)} · ${prioText(b.prio)}`), x.test ? [`⏱ ${T('Testlauf', 'Time trial')}`] : [], mixFor(x) ? [`⇄ ${esc(x.with.name)}`] : []).join(' · ');
     const nums = [x.a ? T('Rennen', 'Race') : x.bLong ? T(`Rennen ${raceLabel(x.bRace)} statt Longrun`, `race ${raceLabel(x.bRace)} instead of long run`) : x.noLong ? T('kein Longrun', 'no long run') : lv === null || lv === undefined ? '' : T(`Longrun ${lv} km`, `long run ${lv} km`), kv === null || kv === undefined ? '' : T(`Woche ${kv} km`, `week ${kv} km`)].filter(Boolean).join(' · ');
     return `<div class="row planweek${i === 0 ? ' now' : ''}${x.a ? ' race' : ''}"><span class="dur">${T('KW', 'Wk')} ${isoWeek(x.week)}<small>${dateShort(x.week)}</small></span><span class="txt"><b><span class="phasedot ph-${phaseKey(x)}"></span>${esc(pl)}${marks ? ` · ${marks}` : ''}</b>${nums ? `<small>${nums}</small>` : ''}</span></div>`;
   };
@@ -1939,8 +1967,8 @@ function raceClashText(c, k) {
     : k.kind === 'after' ? T(`${on} fällt in die Erholung danach, die dauert etwa ${wk(k.n)}.`, `${on} falls into the recovery afterwards, which takes about ${wk(k.n)}.`)
     : k.kind === 'before' ? T(`Es fällt ins Tapering vor ${on} (${wk(k.n)}).`, `It falls into the taper before ${on} (${wk(k.n)}).`)
     : T(`${on} fällt ins Tapering davor (${wk(k.n)}).`, `${on} falls into the taper before it (${wk(k.n)}).`);
-  return c.prio === 'A' ? T(`Zu dicht für zwei A-Rennen: ${why} Eines davon besser als B-Rennen eintragen.`, `Too close for two A races: ${why} Better enter one of them as a B race.`)
-    : T(`${why} Als B-Rennen nur locker mitlaufen, nicht auf Zeit.`, `${why} As a B race just run along easily, not for time.`);
+  return c.prio === 'A' ? T(`Zu dicht für zwei A-Rennen: ${why} Eines davon besser als B-Rennen (Zwischenziel) eintragen – das bereitet der Plan im Block des anderen mit vor.`, `Too close for two A races: ${why} Better enter one of them as a B race (intermediate goal) – the plan then prepares it within the other one's block.`)
+    : T(`${why} Als ${prioText(c.prio)}-Rennen nur locker mitlaufen, nicht auf Zeit.`, `${why} As a ${prioText(c.prio)} race just run along easily, not for time.`);
 }
 // Formular an die Auswahl anpassen: Feld für km bzw. Level, Zielzeit nur bei fester Distanz, Rechnung bei Wings for Life und Pace Race
 function syncRaceForm(focus) {
@@ -1957,7 +1985,7 @@ function renderRaces() {
   const today = localDay(), e = races.find(r => r.id === raceEdit) || null;
   const opt = (v, l, cur) => `<option value="${v}"${v === cur ? ' selected' : ''}>${esc(l)}</option>`;
   const cur = e ? e.fmt || (e.km ? 'custom' : e.dist) : 'hm', fmt = cur === 'wfl' || cur === 'pace' ? cur : null;
-  const list = races.length ? races.map(r => `<button type="button" class="row${r.date < today ? ' past' : ''}" data-raceedit="${esc(r.id)}"><span class="dur">${dateGerman(r.date)}</span><span class="txt"><b>${esc(r.name)} <span class="prio prio-${r.prio}">${r.prio}</span></b><small>${esc(raceLabel(r))}${r.km ? T(` (geplant wie ${esc(SEASON.dist[r.dist].label)})`, ` (planned like ${esc(SEASON.dist[r.dist].label)})`) : ''}${esc(goalLine(r))}${r.date < today ? esc(pastText(r)) : r.prio === 'A' ? '<br>' + esc(peakText(r)) : ''}</small></span><span class="chev"></span></button>`).join('')
+  const list = races.length ? races.map(r => `<button type="button" class="row${r.date < today ? ' past' : ''}" data-raceedit="${esc(r.id)}"><span class="dur">${dateGerman(r.date)}</span><span class="txt"><b>${esc(r.name)} <span class="prio prio-${r.prio}">${prioText(r.prio)}</span></b><small>${esc(raceLabel(r))}${r.km ? T(` (geplant wie ${esc(SEASON.dist[r.dist].label)})`, ` (planned like ${esc(SEASON.dist[r.dist].label)})`) : ''}${esc(goalLine(r))}${r.date < today ? esc(pastText(r)) : r.prio === 'A' || (r.prio === 'M' && !inABlock(r)) ? '<br>' + esc(peakText(r)) : ''}</small></span><span class="chev"></span></button>`).join('')
     : `<div class="row"><span class="txt"><small>${T('Noch keine Rennen eingetragen.', 'No races entered yet.')}</small></span></div>`;
   return `<div class="intro">${esc(SEASON.intro)}</div>
     <div class="header">${e ? T('Rennen bearbeiten', 'Edit race') : T('Rennen eintragen', 'Add race')}</div><div class="group"><div class="raceform">
@@ -1965,13 +1993,13 @@ function renderRaces() {
       <div class="field"><label for="racedate">${T('Datum', 'Date')}</label><input id="racedate" type="date" value="${e ? e.date : ''}"></div>
       <div class="field"><label for="racedist">${T('Distanz', 'Distance')}</label><select id="racedist">${Object.entries(SEASON.dist).map(([k, d]) => opt(k, d.label, cur)).join('')}${opt('custom', T('Andere Distanz', 'Other distance'), cur)}${opt('wfl', 'Wings for Life World Run', cur)}${opt('pace', 'Pace Race', cur)}</select></div>
       <div class="field${e && e.km ? '' : ' hide'}" id="racekmfield"><label for="racekm" id="racekmlabel">${raceKmLabel(cur)}</label><input id="racekm" type="text" inputmode="${cur === 'pace' ? 'numeric' : 'decimal'}" autocomplete="off" placeholder="${cur === 'pace' ? T('z. B. 12', 'e.g. 12') : T('z. B. 20', 'e.g. 20')}" value="${e && e.km ? esc(kmText(e.km)) : ''}"></div>
-      <div class="field"><label for="raceprio">${T('Priorität', 'Priority')}</label><select id="raceprio">${opt('A', T('A-Rennen', 'A race'), e ? e.prio : 'A')}${opt('B', T('B-Rennen', 'B race'), e ? e.prio : 'A')}</select></div>
+      <div class="field wide"><label for="raceprio">${T('Priorität', 'Priority')}</label><select id="raceprio">${opt('A', T('A – Hauptziel', 'A – main goal'), e ? e.prio : 'A')}${opt('M', T('B – Zwischenziel', 'B – intermediate goal'), e ? e.prio : 'A')}${opt('B', T('C – Trainingslauf', 'C – training race'), e ? e.prio : 'A')}</select></div>
       <p class="tiny racefmtinfo${fmt ? '' : ' hide'}" id="racefmtinfo">${fmt ? raceFmtInfo(fmt, fmtVal(fmt, e && e.km ? kmText(e.km) : '')) : ''}</p>
       <p class="alert due racewarn hide" id="racewarn"></p>
       <div class="field wide${fmt ? ' hide' : ''}" id="racegoalfield"><label>${T('Zielzeit (optional)', 'Goal time (optional)')}</label>${timeFields('racegoal', e && !e.fmt && e.goal, T('Zielzeit', 'Goal time'))}</div>
       <div class="raceactions">${e ? `<button type="button" class="btn small danger" id="racedel">${T('Löschen', 'Delete')}</button><button type="button" class="btn small" id="racecancel">${T('Abbrechen', 'Cancel')}</button>` : ''}<button type="button" class="btn small primary" id="racesave">${e ? T('Speichern', 'Save') : T('Hinzufügen', 'Add')}</button></div>
     </div></div>
-    <p class="footer">${T('A-Rennen bekommen einen eigenen Vorbereitungsblock, B-Rennen laufen als harte Einheit mit. Antippen zum Bearbeiten.', 'A races get their own preparation block, B races run along as a hard session. Tap to edit.')}</p>
+    <p class="footer">${T('A = Hauptziel mit eigenem Block. B = Zwischenziel: eigener Block, wenn Platz ist – liegt es in der Vorbereitung aufs A-Rennen, läuft es dort mit (Woche davor etwas weniger, danach locker). C = Trainingslauf als harte Einheit. Antippen zum Bearbeiten.', 'A = main goal with its own block. B = intermediate goal: its own block if there is room – if it falls within the preparation for the A race, it runs along there (slightly less the week before, easy afterwards). C = training race as a hard session. Tap to edit.')}</p>
     <div class="header">${T('Deine Rennen', 'Your races')}</div><div class="group" id="racelist">${list}</div>`;
 }
 function saveRaceFromForm() {
@@ -2288,8 +2316,8 @@ function badgesNow(today = localDay()) {
 function readyCard() {
   if (!mod('laufen')) return '';
   const today = localDay(), got = badgesNow(today), ico = startIcon('laufen');
-  // nur A-Rennen (Jan: B-Rennen laufen ohne Bereitschafts-Prüfung mit)
-  const list = races.filter(r => r.prio === 'A' && r.date >= today && !r.dns).sort((a, b) => a.date.localeCompare(b.date)).slice(0, 3);
+  // A- und B-Rennen (Haupt- und Zwischenziel); C-Rennen = Trainingsläufe laufen ohne Bereitschafts-Prüfung mit
+  const list = races.filter(r => (r.prio === 'A' || r.prio === 'M') && r.date >= today && !r.dns).sort((a, b) => a.date.localeCompare(b.date)).slice(0, 3);
   const when = r => { const n = daysTo(r.date); return n === 0 ? T('heute', 'today') : n === 1 ? T('morgen', 'tomorrow') : T(`in ${n} Tagen`, `in ${n} days`); };
   const rows = list.map(r => { const x = raceReady(r); return `<div class="srowt">${ico}<span class="txt"><b>${esc(r.name)}</b><small>${esc(when(r) + ' · ' + readyWhy(r, x))}</small></span><span class="spill ${x.ready ? 'yes' : 'no'}">${x.ready ? T('✓ bereit', '✓ ready') : T('noch nicht', 'not yet')}</span></div>`; }).join('');
   const earned = BADGES.filter(([k]) => isDay(got[k])), newest = earned.slice().sort((a, b) => got[b[0]].localeCompare(got[a[0]]) || b[1] - a[1])[0];
@@ -2646,7 +2674,7 @@ const renderLevelAsk = () => `<div class="group" id="levelask"><div class="row">
   <div class="row"><span class="txt"></span><button type="button" class="btn small" data-level="runner">${T('Ich laufe schon', 'I already run')}</button><button type="button" class="btn small primary" data-level="beginner">${T('Einstieg starten', 'Start the starter')}</button></div></div>`;
 // Rennen schon geplant: erst der Einstieg, dann der Rennblock – reicht die Zeit danach noch?
 function starterRaceNote(s) {
-  const today = localDay(), r = races.filter(x => x.prio === 'A' && x.date >= today && SEASON.dist[x.dist]).sort((a, b) => a.date.localeCompare(b.date))[0];
+  const today = localDay(), r = planTargets().filter(x => x.date >= today).sort((a, b) => a.date.localeCompare(b.date))[0];
   if (!r) return '';
   const left = STARTER.weeks.length - s.week - (s.done >= STARTER_N ? 1 : 0), after = weeksBetween(weekStart(today), weekStart(r.date)) + 1 - left, need = SEASON.dist[r.dist].minWeeks;
   const base = T(`Dein Rennen <b>${esc(r.name)}</b> (${esc(raceLabel(r))}) am ${dayLabel(r.date)}: Erst der Einstieg (noch ${left} ${left === 1 ? 'Woche' : 'Wochen'}), danach plant die App den Rennblock`, `Your race <b>${esc(r.name)}</b> (${esc(raceLabel(r))}) on ${dayLabel(r.date)}: first the starter (${left} ${left === 1 ? 'week' : 'weeks'} left), then the app plans the race block`);
@@ -2685,7 +2713,7 @@ function renderPlan() {
   const S = seasonPlan();
   if (!S.weeks.length) {
     // Kein A-Rennen mehr geplant, aber eines liegt kurz zurück: Erholung trotzdem anzeigen (Rennwoche + Erholungswochen der Distanz)
-    const today = localDay(), lastA = races.filter(r => r.prio === 'A' && r.date <= today && SEASON.dist[r.dist]).sort((a, b) => a.date.localeCompare(b.date)).at(-1);
+    const today = localDay(), lastA = planTargets().filter(r => r.date <= today).sort((a, b) => a.date.localeCompare(b.date)).at(-1);
     const sinceW = lastA ? weeksBetween(weekStart(lastA.date), weekStart(today)) : 99;
     const recBox = lastA && sinceW <= SEASON.dist[lastA.dist].recover.length && SEASON.recoverNote[lastA.dist]
       ? `<div class="header">${T('Erholung', 'Recovery')}</div><div class="group"><div class="panel" style="border:0;padding-top:12px" id="planrecover"><div class="phasebadge ph-recover">${esc(SEASON.phase.recover[0])}</div><p class="loadstatus">${T(`<b>${esc(lastA.name)}</b> am ${dayLabel(lastA.date)}`, `<b>${esc(lastA.name)}</b> on ${dayLabel(lastA.date)}`)}</p><p class="tiny" style="margin-top:2px">${esc(SEASON.phase.recover[1])}</p><div class="alert">${esc(SEASON.recoverNote[lastA.dist])}</div></div></div>` : '';
@@ -3219,7 +3247,7 @@ function planIcs(S = seasonPlan()) {
     }
   }
   for (const r of races.filter(r => r.date >= today)) add(`kb-race-${r.id}`, r.date, addDays(r.date, 1), `🏁 ${r.name} (${raceLabel(r)})`,
-    [T(`${r.prio}-Rennen`, `${r.prio} race`), r.fmt ? goalInfo(r) : r.goal ? T(`Zielzeit ${hms(r.goal)} = ${paceText(r.goal, raceKm(r))}`, `Goal time ${hms(r.goal)} = ${paceText(r.goal, raceKm(r))}`) : '', T('Warm-up: Tagwerk → Laufen → Warm-up', 'Warm-up: Tagwerk → Running → Warm-up')].filter(Boolean).join('\n'));
+    [T(`${prioText(r.prio)}-Rennen`, `${prioText(r.prio)} race`), r.fmt ? goalInfo(r) : r.goal ? T(`Zielzeit ${hms(r.goal)} = ${paceText(r.goal, raceKm(r))}`, `Goal time ${hms(r.goal)} = ${paceText(r.goal, raceKm(r))}`) : '', T('Warm-up: Tagwerk → Laufen → Warm-up', 'Warm-up: Tagwerk → Running → Warm-up')].filter(Boolean).join('\n'));
   return ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Tagwerk//Laufplan//DE', 'CALSCALE:GREGORIAN', 'X-WR-CALNAME:' + T('Laufplan', 'Running plan'), ...ev, 'END:VCALENDAR'].map(icsFold).join('\r\n') + '\r\n';
 }
 function exportPlanIcs() {

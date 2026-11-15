@@ -91,7 +91,7 @@ test('B-Rennen in der Erholung: nur locker mitlaufen; Formular warnt schon beim 
   await expect(page.locator('#racewarn')).toContainText('Zu dicht für zwei A-Rennen: Es fällt in die Erholung nach Frühjahrs-HM');
   await expect(page.locator('#racewarn')).toContainText('etwa 2 Wochen');
   await page.selectOption('#raceprio', 'B');
-  await expect(page.locator('#racewarn')).toContainText('Als B-Rennen nur locker mitlaufen');
+  await expect(page.locator('#racewarn')).toContainText('Als C-Rennen nur locker mitlaufen');
   // vor dem A-Rennen im Tapering
   await page.selectOption('#raceprio', 'A');
   await page.fill('#racedate', await at(7 * 11 + 6));

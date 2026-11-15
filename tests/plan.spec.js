@@ -120,7 +120,7 @@ test('Rennen: eintragen, Fehler markieren, bearbeiten, löschen – bleibt gespe
   await page.selectOption('#raceprio', 'B');
   await fillTime(page, 'racegoal', '', '', '');
   await page.click('#racesave');
-  await expect(page.locator('#racelist .prio')).toHaveText('B');
+  await expect(page.locator('#racelist .prio')).toHaveText('C'); // gespeichert 'B' = Trainingslauf, angezeigt als C
   expect(await page.evaluate(() => races.map(r => [r.prio, r.goal]))).toEqual([['B', null]]);
 
   await page.click('[data-raceedit]');
@@ -476,4 +476,51 @@ test('Harter Kurs-Tag: am Tag danach nur locker statt Qualität, Hinweis im Prof
   await page.evaluate(() => { profile.week.strengthPlan = {}; persistProfile(); });
   await page.reload();
   expect(await page.evaluate(() => profile.week.gymHard)).toEqual([]);
+});
+
+test('A/B/C: B-Rennen außerhalb der A-Vorbereitung bekommt einen eigenen Block, im A-Block läuft es mit (Woche davor weniger, danach locker)', async ({ page }) => {
+  const r = await page.evaluate(() => {
+    const ma = { id: 'ma', name: 'Berlin-Marathon', date: '2027-09-26', dist: 'marathon', prio: 'A' };
+    const hmB = { id: 'hm', name: 'Berliner HM', date: '2027-04-04', dist: 'hm', prio: 'M' };
+    const late = { id: 'late', name: 'Sommer-HM', date: '2027-08-22', dist: 'hm', prio: 'M' };
+    const c = { id: 'c', name: 'Stadtlauf', date: '2027-06-13', dist: '10k', prio: 'B' };
+    races = [ma, hmB, late, c]; persistRaces();
+    const S = seasonPlan('2026-11-16', { L0: 12, W0: 25 });
+    const wk = d => S.weeks.find(x => x.week === weekStart(d));
+    const hmWeek = wk('2027-04-04'), lateW = wk('2027-08-22'), pre = wk('2027-08-15'), post = wk('2027-08-29'), cW = wk('2027-06-13');
+    // Vergleich ohne das B-Rennen im A-Block
+    races = [ma, hmB, c]; persistRaces();
+    const S0 = seasonPlan('2026-11-16', { L0: 12, W0: 25 }), wk0 = d => S0.weeks.find(x => x.week === weekStart(d));
+    const out = {
+      targets: planTargets().map(x => x.id), hmOwn: hmWeek.a && hmWeek.a.id, hmPhaseBefore: wk('2027-03-28').phase,
+      lateTarget: lateW.target.id, latePhase: lateW.phase, lateRace: lateW.bRace && lateW.bRace.id, mRace: lateW.mRace && lateW.mRace.id,
+      preLong: [pre.mPre && pre.mPre.id, Math.round(pre.long), Math.round(wk0('2027-08-15').long)],
+      postEasy: post.mPost && post.mPost.id, cWeek: cW.bRace && cW.bRace.id, cMarks: cW.mRace
+    };
+    races = [ma, hmB, late, c]; persistRaces();
+    const sched = weekSchedule(post).filter(o => /^quality/.test(o.kind)).map(o => [o.title, !!o.easy]);
+    const raceItem = weekSchedule(lateW).find(o => o.kind === 'brace');
+    return Object.assign(out, { sched, raceTitle: raceItem.title, raceDetail: raceItem.detail });
+  });
+  expect(r.targets).toEqual(['hm', 'ma']); // B im Frühjahr: eigener Block; B im Sommer: im Marathon-Block
+  expect(r.hmOwn).toBe('hm');
+  expect(r.hmPhaseBefore).toBe('taper');
+  expect([r.lateTarget, r.latePhase, r.lateRace, r.mRace]).toEqual(['ma', 'spec', 'late', 'late']);
+  expect(r.preLong[0]).toBe('late');
+  expect(r.preLong[1]).toBeLessThan(r.preLong[2]); // Woche davor: kürzerer Longrun
+  expect(r.postEasy).toBe('late');
+  expect(r.sched.every(([, easy]) => easy)).toBe(true); // Woche danach: keine Qualität
+  expect(r.raceTitle).toBe('B-Rennen: Sommer-HM');
+  expect(r.raceDetail).toContain('Zwischenziel');
+  expect([r.cWeek, r.cMarks]).toEqual(['c', undefined]); // C-Rennen wie bisher
+});
+
+test('A/B/C im Formular: Auswahl A – Hauptziel, B – Zwischenziel, C – Trainingslauf; Liste zeigt B für Zwischenziel; Bereit-Karte auch für B', async ({ page }) => {
+  await page.evaluate(() => { races = [{ id: 'z', name: 'Zwischen', date: addDays(localDay(), 60), dist: '10k', prio: 'M' }, { id: 't', name: 'Training', date: addDays(localDay(), 30), dist: '5k', prio: 'B' }]; persistRaces(); renderAll(); });
+  await openPlan(page, 'rennen');
+  await expect(page.locator('#racelist .prio')).toHaveText(['C', 'B']);
+  await page.locator('[data-raceedit="z"]').click();
+  await expect(page.locator('#raceprio option')).toHaveText(['A – Hauptziel', 'B – Zwischenziel', 'C – Trainingslauf']);
+  await expect(page.locator('#raceprio')).toHaveValue('M');
+  expect(await page.evaluate(() => { showArea('start'); return [...document.querySelectorAll('#readycard .srowt b')].map(b => b.textContent); })).toEqual(['Zwischen']);
 });
