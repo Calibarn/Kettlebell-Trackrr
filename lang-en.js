@@ -2009,11 +2009,11 @@ const EN_TEXT = {
 "Die Trainingswoche warnt, wenn die Qualitätseinheit direkt nach einem Kraft-Tag mit Beinen liegt. Oberkörper und Core am Vortag sind in Ordnung.": "The training week warns if the quality session comes right after a strength day with legs. Upper body and core the day before are fine.",
 "Intervalle": "Intervals",
 "Intervalle eintragen": "Enter intervals",
-"Bei Intervall- und Tempoläufen trägst du jetzt jedes Intervall ein: Strecke, Zeit und Max-Puls. Anzahl und Länge kommen aus dem Plan (z. B. 4 × 6 Min.), du ergänzt nur, was fehlt. Die Felder darüber gelten für die ganze Einheit mit Ein- und Auslaufen.": "For interval and tempo runs you now enter every interval: distance, time and max HR. Count and length come from the plan (e.g. 4 × 6 min), you only add what’s missing. The fields above are for the whole session incl. warm-up and cool-down.",
 "Vergleich mit dem letzten Mal": "Compared with last time",
 "Nach dem Eintragen siehst du jedes Intervall mit Tempo und Max-Puls und den Vergleich mit der letzten gleich aufgebauten Einheit – z. B. „12 s/km schneller, Max-Puls 2 niedriger“.": "After logging you see every interval with pace and max HR and the comparison with the last session of the same structure – e.g. “12 s/km faster, max HR 2 lower”.",
 "Fortschritt und VO2max": "Progress and VO2max",
-"Unter Laufen → Läufe → Fortschritt: deine VO2max (z. B. Cardio-Fitness der Uhr) im Verlauf und je Intervall-Aufbau, wie sich Ø-Tempo und Max-Puls entwickeln.": "Under Running → Runs → Progress: your VO2max (e.g. your watch’s cardio fitness) over time and, per interval structure, how average pace and max HR develop."
+"Unter Laufen → Läufe → Fortschritt: deine VO2max (z. B. Cardio-Fitness der Uhr) im Verlauf und je Intervall-Aufbau, wie sich Ø-Tempo und Max-Puls entwickeln.": "Under Running → Runs → Progress: your VO2max (e.g. your watch’s cardio fitness) over time and, per interval structure, how average pace and max HR develop.",
+"Bei Intervall- und Tempoläufen trägst du jetzt jedes Intervall ein: Strecke, Zeit und Max-Puls. Anzahl und Länge kommen aus dem Plan (z. B. 4 × 6 Min.), du ergänzt nur, was fehlt. Die Zeit geht ohne Doppelpunkt: 140 = 1:40. Die Felder darüber gelten für die ganze Einheit mit Ein- und Auslaufen.": "For interval and tempo runs you now enter every interval: distance, time and max HR. Count and length come from the plan (e.g. 4 × 6 min), you only add what’s missing. Time works without a colon: 140 = 1:40. The fields above are for the whole session incl. warm-up and cool-down."
 };
 const EN_HTML = {
 "Kraft · Laufen · Mobility": "Strength · Running · Mobility",

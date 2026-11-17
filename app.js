@@ -1414,16 +1414,23 @@ function repPlan(text) {
   return u === 'km' ? { n, km: v } : u === 'm' ? { n, km: v / 1000 } : u.startsWith('min') ? { n, sec: Math.round(v * 60) } : { n, sec: Math.round(v) };
 }
 const repKmIn = t => { t = String(t || '').trim().replace(',', '.').replace(/\s*(km|m)$/i, ''); if (t === '') return null; const v = Number(t); return !Number.isFinite(v) || v <= 0 ? NaN : v >= 50 ? v / 1000 : v; };
-const repSecIn = t => { t = String(t || '').trim(); if (t === '') return null; const m = t.match(/^(\d{1,3})(?:[:.,](\d{2}))?$/); if (!m) return NaN; const sec = Number(m[1]) * 60 + Number(m[2] || 0); return Number(m[2] || 0) < 60 && sec >= 5 ? sec : NaN; };
+/* Zeit je Intervall: 1:40, 1,40 oder 1.40 – und ohne Trennzeichen (iPhone-Ziffernblock hat keinen Doppelpunkt): bis 2 Ziffern = Minuten
+   (6 = 6:00), 3–4 Ziffern = die letzten zwei sind Sekunden (140 = 1:40, 1230 = 12:30). Beim Verlassen des Felds steht dort 1:40. */
+const repSecIn = t => { t = String(t || '').trim(); if (t === '') return null;
+  let m = t.match(/^(\d{1,3})[:.,](\d{2})$/), mm, ss;
+  if (m) { mm = Number(m[1]); ss = Number(m[2]); }
+  else if ((m = t.match(/^\d{1,4}$/))) { if (t.length <= 2) { mm = Number(t); ss = 0; } else { mm = Number(t.slice(0, -2)); ss = Number(t.slice(-2)); } }
+  else return NaN;
+  const sec = mm * 60 + ss; return ss < 60 && sec >= 5 ? sec : NaN; };
 const repKmOut = v => v ? v < 1 ? String(Math.round(v * 1000)) : String(Math.round(v * 100) / 100).replace('.', EN ? '.' : ',') : ''; // 400 (m) bzw. 1,05 (km) – zwei Nachkommastellen
 function repRow(id, i, r) {
-  return `<span class="repno">${i + 1}</span><input type="text" inputmode="decimal" autocomplete="off" data-rep="${id}" data-f="km" value="${esc(repKmOut(r.km))}" placeholder="m / km" aria-label="${T(`Strecke Intervall ${i + 1}`, `Distance interval ${i + 1}`)}"><input type="text" inputmode="decimal" autocomplete="off" data-rep="${id}" data-f="sec" value="${r.sec ? hms(r.sec) : ''}" placeholder="4:05" aria-label="${T(`Zeit Intervall ${i + 1}`, `Time interval ${i + 1}`)}"><input type="text" inputmode="numeric" autocomplete="off" maxlength="3" data-rep="${id}" data-f="max" value="${r.max || ''}" placeholder="bpm" aria-label="${T(`Max-Puls Intervall ${i + 1}`, `Max HR interval ${i + 1}`)}">`;
+  return `<span class="repno">${i + 1}</span><input type="text" inputmode="decimal" autocomplete="off" data-rep="${id}" data-f="km" value="${esc(repKmOut(r.km))}" placeholder="m / km" aria-label="${T(`Strecke Intervall ${i + 1}`, `Distance interval ${i + 1}`)}"><input type="text" inputmode="decimal" autocomplete="off" data-rep="${id}" data-f="sec" value="${r.sec ? hms(r.sec) : ''}" placeholder="m:ss" aria-label="${T(`Zeit Intervall ${i + 1}`, `Time interval ${i + 1}`)}"><input type="text" inputmode="numeric" autocomplete="off" maxlength="3" data-rep="${id}" data-f="max" value="${r.max || ''}" placeholder="bpm" aria-label="${T(`Max-Puls Intervall ${i + 1}`, `Max HR interval ${i + 1}`)}">`;
 }
 function repsHtml(id, reps, plan, show) {
   const list = reps && reps.length ? reps : plan ? Array.from({ length: plan.n }, () => ({ km: plan.km, sec: plan.sec })) : [{}, {}, {}, {}];
   return `<div class="reps${show ? '' : ' hide'}" id="${id}"><div class="repshead"><b>${T('Intervalle', 'Intervals')}</b><label for="${id}-n">${T('Anzahl', 'Count')}</label><input type="number" inputmode="numeric" min="1" max="30" id="${id}-n" data-repn="${id}" value="${list.length}"></div>
     <div class="repgrid" id="${id}-g"><span></span><span>${T('Strecke', 'Distance')}</span><span>${T('Zeit', 'Time')}</span><span>${T('Max-Puls', 'Max HR')}</span>${list.map((r, i) => repRow(id, i, r)).join('')}</div>
-    <p class="repsum" id="${id}-sum">${(st => st ? esc(repLine(st)) : '')(repStats({ reps: cleanReps(list) }))}</p><p class="tiny">${T('Strecke als 400 (m) oder 1,02 (km), Zeit als 4:05. Leer lassen, was du nicht hast. Die Felder oben gelten für die ganze Einheit inkl. Ein- und Auslaufen.', 'Distance as 400 (m) or 1.02 (km), time as 4:05. Leave empty what you don’t have. The fields above are for the whole session incl. warm-up and cool-down.')}</p></div>`;
+    <p class="repsum" id="${id}-sum">${(st => st ? esc(repLine(st)) : '')(repStats({ reps: cleanReps(list) }))}</p><p class="tiny">${T('Strecke als 400 (m) oder 1,02 (km). Zeit ohne Doppelpunkt: 140 = 1:40, 605 = 6:05, 6 = 6:00. Leer lassen, was du nicht hast. Die Felder oben gelten für die ganze Einheit inkl. Ein- und Auslaufen.', 'Distance as 400 (m) or 1.02 (km). Time without colon: 140 = 1:40, 605 = 6:05, 6 = 6:00. Leave empty what you don’t have. The fields above are for the whole session incl. warm-up and cool-down.')}</p></div>`;
 }
 // Werte aus dem Raster lesen; raw = ohne Prüfung (beim Ändern der Anzahl), sonst null bei Fehlern (Feld markiert, Hinweis)
 function repsRead(id, raw = false) {
@@ -1434,7 +1441,7 @@ function repsRead(id, raw = false) {
     if (raw) { out.push({ km: Number.isNaN(km) ? null : km, sec: Number.isNaN(sec) ? null : sec, max: Number.isNaN(max) ? null : max, t: [a.value, b.value, c.value] }); continue; }
     const bad = [[a, km !== null && (Number.isNaN(km) || km < 0.05 || km > 20)], [b, Number.isNaN(sec) || sec > 7200], [c, max !== null && (Number.isNaN(max) || max < 60 || max > 230)]];
     for (const [el, x] of bad) x ? el.setAttribute('aria-invalid', 'true') : el.removeAttribute('aria-invalid');
-    if (bad.some(x => x[1])) { toast(T(`Intervall ${i / 3 + 1} prüfen: Strecke 400 oder 1,02 · Zeit 4:05 · Max-Puls 60–230 – oder leer lassen.`, `Check interval ${i / 3 + 1}: distance 400 or 1.02 · time 4:05 · max HR 60–230 – or leave empty.`)); bad.find(x => x[1])[0].focus(); return null; }
+    if (bad.some(x => x[1])) { toast(T(`Intervall ${i / 3 + 1} prüfen: Strecke 400 oder 1,02 · Zeit 140 (= 1:40) · Max-Puls 60–230 – oder leer lassen.`, `Check interval ${i / 3 + 1}: distance 400 or 1.02 · time 140 (= 1:40) · max HR 60–230 – or leave empty.`)); bad.find(x => x[1])[0].focus(); return null; }
     out.push(Object.assign({}, km ? { km } : {}, sec ? { sec } : {}, max ? { max } : {}));
   }
   return out.filter(x => Object.keys(x).length);
@@ -1449,8 +1456,8 @@ function repsResize(id) {
 }
 function repsLive(id) {
   const el = $(id + '-sum'); if (!el) return;
-  const st = repStats({ reps: repsRead(id, true).map(r => Object.assign({}, r.km ? { km: r.km } : {}, r.sec ? { sec: r.sec } : {}, r.max ? { max: r.max } : {})).filter(x => Object.keys(x).length) });
-  el.textContent = st ? repLine(st) : '';
+  const rows = repsRead(id, true), reps = rows.map(r => Object.assign({}, r.km ? { km: r.km } : {}, r.sec ? { sec: r.sec } : {}, r.max ? { max: r.max } : {})).filter(x => Object.keys(x).length), st = repStats({ reps });
+  el.textContent = !st ? '' : reps.length < rows.length ? T(`${reps.length} von ${rows.length} Intervallen ausgefüllt`, `${reps.length} of ${rows.length} intervals filled`) + (st.pace ? ` · Ø ${hms(st.pace)} /km` : '') : repLine(st);
 }
 const avgOf = a => a.reduce((x, y) => x + y, 0) / a.length;
 // Aufbau der Einheit zum Vergleichen: gleich lange Zeiten → „4 × 6 Min.“, gleich lange Strecken → „12 × 400 m“
@@ -3956,6 +3963,7 @@ $('runtabs').addEventListener('click', e => { const b = e.target.closest('[data-
 document.addEventListener('change', e => {
   const t = e.target; if (!t || !t.id && !t.dataset) return;
   if (t.dataset && t.dataset.repn) { repsResize(t.dataset.repn); return; }
+  if (t.dataset && t.dataset.rep && t.dataset.f === 'sec') { const v = repSecIn(t.value); if (v && !Number.isNaN(v)) { t.value = hms(v); t.removeAttribute('aria-invalid'); } repsLive(t.dataset.rep); return; }
   if (t.id === 'runkind' || t.id === 'rundate') { const b = $('runreps'); if (b) b.classList.toggle('hide', !formQuality($('rundate').value, $('runkind').value)); return; }
   if (t.id && t.id.startsWith('srunkind')) { const b = $('srunreps' + t.id.slice(8)); if (b) b.classList.toggle('hide', t.value !== 'quality'); }
 });

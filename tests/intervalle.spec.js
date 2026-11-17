@@ -13,12 +13,13 @@ const setupQualityToday = page => page.evaluate(() => {
 test('Eingabe: Aufbau aus dem Plan, Strecke in m oder km, Zeit als 4:05', async ({ page }) => {
   const r = await page.evaluate(() => ({
     plan: ['4 × 6 Min. Schwelle, 90 Sek. Trabpause', '12 × 400 m etwas schneller als 5-km-Tempo', '3 × 2 km im Renntempo', 'Locker 40 Min.', '8 × 30 Sek. zügig'].map(repPlan),
-    km: ['400', '0,4', '1,02', '1000 m', '', 'x'].map(repKmIn), sec: ['4:05', '4,05', '6', '', '4:75', 'abc'].map(repSecIn),
+    km: ['400', '0,4', '1,02', '1000 m', '', 'x'].map(repKmIn), sec: ['4:05', '4,05', '6', '', '4:75', 'abc', '140', '605', '1230', '175', '4,5'].map(repSecIn),
     key: [repKey([{ sec: 360, km: 1.02 }, { sec: 360, km: 1.05 }]).label, repKey([{ km: 0.4, sec: 101 }, { km: 0.4, sec: 98 }]).label, repKey([{ km: 2, sec: 600 }, { km: 1, sec: 290 }]).label]
   }));
   expect(r.plan).toEqual([{ n: 4, sec: 360 }, { n: 12, km: 0.4 }, { n: 3, km: 2 }, null, { n: 8, sec: 30 }]);
   expect(r.km).toEqual([0.4, 0.4, 1.02, 1, null, NaN]);
-  expect(r.sec).toEqual([245, 245, 360, null, NaN, NaN]);
+  // ohne Doppelpunkt (iPhone-Ziffernblock): 140 = 1:40, 605 = 6:05, 1230 = 12:30; 175 (75 s) und eine Sekunden-Ziffer sind ungültig
+  expect(r.sec).toEqual([245, 245, 360, null, NaN, NaN, 100, 365, 750, NaN, NaN]);
   expect(r.key).toEqual(['2 × 6 Min.', '2 × 400 m', '2 Intervalle']);
 });
 
@@ -92,8 +93,13 @@ test('Läufe: Intervalle eintragen, Anzahl ändern, bearbeiten; Fortschritt mit 
   await expect(page.locator('#runreps [data-f="sec"]').nth(4)).toHaveValue('6:00');
   await page.fill('#runreps-n', '2'); await page.locator('#runreps-n').dispatchEvent('change');
   await expect(page.locator('#runreps [data-f="km"]')).toHaveCount(2);
+  // unvollständig: die Summe sagt, wie viele Intervalle ausgefüllt sind
+  await page.locator('#runreps [data-f="sec"]').nth(1).fill('');
+  await expect(page.locator('#runreps-sum')).toHaveText(/^1 von 2 Intervallen ausgefüllt/);
   await page.locator('#runreps [data-f="km"]').nth(1).fill('0,4');
-  await page.locator('#runreps [data-f="sec"]').nth(0).fill('1:40'); await page.locator('#runreps [data-f="sec"]').nth(1).fill('1:38');
+  await page.locator('#runreps [data-f="sec"]').nth(0).fill('140'); await page.locator('#runreps [data-f="sec"]').nth(1).fill('1:38');
+  await page.locator('#runreps [data-f="sec"]').nth(0).dispatchEvent('change');
+  await expect(page.locator('#runreps [data-f="sec"]').nth(0)).toHaveValue('1:40'); // so angezeigt, wie es verstanden wurde
   await page.fill('#runkm', '6');
   await page.click('#runaddbtn');
   expect(await page.evaluate(() => runLog.map(r => r.reps))).toEqual([[{ km: 0.4, sec: 100 }, { km: 0.4, sec: 98 }]]);

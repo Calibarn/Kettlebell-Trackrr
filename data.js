@@ -891,7 +891,7 @@ const APP_VERSION = '1.6';
 // Ein Eintrag pro Tag: Änderungen desselben Tages kommen in den Eintrag des Tages (aka = frühere ids für „schon gesehen“)
 const CHANGELOG = [
   { id: '2026-11-17', date: '2026-11-17', version: '1.6', title: 'Intervalle', items: [
-    ['Intervalle eintragen', 'Bei Intervall- und Tempoläufen trägst du jetzt jedes Intervall ein: Strecke, Zeit und Max-Puls. Anzahl und Länge kommen aus dem Plan (z. B. 4 × 6 Min.), du ergänzt nur, was fehlt. Die Felder darüber gelten für die ganze Einheit mit Ein- und Auslaufen.', 'neu'],
+    ['Intervalle eintragen', 'Bei Intervall- und Tempoläufen trägst du jetzt jedes Intervall ein: Strecke, Zeit und Max-Puls. Anzahl und Länge kommen aus dem Plan (z. B. 4 × 6 Min.), du ergänzt nur, was fehlt. Die Zeit geht ohne Doppelpunkt: 140 = 1:40. Die Felder darüber gelten für die ganze Einheit mit Ein- und Auslaufen.', 'neu'],
     ['Vergleich mit dem letzten Mal', 'Nach dem Eintragen siehst du jedes Intervall mit Tempo und Max-Puls und den Vergleich mit der letzten gleich aufgebauten Einheit – z. B. „12 s/km schneller, Max-Puls 2 niedriger“.', 'neu'],
     ['Fortschritt und VO2max', 'Unter Laufen → Läufe → Fortschritt: deine VO2max (z. B. Cardio-Fitness der Uhr) im Verlauf und je Intervall-Aufbau, wie sich Ø-Tempo und Max-Puls entwickeln.', 'neu']
   ] },
