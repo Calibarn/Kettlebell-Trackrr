@@ -887,9 +887,14 @@ PREP.mat.push('Dead Bug mit Kurzhantel', 'Floor Press mit Kurzhanteln', 'Pullove
    Der älteste (letzte) Eintrag ist der Grundstand mit allen Funktionen; Neulinge sehen ihn plus die 3 neuesten Updates. */
 /* Versionsnummer der App, angezeigt unter Mehr. Seit 13.11.2026 gehen Änderungen direkt live (main, ohne Wochen-Release über dev);
    jeder Tag mit Veröffentlichung ist eine neue Nebenversion: 1.1, 1.2, 1.3 … Der Neuigkeiten-Eintrag des Tages bekommt dieselbe Nummer (version). */
-const APP_VERSION = '1.5';
+const APP_VERSION = '1.6';
 // Ein Eintrag pro Tag: Änderungen desselben Tages kommen in den Eintrag des Tages (aka = frühere ids für „schon gesehen“)
 const CHANGELOG = [
+  { id: '2026-11-17', date: '2026-11-17', version: '1.6', title: 'Intervalle', items: [
+    ['Intervalle eintragen', 'Bei Intervall- und Tempoläufen trägst du jetzt jedes Intervall ein: Strecke, Zeit und Max-Puls. Anzahl und Länge kommen aus dem Plan (z. B. 4 × 6 Min.), du ergänzt nur, was fehlt. Die Felder darüber gelten für die ganze Einheit mit Ein- und Auslaufen.', 'neu'],
+    ['Vergleich mit dem letzten Mal', 'Nach dem Eintragen siehst du jedes Intervall mit Tempo und Max-Puls und den Vergleich mit der letzten gleich aufgebauten Einheit – z. B. „12 s/km schneller, Max-Puls 2 niedriger“.', 'neu'],
+    ['Fortschritt und VO2max', 'Unter Laufen → Läufe → Fortschritt: deine VO2max (z. B. Cardio-Fitness der Uhr) im Verlauf und je Intervall-Aufbau, wie sich Ø-Tempo und Max-Puls entwickeln.', 'neu']
+  ] },
   { id: '2026-11-16', date: '2026-11-16', version: '1.5', title: 'Einfacher', items: [
     ['Laufen: eine Reiterzeile', 'Statt zwei Reihen gibt es nur noch Woche · Rennen · Läufe · Wissen. Bestzeiten stehen unter Rennen (aufklappbar), Warm-up, Lauf-ABC und Tempo & Tipps unter Wissen.', 'neu'],
     ['Läufe bearbeiten', 'Unter Laufen → Läufe steht „Lauf eintragen“ ganz oben. Einen Lauf antippen, um Art, km, Zeit oder Puls zu ändern oder ihn zu löschen – z. B. Laufgruppe statt Intervall. Die Liste zeigt die neuesten 5.', 'neu'],

@@ -687,3 +687,33 @@ html[data-os=android] .infoi{border-color:var(--accent-ink);color:var(--accent-i
 .srdyrow+.srdyrow{border-top:.5px solid var(--sep)}
 .srdywhy{margin:0 0 10px 52px;font-size:13px;color:var(--label2);line-height:1.35}
 .row.schedpick{cursor:pointer}
+/* Intervalle eintragen: Anzahl + Raster (Nr · Strecke · Zeit · Max-Puls) */
+.reps{margin:10px 0 4px;padding:10px 0 0;border-top:.5px solid var(--sep)}
+.runadd2+.reps,.group>.reps{padding-left:16px;padding-right:16px}
+.repshead{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.repshead b{flex:1;font-weight:600}
+.repshead label{font-size:13px;color:var(--label2)}
+.repshead input{width:64px;text-align:center}
+.repgrid{display:grid;grid-template-columns:22px 1fr 1fr 1fr;gap:6px 8px;align-items:center}
+.repgrid>span{font-size:12px;color:var(--label2)}
+.repgrid .repno{font-size:14px;color:var(--label2);text-align:right;font-variant-numeric:tabular-nums}
+.repgrid input{min-width:0;width:100%;text-align:center;font-variant-numeric:tabular-nums}
+.repsum{margin:8px 0 0;font-size:14px;font-weight:600;font-variant-numeric:tabular-nums}
+.repsum:empty{display:none}
+.repmini{color:var(--label2)}
+/* Auswertung: Intervalle als kleine Tabelle */
+.repfb{margin:8px 0 4px}
+.repfbhead{margin:0 0 6px;font-size:14px;font-variant-numeric:tabular-nums}
+.reptab{list-style:none;margin:0;padding:0;font-size:13px;font-variant-numeric:tabular-nums}
+.reptab li{display:grid;grid-template-columns:22px 1fr 1fr 1fr 44px;gap:6px;padding:3px 0;border-top:.5px solid var(--sep)}
+.reptab li.rephd{border-top:0;color:var(--label2);font-size:12px}
+.reptab li span:first-child{color:var(--label2)}
+/* Fortschritt: VO2max und Intervalle */
+.progblock{padding:10px 16px 6px}
+.progblock+.progblock{border-top:.5px solid var(--sep)}
+.progtitle{margin:0 0 4px;display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 8px}
+.progtitle small{color:var(--label2);font-size:13px}
+.prognum{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}
+.progline{margin:2px 0 6px;font-size:14px;font-variant-numeric:tabular-nums}
+.vo2add{display:grid;grid-template-columns:1fr 90px auto;gap:8px;align-items:center;margin:8px 0}
+.vo2add input{min-width:0}

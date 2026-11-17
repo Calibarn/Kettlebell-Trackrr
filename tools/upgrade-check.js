@@ -47,9 +47,10 @@ const COLL = {
   entries: { key: e => e.id },
   waist: { key: e => e.date, pick: e => ({ date: e.date, cm: e.cm, note: e.note || '' }) },
   runWeeks: { key: e => e.week, pick: e => ({ week: e.week, km: e.km ?? null, long: e.long ?? null }) },
-  runLog: { key: e => e.id, pick: e => ({ id: e.id, date: e.date, km: e.km, sec: e.sec, hr: e.hr, kind: e.kind }) }, // Zeit, Puls, Art ab 1.1
+  runLog: { key: e => e.id, pick: e => ({ id: e.id, date: e.date, km: e.km, sec: e.sec, hr: e.hr, kind: e.kind, reps: e.reps }) }, // Zeit, Puls, Art ab 1.1, Intervalle ab 1.6
   races: { key: e => e.id },
   weights: { key: e => e.date, pick: e => ({ date: e.date, kg: e.kg }) },
+  vo2: { key: e => e.date, pick: e => ({ date: e.date, v: e.v }) }, // ab 1.6
   results: { key: e => e.id }
 };
 // Bewusste Umstellungen zwischen den Versionen: so muss der alte Wert in der neuen Version aussehen
