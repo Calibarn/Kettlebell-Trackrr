@@ -129,6 +129,10 @@ test('Läufe: Intervalle eintragen, Anzahl ändern, bearbeiten; Fortschritt mit 
   await page.evaluate(() => { vo2s = []; persistVo2(); runLog = []; persistRunLog(); });
   await page.setInputFiles('#importfile', { name: 'b.json', mimeType: 'application/json', buffer: Buffer.from(json) });
   await expect.poll(() => page.evaluate(() => [vo2s.length, runLog.length && runLog[0].reps.length])).toEqual([2, 2]);
+  // eine Datei nur mit VO2max-Werten (z. B. aus der Health-App übertragen) lässt sich ebenfalls importieren
+  await page.evaluate(() => { vo2s = []; persistVo2(); });
+  await page.setInputFiles('#importfile', { name: 'vo2.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({ version: 3, entries: [], vo2: [{ date: '2026-08-23', v: 50.1 }, { date: '2026-11-17', v: 42.5 }, { date: 'kaputt', v: 1 }] })) });
+  await expect.poll(() => page.evaluate(() => vo2s.map(e => e.v))).toEqual([50.1, 42.5]);
 });
 
 test('Fortschritt: gleich aufgebaute Einheiten im Verlauf (Ø-Tempo und Max-Puls), andere Aufbauten getrennt', async ({ page }) => {

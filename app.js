@@ -1279,8 +1279,8 @@ function progressSummary() {
 }
 function progressHtml() {
   const today = localDay(), V = vo2s, f = V[0], l = V.at(-1), d = f && l && V.length > 1 ? Math.round((l.v - f.v) * 10) / 10 : null;
-  const vo2 = `<div class="progblock"><p class="progtitle"><b>VO2max</b>${l ? ` <span class="prognum">${vo2Text(l.v)}</span><small>${d !== null ? `${d > 0 ? '+' : ''}${vo2Text(d)} ${T(`seit ${dateGerman(f.date)}`, `since ${dateGerman(f.date)}`)}` : dateGerman(l.date)}</small>` : ''}</p>
-    ${V.length > 1 ? measureChart(V.slice(-12), e => e.v, vo2Text, 'VO2max', 'ml/kg/min') : ''}
+  const vo2 = `<div class="progblock"><p class="progtitle"><b>VO2max</b>${l ? ` <span class="prognum">${vo2Text(l.v)}</span><small>${d !== null ? `${d > 0 ? '+' : d < 0 ? '−' : '±'}${vo2Text(Math.abs(d))} ${T(`seit ${dateGerman(f.date)}`, `since ${dateGerman(f.date)}`)}` : dateGerman(l.date)}</small>` : ''}</p>
+    ${V.length > 1 ? measureChart(V.slice(-60), e => e.v, vo2Text, 'VO2max', 'ml/kg/min') : ''}
     <div class="vo2add"><input type="date" id="vo2date" value="${today}" max="${today}" aria-label="${T('Datum', 'Date')}"><input type="text" inputmode="decimal" autocomplete="off" id="vo2val" placeholder="${T('z. B. 38,5', 'e.g. 38.5')}" aria-label="VO2max"><button type="button" class="btn small primary" id="vo2save">${T('Eintragen', 'Add')}</button></div>
     ${V.length ? `<p class="tiny">${V.slice(-3).reverse().map(e => `${dateShort(e.date)} ${vo2Text(e.v)} <button type="button" class="linkbtn" data-vo2del="${e.date}" aria-label="${T(`VO2max vom ${dateGerman(e.date)} löschen`, `Delete VO2max of ${dateGerman(e.date)}`)}">✕</button>`).join(' · ')}</p>` : `<p class="tiny">${T('Den Wert zeigt die Uhr als Cardio-Fitness bzw. VO2max (iPhone: Health → Herz). Einmal pro Woche reicht – entscheidend ist der Verlauf, nicht der einzelne Wert.', 'Your watch shows it as cardio fitness or VO2max (iPhone: Health → Heart). Once a week is enough – what matters is the trend, not a single value.')}</p>`}</div>`;
   const G = repGroups().slice(0, 3);
@@ -3414,7 +3414,7 @@ function importBackup(file) {
       if (isObj(x) && Array.isArray(x.gymLog)) { const a = normGymLog(x.gymLog), have = new Set(getGymLog().map(e => e.d)); putGymLog(getGymLog().concat(a.filter(e => !have.has(e.d)))); }
       if (isObj(x) && Array.isArray(x.mobLog)) { const a = normMobLog(x.mobLog), have = new Set(getMobLog().map(e => e.d + '|' + e.t)); putMobLog(getMobLog().concat(a.filter(e => !have.has(e.d + '|' + e.t)))); }
       const settings = isObj(x) && isObj(x.settings) ? x.settings : null;
-      if (!entries.length && !wl.length && !rw.length && !rl.length && !rc.length && !wg.length && !rs.length && !settings) throw Error(T('Keine gültigen Daten gefunden', 'No valid data found'));
+      if (!entries.length && !wl.length && !rw.length && !rl.length && !rc.length && !wg.length && !rs.length && !vo.length && !settings) throw Error(T('Keine gültigen Daten gefunden', 'No valid data found'));
       const ids = new Set(saved.map(e => String(e.id))); let added = 0, addedW = 0;
       for (const e of entries) if (!ids.has(e.id)) { saved.push(e); ids.add(e.id); added++; }
       const days = new Set(waist.map(e => e.date));
