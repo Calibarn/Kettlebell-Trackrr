@@ -483,7 +483,7 @@ html[data-os=android] .infoi{border-color:var(--accent-ink);color:var(--accent-i
 .sdone{flex:none;font-size:14px;font-weight:600;color:var(--accent-ink)}
 .sicon{flex:none;display:grid;place-items:center;width:34px;height:34px;border-radius:9px;color:#fff}
 .sicon svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.si-kraft{background:var(--accent);color:var(--on-accent)}.si-laufen{background:var(--blue)}.si-mobility{background:#a855d6}.si-profil{background:var(--orange);color:#000}.si-mehr{background:#8e8e93;color:#000}
+.si-kraft{background:var(--accent);color:var(--on-accent)}.si-laufen{background:var(--blue)}.si-mobility{background:#a855d6}.si-profil{background:var(--orange);color:#000}.si-mehr{background:#8e8e93;color:#000}.si-sauna{background:#e4572e}
 .sweek{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:2px 0 8px}
 .sweek>div{display:flex;flex-direction:column;gap:4px;min-width:0}
 .sweek small{font-size:13px;color:var(--label2)}
@@ -717,3 +717,6 @@ html[data-os=android] .infoi{border-color:var(--accent-ink);color:var(--accent-i
 .progline{margin:2px 0 6px;font-size:14px;font-variant-numeric:tabular-nums}
 .vo2add{display:grid;grid-template-columns:1fr 90px auto;gap:8px;align-items:center;margin:8px 0}
 .vo2add input{min-width:0}
+.saunaadd{display:grid;grid-template-columns:1fr 92px auto;gap:8px;align-items:center;padding:2px 16px 0}
+.saunaadd input,.saunaadd select{min-width:0}
+#saunatoday .tiny{padding:0 16px 12px}

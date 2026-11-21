@@ -457,10 +457,12 @@ const SEASON = {
   /* Qualitätseinheit je Phase und Distanz; [ungerade KW, gerade KW].
      Schwerpunkt Schwelle (Jan: „mehr Schwellenintervalle statt Intervalle“): Basis, Grundlage und Aufbau mit Schwellen-Intervallen,
      kurze Steigerungen bleiben für flinke Beine. Harte Intervalle (≈ 5-km-Tempo) erst in der spezifischen Phase kurz vor dem Rennen –
-     bei 5 km die letzten 2, bei 10 km die letzten 3 Wochen vor dem Tapering; HM und Marathon üben dort Renntempo statt Intervalle. */
+     bei 5 km die letzten 2, bei 10 km die letzten 3 Wochen vor dem Tapering; HM und Marathon üben dort Renntempo statt Intervalle.
+     Ab 1.7 (Jans Bild mit drei Einheiten): Grundlage mit Cruise-Intervallen nach Daniels (1-km-Stücke, kurze Pause), 10 km spezifisch mit
+     dem Norweger 4 × 4. Billat 30/30 bewusst nicht – das wäre eine weitere harte Intervall-Einheit außerhalb der spezifischen Phase. */
   key: {
     basis: { all: ['4 × 6 Min. Schwelle, 90 Sek. Trabpause', '3 × 8 Min. Schwelle, 2 Min. Trabpause, danach 6 × 100 m Steigerung'] },
-    base: { all: ['5 × 6 Min. Schwelle, 90 Sek. Trabpause', '3 × 10 Min. Schwelle, 2 Min. Trabpause, danach 6 × 100 m Steigerung'] },
+    base: { all: ['5 × 1 km Schwelle, 1 Min. Trabpause', '3 × 10 Min. Schwelle, 2 Min. Trabpause, danach 6 × 100 m Steigerung'] },
     build: {
       '5k': ['6 × 5 Min. Schwelle, 1 Min. Trabpause', '3 × 10 Min. Schwelle, 2 Min. Trabpause'],
       '10k': ['4 × 8 Min. Schwelle, 90 Sek. Trabpause', '3 × 10 Min. Schwelle, 2 Min. Trabpause'],
@@ -470,7 +472,7 @@ const SEASON = {
     },
     spec: {
       '5k': ['5 × 1 km im 5-km-Tempo, 2 Min. Trabpause', '12 × 400 m etwas schneller als 5-km-Tempo'],
-      '10k': ['Intervall: 5 × 1 km zügig, 2 Min. Trabpause', '3 × 3 km im 10-km-Tempo, 3 Min. Trabpause'],
+      '10k': ['Intervall: Norweger 4 × 4 Min. hart, 3 Min. Trabpause', '3 × 3 km im 10-km-Tempo, 3 Min. Trabpause'],
       hm: ['2 × 5 km im HM-Tempo, 3 Min. Trabpause', '3 × 3 km im HM-Tempo, 2 Min. Trabpause'],
       marathon: ['2 × 15 Min. Schwelle', '8 km im Marathontempo nach 3 km Einlaufen'],
       pace: ['Probe: 8–10 × 1 km, jeder etwas schneller, die letzten 3 im Level-Tempo, 60 Sek. Stehpause', '5 × 1 km im Level-Tempo, 60 Sek. Stehpause']
@@ -587,7 +589,7 @@ const SEASON_GUIDE = [
 /* Mobility (ohne Tracking): Reiter Läufer / Alltag mit je einem geführten Kurzprogramm pro Auswahl, Reiter Übungen nach Körperbereich.
    Die Reihenfolge von routines nicht ändern: data-mob verweist auf den Index. */
 const MOBILITY = {
-  tabs: [['laeufer', 'Läufer'], ['alltag', 'Alltag'], ['uebungen', 'Übungen']],
+  tabs: [['laeufer', 'Läufer'], ['alltag', 'Alltag'], ['uebungen', 'Übungen'], ['recovery', 'Recovery']],
   regions: [['huefte', 'Hüfte'], ['ruecken', 'Rücken'], ['schultern', 'Schultern'], ['beine', 'Beine & Fuß']],
   routines: [
     { id: 'morgens', tab: 'alltag', label: 'Morgens', title: 'Morgens', time: '5 Min.', intro: 'Fünf Minuten nach dem Aufstehen: Rücken, Hüfte, Schultern und Nacken in Gang bringen.', steps: [['1 Min.', 'Katze-Kuh'], ['1 Min.', "World's Greatest Stretch"], ['1 Min.', '90/90-Hüftrotation'], ['1 Min.', 'Wand-Engel'], ['1 Min.', 'Kinn-Rückzug']] },
@@ -887,9 +889,14 @@ PREP.mat.push('Dead Bug mit Kurzhantel', 'Floor Press mit Kurzhanteln', 'Pullove
    Der älteste (letzte) Eintrag ist der Grundstand mit allen Funktionen; Neulinge sehen ihn plus die 3 neuesten Updates. */
 /* Versionsnummer der App, angezeigt unter Mehr. Seit 13.11.2026 gehen Änderungen direkt live (main, ohne Wochen-Release über dev);
    jeder Tag mit Veröffentlichung ist eine neue Nebenversion: 1.1, 1.2, 1.3 … Der Neuigkeiten-Eintrag des Tages bekommt dieselbe Nummer (version). */
-const APP_VERSION = '1.6';
+const APP_VERSION = '1.7';
 // Ein Eintrag pro Tag: Änderungen desselben Tages kommen in den Eintrag des Tages (aka = frühere ids für „schon gesehen“)
 const CHANGELOG = [
+  { id: '2026-11-21', date: '2026-11-21', version: '1.7', title: 'Sauna', items: [
+    ['Sauna unter Recovery', 'Neuer Reiter Mobility → Recovery: Sauna eintragen, auch nachträglich und mit Anzahl der Gänge, dazu Verlauf und eine kurze Anleitung – Ablauf, Abkühlen, Trinken, nach dem Training.', 'neu'],
+    ['Sauna-Tage', 'Unter Profil → Trainingswoche legst du Sauna-Tage fest. Dann steht die Sauna in „Heute dran“, mit Hinweis passend zum Training: am Tag vor einem Rennen lieber nicht, nach einem harten Lauf erst trinken und essen, vor einer harten Einheit nur mild.', 'neu'],
+    ['Neue Intervall-Einheiten', 'In der Grundlage gibt es jetzt auch Cruise-Intervalle: 5 × 1 km an der Schwelle mit 1 Min. Trabpause. Vor einem 10-km-Rennen kommt der Norweger 4 × 4 dazu: 4 Min. hart, 3 Min. traben.', 'neu']
+  ] },
   { id: '2026-11-17', date: '2026-11-17', version: '1.6', title: 'Intervalle', items: [
     ['Intervalle eintragen', 'Bei Intervall- und Tempoläufen trägst du jetzt jedes Intervall ein: Strecke, Zeit und Max-Puls. Anzahl und Länge kommen aus dem Plan (z. B. 4 × 6 Min.), du ergänzt nur, was fehlt. Die Zeit geht ohne Doppelpunkt: 140 = 1:40. Die Felder darüber gelten für die ganze Einheit mit Ein- und Auslaufen.', 'neu'],
     ['Vergleich mit dem letzten Mal', 'Nach dem Eintragen siehst du jedes Intervall mit Tempo und Max-Puls und den Vergleich mit der letzten gleich aufgebauten Einheit – z. B. „12 s/km schneller, Max-Puls 2 niedriger“.', 'neu'],

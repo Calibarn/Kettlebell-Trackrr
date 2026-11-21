@@ -51,6 +51,7 @@ const COLL = {
   races: { key: e => e.id },
   weights: { key: e => e.date, pick: e => ({ date: e.date, kg: e.kg }) },
   vo2: { key: e => e.date, pick: e => ({ date: e.date, v: e.v }) }, // ab 1.6
+  saunaLog: { key: e => e.d, pick: e => ({ d: e.d, g: e.g }) }, // ab 1.7
   results: { key: e => e.id }
 };
 // Bewusste Umstellungen zwischen den Versionen: so muss der alte Wert in der neuen Version aussehen

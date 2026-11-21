@@ -31,6 +31,7 @@ Mein persönlicher Trainings-Begleiter als Web-App für iPhone und Android – K
   - Läufer: Nach dem Lauf, Hüfte, Sprunggelenk, Füße & Achillessehne
   - Alltag: Morgens, Nach dem Sitzen
   - Übungen nach Körperbereich: Hüfte, Rücken, Schultern, Beine & Fuß
+  - Recovery: Sauna eintragen (Datum, optional Gänge), Verlauf und Anleitung; feste Sauna-Tage (Profil → Trainingswoche) stehen in „Heute dran“ mit Hinweis passend zum Training (Rennen heute/morgen → lieber nicht, harter Lauf → erst laufen, morgen hart → mild)
   - Kurzprogramme mit geführtem Timer inkl. Seitenwechsel und Ansage
 - **Mehr** (Zeile am Ende der Startseite): Neuigkeiten, Anleitung (inkl. Hinweise), Geräte-Sync, Datensicherung, Zurücksetzen
 - **Im Handy-Browser** (iPhone/Android, nicht als App geöffnet) steht in jedem Bereich ganz oben der Hinweis „Als App installieren“ mit Link zur Anleitung – nicht wegklickbar, während eines Trainings ausgeblendet

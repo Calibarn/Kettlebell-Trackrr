@@ -5,7 +5,7 @@ const $ = id => document.getElementById(id);
 const KEYS = {
   entries: 'jan-kettlebell-tracker-v1', waist: 'jan-kb-waist-v1', vo2: 'jan-kb-vo2-v1', sound: 'jan-kb-sound-v1', gear: 'jan-kb-gear-v1',
   choice: 'jan-kb-choice-v1', stage: 'jan-kb-stage-v1', plan: 'jan-kb-plan-v1', session: 'jan-kb-session-v1',
-  backup: 'jan-kb-lastbackup-v1', hint: 'jan-kb-installhint-v1', area: 'jan-kb-area-v1', run: 'jan-kb-runview-v1', audio: 'jan-kb-audio-v1', mob: 'jan-kb-mobview-v1', runweeks: 'jan-kb-runweeks-v1', runlog: 'jan-kb-runlog-v1', races: 'jan-kb-races-v1', profile: 'jan-kb-profile-v1', weight: 'jan-kb-weight-v1', skip: 'jan-kb-weekskip-v1', results: 'jan-kb-results-v1', bestview: 'jan-kb-bestview-v1', notes: 'jan-kb-notes-v1', weekplan: 'jan-kb-weekplan-v1', icsremind: 'jan-kb-icsremind-v1', sections: 'jan-kb-sections-v1', starter: 'jan-kb-starter-v1', moblog: 'jan-kb-moblog-v1', runask: 'jan-kb-runask-v1', gymlog: 'jan-kb-gymlog-v1', setup: 'jan-kb-setup-v1', longset: 'jan-kb-longset-v1', swap: 'jan-kb-swap-v1', dayadd: 'jan-kb-dayadd-v1', badges: 'jan-kb-badges-v1'
+  backup: 'jan-kb-lastbackup-v1', hint: 'jan-kb-installhint-v1', area: 'jan-kb-area-v1', run: 'jan-kb-runview-v1', audio: 'jan-kb-audio-v1', mob: 'jan-kb-mobview-v1', runweeks: 'jan-kb-runweeks-v1', runlog: 'jan-kb-runlog-v1', races: 'jan-kb-races-v1', profile: 'jan-kb-profile-v1', weight: 'jan-kb-weight-v1', skip: 'jan-kb-weekskip-v1', results: 'jan-kb-results-v1', bestview: 'jan-kb-bestview-v1', notes: 'jan-kb-notes-v1', weekplan: 'jan-kb-weekplan-v1', icsremind: 'jan-kb-icsremind-v1', sections: 'jan-kb-sections-v1', starter: 'jan-kb-starter-v1', moblog: 'jan-kb-moblog-v1', runask: 'jan-kb-runask-v1', gymlog: 'jan-kb-gymlog-v1', saunalog: 'jan-kb-saunalog-v1', setup: 'jan-kb-setup-v1', longset: 'jan-kb-longset-v1', swap: 'jan-kb-swap-v1', dayadd: 'jan-kb-dayadd-v1', badges: 'jan-kb-badges-v1'
 };
 /* Datensicherheit bei Updates:
    - Einträge, die diese Version nicht versteht, werden nie verworfen, sondern unverändert mitgespeichert.
@@ -120,6 +120,8 @@ function normProfile(p) {
       // Mobility-Tage mit Routine je Tag (sonst die zuletzt genutzte)
       mobility: mobDays,
       mobilityPlan: isObj(wk.mobilityPlan) ? Object.fromEntries(Object.entries(wk.mobilityPlan).filter(([d, id]) => mobDays.includes(Number(d)) && typeof id === 'string' && MOBILITY.routines.some(r => r.id === id))) : {},
+      // Sauna-Tage (ab 1.7, Mobility → Recovery): stehen in „Heute dran“ mit einem Hinweis passend zum Training
+      sauna: Array.isArray(wk.sauna) ? [...new Set(wk.sauna.filter(isWd))] : [],
       // harte Kurs-Tage (z. B. CrossFit): am Tag danach plant der Laufplan nur locker statt Qualität
       gymHard: Array.isArray(wk.gymHard) ? [...new Set(wk.gymHard.filter(d => isWd(d) && strength.includes(d) && isObj(wk.strengthPlan) && wk.strengthPlan[d] === 'gym'))] : [],
       gymNames: isObj(wk.gymNames) ? Object.fromEntries(Object.entries(wk.gymNames).filter(([d, n]) => isObj(wk.strengthPlan) && wk.strengthPlan[d] === 'gym' && strength.includes(Number(d)) && typeof n === 'string' && n.trim()).map(([d, n]) => [d, n.trim().slice(0, 30)])) : {} }
@@ -1020,6 +1022,7 @@ function renderProfile() {
     ${w.strength.length ? `<p class="tiny">${T('Feste Krafttage – beim Nachholen kommt dort kein Lauf dazu', 'Fixed strength days – no run is added there when catching up')}</p><div class="chips days" role="group" aria-label="${T('Feste Krafttage', 'Fixed strength days')}">${WEEK_ORDER.filter(d => w.strength.includes(d)).map(d => `<button type="button" class="chip" data-strengthfix="${d}" aria-pressed="${w.strengthFixed.includes(d)}">${WD[d]}</button>`).join('')}</div>` : ''}
 ` : ''}${mod('mobility') ? `    <p class="tiny">${T('Mobility-Tage', 'Mobility days')}</p><div class="chips days" role="group" aria-label="${T('Mobility-Tage', 'Mobility days')}">${WEEK_ORDER.map(d => `<button type="button" class="chip" data-mobday="${d}" aria-pressed="${w.mobility.includes(d)}">${WD[d]}</button>`).join('')}</div>
     ${w.mobility.length ? `<p class="tiny">${T('Routine je Mobility-Tag – „frei“ nimmt die zuletzt genutzte', 'Routine per mobility day – “free” uses the last one you used')}</p><div class="dayplans">${WEEK_ORDER.filter(d => w.mobility.includes(d)).map(d => `<label class="dayplan"><span>${WD[d]}</span><select data-wkmob="${d}" aria-label="${T(`Mobility-Routine am ${WD_LONG[d]}`, `Mobility routine on ${WD_LONG[d]}`)}"><option value="">${T('frei', 'free')}</option>${MOBILITY.routines.map(r => `<option value="${r.id}"${w.mobilityPlan[d] === r.id ? ' selected' : ''}>${esc(tr(r.label))}</option>`).join('')}</select></label>`).join('')}</div>` : ''}
+    <p class="tiny">${T('Sauna-Tage', 'Sauna days')}</p><div class="chips days" role="group" aria-label="${T('Sauna-Tage', 'Sauna days')}">${WEEK_ORDER.map(d => `<button type="button" class="chip" data-saunaday="${d}" aria-pressed="${w.sauna.includes(d)}">${WD[d]}</button>`).join('')}</div>
 ` : ''}    ${weekWarnings().map(t => `<div class="alert due">${esc(t)}</div>`).join('')}
     <p class="tiny">${T('Optional: im Plan abhaken, was erledigt ist, und Verpasstes in derselben Woche auf einen freien Tag verschieben.', 'Optional: tick off in the plan what is done and move missed sessions to a free day in the same week.')}</p><div class="chips"><button type="button" class="chip" data-wktrack aria-pressed="${w.track}">${T('Abhaken & nachholen', 'Tick off & catch up')}</button></div>`;
   const zr = n => zoneRange(n);
@@ -1079,6 +1082,8 @@ function onProfileClick(e) {
   if (mt) { const k = mt.dataset.modtoggle, on = !mod(k); if (!on && ['kraft', 'laufen', 'mobility'].filter(mod).length === 1) { toast(T('Mindestens ein Bereich bleibt an.', 'At least one area stays on.')); return; } profile.modules[k] = on; profileChanged('week'); applyModules(); renderStart(); return; }
   const mdy = t.closest('[data-mobday]');
   if (mdy) { const d = Number(mdy.dataset.mobday), m = profile.week.mobility; profile.week.mobility = m.includes(d) ? m.filter(x => x !== d) : m.concat(d); profileChanged('week'); return; }
+  const sdy = t.closest('[data-saunaday]');
+  if (sdy) { const d = Number(sdy.dataset.saunaday), m = profile.week.sauna; profile.week.sauna = m.includes(d) ? m.filter(x => x !== d) : m.concat(d); profileChanged('week'); return; }
   const sd = t.closest('[data-strength]');
   if (sd) { const d = Number(sd.dataset.strength), s = profile.week.strength; profile.week.strength = s.includes(d) ? s.filter(x => x !== d) : s.concat(d); profileChanged('week'); return; }
   // Max. HF schätzen: Tanaka (2001, Metaanalyse) und Nes (2013, HUNT-Studie, trainierte Erwachsene) statt „220 − Alter“; das Alter wird nicht gespeichert
@@ -2332,6 +2337,26 @@ const normGymLog = v => Array.isArray(v) ? v.filter(e => isObj(e) && isDay(e.d) 
 const getGymLog = () => normGymLog(load(KEYS.gymlog, []));
 const putGymLog = v => store(KEYS.gymlog, normGymLog(v));
 const gymDone = d => getGymLog().some(e => e.d === d);
+/* Sauna (ab 1.7, Mobility → Recovery): ein Eintrag je Tag { d, g? } mit optional der Anzahl Gänge (1–6), im Backup und Sync.
+   Sauna-Tage aus Profil → Trainingswoche stehen in „Heute dran“ – mit einem Hinweis passend zum Training (saunaHint). */
+const normSaunaLog = v => { if (!Array.isArray(v)) return []; const m = new Map(); for (const e of v) if (isObj(e) && isDay(e.d)) m.set(e.d, Object.assign({ d: e.d }, Number.isInteger(e.g) && e.g >= 1 && e.g <= 6 ? { g: e.g } : {})); return [...m.values()].sort((a, b) => a.d.localeCompare(b.d)).slice(-400); };
+const getSaunaLog = () => normSaunaLog(load(KEYS.saunalog, []));
+const putSaunaLog = v => store(KEYS.saunalog, normSaunaLog(v));
+const saunaOn = d => getSaunaLog().find(e => e.d === d) || null;
+const gaengeText = g => g ? T(`${g} ${g === 1 ? 'Gang' : 'Gänge'}`, `${g} ${g === 1 ? 'round' : 'rounds'}`) : '';
+/* Hinweis für einen Sauna-Tag, wichtigster zuerst: Rennen heute oder morgen → lieber keine Sauna (Flüssigkeit, frische Beine,
+   nach Halbmarathon und Marathon zusätzlich Kreislauf). Harter Lauf heute → erst laufen, dann Sauna; morgen → heute mild. Krafttag → danach. */
+function saunaHint(day) {
+  const next = addDays(day, 1), wd = new Date(day + 'T12:00:00').getDay(), race = d => races.find(r => r.date === d && !r.dns);
+  const hard = d => { if (!mod('laufen') || runnerLevel() === 'beginner') return null; const it = plannedRunsOn(d).find(o => o.kind === 'long' || ((o.kind === 'quality' || o.kind === 'quality2') && !o.easy)); return it ? it.title : null; };
+  const r0 = race(day), r1 = race(next), h0 = !r0 && !r1 && hard(day), h1 = !r0 && !r1 && !h0 && hard(next);
+  if (r0) return { warn: true, text: T(`Heute ${r0.name}: danach keine Sauna – frühestens morgen, dann kurz und mild.`, `${r0.name} today: no sauna afterwards – tomorrow at the earliest, then short and mild.`) };
+  if (r1) return { warn: true, text: T(`Morgen ${r1.name}: heute lieber keine Sauna – sie kostet Flüssigkeit und frische Beine.`, `${r1.name} tomorrow: better skip the sauna today – it costs fluid and fresh legs.`) };
+  if (h0) return { text: T(`Erst ${h0}, dann Sauna – vorher trinken und etwas essen, dann 2–3 Gänge.`, `${h0} first, then sauna – drink and eat something first, then 2–3 rounds.`) };
+  if (h1) return { text: T(`Morgen ${h1}: heute mild – 2 Gänge und viel trinken.`, `${h1} tomorrow: keep it mild today – 2 rounds and plenty to drink.`) };
+  if (mod('kraft') && strengthDays().includes(wd)) return { text: gymOn(wd) ? T(`Nach ${gymOn(wd)}: erst trinken, dann 2–3 Gänge.`, `After ${gymOn(wd)}: drink first, then 2–3 rounds.`) : T('Nach dem Krafttraining: erst trinken, dann 2–3 Gänge.', 'After strength training: drink first, then 2–3 rounds.') };
+  return { text: T('2–3 Gänge à 8–12 Min., dazwischen abkühlen und ruhen, viel trinken.', '2–3 rounds of 8–12 min, cool down and rest in between, drink plenty.') };
+}
 function logMobility(title) { putMobLog(getMobLog().concat({ d: localDay(), t: String(title) })); if (area === 'start') renderStart(); }
 const daysAgo = d => { const n = Math.round((new Date(localDay() + 'T12:00:00') - new Date(d + 'T12:00:00')) / 864e5); return n <= 0 ? T('heute', 'today') : n === 1 ? T('gestern', 'yesterday') : T(`vor ${n} Tagen`, `${n} days ago`); };
 const daysTo = d => Math.round((new Date(d + 'T12:00:00') - new Date(localDay() + 'T12:00:00')) / 864e5);
@@ -2340,7 +2365,8 @@ const START_ICON = {
   laufen: '<circle cx="14.5" cy="4.5" r="1.8"/><path d="M8 21l3-6 3 2v5M11 15l1.5-5L9 11 7 14M12.5 10l3 2.5 3-1"/>',
   mobility: '<circle cx="12" cy="4.5" r="1.8"/><path d="M5 9l7 1.5L19 9M12 10.5V15l-4 6M12 15l4 6"/>',
   profil: '<circle cx="12" cy="8" r="3.6"/><path d="M4.5 20.5c1.2-4 4.1-6 7.5-6s6.3 2 7.5 6"/>',
-  mehr: '<path d="M6 12h.01M12 12h.01M18 12h.01" stroke-width="3.2"/>'
+  mehr: '<path d="M6 12h.01M12 12h.01M18 12h.01" stroke-width="3.2"/>',
+  sauna: '<path d="M8 20c-1.6-1.8 1.6-3.4 0-5.2S9.6 11.4 8 9.6M12 20c-1.6-1.8 1.6-3.4 0-5.2s1.6-3.4 0-5.2M16 20c-1.6-1.8 1.6-3.4 0-5.2s1.6-3.4 0-5.2M5 5.5h14"/>'
 };
 const startIcon = (k, cls = '') => `<span class="sicon si-${k}${cls}" aria-hidden="true"><svg viewBox="0 0 24 24">${START_ICON[k]}</svg></span>`;
 // Was heute dran ist: aus dem Saisonplan (mit Abhaken/Verschieben), sonst aus den Tagen im Profil; dazu der Lauf-Einstieg
@@ -2348,12 +2374,15 @@ function todayItems() {
   const today = localDay(), wd = new Date(today + 'T12:00:00').getDay(), w = profile.week, out = [];
   const kraft = (pk = plan) => { const ex = exList(pk); return { kind: 'strength', title: `${T('Kraft', 'Strength')} · ${tr(PLANS[pk].tab)}`, detail: `${ex.length} ${T("Übungen", "exercises")} · ${Math.round(phaseSecs(pk, 1) / 60)} ${T("Min.", "min")}`, act: 'kraft', plan: pk, need: planNeeds(pk) }; };
   // Mobility-Tag: Routine des Tages
+  // Sauna-Tag (oder heute schon eingetragen): mit Hinweis passend zum Training
+  const saunaItem = () => { const s = saunaOn(today); if (!mod('mobility') || !(w.sauna.includes(wd) || s)) return null; return { kind: 'sauna', key: 'sauna', title: 'Sauna', detail: s ? gaengeText(s.g) : '', tip: s ? '' : saunaHint(today).text, act: 'sauna', done: !!s }; };
   const mobItem = () => { if (!mod('mobility') || !w.mobility.includes(wd)) return null; const r = mobRoutineOn(wd); return { kind: 'mobility', title: `Mobility · ${tr(r.title)}`, detail: tr(r.time), act: 'mob', mob: MOBILITY.routines.indexOf(r), done: getMobLog().some(e => e.d === today) }; };
   if (runnerLevel() === 'beginner' || !mod('laufen')) {
     const s = getStarter(), doneToday = s.log.some(x => x.d === today);
     if (mod('laufen') && (doneToday || s.done < STARTER_N)) out.push({ kind: 'starter', title: T(`Lauf-Einstieg · Woche ${s.week + 1}`, `Running starter · week ${s.week + 1}`), detail: starterSummary(s.week), act: 'starter', done: doneToday });
     const mi = mobItem(); if (mi) out.push(mi);
     if (strengthDays().includes(wd)) out.push(gymOn(wd) ? { kind: 'strength', gym: gymOn(wd), title: `${T('Kurs', 'Class')} · ${gymOn(wd)}`, detail: T('im Studio', 'at the gym'), act: 'gym', done: gymDone(today) } : kraft(dayPlan(wd) || plan));
+    const si = saunaItem(); if (si) out.push(si);
     return out;
   }
   const S = seasonPlan(), x = S.weeks[0];
@@ -2378,6 +2407,7 @@ function todayItems() {
   const ad = dayAdd[today];
   if (ad && ad.to === 'mob' && !out.some(o => o.kind === 'mobility')) { const r = mobRoutineOn(wd); out.push({ kind: 'mobility', key: 'add', extraAdd: true, title: `Mobility · ${tr(r.title)}`, detail: `${tr(r.time)} · ${T('heute zusätzlich', 'extra today')}`, act: 'mob', mob: MOBILITY.routines.indexOf(r), done: getMobLog().some(e => e.d === today) }); }
   if (swapped && sw && sw.to === 'rest') out.push({ kind: 'rest', key: 'swap', swap: true, title: T('Ruhetag', 'Rest day'), detail: T(`heute statt ${swapWas(swapped, wd)}`, `today instead of ${swapWas(swapped, wd)}`) });
+  const si = saunaItem(); if (si) out.push(si);
   return out;
 }
 /* Jahresziel: gelaufene km im Jahr (einzelne Läufe und Rennen nach Datum, Wochensummen nach dem Donnerstag ihrer Woche),
@@ -2803,8 +2833,8 @@ function renderStart() {
   const today = localDay(), wk = weekStart(today), items = todayItems();
   $('startdate').textContent = new Intl.DateTimeFormat(LOCALE, { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date(today + 'T12:00:00'));
   const logBtn = it => RUN(it) && it.key && !ranOn(today) ? `<button type="button" class="btn small primary sgo" data-logtoday="${esc(it.key)}">${T('Eintragen', 'Log')}</button>` : '';
-  const btn = it => it.done ? `<span class="sdone">✓ ${T('erledigt', 'done')}</span>` : it.act === 'mob' ? `<button type="button" class="btn small primary sgo" data-startmob="${it.mob}">▶ ${T('Starten', 'Start')}</button>` : it.act === 'gym' ? `<button type="button" class="btn small primary sgo" data-gymdone="${esc(it.gym)}">✓ ${T('Abhaken', 'Check off')}</button>` : it.act === 'kraft' || it.act === 'starter' ? `<button type="button" class="btn small primary sgo" data-startact="${it.act}"${it.plan ? ` data-startplan="${it.plan}"` : ''}>▶ ${T('Starten', 'Start')}</button>` : it.act ? `<span class="sbtns"><button type="button" class="btn small sgo" data-startact="${it.act}">${T('Details', 'Details')}</button>${logBtn(it)}</span>` : '';
-  const ico = it => startIcon(it.kind === 'strength' ? 'kraft' : it.kind === 'mobility' || it.kind === 'rest' ? 'mobility' : it.kind === 'extra' ? 'mehr' : 'laufen');
+  const btn = it => it.done ? `<span class="sdone">✓ ${T('erledigt', 'done')}</span>` : it.act === 'mob' ? `<button type="button" class="btn small primary sgo" data-startmob="${it.mob}">▶ ${T('Starten', 'Start')}</button>` : it.act === 'gym' ? `<button type="button" class="btn small primary sgo" data-gymdone="${esc(it.gym)}">✓ ${T('Abhaken', 'Check off')}</button>` : it.act === 'sauna' ? `<button type="button" class="btn small primary sgo" data-saunadone>✓ ${T('Abhaken', 'Check off')}</button>` : it.act === 'kraft' || it.act === 'starter' ? `<button type="button" class="btn small primary sgo" data-startact="${it.act}"${it.plan ? ` data-startplan="${it.plan}"` : ''}>▶ ${T('Starten', 'Start')}</button>` : it.act ? `<span class="sbtns"><button type="button" class="btn small sgo" data-startact="${it.act}">${T('Details', 'Details')}</button>${logBtn(it)}</span>` : '';
+  const ico = it => startIcon(it.kind === 'strength' ? 'kraft' : it.kind === 'mobility' || it.kind === 'rest' ? 'mobility' : it.kind === 'sauna' ? 'sauna' : it.kind === 'extra' ? 'mehr' : 'laufen');
   const rows = items.length ? items.map(it => `<div class="srowt${it.done ? ' isdone' : ''}">${ico(it)}<span class="txt"><b>${esc(it.title)}</b>${it.detail || it.note ? `<small>${esc([it.detail, it.note].filter(Boolean).join(' · '))}</small>` : ''}${it.need && it.need.length && !it.done ? `<small class="sneed"><b>${T('Du brauchst', 'You need')}:</b> ${esc(it.need.join(' · '))}</small>` : ''}${it.tip ? `<small class="stip">${esc(it.tip)}</small>` : ''}${longCtl(it)}${warmCtl(it)}${swapCtl(it, items)}</span>${swapOpen && swapOpen === it.key && !it.swap ? '' : btn(it)}</div>`).join('')
     : `<div class="srowt">${startIcon('mobility')}<span class="txt"><b>${T('Heute ist nichts geplant', 'Nothing planned today')}</b><small>${T('Ruhetag – oder eine kurze Mobility-Routine', 'Rest day – or a short mobility routine')}</small></span><button type="button" class="btn small sgo" data-go="mobility">Mobility</button></div>`;
   // Diese Woche: Kraft gegen die Krafttage im Profil, Laufen gegen den Plan bzw. den Schnitt der letzten 4 Wochen, Mobility als Anzahl
@@ -2865,6 +2895,8 @@ $('startcontent').addEventListener('click', e => {
   if (e.target.closest('#yearsave')) { const v = Number(String($('yeargoal').value).replace(/\D/g, '')), y = localDay().slice(0, 4);
     if (!(Number.isInteger(v) && v >= 50 && v <= 20000)) { $('yeargoal').setAttribute('aria-invalid', 'true'); toast(T('Bitte ein Ziel zwischen 50 und 20.000 km eintragen.', 'Please enter a goal between 50 and 20,000 km.')); return; }
     profile.yearKm[y] = v; yearEdit = false; persistProfile(); renderStart(); toast(T(`✓ Jahresziel ${y}: ${kmText(v)} km`, `✓ Year goal ${y}: ${kmText(v)} km`)); return; }
+  if (e.target.closest('[data-saunadone]')) { const d = localDay(); if (!saunaOn(d)) putSaunaLog(getSaunaLog().concat({ d })); renderStart(); if (area === 'mobility') renderMobility();
+    toastUndo(T('✓ Sauna abgehakt.', '✓ Sauna checked off.'), () => { putSaunaLog(getSaunaLog().filter(x => x.d !== d)); renderStart(); }); return; }
   const gd = e.target.closest('[data-gymdone]'); if (gd) { const d = localDay(); if (!gymDone(d)) putGymLog(getGymLog().concat({ d, n: gd.dataset.gymdone })); renderStart(); toast(T(`✓ ${gd.dataset.gymdone} abgehakt.`, `✓ ${gd.dataset.gymdone} checked off.`)); return; }
   const po = e.target.closest('[data-pendopen]'); if (po) { pendOpen = po.dataset.pendopen; renderStart(); const c = document.querySelector('#startrun, #startresult'); if (c) { c.scrollIntoView({ block: 'nearest' }); const f = c.querySelector('input'); if (f) f.focus({ preventScroll: true }); } return; }
   if (e.target.closest('[data-pendclose]')) { pendOpen = null; renderStart(); return; }
@@ -3006,7 +3038,8 @@ const SYNC_COLLS = {
   results: { key: KEYS.results, id: e => isObj(e) && typeof e.id === 'string' ? e.id : null },
   // Mobility-Routinen und Kurs-Tage je Eintrag (bis 1.1 als Ganzes unter „Einstellungen“ – dort übersprang der Abgleich Listen)
   moblog: { key: KEYS.moblog, id: e => isObj(e) && isDay(e.d) && typeof e.t === 'string' ? `${e.d}|${e.t}` : null },
-  gymlog: { key: KEYS.gymlog, id: e => isObj(e) && isDay(e.d) && typeof e.n === 'string' ? `${e.d}|${e.n}` : null }
+  gymlog: { key: KEYS.gymlog, id: e => isObj(e) && isDay(e.d) && typeof e.n === 'string' ? `${e.d}|${e.n}` : null },
+  saunalog: { key: KEYS.saunalog, id: e => isObj(e) && isDay(e.d) ? e.d : null } // ab 1.7
 };
 // Einstellungen, die zwischen Geräten gleich sein sollen (Ton, Stimme und Sprache bleiben je Gerät). Erfolge: je Strecke das früheste Datum.
 const SYNC_SETTINGS = { choices: KEYS.choice, stages: KEYS.stage, profile: KEYS.profile, gear: KEYS.gear, weekSkip: KEYS.skip, longSet: KEYS.longset, daySwap: KEYS.swap, dayAdd: KEYS.dayadd, weekPlan: KEYS.weekplan, starter: KEYS.starter, badges: KEYS.badges };
@@ -3075,7 +3108,7 @@ function syncMerge(remote) {
       if (!idx.has(id)) m.del[k] = Math.max(m.del[k] || 0, ts);
     }
     if (touched) { if (d.key === KEYS.runlog || d.key === KEYS.weight || d.key === KEYS.races || d.key === KEYS.results) arr.sort((a, b) => String(a.date).localeCompare(String(b.date)));
-      if (d.key === KEYS.moblog || d.key === KEYS.gymlog) arr.sort((a, b) => String(a.d).localeCompare(String(b.d)));
+      if (d.key === KEYS.moblog || d.key === KEYS.gymlog || d.key === KEYS.saunalog) arr.sort((a, b) => String(a.d).localeCompare(String(b.d)));
       rawSet(d.key, arr); }
   }
   for (const [n, key] of Object.entries(SYNC_SETTINGS)) {
@@ -3325,7 +3358,7 @@ $('notesauto').addEventListener('click', () => { notesOpt.auto = notesOpt.auto =
 
 /* ---------- Dateien: Backup, CSV, Kalender ---------- */
 function download(name, content, type) { const blob = new Blob([content], { type }), url = URL.createObjectURL(blob), a = document.createElement('a'); a.href = url; a.download = name; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 3000); }
-function backupJson() { return JSON.stringify({ version: 3, entries: saved.concat(savedKeep), waist: waist.concat(waistKeep), runWeeks: runWeeks.concat(runWeeksKeep), runLog: runLog.concat(runLogKeep), races: races.concat(racesKeep), weights: weights.concat(weightKeep), vo2: vo2s.concat(vo2Keep), results: results.concat(resultsKeep), weekSkip, longSet, daySwap, dayAdd, badges: load(KEYS.badges, {}), starter: getStarter(), mobLog: getMobLog(), gymLog: getGymLog(), settings: { gear, choices, stages, audio: audioOpt, profile: Object.assign({}, profileExtra, profile) }, exportedAt: new Date().toISOString() }, null, 2); }
+function backupJson() { return JSON.stringify({ version: 3, entries: saved.concat(savedKeep), waist: waist.concat(waistKeep), runWeeks: runWeeks.concat(runWeeksKeep), runLog: runLog.concat(runLogKeep), races: races.concat(racesKeep), weights: weights.concat(weightKeep), vo2: vo2s.concat(vo2Keep), results: results.concat(resultsKeep), weekSkip, longSet, daySwap, dayAdd, badges: load(KEYS.badges, {}), starter: getStarter(), mobLog: getMobLog(), gymLog: getGymLog(), saunaLog: getSaunaLog(), settings: { gear, choices, stages, audio: audioOpt, profile: Object.assign({}, profileExtra, profile) }, exportedAt: new Date().toISOString() }, null, 2); }
 function schemaCheck() {
   const prev = load(SCHEMA_KEY, null);
   if (prev === SCHEMA || (typeof prev === 'number' && prev > SCHEMA)) return; // neuere Daten mit älterer App: nichts verändern
@@ -3419,6 +3452,7 @@ function importBackup(file) {
       // Lauf-Einstieg: der Stand mit mehr erledigten Einheiten gewinnt
       if (isObj(x) && isObj(x.starter)) { const a = normStarter(x.starter); if (a.log.length > getStarter().log.length) putStarter(a); }
       if (isObj(x) && Array.isArray(x.gymLog)) { const a = normGymLog(x.gymLog), have = new Set(getGymLog().map(e => e.d)); putGymLog(getGymLog().concat(a.filter(e => !have.has(e.d)))); }
+      if (isObj(x) && Array.isArray(x.saunaLog)) { const a = normSaunaLog(x.saunaLog), have = new Set(getSaunaLog().map(e => e.d)); putSaunaLog(getSaunaLog().concat(a.filter(e => !have.has(e.d)))); }
       if (isObj(x) && Array.isArray(x.mobLog)) { const a = normMobLog(x.mobLog), have = new Set(getMobLog().map(e => e.d + '|' + e.t)); putMobLog(getMobLog().concat(a.filter(e => !have.has(e.d + '|' + e.t)))); }
       const settings = isObj(x) && isObj(x.settings) ? x.settings : null;
       if (!entries.length && !wl.length && !rw.length && !rl.length && !rc.length && !wg.length && !rs.length && !vo.length && !settings) throw Error(T('Keine gültigen Daten gefunden', 'No valid data found'));
@@ -3681,7 +3715,7 @@ function renderRun() {
     <p class="footer">${T('Zeiten sind Richtwerte. „Geführt“ startet einen Ablauf mit Countdown und Ansage; Strecken und Wiederholungen hakst du selbst ab. Am Wettkampftag nichts Neues ausprobieren – den Ablauf vorher im Training testen.', 'Times are guidelines. “Guided” starts a sequence with countdown and voice; you tick off distances and reps yourself. Try nothing new on race day – test the sequence in training first.')}</p>`;
 }
 // Reiter wie bei Laufen: oben Läufer / Alltag / Übungen, darunter das Programm bzw. der Körperbereich
-const mobOptions = tab => tab === 'uebungen' ? MOBILITY.regions.map(([id, label]) => ({ id, label })) : MOBILITY.routines.filter(r => r.tab === tab);
+const mobOptions = tab => tab === 'uebungen' ? MOBILITY.regions.map(([id, label]) => ({ id, label })) : tab === 'recovery' ? [{ id: 'sauna', label: 'Sauna' }] : MOBILITY.routines.filter(r => r.tab === tab);
 let mobView = load(KEYS.mob, null); if (!isObj(mobView)) mobView = {};
 mobView.tab = MOBILITY.tabs.some(t => t[0] === mobView.tab) ? mobView.tab : MOBILITY.tabs[0][0];
 for (const [t] of MOBILITY.tabs) if (!mobOptions(t).some(o => o.id === mobView[t])) mobView[t] = mobOptions(t)[0].id;
@@ -3689,8 +3723,10 @@ function renderMobility() {
   const tab = mobView.tab, opts = mobOptions(tab), cur = opts.find(o => o.id === mobView[tab]) || opts[0];
   $('mobtabs').innerHTML = MOBILITY.tabs.map(([k, l]) => `<button role="tab" type="button" data-mobtab="${k}" aria-selected="${tab === k}">${l}</button>`).join('');
   $('mobsub').innerHTML = opts.map(o => `<button role="tab" type="button" data-mobsub="${o.id}" aria-selected="${o.id === cur.id}">${esc(o.label)}</button>`).join('');
+  $('mobsub').classList.toggle('hide', opts.length < 2);
   let h;
-  if (tab === 'uebungen') {
+  if (tab === 'recovery') h = renderSauna();
+  else if (tab === 'uebungen') {
     h = MOBILITY.groups.filter(g => g.region === cur.id).map((g, i) => `<div class="header"${i ? '' : ' style="margin-top:6px"'}>${esc(g.title)}</div><div class="group">${g.items.map(s => stepRow(s[0], s[1], '')).join('')}</div>`).join('');
     h += `<p class="footer">${T('Dehnen und mobilisieren im angenehmen Bereich – ziehen ja, Schmerz nein. Ruhig weiteratmen.', 'Stretch and mobilise within a comfortable range – pulling yes, pain no. Keep breathing calmly.')}</p>`;
   } else {
@@ -3700,6 +3736,35 @@ function renderMobility() {
   }
   $('mobcontent').innerHTML = h;
 }
+
+/* Mobility → Recovery → Sauna: heute (Hinweis passend zum Training), eintragen auch nachträglich, Verlauf, Anleitung */
+function renderSauna() {
+  const today = localDay(), L = getSaunaLog(), s = saunaOn(today), plan = WEEK_ORDER.filter(d => profile.week.sauna.includes(d));
+  const n28 = L.filter(e => e.d > addDays(today, -28) && e.d <= today), withG = n28.filter(e => e.g), avgG = withG.length ? withG.reduce((a, e) => a + e.g, 0) / withG.length : null;
+  const tips = [[T('Ablauf', 'How'), T('2–3 Gänge à 8–12 Min. Raus, sobald es unangenehm wird – die Zeit ist kein Ziel. Am Anfang unten sitzen, da ist es kühler.', '2–3 rounds of 8–12 min. Get out as soon as it gets uncomfortable – the time is not a target. Sit low at first, it is cooler there.')],
+    [T('Abkühlen und ruhen', 'Cool down and rest'), T('Erst ein paar Minuten an die frische Luft, dann kühl abduschen – von den Füßen Richtung Herz. Danach mindestens so lange ruhen, wie der Gang gedauert hat.', 'First a few minutes in fresh air, then a cool shower – from the feet towards the heart. Then rest at least as long as the round lasted.')],
+    [T('Trinken', 'Drink'), T('Wasser oder Schorle in den Pausen, kein Alkohol. Nach dem Training schon vorher trinken.', 'Water or juice spritzer in the breaks, no alcohol. After training drink before you go in.')],
+    [T('Nach dem Training', 'After training'), T('Erst trinken und etwas essen, bis der Puls ruhig ist. Nicht vor einem Lauf – Hitze macht müde und kostet Flüssigkeit. Nach harten Einheiten lieber 2 Gänge.', 'Drink and eat something first, until your heart rate has settled. Not before a run – heat makes you tired and costs fluid. After hard sessions rather 2 rounds.')],
+    [T('Für Läufer', 'For runners'), T('Regelmäßig nach dem Laufen gewöhnt die Sauna den Körper an Hitze (mehr Blutplasma) – das hilft vor einem warmen Rennen. Belegt ist das in kleinen Studien; das Training ersetzt sie nicht.', 'Regular sauna after running gets the body used to heat (more blood plasma) – that helps before a warm race. Small studies show this; it does not replace training.')],
+    [T('Lieber nicht', 'Better not'), T('Am Tag vor einem Rennen, am Tag eines Halbmarathons oder Marathons, bei Erkältung oder Fieber und nach Alkohol. Bei Herz-Kreislauf-Problemen oder Blutdruck-Medikamenten vorher ärztlich abklären.', 'The day before a race, on the day of a half marathon or marathon, with a cold or fever and after alcohol. With heart or circulation problems or blood pressure medication, check with a doctor first.')]];
+  return `<div class="intro">${T('Sauna nach dem Training hilft beim Abschalten – und regelmäßig nach dem Laufen gewöhnt sie den Körper an Hitze.', 'A sauna after training helps you switch off – and regularly after running it gets the body used to heat.')}</div>
+    <div class="group" style="margin-top:12px" id="saunatoday"><div class="row"><span class="txt"><b style="font-weight:600">${s ? T('Heute in der Sauna ✓', 'Sauna today ✓') : T('Heute', 'Today')}</b><small>${esc(s ? gaengeText(s.g) || T('ohne Anzahl Gänge', 'without number of rounds') : saunaHint(today).text)}</small></span></div>
+    <div class="saunaadd"><input type="date" id="saunadate" value="${today}" max="${today}" aria-label="${T('Datum', 'Date')}"><select id="saunag" aria-label="${T('Gänge', 'Rounds')}"><option value="">${T('Gänge', 'Rounds')}</option>${[1, 2, 3, 4, 5].map(g => `<option value="${g}"${s && s.g === g ? ' selected' : ''}>${g}</option>`).join('')}</select><button type="button" class="btn small primary" id="saunasave">${T('Eintragen', 'Add')}</button></div>
+    <p class="tiny">${plan.length ? T(`Sauna-Tage: ${plan.map(d => WD[d]).join(', ')} – stehen in „Heute dran“. Ändern unter Profil → Trainingswoche.`, `Sauna days: ${plan.map(d => WD[d]).join(', ')} – shown in “On today”. Change under Profile → Training week.`) : T('Feste Sauna-Tage legst du unter Profil → Trainingswoche fest – dann steht die Sauna in „Heute dran“, mit Hinweis passend zum Training.', 'Set fixed sauna days under Profile → Training week – then the sauna appears in “On today”, with a tip that fits your training.')}</p></div>
+    <div class="header">${T('Verlauf', 'History')}</div><div class="group" id="saunalist">${L.length ? `<div class="row"><span class="txt"><b>${T(`${n28.length} × in 4 Wochen`, `${n28.length} × in 4 weeks`)}</b><small>${avgG ? T(`Ø ${NUM1.format(avgG)} Gänge · `, `avg ${NUM1.format(avgG)} rounds · `) : ''}${T('zuletzt', 'last')} ${daysAgo(L.at(-1).d)}</small></span></div>${L.slice(-6).reverse().map(e => `<div class="row"><span class="txt">${esc(dayLabel(e.d))}${e.g ? ` · ${esc(gaengeText(e.g))}` : ''}</span><button type="button" class="linkbtn" data-saunadel="${e.d}" aria-label="${T(`Sauna vom ${dateGerman(e.d)} löschen`, `Delete sauna of ${dateGerman(e.d)}`)}">✕</button></div>`).join('')}` : `<div class="row"><span class="txt"><small>${T('Noch keine Sauna eingetragen.', 'No sauna logged yet.')}</small></span></div>`}</div>
+    <div class="header">${T('So geht’s', 'How it works')}</div><div class="group">${tips.map(([b, t]) => `<div class="row"><span class="txt"><b style="font-weight:600">${esc(b)}</b><small>${esc(t)}</small></span></div>`).join('')}</div>
+    <p class="footer">${T('Richtwerte für Gesunde. Wer sich unwohl fühlt, geht raus.', 'Guidelines for healthy people. If you feel unwell, get out.')}</p>`;
+}
+$('mobcontent').addEventListener('click', e => {
+  if (e.target.closest('#saunasave')) {
+    const d = $('saunadate').value, old = isDay(d) ? saunaOn(d) : null, g = Number($('saunag').value) || (old && old.g) || null; // ohne Auswahl bleiben eingetragene Gänge
+    if (!isDay(d) || d > localDay()) { toast(T('Bitte ein Datum bis heute wählen.', 'Please choose a date up to today.')); return; }
+    putSaunaLog(getSaunaLog().filter(x => x.d !== d).concat(Object.assign({ d }, g ? { g } : {}))); renderMobility(); if (area === 'start') renderStart();
+    toast(T(`✓ Sauna am ${dateGerman(d)} eingetragen.`, `✓ Sauna on ${dateGerman(d)} logged.`)); return;
+  }
+  const sd = e.target.closest('[data-saunadel]'); if (sd) { const old = saunaOn(sd.dataset.saunadel); if (!old) return; putSaunaLog(getSaunaLog().filter(x => x.d !== old.d)); renderMobility();
+    toastUndo(T('Sauna gelöscht.', 'Sauna deleted.'), () => { putSaunaLog(getSaunaLog().concat(old)); renderMobility(); }); }
+});
 
 /* ---------- Routine-Timer für Laufen und Mobility (ohne Tracking) ---------- */
 const routineDlg = $('routine'); let rt = null;
