@@ -444,7 +444,7 @@ const SEASON = {
   },
   // Obergrenze je Phase als Anteil der Spitzenwerte; Basis = zwischen den Blöcken bzw. vor dem ersten
   cap: { basis: 0.6, base: 0.7, build: 0.85, spec: 1 },
-  grow: 0.1, cutLong: 0.8, cutWeek: 0.75, cutEvery: 3,
+  grow: 0.1, cutLong: 0.8, cutWeek: 0.75, cutEvery: 3, cutShare: 0.8, cutReps: 0.65,
   phase: {
     basis: ['Basis', 'Locker laufen und das Niveau halten. Der nächste Block startet später.'],
     base: ['Grundlage', 'Umfang aufbauen, fast alles locker in Zone 2. Dazu Schwellen-Intervalle und kurze Steigerungen für flinke Beine.'],
@@ -452,7 +452,7 @@ const SEASON = {
     spec: ['Spezifisch', 'Kurz vor dem Rennen: Renntempo üben (bei 5 und 10 km auch Intervalle) und Verpflegung testen. Die längsten Läufe des Blocks.'],
     taper: ['Tapering', 'Umfang runter, kurze Abschnitte im Renntempo bleiben. Frisch an den Start.'],
     recover: ['Erholung', 'Nur locker laufen, kein Tempo. Bei Beschwerden lieber Pause.'],
-    cut: ['Entlastung', 'Bewusst weniger: Longrun und Qualitätseinheit kürzer, damit der Körper das Training umsetzt.']
+    cut: ['Entlastung', 'Bewusst weniger, aber nicht nichts: weniger km, Longrun und Qualität kürzer, das Tempo bleibt – so setzt der Körper das Training um.']
   },
   /* Qualitätseinheit je Phase und Distanz; [ungerade KW, gerade KW].
      Schwerpunkt Schwelle (Jan: „mehr Schwellenintervalle statt Intervalle“): Basis, Grundlage und Aufbau mit Schwellen-Intervallen,
@@ -889,9 +889,14 @@ PREP.mat.push('Dead Bug mit Kurzhantel', 'Floor Press mit Kurzhanteln', 'Pullove
    Der älteste (letzte) Eintrag ist der Grundstand mit allen Funktionen; Neulinge sehen ihn plus die 3 neuesten Updates. */
 /* Versionsnummer der App, angezeigt unter Mehr. Seit 13.11.2026 gehen Änderungen direkt live (main, ohne Wochen-Release über dev);
    jeder Tag mit Veröffentlichung ist eine neue Nebenversion: 1.1, 1.2, 1.3 … Der Neuigkeiten-Eintrag des Tages bekommt dieselbe Nummer (version). */
-const APP_VERSION = '1.7';
+const APP_VERSION = '1.8';
 // Ein Eintrag pro Tag: Änderungen desselben Tages kommen in den Eintrag des Tages (aka = frühere ids für „schon gesehen“)
 const CHANGELOG = [
+  { id: '2026-11-22', date: '2026-11-22', version: '1.8', title: 'Entlastung', items: [
+    ['Entlastungswoche nach deinem Training', 'Die Entlastungswoche richtet sich jetzt nach dem, was du wirklich gelaufen bist: Nach drei Wochen Aufbau am Stück kommt sie automatisch. Vorher rutschte sie jede Woche eine Woche weiter und kam nie.', 'bug'],
+    ['Entlastung heißt nicht nichts', 'Etwa 25 % weniger km und ein kürzerer Longrun. Bei der Qualität ein Drittel weniger Wiederholungen bei gleichem Tempo, z. B. 3 statt 5 × 1 km. Kraft mit gleichem Gewicht, je Übung 1 Satz weniger. „Heute dran“ zeigt an, wenn Entlastungswoche ist.', 'neu'],
+    ['Auswertung: knapp im Bereich', 'Bis 5 s/km schneller oder 2 bpm über der Zone zählt weiter als im Bereich. Der Balken zeigt diese Toleranz jetzt als hellen Streifen, und der Text sagt „knapp“ statt „alles im Bereich“.', 'bug']
+  ] },
   { id: '2026-11-21', date: '2026-11-21', version: '1.7', title: 'Sauna', items: [
     ['Sauna unter Recovery', 'Neuer Reiter Mobility → Recovery: Sauna eintragen, auch nachträglich und mit Anzahl der Gänge, dazu Verlauf und eine kurze Anleitung – Ablauf, Abkühlen, Trinken, nach dem Training.', 'neu'],
     ['Sauna-Tage', 'Unter Profil → Trainingswoche legst du Sauna-Tage fest. Dann steht die Sauna in „Heute dran“, mit Hinweis passend zum Training: am Tag vor einem Rennen lieber nicht, nach einem harten Lauf erst trinken und essen, vor einer harten Einheit nur mild.', 'neu'],

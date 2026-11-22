@@ -196,6 +196,7 @@ html[data-os=android] .ratehint{color:var(--accent-ink)}
 .chart .zkeep{fill:var(--accent);opacity:.3}
 .chart .zbuild{fill:var(--accent)}
 .chart .zbuild.band{opacity:.55}
+.chart .zbuild.tol{opacity:.25}
 .chart .zover{fill:var(--orange);opacity:.55}
 .chart .zmark{stroke:var(--label)}
 .chart .bar.over{fill:var(--orange)}

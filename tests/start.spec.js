@@ -295,6 +295,15 @@ test.describe('Lauf nachtragen', () => {
     // in der Liste unter Umfang
     await page.evaluate(() => { showArea('laufen'); }); await page.click('[data-runtab="laeufe"]');
     await expect(page.locator('#runlist')).toContainText('1:24:00 · 6:00\u00a0/km · Ø\u00a0138\u00a0bpm · ✓ im Bereich');
+    // knapp schneller (in der Toleranz von 5 s/km): Text sagt „knapp“, der Balken zeigt die Toleranz als eigenen Streifen
+    await setup('l');
+    await fill('10', ['', '59', '43'], '140');
+    await expect(page.locator('#startfb .sfbtext')).toHaveText('✓ Passt – nur 2 s/km schneller als locker, und der Puls lag in Zone 2.');
+    await expect(page.locator('#startfb svg.chk rect.tol')).toHaveCount(2);
+    // Puls knapp über der Zone (Toleranz 2 bpm)
+    await setup('l');
+    await fill('10', ['1', '02', '00'], '146');
+    await expect(page.locator('#startfb .sfbtext')).toHaveText('✓ Passt – der Puls lag nur 1 bpm über Zone 2.');
     // Puls zu hoch bei passendem Tempo
     await setup('l');
     await fill('10', ['1', '02', '00'], '152');

@@ -1605,6 +1605,19 @@ function inABlock(m) {
   });
 }
 const planTargets = () => races.filter(r => SEASON.dist[r.dist] && (r.prio === 'A' || (r.prio === 'M' && !inABlock(r))));
+/* Entlastungswoche nach dem tatsächlichen Training (ab 1.8): wie viele Wochen am Stück vor `start` normal oder mehr gelaufen wurde.
+   Eine Woche zählt als Entlastung (und beendet die Zählung), wenn ihre km höchstens 80 % (SEASON.cutShare) des Schnitts der vier
+   Wochen davor waren – Entlastungswoche, Tapering, Erholung, Krankheit, Urlaub – oder wenn nichts eingetragen ist.
+   Vorher zählte der Plan die Aufbauwochen immer ab der laufenden Woche: Die Entlastung lag so stets drei Wochen in der Zukunft und kam nie. */
+function buildStreak(start) {
+  let n = 0;
+  for (let i = 1; i <= 8; i++) {
+    const w = addDays(start, -7 * i), km = weekKm(w), avg = loadFor(w).avg;
+    if (km === null || !avg || km <= avg * SEASON.cutShare) break;
+    n++;
+  }
+  return n;
+}
 // Saisonplan ab der laufenden Woche bis zum letzten A-Rennen (bzw. B-Rennen mit eigenem Block).
 // start/L0/W0 nur für Tests überschreibbar; sonst aus Umfang: längster Lauf der 30 Tage und Schnitt der 4 Wochen.
 function seasonPlan(today = localDay(), opt = {}) {
@@ -1663,7 +1676,8 @@ function seasonPlan(today = localDay(), opt = {}) {
   // Vorwärts: Longrun (L) und Wochen-km (W) mit höchstens +10 % pro Woche und Entlastung nach drei Aufbauwochen
   const R = longestIn(today), Ld = loadFor(start);
   let L = opt.L0 !== undefined ? opt.L0 : R ? R.km : null, W = opt.W0 !== undefined ? opt.W0 : Ld.avg;
-  let streak = 0, peakL = L, peakW = W;
+  // Aufbauwochen zählen ab der letzten tatsächlichen Entlastung (aus den eingetragenen Läufen), nicht ab heute
+  let streak = opt.streak !== undefined ? opt.streak : buildStreak(start), peakL = L, peakW = W;
   const grow = (v, cap) => v === null ? null : v >= cap ? v : Math.min(cap, v * (1 + SEASON.grow));
   weeks.forEach((x, i) => {
     const d = D(x.target.dist), p = x.phase, nextPh = weeks[i + 1] && weeks[i + 1].phase;
@@ -1678,8 +1692,10 @@ function seasonPlan(today = localDay(), opt = {}) {
       x.long = L === null || !f.long ? null : peakL * f.long; x.km = W === null ? null : peakW * f.wk; streak = 0; return;
     }
     const pk = bothPeaks(x), share = SEASON.cap[p], capL = Math.max(8, pk.long * share), capW = Math.max(15, pk.week * share);
-    if (streak >= SEASON.cutEvery && nextPh !== 'taper') {
-      x.cut = true; streak = 0;
+    // laufende Woche schon normal gelaufen (über 90 % der Wochen-km)? Dann zählt sie als Aufbau, die Entlastung kommt nächste Woche
+    const doneNormal = i === 0 && W !== null && Ld.cur !== null && Ld.cur > W * 0.9;
+    if (streak >= SEASON.cutEvery && nextPh !== 'taper' && !doneNormal) {
+      x.cut = true; x.cutAfter = streak; streak = 0;
       x.long = L === null ? null : L * SEASON.cutLong; x.km = W === null ? null : W * SEASON.cutWeek; return;
     }
     L = grow(L, capL); W = grow(W, capW); x.long = L; x.km = W; streak++; peakL = L; peakW = W;
@@ -1839,7 +1855,9 @@ function weekKey(x, alt = false) {
   // im gemeinsamen Block: ungerade KW die erste Einheit fürs aktuelle Ziel, gerade KW die erste fürs spätere Rennen
   // alt: zweite Qualität der Woche – die jeweils andere Einheit des Paars
   const txt = mix ? list[alt ? 1 : 0] : list[(odd ? 0 : 1) ^ (alt ? 1 : 0)], tp = /^(Intervall|Intervals):/.test(txt) ? trainingPaces() : null;
-  return (x.cut ? T('kürzer: ', 'shorter: ') : '') + withPace(txt, r) + (tp ? ` (≈ ${hms(tp.interval)} /km)` : '') + (x.phase === 'recover' ? easyPace() : '') + (mix ? T(` · für ${mix.name}`, ` · for ${mix.name}`) : '');
+  // Entlastungswoche: etwa ein Drittel weniger Wiederholungen bei gleichem Tempo (5 × 1 km → 3 × 1 km); ohne „n ×“ nur „kürzer“
+  const m = x.cut && txt.match(/(\d{1,2})\s*×/), n = m ? Number(m[1]) : 0, k = Math.max(2, Math.round(n * SEASON.cutReps)), less = m && k < n;
+  return (x.cut ? T('kürzer: ', 'shorter: ') : '') + withPace(less ? txt.replace(m[0], `${k} ×`) : txt, r) + (less ? T(` – statt ${n} ×`, ` – instead of ${n} ×`) : '') + (tp ? ` (≈ ${hms(tp.interval)} /km)` : '') + (x.phase === 'recover' ? easyPace() : '') + (mix ? T(` · für ${mix.name}`, ` · for ${mix.name}`) : '');
 }
 function weekLongNote(x) {
   if (x.a) return T('kein Longrun – Rennwoche', 'no long run – race week');
@@ -2077,7 +2095,7 @@ function renderPlanWeek(S) {
     </div>
     <div class="planrows" id="planschedule">${schedRows(x)}</div>
     <p class="tiny">${T('Einheit antippen, wenn sie diese Woche entfällt. Tage stellst du unter <b>Profil → Trainingswoche</b> ein.', 'Tap a session if it’s skipped this week. Set the days under <b>Profile → Training week</b>.')}</p>
-    ${recNote}${bs}
+    ${x.cut ? `<div class="alert" id="plancut">${T(`<b>Entlastungswoche</b> nach ${x.cutAfter} Wochen Aufbau: ca. 25 % weniger km, Longrun und Qualität kürzer – das Tempo bleibt. Kraft mit gleichem Gewicht, je Übung 1 Satz weniger. Nächste Woche geht es normal weiter.`, `<b>Deload week</b> after ${x.cutAfter} weeks of building: about 25 % fewer km, long run and quality shorter – the pace stays. Strength with the same weight, 1 set less per exercise. Next week continues as normal.`)}</div>` : ''}${recNote}${bs}
     ${S.hasData ? '' : `<p class="tiny">${T('Für Longrun und Wochen-km: unter <b>Umfang</b> deine Läufe oder Wochensummen der letzten Wochen eintragen.', 'For long run and weekly km: enter your runs or weekly totals of the last weeks under <b>Volume</b>.')}</p>`}
     ${!x.a && !x.bLong && x.long && x.km && x.long > 0.6 * x.km ? `<div class="alert due" id="planratio">${T(`Der Longrun ist ${Math.round(x.long / x.km * 100)} % deiner Wochen-km – für Qualität und lockere Läufe bleibt kaum etwas. Fehlen unter <b>Umfang</b> Läufe? Dann dort nachtragen, der Plan rechnet sofort neu.`, `The long run is ${Math.round(x.long / x.km * 100)} % of your weekly km – hardly anything is left for quality and easy runs. Are runs missing under <b>Volume</b>? Add them there, the plan recalculates immediately.`)}</div>` : ''}
     ${R && !x.a && !x.noLong && !x.bLong && x.long > R.max ? `<p class="tiny">${T(`Longrun auf ${kmText(R.max)} km begrenzt: längster Lauf der letzten 30 Tage plus 10 %.`, `Long run capped at ${kmText(R.max)} km: longest run of the last 30 days plus 10 %.`)}</p>` : ''}
@@ -2398,8 +2416,10 @@ function todayItems() {
   const tip = it => !it.sameDay ? '' : it.base && /Beinübungen|leg exercises/.test(it.base) ? T('Nach dem Lauf', 'After the run') : it.sameDay === 'hard' ? T('Nach dem Lauf, ohne schwere Beinübungen', 'After the run, no heavy leg exercises') : T('Nach dem Lauf oder mit ein paar Stunden Abstand', 'After the run or a few hours apart');
   // ein heute eingetragener Lauf hakt den geplanten Lauf ab (auch ohne Saisonplan)
   const ranToday = ranOn(today);
-  const gymItem = it => ({ kind: 'strength', gym: gymOn(wd), key: it.key || 'strength-' + wd, title: `${T('Kurs', 'Class')} · ${gymOn(wd)}`, detail: it.sameDay ? it.base : it.detail || T('im Studio', 'at the gym'), act: 'gym', done: it.done || gymDone(today), tip: tip(it) });
-  for (const it of items) out.push(it.kind === 'strength' && !it.swap && !it.extraAdd && gymOn(wd) ? gymItem(it) : it.kind === 'strength' ? Object.assign(kraft(it.plan || plan), { key: it.key, swap: it.swap, extraAdd: it.extraAdd, done: it.done, note: it.sameDay ? it.base : it.detail, tip: tip(it) }) : Object.assign({}, it, { act: RUN(it) ? 'plan' : null, done: it.done || (RUN(it) && ranToday) }));
+  // Entlastungswoche: Kraft mit gleichem Gewicht, aber weniger Sätzen; Kurs lockerer
+  const cutTip = (it, gym) => [tip(it), x && x.cut ? (gym ? T('Entlastungswoche: etwas lockerer als sonst', 'Deload week: a bit easier than usual') : T('Entlastungswoche: gleiches Gewicht, je Übung 1 Satz weniger', 'Deload week: same weight, 1 set less per exercise')) : ''].filter(Boolean).join(' · ');
+  const gymItem = it => ({ kind: 'strength', gym: gymOn(wd), key: it.key || 'strength-' + wd, title: `${T('Kurs', 'Class')} · ${gymOn(wd)}`, detail: it.sameDay ? it.base : it.detail || T('im Studio', 'at the gym'), act: 'gym', done: it.done || gymDone(today), tip: cutTip(it, true) });
+  for (const it of items) out.push(it.kind === 'strength' && !it.swap && !it.extraAdd && gymOn(wd) ? gymItem(it) : it.kind === 'strength' ? Object.assign(kraft(it.plan || plan), { key: it.key, swap: it.swap, extraAdd: it.extraAdd, done: it.done, note: it.sameDay ? it.base : it.detail, tip: cutTip(it, false) }) : Object.assign({}, it, { act: RUN(it) ? 'plan' : null, done: it.done || (RUN(it) && ranToday) }));
   const mi = mobItem(); if (mi) out.push(mi);
   // getauscht zu Mobility oder Ruhetag (Lauf und Kraft kommen schon aus dem Plan)
   const sw = daySwap[today];
@@ -2408,6 +2428,7 @@ function todayItems() {
   if (ad && ad.to === 'mob' && !out.some(o => o.kind === 'mobility')) { const r = mobRoutineOn(wd); out.push({ kind: 'mobility', key: 'add', extraAdd: true, title: `Mobility · ${tr(r.title)}`, detail: `${tr(r.time)} · ${T('heute zusätzlich', 'extra today')}`, act: 'mob', mob: MOBILITY.routines.indexOf(r), done: getMobLog().some(e => e.d === today) }); }
   if (swapped && sw && sw.to === 'rest') out.push({ kind: 'rest', key: 'swap', swap: true, title: T('Ruhetag', 'Rest day'), detail: T(`heute statt ${swapWas(swapped, wd)}`, `today instead of ${swapWas(swapped, wd)}`) });
   const si = saunaItem(); if (si) out.push(si);
+  out.deload = !!(x && x.cut); // für die Überschrift „Heute dran · Entlastungswoche“
   return out;
 }
 /* Jahresziel: gelaufene km im Jahr (einzelne Läufe und Rennen nach Datum, Wochensummen nach dem Donnerstag ihrer Woche),
@@ -2712,13 +2733,18 @@ function runCard(p, i = 0) {
     <div class="sresact">${today || i === 91 ? `<button type="button" class="btn small" data-logcancel>${T('Abbrechen', 'Cancel')}</button>` : `<button type="button" class="btn small" data-runskip="${esc(ref)}">${T('Nicht gelaufen', 'Did not run')}</button>`}<button type="button" class="btn small${(kind === 'quality' ? null : runSuggest(p)) ? '' : ' primary'}" data-runsave="${esc(ref)}" data-i="${i}" data-kind="${runKindOf(it)}" data-title="${esc(`${when} · ${it.title}`)}">${T('Speichern', 'Save')}</button></div></div>`;
 }
 /* Auswertung eines Laufs gegen den Zielbereich der Einheit: lockere Läufe nach Puls (Zone 2, Regeneration Zone 1) und Tempo.
-   Langsamer bzw. niedriger ist bei lockeren Läufen kein Fehler. Intervall/Tempo: keine Wertung – der Schnitt mischt schnelle Abschnitte, Pausen und Ein-/Auslaufen. */
-const RUN_ZONE = { easy: 2, long: 2, group: 2, recovery: 1 };
+   Langsamer bzw. niedriger ist bei lockeren Läufen kein Fehler. Intervall/Tempo: keine Wertung – der Schnitt mischt schnelle Abschnitte, Pausen und Ein-/Auslaufen.
+   Toleranz (wie beim Nachrücken des lockeren Tempos): bis 5 s/km schneller und bis 2 bpm über der Zone zählt noch als im Bereich –
+   der Balken zeigt das als hellgrünen Streifen, der Text sagt „knapp“ (Jan: 6:17 bei 6:20–6:50 stand im Orange, Text „alles im Bereich“). */
+const RUN_ZONE = { easy: 2, long: 2, group: 2, recovery: 1 }, RUN_TOL = { pace: 5, hr: 2 };
 function runCheck(r) {
   const zone = RUN_ZONE[r.kind] || null, z = profile.hr.z, tp = trainingPaces(), pace = r.sec ? r.sec / r.km : null, out = { zone, pace, hr: r.hr || null, p: null, h: null };
   if (!zone) return out;
-  if (pace && tp) out.p = { lo: tp.easy[0], hi: tp.easy[1], st: pace < tp.easy[0] - 5 ? 'fast' : pace > tp.easy[1] ? 'slow' : 'ok' };
-  if (r.hr && z) out.h = { lo: z[zone - 1], hi: z[zone] - 1, st: r.hr > z[zone] + 1 ? 'high' : r.hr < z[zone - 1] ? 'low' : 'ok' };
+  if (pace && tp) out.p = { lo: tp.easy[0], hi: tp.easy[1], st: pace < tp.easy[0] - RUN_TOL.pace ? 'fast' : pace > tp.easy[1] ? 'slow' : 'ok' };
+  if (r.hr && z) out.h = { lo: z[zone - 1], hi: z[zone] - 1, st: r.hr > z[zone] - 1 + RUN_TOL.hr ? 'high' : r.hr < z[zone - 1] ? 'low' : 'ok' };
+  // knapp: in der Toleranz, aber außerhalb der angezeigten Spanne (Tempo gerundet wie in der Anzeige)
+  if (out.p) out.p.near = out.p.st === 'ok' && Math.round(pace) < out.p.lo ? out.p.lo - Math.round(pace) : 0;
+  if (out.h) out.h.near = out.h.st === 'ok' && r.hr > out.h.hi ? r.hr - out.h.hi : 0;
   return out;
 }
 function runVerdict(c) {
@@ -2729,17 +2755,22 @@ function runVerdict(c) {
   if (H) return { ok: false, short: T(`Puls über ${zn}`, `HR above ${zn}`), text: c.p ? T(`Das Tempo passte, der Puls lag trotzdem über ${zn} – Hitze, Hügel oder Müdigkeit? Beim nächsten Mal mehr auf den Puls achten und dafür langsamer laufen.`, `The pace was fine, but your heart rate was above ${zn} – heat, hills or fatigue? Next time watch your heart rate more and run slower for it.`) : T(`Puls über ${zn} – beim nächsten Mal mehr auf den Puls achten und etwas ruhiger laufen.`, `Heart rate above ${zn} – next time watch your heart rate more and run a bit easier.`) };
   if (P && c.h) return { ok: true, short: T('✓ Puls im Bereich', '✓ HR in range'), text: T('Puls im Bereich, das Tempo war schneller als geplant – passt. Die App rückt dein lockeres Tempo schrittweise nach (höchstens 10 s/km pro Lauf, insgesamt 30 s/km).', 'Heart rate in range, the pace was faster than planned – fine. The app moves your easy pace up step by step (at most 10 s/km per run, 30 s/km in total).') };
   if (P) return { ok: false, short: T('schneller als locker', 'faster than easy'), text: T('Schneller als das lockere Tempo – beim nächsten Mal mehr auf die Zeit achten. Mit Ø-Puls sieht die App auch, ob es trotzdem locker war.', 'Faster than the easy pace – next time watch the time more. With the average heart rate the app also sees whether it was still easy.') };
+  const nP = c.p && c.p.near, nH = c.h && c.h.near;
+  if (nP && nH) return { ok: true, short: T('✓ im Bereich', '✓ in range'), text: T('Passt – Tempo und Puls lagen nur knapp über dem Bereich.', 'Fine – pace and heart rate were only just above the range.') };
+  if (nP) return { ok: true, short: T('✓ im Bereich', '✓ in range'), text: c.h ? T(`Passt – nur ${nP} s/km schneller als locker, und der Puls lag in ${zn}.`, `Fine – only ${nP} s/km faster than easy, and your heart rate was in ${zn}.`) : T(`Passt – nur ${nP} s/km schneller als locker, das liegt in der Messgenauigkeit der Uhr.`, `Fine – only ${nP} s/km faster than easy, that is within the watch’s accuracy.`) };
+  if (nH) return { ok: true, short: T('✓ im Bereich', '✓ in range'), text: T(`Passt – der Puls lag nur ${nH} bpm über ${zn}.`, `Fine – your heart rate was only ${nH} bpm above ${zn}.`) };
   return { ok: true, short: T('✓ im Bereich', '✓ in range'), text: T('Super – alles im empfohlenen Bereich.', 'Great – everything in the recommended range.') };
 }
-// Balken: Zielbereich in der Mitte, Markierung für deinen Wert. Tempo: rechts schneller (zu schnell = orange), Puls: rechts höher
-function checkBar(v, lo, hi, fmt, pace, label) {
+// Balken: Zielbereich in der Mitte, Markierung für deinen Wert. Tempo: rechts schneller (zu schnell = orange), Puls: rechts höher.
+// tol: Toleranz auf der „zu viel“-Seite (Tempo unter lo, Puls über hi) als hellgrüner Streifen – genau so weit, wie die Wertung „im Bereich“ sagt
+function checkBar(v, lo, hi, fmt, pace, label, tol = 0) {
   const W = 320, l = 6, r = 6, y0 = 22, h = 12, span = Math.max(hi - lo, 4), a = Math.min(lo - span, v - span * 0.2), b = Math.max(hi + span, v + span * 0.2);
   const x = t => { const f = (Math.min(Math.max(t, a), b) - a) / (b - a); return l + (pace ? 1 - f : f) * (W - l - r); };
   const seg = (p, q, cls) => { const x1 = Math.min(x(p), x(q)), x2 = Math.max(x(p), x(q)); return `<rect class="${cls}" x="${x1}" y="${y0}" width="${x2 - x1}" height="${h}"/>`; };
   const mx = x(v), anchor = mx < 40 ? 'start' : mx > W - 40 ? 'end' : 'middle', tick = t => `<text class="lbl" x="${x(t)}" y="${y0 + h + 15}" text-anchor="middle" font-size="11.5">${fmt(t)}</text>`;
   return `<svg class="chart chk" viewBox="0 0 ${W} 54" role="img" aria-label="${esc(`${label}: ${fmt(v)}, ${T('Zielbereich', 'target range')} ${fmt(pace ? hi : lo)}–${fmt(pace ? lo : hi)}`)}">
     <clipPath id="chk${label.length}${Math.round(v)}"><rect x="${l}" y="${y0}" width="${W - l - r}" height="${h}" rx="6"/></clipPath>
-    <g clip-path="url(#chk${label.length}${Math.round(v)})">${seg(a, lo, pace ? 'zover' : 'zlow')}${seg(lo, hi, 'zbuild band')}${seg(hi, b, pace ? 'zlow' : 'zover')}</g>
+    <g clip-path="url(#chk${label.length}${Math.round(v)})">${pace ? seg(a, lo - tol, 'zover') + (tol ? seg(lo - tol, lo, 'zbuild tol') : '') : seg(a, lo, 'zlow')}${seg(lo, hi, 'zbuild band')}${pace ? seg(hi, b, 'zlow') : (tol ? seg(hi, hi + tol, 'zbuild tol') : '') + seg(hi + tol, b, 'zover')}</g>
     ${tick(lo)}${tick(hi)}<line class="zmark" x1="${mx}" y1="${y0 - 4}" x2="${mx}" y2="${y0 + h + 4}" stroke-width="3" stroke-linecap="round"/>
     <text class="val" x="${mx}" y="${y0 - 8}" text-anchor="${anchor}" font-size="12.5" font-weight="600">${fmt(v)}</text></svg>`;
 }
@@ -2758,8 +2789,8 @@ function feedbackCard(f) {
   const c = runCheck(r), v = runVerdict(c), bpm = t => `${Math.round(t)}`, zn = `Zone ${c.zone}`, st = repStats(r), cmp = st && repCompare(r);
   return `<div class="scard sfb" id="${f.box ? f.box + 'card' : 'startfb'}"><p class="skicker">${T('Auswertung', 'Review')}</p>
     <div class="srowt">${startIcon('laufen')}<span class="txt"><b>${esc(f.title)}</b><small>${esc(runStats(r))}</small></span></div>
-    ${c.p ? `<div class="chkrow"><span>${T('Tempo', 'Pace')} <small>${T('locker', 'easy')}</small></span>${checkBar(c.pace, c.p.lo, c.p.hi, t => hms(Math.round(t)), true, 'Tempo')}</div>` : ''}
-    ${c.h ? `<div class="chkrow"><span>${T('Puls', 'HR')} <small>${zn}</small></span>${checkBar(c.hr, c.h.lo, c.h.hi, bpm, false, 'Puls')}</div>` : ''}
+    ${c.p ? `<div class="chkrow"><span>${T('Tempo', 'Pace')} <small>${T('locker', 'easy')}</small></span>${checkBar(c.pace, c.p.lo, c.p.hi, t => hms(Math.round(t)), true, 'Tempo', RUN_TOL.pace)}</div>` : ''}
+    ${c.h ? `<div class="chkrow"><span>${T('Puls', 'HR')} <small>${zn}</small></span>${checkBar(c.hr, c.h.lo, c.h.hi, bpm, false, 'Puls', RUN_TOL.hr)}</div>` : ''}
     ${st ? repFeedback(r, st, cmp) : ''}
     ${v.text && !st ? `<p class="sfbtext${v.ok === true ? ' good' : v.ok === false ? ' warn' : ''}">${v.ok === true ? '✓ ' : ''}${esc(v.text)}</p>` : ''}
     ${f.easy ? `<p class="sfbtext" id="sfbeasy">${f.easy[1][0] < f.easy[0][0] ? T(`Lockeres Tempo angepasst: ${paceRange(f.easy[0])} → <b>${paceRange(f.easy[1])}</b> – Puls in Zone 2 bei schnellerem Tempo. Die App rückt höchstens 10 s/km pro Lauf nach.`, `Easy pace adjusted: ${paceRange(f.easy[0])} → <b>${paceRange(f.easy[1])}</b> – HR in zone 2 at a faster pace. The app moves at most 10 s/km per run.`) : T(`Lockeres Tempo angepasst: ${paceRange(f.easy[0])} → <b>${paceRange(f.easy[1])}</b> – ${f.easy[2] ? 'Puls über Zone 2' : 'Puls in Zone 2 erst bei langsamerem Tempo'}. Die App passt höchstens 10 s/km pro Lauf an.`, `Easy pace adjusted: ${paceRange(f.easy[0])} → <b>${paceRange(f.easy[1])}</b> – ${f.easy[2] ? 'HR above zone 2' : 'HR only in zone 2 at a slower pace'}. The app adjusts at most 10 s/km per run.`)}</p>` : ''}
@@ -2853,7 +2884,7 @@ function renderStart() {
   const lt = logToday && items.find(it => it.key === logToday && RUN(it));
   const lp = logPick && plannedRunsOn(logPick.day).find(it => it.key === logPick.key);
   const syncPause = autoOn() && autoPaused ? `<div class="scard" id="syncresume"><div class="srowt">${startIcon('mehr')}<span class="txt"><b>${T('Sync pausiert', 'Sync paused')}</b><small>${T('Der Browser fragt wieder nach dem Zugriff auf die Sync-Datei.', 'The browser asks for access to the sync file again.')}</small></span><button type="button" class="btn small primary sgo" data-syncresume>${T('Fortsetzen', 'Resume')}</button></div></div>` : '';
-  $('startcontent').innerHTML = `${syncPause}${startFeedback ? feedbackCard(startFeedback) : ''}${lt ? runCard({ day: today, item: lt }, 90) : lp ? runCard({ day: logPick.day, item: lp }, 91) : ''}<div class="scard"><p class="skicker">${T('Heute dran', 'On today')}</p>${rows}${addCtl(items)}</div>${pendingHtml()}
+  $('startcontent').innerHTML = `${syncPause}${startFeedback ? feedbackCard(startFeedback) : ''}${lt ? runCard({ day: today, item: lt }, 90) : lp ? runCard({ day: logPick.day, item: lp }, 91) : ''}<div class="scard"><p class="skicker">${T('Heute dran', 'On today')}${items.deload ? ` · <b>${T('Entlastungswoche', 'Deload week')}</b>` : ''}</p>${rows}${addCtl(items)}</div>${pendingHtml()}
     ${racePlanCard()}<div class="scard"><p class="skicker">${T('Diese Woche', 'This week')}</p>${weekStrip()}<div class="sweek">${week.map(([l, v, b]) => `<div><small>${esc(l)}</small><b>${esc(v)}</b>${b}</div>`).join('')}</div>${yearCard()}</div>${readyCard()}
     <button type="button" class="scard smorerow" data-go="mehr">${startIcon('mehr')}<span class="txt"><b>${T('Mehr', 'More')}</b><small>${esc(T('Neuigkeiten, Sync, Daten', 'News, sync, data') + ' · ' + bTxt)}</small></span><span class="chev"></span></button>`;
 }
