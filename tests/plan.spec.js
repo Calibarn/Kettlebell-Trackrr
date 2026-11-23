@@ -437,18 +437,23 @@ test('Kalender-Export: Erinnerung am Trainingstag optional, Uhrzeit wählbar', a
   expect(await page.evaluate(() => icsRemind)).toEqual({ on: true, time: '06:30' });
 });
 
-test('Qualität: Schwelle in Basis, Grundlage und Aufbau; harte Intervalle nur in der spezifischen Phase (5 km: 2, 10 km: 3 Wochen), HM ohne', async ({ page }) => {
+test('Qualität: Schwelle in Basis, Grundlage und Aufbau – jede dritte KW schnelle Intervalle (30/30, 4 × 4); sonst harte Intervalle nur spezifisch', async ({ page }) => {
   const q = dist => page.evaluate(d => {
     races = [{ id: 'a', name: 'A', date: '2027-05-02', dist: d, prio: 'A' }]; results = [];
     const S = seasonPlan('2027-01-04', { L0: 12, W0: 25 });
-    return S.weeks.filter(w => !w.a && !w.test && w.phase !== 'recover').map(w => [w.phase, weekKey(w), weekKey(w, true)]);
+    return S.weeks.filter(w => !w.a && !w.test && w.phase !== 'recover').map(w => [w.phase, weekKey(w), weekKey(w, true), isoWeek(w.week)]);
   }, dist);
   for (const dist of ['5k', '10k', 'hm']) {
     const weeks = await q(dist), hard = weeks.filter(([, a, b]) => /^(kürzer: )?Intervall|5-km-Tempo|× 400 m/.test(a + ' ' + b));
-    // vor der spezifischen Phase: nur Schwelle (bzw. Steigerungen), keine harten Intervalle
-    expect(weeks.filter(([p]) => ['basis', 'base', 'build'].includes(p)).every(([, a]) => /Schwelle/.test(a)), dist).toBe(true);
-    expect(hard.every(([p]) => p === 'spec'), dist).toBe(true);
-    expect(hard.length > 0, dist).toBe(dist !== 'hm');
+    const fast = ([p, a, b, kw]) => kw % 3 === 0 && (p !== 'build' ? /^(kürzer: )?Intervall: Billat 30\/30/ : /^(kürzer: )?Intervall: Norweger \d × 4/).test(a) && /Schwelle/.test(b);
+    // vor der spezifischen Phase: Schwelle – außer jede dritte KW (die zweite Qualität bleibt Schwelle)
+    expect(weeks.filter(([p]) => ['basis', 'base', 'build'].includes(p)).every(w => /Schwelle/.test(w[1]) || fast(w)), dist).toBe(true);
+    expect(hard.every(w => w[0] === 'spec' || fast(w)), dist).toBe(true);
+    expect(hard.filter(w => w[0] !== 'spec').length > 0, dist).toBe(true);
+    // höchstens jede dritte Woche vor der spezifischen Phase
+    const pre = weeks.filter(([p]) => p !== 'spec' && p !== 'taper');
+    expect(hard.filter(w => w[0] !== 'spec').length <= Math.ceil(pre.length / 3), dist).toBe(true);
+    expect(hard.some(w => w[0] === 'spec'), dist).toBe(dist !== 'hm');
   }
 });
 

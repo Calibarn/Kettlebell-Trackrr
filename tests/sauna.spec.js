@@ -120,7 +120,7 @@ test('Qualität: Cruise-Intervalle in der Grundlage, Norweger 4 × 4 vor 10 km �
     const nor = 'Intervall: Norweger 4 × 4 Min. hart, 3 Min. Trabpause', cru = '5 × 1 km Schwelle, 1 Min. Trabpause';
     return { base: keys.filter(k => k.startsWith('base|')).join(' '), spec: keys.filter(k => k.startsWith('spec|')).join(' '), plan: [repPlan(cru), repPlan(nor)], warm: warmFor({ kind: 'quality', detail: nor }), pace: hms(trainingPaces().interval) };
   });
-  expect(r.base).toMatch(/5 × 1 km Schwelle, 1 Min\. Trabpause \(\d:\d\d–\d:\d\d \/km\)/);
+  expect(r.base).toMatch(/[35] × 1 km Schwelle, 1 Min\. Trabpause \(\d:\d\d–\d:\d\d \/km\)/); // in einer Entlastungswoche 3 statt 5
   expect(r.spec).toContain(`Intervall: Norweger 4 × 4 Min. hart, 3 Min. Trabpause (≈ ${r.pace} /km)`);
   expect(r.plan).toEqual([{ n: 5, km: 1 }, { n: 4, sec: 240 }]);
   expect(r.warm).toBe('interval');

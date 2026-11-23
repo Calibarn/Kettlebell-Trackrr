@@ -1854,7 +1854,9 @@ function weekKey(x, alt = false) {
   const t = SEASON.key[x.phase] || SEASON.key.basis, list = t[planKey(r)] || t[r.dist] || t.all;
   // im gemeinsamen Block: ungerade KW die erste Einheit fürs aktuelle Ziel, gerade KW die erste fürs spätere Rennen
   // alt: zweite Qualität der Woche – die jeweils andere Einheit des Paars
-  const txt = mix ? list[alt ? 1 : 0] : list[(odd ? 0 : 1) ^ (alt ? 1 : 0)], tp = /^(Intervall|Intervals):/.test(txt) ? trainingPaces() : null;
+  // jede dritte KW in Grundlage und Aufbau: schnelle Intervalle statt Schwelle (SEASON.vo2) – nur die erste Qualität, nicht im gemeinsamen Block
+  const vo2 = !mix && !alt && SEASON.vo2[x.phase] && isoWeek(x.week) % SEASON.vo2.every === 0 ? SEASON.vo2[x.phase] : null;
+  const txt = vo2 || (mix ? list[alt ? 1 : 0] : list[(odd ? 0 : 1) ^ (alt ? 1 : 0)]), tp = /^(Intervall|Intervals):/.test(txt) ? trainingPaces() : null;
   // Entlastungswoche: etwa ein Drittel weniger Wiederholungen bei gleichem Tempo (5 × 1 km → 3 × 1 km); ohne „n ×“ nur „kürzer“
   const m = x.cut && txt.match(/(\d{1,2})\s*×/), n = m ? Number(m[1]) : 0, k = Math.max(2, Math.round(n * SEASON.cutReps)), less = m && k < n;
   return (x.cut ? T('kürzer: ', 'shorter: ') : '') + withPace(less ? txt.replace(m[0], `${k} ×`) : txt, r) + (less ? T(` – statt ${n} ×`, ` – instead of ${n} ×`) : '') + (tp ? ` (≈ ${hms(tp.interval)} /km)` : '') + (x.phase === 'recover' ? easyPace() : '') + (mix ? T(` · für ${mix.name}`, ` · for ${mix.name}`) : '');
@@ -2846,7 +2848,7 @@ function addCtl(items) {
 /* Warm-up direkt an der harten Einheit in „Heute dran“, nach dem Eintragen der Cooldown: Qualität und Testlauf → Intervall-Warm-up
    (kurze schnelle Stücke 200–400 m → Speed), Rennen → Renntag-Warm-up der Strecke. Lockere Läufe brauchen keins. Startet den geführten Ablauf. */
 const warmFor = it => it.easy || it.recovery ? null : it.kind === 'race' || it.kind === 'brace' ? (RUN_GUIDE.race.some(r => r.id === it.warm) ? it.warm : '10k')
-  : it.kind === 'quality' || it.kind === 'quality2' ? (/\d+ × (?:200|300|400) m\b/.test(it.detail || '') ? 'speed' : 'interval') : null;
+  : it.kind === 'quality' || it.kind === 'quality2' ? (/\d+ × (?:(?:200|300|400) m|30 (?:Sek|s))\b/.test(it.detail || '') ? 'speed' : 'interval') : null;
 function warmCtl(it) {
   const id = warmFor(it), g = id && WARMUPS.find(r => r.id === id); if (!g) return '';
   const k = it.done ? 'cooldown' : 'warmup', m = g.intro.match(/(?:etwa|about) (\d+(?:–\d+)?) (?:Minuten|minutes)/);

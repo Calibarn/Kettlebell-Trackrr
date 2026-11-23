@@ -2027,7 +2027,11 @@ const EN_TEXT = {
 "Entlastung heißt nicht nichts": "Deload doesn’t mean nothing",
 "Etwa 25 % weniger km und ein kürzerer Longrun. Bei der Qualität ein Drittel weniger Wiederholungen bei gleichem Tempo, z. B. 3 statt 5 × 1 km. Kraft mit gleichem Gewicht, je Übung 1 Satz weniger. „Heute dran“ zeigt an, wenn Entlastungswoche ist.": "About 25 % fewer km and a shorter long run. For quality a third fewer reps at the same pace, e.g. 3 instead of 5 × 1 km. Strength with the same weight, 1 set less per exercise. “On today” shows when it is a deload week.",
 "Auswertung: knapp im Bereich": "Review: just in range",
-"Bis 5 s/km schneller oder 2 bpm über der Zone zählt weiter als im Bereich. Der Balken zeigt diese Toleranz jetzt als hellen Streifen, und der Text sagt „knapp“ statt „alles im Bereich“.": "Up to 5 s/km faster or 2 bpm above the zone still counts as in range. The bar now shows this tolerance as a light stripe, and the text says “just” instead of “everything in range”."
+"Bis 5 s/km schneller oder 2 bpm über der Zone zählt weiter als im Bereich. Der Balken zeigt diese Toleranz jetzt als hellen Streifen, und der Text sagt „knapp“ statt „alles im Bereich“.": "Up to 5 s/km faster or 2 bpm above the zone still counts as in range. The bar now shows this tolerance as a light stripe, and the text says “just” instead of “everything in range”.",
+"Intervall: Billat 30/30 – 12 × 30 Sek. zügig, je 30 Sek. traben": "Intervals: Billat 30/30 – 12 × 30 s brisk, 30 s jog each",
+"Schnelle Intervalle": "Fast intervals",
+"Ab und zu schnelle Intervalle": "Fast intervals now and then",
+"Jede dritte Woche ersetzt jetzt eine schnelle Intervall-Einheit die Schwelle: Billat 30/30 (12 × 30 Sek. zügig, 30 Sek. traben) in Basis und Grundlage, Norweger 4 × 4 im Aufbau. Die anderen Wochen bleiben Schwelle.": "Every third week a fast interval session now replaces the threshold: Billat 30/30 (12 × 30 s brisk, 30 s jog) in the basis and base phases, Norwegian 4 × 4 in the build phase. The other weeks stay threshold."
 };
 const EN_HTML = {
 "Kraft · Laufen · Mobility": "Strength · Running · Mobility",

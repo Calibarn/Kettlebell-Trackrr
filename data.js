@@ -459,7 +459,11 @@ const SEASON = {
      kurze Steigerungen bleiben für flinke Beine. Harte Intervalle (≈ 5-km-Tempo) erst in der spezifischen Phase kurz vor dem Rennen –
      bei 5 km die letzten 2, bei 10 km die letzten 3 Wochen vor dem Tapering; HM und Marathon üben dort Renntempo statt Intervalle.
      Ab 1.7 (Jans Bild mit drei Einheiten): Grundlage mit Cruise-Intervallen nach Daniels (1-km-Stücke, kurze Pause), 10 km spezifisch mit
-     dem Norweger 4 × 4. Billat 30/30 bewusst nicht – das wäre eine weitere harte Intervall-Einheit außerhalb der spezifischen Phase. */
+     dem Norweger 4 × 4.
+     Ab 1.9 (Jan: „Ja will ich“ – gegen meinen Rat, Schwelle bringt für den HM mehr): In Basis, Grundlage und Aufbau ersetzt jede dritte
+     Kalenderwoche (KW durch 3 teilbar) die Schwelle durch schnelle Intervalle – Basis und Grundlage Billat 30/30, Aufbau Norweger 4 × 4 (vo2).
+     Nur die erste Qualität der Woche, nicht bei gemeinsamen Blöcken zweier Rennen. */
+  vo2: { every: 3, basis: 'Intervall: Billat 30/30 – 12 × 30 Sek. zügig, je 30 Sek. traben', base: 'Intervall: Billat 30/30 – 12 × 30 Sek. zügig, je 30 Sek. traben', build: 'Intervall: Norweger 4 × 4 Min. hart, 3 Min. Trabpause' },
   key: {
     basis: { all: ['4 × 6 Min. Schwelle, 90 Sek. Trabpause', '3 × 8 Min. Schwelle, 2 Min. Trabpause, danach 6 × 100 m Steigerung'] },
     base: { all: ['5 × 1 km Schwelle, 1 Min. Trabpause', '3 × 10 Min. Schwelle, 2 Min. Trabpause, danach 6 × 100 m Steigerung'] },
@@ -889,9 +893,12 @@ PREP.mat.push('Dead Bug mit Kurzhantel', 'Floor Press mit Kurzhanteln', 'Pullove
    Der älteste (letzte) Eintrag ist der Grundstand mit allen Funktionen; Neulinge sehen ihn plus die 3 neuesten Updates. */
 /* Versionsnummer der App, angezeigt unter Mehr. Seit 13.11.2026 gehen Änderungen direkt live (main, ohne Wochen-Release über dev);
    jeder Tag mit Veröffentlichung ist eine neue Nebenversion: 1.1, 1.2, 1.3 … Der Neuigkeiten-Eintrag des Tages bekommt dieselbe Nummer (version). */
-const APP_VERSION = '1.8';
+const APP_VERSION = '1.9';
 // Ein Eintrag pro Tag: Änderungen desselben Tages kommen in den Eintrag des Tages (aka = frühere ids für „schon gesehen“)
 const CHANGELOG = [
+  { id: '2026-11-23', date: '2026-11-23', version: '1.9', title: 'Schnelle Intervalle', items: [
+    ['Ab und zu schnelle Intervalle', 'Jede dritte Woche ersetzt jetzt eine schnelle Intervall-Einheit die Schwelle: Billat 30/30 (12 × 30 Sek. zügig, 30 Sek. traben) in Basis und Grundlage, Norweger 4 × 4 im Aufbau. Die anderen Wochen bleiben Schwelle.', 'neu']
+  ] },
   { id: '2026-11-22', date: '2026-11-22', version: '1.8', title: 'Entlastung', items: [
     ['Entlastungswoche nach deinem Training', 'Die Entlastungswoche richtet sich jetzt nach dem, was du wirklich gelaufen bist: Nach drei Wochen Aufbau am Stück kommt sie automatisch. Vorher rutschte sie jede Woche eine Woche weiter und kam nie.', 'bug'],
     ['Entlastung heißt nicht nichts', 'Etwa 25 % weniger km und ein kürzerer Longrun. Bei der Qualität ein Drittel weniger Wiederholungen bei gleichem Tempo, z. B. 3 statt 5 × 1 km. Kraft mit gleichem Gewicht, je Übung 1 Satz weniger. „Heute dran“ zeigt an, wenn Entlastungswoche ist.', 'neu'],

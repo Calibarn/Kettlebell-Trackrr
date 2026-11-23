@@ -718,6 +718,7 @@ test('Warm-up an der harten Einheit: „▶ Warm-up“ in Heute dran startet den
   const wd = await page.evaluate(() => new Date().getDay());
   await page.evaluate(wd => {
     races = [{ id: 'a', name: 'A', date: addDays(localDay(), 100), dist: 'hm', prio: 'A' }]; results = []; persistRaces();
+    SEASON.vo2.every = 1e9; // unabhängig von der Kalenderwoche: Schwelle statt jede dritte Woche 30/30 (das hätte das Speed-Warm-up)
     Object.assign(profile.week, { group: null, quality: wd, long: (wd + 3) % 7, extras: [], strength: [], mobility: [] });
     persistProfile(); renderAll(); showArea('start');
   }, wd);

@@ -54,6 +54,7 @@ function localizeContent() {
   each(SEASON.dist, d => set(d, 'label'));
   each(SEASON.phase, p => { p[0] = tr(p[0]); p[1] = tr(p[1]); });
   each(SEASON.key, ph => each(ph, l => { l[0] = tr(l[0]); l[1] = tr(l[1]); }));
+  ['basis', 'base', 'build'].forEach(k => set(SEASON.vo2, k));
   for (const k of Object.keys(SEASON.long)) { const v = SEASON.long[k]; if (typeof v === 'string') SEASON.long[k] = tr(v); else for (const d of Object.keys(v)) v[d] = tr(v[d]); }
   ['bRace', 'bInTaper', 'bInRecover', 'intro', 'note'].forEach(k => set(SEASON, k));
   for (const k of Object.keys(SEASON.recoverNote || {})) SEASON.recoverNote[k] = tr(SEASON.recoverNote[k]);

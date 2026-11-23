@@ -8,6 +8,8 @@ const setupQualityToday = page => page.evaluate(() => {
   races = [{ id: 'h', name: 'HM', date: addDays(localDay(), 120), dist: 'hm', prio: 'A', goal: null }]; persistRaces();
   Object.assign(profile.week, { runner: 'runner', quality: wd, long: (wd + 4) % 7, group: null, extras: [], strength: [], mobility: [] }); persistProfile();
   runLog = []; persistRunLog(); localStorage.removeItem(KEYS.runask); startFeedback = null;
+  // Plan-Einheit unabhängig von der Kalenderwoche (gerade/ungerade, jede dritte schnelle Intervalle): immer 4 × 6 Min.
+  const k = '4 × 6 Min. Schwelle, 90 Sek. Trabpause'; SEASON.key.basis.all = [k, k]; SEASON.key.base.all = [k, k]; SEASON.vo2.every = 1e9;
 });
 
 test('Eingabe: Aufbau aus dem Plan, Strecke in m oder km, Zeit als 4:05', async ({ page }) => {

@@ -41,12 +41,16 @@ test('Entlastungswoche: Qualität mit weniger Wiederholungen bei gleichem Tempo'
   const r = await page.evaluate(() => {
     results = [{ id: 'a', date: addDays(localDay(), -10), km: 10, time: 3000, dist: '10k' }];
     races = [{ id: 'h', name: 'HM', date: addDays(localDay(), 200), dist: 'hm', prio: 'A' }];
-    const x = Object.assign({}, seasonPlan().weeks[0], { phase: 'base', cut: true }), k = [weekKey(x), weekKey(x, true)].sort();
-    return { k, plan: k.map(repPlan) };
+    // eine Woche ohne schnelle Intervalle (KW nicht durch 3 teilbar) und eine mit
+    let w = seasonPlan().weeks[0].week; while (isoWeek(w) % 3 === 0) w = addDays(w, 7);
+    let v = w; while (isoWeek(v) % 3 !== 0) v = addDays(v, 7);
+    const x = Object.assign({}, seasonPlan().weeks[0], { week: w, phase: 'base', cut: true }), k = [weekKey(x), weekKey(x, true)].sort();
+    return { k, plan: k.map(repPlan), vo2: weekKey(Object.assign({}, x, { week: v })) };
   });
   expect(r.k[0]).toMatch(/^kürzer: 2 × 10 Min\. Schwelle, 2 Min\. Trabpause, danach 6 × 100 m Steigerung \(.+\) – statt 3 ×$/);
   expect(r.k[1]).toMatch(/^kürzer: 3 × 1 km Schwelle, 1 Min\. Trabpause \(.+\) – statt 5 ×$/);
   expect(r.plan).toEqual([{ n: 2, sec: 600 }, { n: 3, km: 1 }]);
+  expect(r.vo2).toMatch(/^kürzer: Intervall: Billat 30\/30 – 8 × 30 Sek\. zügig, je 30 Sek\. traben – statt 12 × \(≈ \d:\d\d \/km\)$/);
 });
 
 test.describe('mit Startseite', () => {
