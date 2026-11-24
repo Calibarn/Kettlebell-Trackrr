@@ -55,4 +55,15 @@ async function closeRating(page) { await expect(page.locator('#rate')).toBeVisib
 // Aufklappbaren Bereich öffnen (Profil, Mehr, Laufen) – wie ein Tipp auf die Zeile
 async function openSect(page, id) { await page.evaluate(i => { const d = document.getElementById(i); if (!d) throw Error('Bereich fehlt: ' + i); d.open = true; try { if (d.classList.contains('sect')) sectState[d.dataset.acc] = d.id; } catch (e) {} }, id); }
 
-module.exports = { test, expect, forward, closeRating, openSect };
+// Heute Qualität (4 × 6 Min.) im HM-Plan, noch kein Lauf eingetragen
+const setupQualityToday = page => page.evaluate(() => {
+  const wd = new Date(localDay() + 'T12:00:00').getDay();
+  results = [{ id: 'a', date: addDays(localDay(), -30), km: 10, time: 3300, dist: '10k' }]; persistResults();
+  races = [{ id: 'h', name: 'HM', date: addDays(localDay(), 120), dist: 'hm', prio: 'A', goal: null }]; persistRaces();
+  Object.assign(profile.week, { runner: 'runner', quality: wd, long: (wd + 4) % 7, group: null, extras: [], strength: [], mobility: [] }); persistProfile();
+  runLog = []; persistRunLog(); localStorage.removeItem(KEYS.runask); startFeedback = null;
+  // Plan-Einheit unabhängig von der Kalenderwoche (gerade/ungerade, jede dritte schnelle Intervalle): immer 4 × 6 Min.
+  const k = '4 × 6 Min. Schwelle, 90 Sek. Trabpause'; SEASON.key.basis.all = [k, k]; SEASON.key.base.all = [k, k]; SEASON.vo2.every = 1e9;
+});
+
+module.exports = { test, expect, forward, closeRating, openSect, setupQualityToday };

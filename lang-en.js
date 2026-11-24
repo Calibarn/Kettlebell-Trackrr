@@ -2281,7 +2281,6 @@ const EN_HTML = {
 "<b>Laufen → Woche:</b> Diese Woche mit Longrun, Wochen-km und Qualitätseinheit, dazu Trainingstempos und die ganze Saison. Einheit antippen, wenn sie diese Woche entfällt. Longrun und Wochen-km kommen aus deinen Läufen (höchstens +10 % pro Woche, nach drei Wochen Aufbau eine Entlastungswoche – gezählt nach dem, was du wirklich gelaufen bist).": "<b>Running → Week:</b> This week with long run, weekly km and quality session, plus training paces and the whole season. Tap a session if it’s skipped this week. Long run and weekly km come from your runs (at most +10 % per week, after three weeks of building a deload week – counted from what you actually ran).",
 "Ohne Werte zeigt der Plan nur „Zone 2“ usw.": "Without values the plan only shows “Zone 2” etc.",
 "Zonen der Uhr übernehmen: Mehr → Apple Watch": "Take the zones from your watch: More → Apple Watch",
-"Apple Watch": "Apple Watch",
 "Intervalle, Läufe, Rennplan und Zonen auf die Uhr": "Intervals, runs, race plan and zones on your watch",
 "Eigenes Training anlegen": "Create a custom workout",
 "Auf dem iPhone die <b>Fitness</b>-App öffnen, <b>Training</b> antippen und bei Laufen (draußen) die Taste <b>Ziele</b>.": "On your iPhone open the <b>Fitness</b> app, tap <b>Workout</b> and, for an outdoor run, the <b>Goals</b> button.",
@@ -2301,7 +2300,6 @@ const EN_HTML = {
 "Je Abschnitt des Rennplans ein Schritt <b>Training</b> mit der Strecke und dem Tempo-Bereich als Ziel. Die Uhr misst meist etwas mehr als die vermessene Strecke (Kurven, Hochhäuser) – für die Zielzeit eher in der schnelleren Hälfte bleiben.": "One <b>Work</b> step per section of the race plan with the distance and the pace range as the target. Your watch usually measures a bit more than the measured course (corners, tall buildings) – for your goal time stay in the faster half.",
 "Pulszonen": "Heart rate zones",
 "Die Zonen der Uhr findest du in den Einstellungen der App Training unter <b>Herzfrequenzzonen</b>; dort lassen sie sich auch von Hand festlegen. Trag dieselben Grenzen unter Profil → Herzfrequenz ein – dann passen Plan, Auswertung und Uhr zusammen.": "You find the watch’s zones in the Workout app settings under <b>Heart Rate Zones</b>; you can also set them manually there. Enter the same limits under Profile → Heart rate – then plan, review and watch match.",
-"VO2max": "VO2max",
 "Die Uhr schätzt sie bei Läufen draußen. Ablesen in der <b>Health</b>-App unter <b>Herz</b> → <b>Cardio-Fitness</b> und unter Laufen → Läufe → Fortschritt eintragen.": "The watch estimates it on outdoor runs. Read it in the <b>Health</b> app under <b>Heart</b> → <b>Cardio Fitness</b> and enter it under Running → Runs → Progress."
 };
-const EN_HTML_KEEP = ["Tagwerk", "Cooldown", "Mobility", "Sprache · Language", "iPhone", "Android", "Tabata", "Core", "<b>Updates</b>"];
+const EN_HTML_KEEP = ["Tagwerk", "Cooldown", "Mobility", "Sprache · Language", "iPhone", "Android", "Tabata", "Core", "<b>Updates</b>", "Apple Watch", "VO2max"];

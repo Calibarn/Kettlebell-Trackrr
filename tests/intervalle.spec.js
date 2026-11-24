@@ -1,16 +1,6 @@
 // Intervalle (ab 1.6): je Wiederholung Strecke, Zeit und Max-Puls eintragen, Vergleich mit der letzten gleich aufgebauten Einheit,
 // Fortschritt unter Laufen → Läufe (VO2max und Intervalle im Verlauf).
-const { test, expect, openSect } = require('./fixtures');
-
-const setupQualityToday = page => page.evaluate(() => {
-  const wd = new Date(localDay() + 'T12:00:00').getDay();
-  results = [{ id: 'a', date: addDays(localDay(), -30), km: 10, time: 3300, dist: '10k' }]; persistResults();
-  races = [{ id: 'h', name: 'HM', date: addDays(localDay(), 120), dist: 'hm', prio: 'A', goal: null }]; persistRaces();
-  Object.assign(profile.week, { runner: 'runner', quality: wd, long: (wd + 4) % 7, group: null, extras: [], strength: [], mobility: [] }); persistProfile();
-  runLog = []; persistRunLog(); localStorage.removeItem(KEYS.runask); startFeedback = null;
-  // Plan-Einheit unabhängig von der Kalenderwoche (gerade/ungerade, jede dritte schnelle Intervalle): immer 4 × 6 Min.
-  const k = '4 × 6 Min. Schwelle, 90 Sek. Trabpause'; SEASON.key.basis.all = [k, k]; SEASON.key.base.all = [k, k]; SEASON.vo2.every = 1e9;
-});
+const { test, expect, openSect, setupQualityToday } = require('./fixtures');
 
 test('Eingabe: Aufbau aus dem Plan, Strecke in m oder km, Zeit als 4:05', async ({ page }) => {
   const r = await page.evaluate(() => ({

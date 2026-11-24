@@ -667,13 +667,13 @@ html[data-os=android] .infoi{border-color:var(--accent-ink);color:var(--accent-i
 .rpval b{font-weight:600}
 .rpval small{font-size:13px;color:var(--label2)}
 .rpwatch{border-top:.5px solid var(--sep);padding:4px 0}
+.rpwatch p{margin:4px 0 8px;font-size:13px;color:var(--label2);line-height:1.4}
 .rpwatch .linkbtn{font-size:14px;padding:8px 0}
+/* ⌚ Für die Uhr: Schritte an der Einheit in „Heute dran“ */
 .swatch{margin-top:2px}
-.swatch summary{list-style:none;font-size:13px;color:var(--accent);cursor:pointer;padding:6px 0}
-.swatch summary::-webkit-details-marker{display:none}
+.swatch summary{font-size:13px;color:var(--accent);padding:6px 0}
 .swatch ol{margin:2px 0 4px;padding-left:20px;font-size:13px;color:var(--label2);line-height:1.4}
 .swatch .linkbtn{font-size:13px;padding:6px 0;text-align:left}
-.rpwatch p{margin:4px 0 8px;font-size:13px;color:var(--label2);line-height:1.4}
 /* Startseite: offene Nachträge als kompakte Zeilen, Formular erst nach Antippen */
 .srowt.spend{width:100%;background:none;border:0;color:inherit;font:inherit;text-align:left;cursor:pointer;padding-top:8px;padding-bottom:8px}
 .srowt.spend+.srowt.spend{border-top:.5px solid var(--sep)}

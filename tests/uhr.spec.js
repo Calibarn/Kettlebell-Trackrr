@@ -1,5 +1,5 @@
 // ⌚ Für die Uhr (ab 1.10): die Einheit von heute als eigenes Training der Fitness-App; wie man es anlegt, steht unter Mehr → Apple Watch.
-const { test, expect } = require('./fixtures');
+const { test, expect, setupQualityToday } = require('./fixtures');
 
 test('Schritte für die Uhr: Intervalle mit Tempo-Ziel und Erholung, kurze Stücke ohne Ziel, lockere Läufe mit Puls-Ziel', async ({ page }) => {
   const r = await page.evaluate(() => {
@@ -15,7 +15,7 @@ test('Schritte für die Uhr: Intervalle mit Tempo-Ziel und Erholung, kurze Stüc
       hm: q('2 × 5 km im HM-Tempo, 3 Min. Trabpause (5:45 /km)'),
       long: watchSteps({ kind: 'long', title: 'Longrun ca. 13 km', km: 13, detail: 'locker, Zone 2' }),
       group: watchSteps({ kind: 'group', title: 'Laufgruppe', detail: 'locker, Zone 2' }),
-      rec: watchSteps({ kind: 'easy', title: 'Regeneration', detail: 'sehr locker, Zone 1' }),
+      rec: watchSteps({ kind: 'easy', title: 'Regeneration', recovery: true, detail: 'sehr locker, Zone 1' }),
       test: watchSteps({ kind: 'quality', title: 'Testlauf 5 km', test: true, detail: 'nach 15 Min. Einlaufen 5 km' }),
       race: watchSteps({ kind: 'race', title: 'HM', detail: '' })
     };
@@ -36,11 +36,8 @@ test('Schritte für die Uhr: Intervalle mit Tempo-Ziel und Erholung, kurze Stüc
 test.describe('mit Startseite', () => {
   test.use({ start: true });
   test('„⌚ Für die Uhr“ an der Einheit von heute, Verweis öffnet Mehr → Apple Watch', async ({ page }) => {
-    await page.evaluate(() => { const wd = new Date(localDay() + 'T12:00:00').getDay();
-      results = [{ id: 'a', date: addDays(localDay(), -20), km: 10, time: 3300, dist: '10k' }]; persistResults();
-      races = [{ id: 'h', name: 'HM', date: addDays(localDay(), 120), dist: 'hm', prio: 'A' }]; persistRaces();
-      Object.assign(profile.week, { runner: 'runner', quality: wd, long: (wd + 4) % 7, group: null, extras: [], strength: [], mobility: [], sauna: [] }); persistProfile();
-      runLog = []; persistRunLog(); showArea('start'); });
+    await setupQualityToday(page);
+    await page.evaluate(() => { profile.week.sauna = []; persistProfile(); showArea('start'); });
     const w = page.locator('#startcontent .srowt', { hasText: 'Qualität' }).locator('.swatch');
     await expect(w.locator('summary')).toHaveText('⌚ Für die Uhr');
     await w.locator('summary').click();
@@ -52,7 +49,26 @@ test.describe('mit Startseite', () => {
     await expect(page.locator('#sect-watch')).toContainText('Wiederholung hinzufügen');
     // auf Android nicht
     await page.evaluate(() => { document.documentElement.dataset.os = 'android'; showArea('start'); });
-    await expect(page.locator('#startcontent .swatch')).toHaveCount(0);
+    await expect(page.locator('#startcontent .swatch')).toBeHidden();
     await expect(page.locator('#sect-watch')).toBeHidden();
+  });
+});
+
+// Jede Einheit mit Trab- oder Stehpause bekommt den Schritt Erholung – in beiden Sprachen
+for (const [locale, text, step, word] of [
+  ['de-DE', /pause|traben/, '5 × wiederholen: Training Strecke 1 km · Erholung Zeit 1:00 Min.', 'Erholung Zeit'],
+  ['en-US', /\bjog\b|standing rest/, 'Repeat 5 ×: work distance 1 km · recovery time 1:00 min', 'recovery time']
+]) test.describe(`Erholung ${locale}`, () => {
+  test.use({ locale });
+  test('steht bei jeder Einheit mit Trab- oder Stehpause', async ({ page }) => {
+    const r = await page.evaluate(([src, word]) => {
+      const q = detail => watchSteps({ kind: 'quality', title: 'Q', detail })[1] || '', all = v => typeof v === 'string' ? [v] : v && typeof v === 'object' ? Object.values(v).flatMap(all) : [];
+      const list = [...all(SEASON.key), ...all(SEASON.vo2)].map(t => tr(t)).filter(t => new RegExp(src).test(t));
+      return { stand: q(tr('5 × 1 km im Level-Tempo, 60 Sek. Stehpause')), jog: q(tr('4 × 6 Min. Schwelle, 90 Sek. Trabpause')), n: list.length, missing: list.filter(t => !q(t).includes(word)) };
+    }, [text.source, word]);
+    expect(r.stand).toBe(step);
+    expect(r.jog).toContain(`${word} 1:30`);
+    expect(r.n).toBeGreaterThan(10);
+    expect(r.missing).toEqual([]);
   });
 });

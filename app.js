@@ -1160,6 +1160,7 @@ function onProfileChange(e) {
 // Eingaben mit Komma oder Punkt; leer = nicht eingetragen (nicht 0)
 const kmNum = v => { const t = String(v ?? '').trim().replace(',', '.'); if (t === '') return null; const n = Number(t); return Number.isFinite(n) && n >= 0 && n <= 1000 ? Math.round(n * 10) / 10 : NaN; };
 const kmText = n => NUM1.format(Number(n));
+const distText = km => km < 1 ? `${Math.round(km * 1000)} m` : `${kmText(km)} km`;
 const rd1 = x => Math.round(x * 10) / 10;
 const okKm = v => v === null || v === undefined || (typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= 1000);
 const validRunWeek = e => isObj(e) && isDay(e.week) && okKm(e.km) && okKm(e.long);
@@ -1473,7 +1474,7 @@ function repKey(reps) {
   const sS = spread(ss), sK = spread(ks), round = (v, q) => Math.abs(v / q - Math.round(v / q)) < 0.02;
   const byKm = sS === sK && ks.length === n && n && round(avgOf(ks), 0.05) && !round(avgOf(ss), 15);
   if (n && sS <= 0.05 && (sS < sK || (sS === sK && !byKm))) { const t = Math.round(avgOf(ss) / 15) * 15; return { key: `${n}x${t}s`, label: `${n} × ${t % 60 ? hms(t) : T(`${t / 60} Min.`, `${t / 60} min`)}` }; }
-  if (n && spread(ks) <= 0.05) { const k = Math.round(avgOf(ks) * 20) / 20; return { key: `${n}x${k}km`, label: `${n} × ${k < 1 ? Math.round(k * 1000) + ' m' : kmText(k) + ' km'}` }; }
+  if (n && spread(ks) <= 0.05) { const k = Math.round(avgOf(ks) * 20) / 20; return { key: `${n}x${k}km`, label: `${n} × ${distText(k)}` }; }
   return { key: `${n}x`, label: T(`${n} Intervalle`, `${n} intervals`) };
 }
 function repStats(r) {
@@ -2858,42 +2859,34 @@ function warmCtl(it) {
   const k = it.done ? 'cooldown' : 'warmup', m = g.intro.match(/(?:etwa|about) (\d+(?:–\d+)?) (?:Minuten|minutes)/);
   return `<small class="slong swarm"><button type="button" class="linkbtn" data-warmgo="${id}|${k}">▶ ${k === 'warmup' ? 'Warm-up' : 'Cooldown'}${k === 'warmup' && m ? T(` · ca. ${m[1]} Min.`, ` · approx. ${m[1]} min`) : ''}</button></small>`;
 }
-// Verweise „Mehr → Apple Watch“: zum Bereich Mehr wechseln und den Abschnitt aufklappen
-document.addEventListener('click', e => {
-  if (!e.target.closest('[data-watchhelp]')) return;
-  showArea('mehr'); const s = $('sect-watch'); s.open = true; s.scrollIntoView({ block: 'start' });
-});
 /* ⌚ Für die Uhr (ab 1.10): die Einheit von heute als eigenes Training der Fitness-App (iPhone ab iOS 26, Uhr ab watchOS 26).
    Aufwärmen und Cool-down offen (mit Doppeltippen weiter), Intervalle mit Zeit oder Strecke und dem Tempo aus dem Plan als Ziel,
    lockere Läufe mit der Puls-Zone als Ziel. Wie man es anlegt, steht einmal unter Mehr → Apple Watch. Nicht auf Android. */
 const watchTime = s => s < 60 ? T(`${s} Sek.`, `${s} s`) : T(`${hms(s)} Min.`, `${hms(s)} min`);
-const watchDist = km => km < 1 ? `${Math.round(km * 1000)} m` : `${kmText(km)} km`;
 function watchSteps(it) {
-  if (it.kind === 'race' || it.kind === 'brace') return null; // Rennen: Rennplan auf der Startseite
-  const d = it.detail || '', z = profile.hr.z, zn = Number((d.match(/Zone (\d)/) || [])[1]) || 2;
-  const hr = z ? `${z[zn - 1]}–${z[zn] - 1} bpm` : `Zone ${zn}`, open = T('Offen – mit Doppeltippen weiter', 'Open – double-tap to move on');
-  if (it.test) return [T('Aufwärmen: Zeit 15:00 Min.', 'Warm-up: time 15:00 min'), T('Training: Strecke 5 km, ohne Ziel – so schnell, wie du gleichmäßig durchhältst', 'Work: distance 5 km, no target – as fast as you can hold evenly'), T('Cool-down: Offen', 'Cooldown: open')];
-  const p = (it.kind === 'quality' || it.kind === 'quality2') ? repPlan(d) : null;
+  if (!RUN_KINDS.includes(it.kind)) return null; // Rennen: Rennplan auf der Startseite
+  const cool = T('Cool-down: Offen', 'Cooldown: open');
+  if (it.test) return [T('Aufwärmen: Zeit 15:00 Min.', 'Warm-up: time 15:00 min'), T('Training: Strecke 5 km, ohne Ziel – so schnell, wie du gleichmäßig durchhältst', 'Work: distance 5 km, no target – as fast as you can hold evenly'), cool];
+  const d = it.detail || '', kind = runKindOf(it), p = kind === 'quality' ? repPlan(d) : null;
   if (!p) {
-    const km = it.kind === 'long' ? it.km || Number((it.title.match(/(\d+(?:[,.]\d)?) km/) || [])[1]?.replace(',', '.')) : 0;
+    const zn = RUN_ZONE[kind] || 2, hr = zoneRange(zn) || `Zone ${zn}`, km = kind === 'long' && it.km;
     return [T(`Training: ${km ? `Strecke ${kmText(km)} km` : 'Offen'}, Ziel Herzfrequenz ${hr}`, `Work: ${km ? `distance ${kmText(km)} km` : 'open'}, target heart rate ${hr}`)];
   }
   // Tempo-Ziel aus dem Plan: Bereich „(5:40–5:45 /km)“ oder ein Wert „(≈ 5:17 /km)“ → ±5 s; zu kurze Stücke ohne Ziel (GPS hinkt nach)
-  const sec = t => { const [m, s] = t.split(':').map(Number); return m * 60 + s; }, rg = d.match(/\((\d+:\d\d)–(\d+:\d\d) \/km\)/), one = !rg && d.match(/\((?:≈ )?(\d+:\d\d) \/km\)/);
-  const pace = rg ? `${rg[1]}–${rg[2]}` : one ? `${hms(sec(one[1]) - 5)}–${hms(sec(one[1]) + 5)}` : null, short = (p.sec && p.sec <= 60) || (p.km && p.km <= 0.2);
-  const target = short ? T('ohne Ziel (zu kurz fürs GPS)', 'no target (too short for GPS)') : pace ? T(`Ziel Tempo ${pace} /km`, `target pace ${pace} /km`) : '';
-  const rest = d.match(/(\d+)\s*(Sek|Min|s|min)\.?\s*(?:Trabpause|traben|jog)/i), restSec = rest ? Number(rest[1]) * (/^m/i.test(rest[2]) ? 60 : 1) : 0;
+  const [, a, b] = d.match(/\((?:≈ )?(\d+:\d\d)(?:–(\d+:\d\d))? \/km\)/) || [], s = a && repSecIn(a), pace = a && paceRange(b ? [s, repSecIn(b)] : [s - 5, s + 5]);
+  const target = p.sec <= 60 || p.km <= 0.2 ? T(', ohne Ziel (zu kurz fürs GPS)', ', no target (too short for GPS)') : pace ? T(`, Ziel Tempo ${pace}`, `, target pace ${pace}`) : '';
+  const rest = d.match(/(\d+)\s*(Sek|sec|s|Min)\.?\s*(?:Trabpause|Stehpause|traben|jog|standing rest)/i), restTime = rest && watchTime(Number(rest[1]) * (/^m/i.test(rest[2]) ? 60 : 1));
   const strides = d.match(/(\d+) × 100 m (?:Steigerung|strides)/);
-  return [T(`Aufwärmen: ${open}`, `Warm-up: ${open}`),
-    T(`${p.n} × wiederholen: Training ${p.sec ? `Zeit ${watchTime(p.sec)}` : `Strecke ${watchDist(p.km)}`}${target ? `, ${target}` : ''}${restSec ? ` · Erholung Zeit ${watchTime(restSec)}` : ''}`,
-      `Repeat ${p.n} ×: work ${p.sec ? `time ${watchTime(p.sec)}` : `distance ${watchDist(p.km)}`}${target ? `, ${target}` : ''}${restSec ? ` · recovery time ${watchTime(restSec)}` : ''}`),
-    T(`Cool-down: Offen${strides ? ` – darin ${strides[1]} × 100 m Steigerung` : ''}`, `Cooldown: open${strides ? ` – with ${strides[1]} × 100 m strides in it` : ''}`)];
+  return [T('Aufwärmen: Offen – mit Doppeltippen weiter', 'Warm-up: Open – double-tap to move on'),
+    T(`${p.n} × wiederholen: Training ${p.sec ? `Zeit ${watchTime(p.sec)}` : `Strecke ${distText(p.km)}`}`, `Repeat ${p.n} ×: work ${p.sec ? `time ${watchTime(p.sec)}` : `distance ${distText(p.km)}`}`) + target + (rest ? T(` · Erholung Zeit ${restTime}`, ` · recovery time ${restTime}`) : ''),
+    cool + (strides ? T(` – darin ${strides[1]} × 100 m Steigerung`, ` – with ${strides[1]} × 100 m strides in it`) : '')];
 }
 function watchCtl(it) {
-  if (it.done || !RUN(it) || document.documentElement.dataset.os === 'android') return '';
-  const s = watchSteps(it); if (!s) return '';
-  return `<details class="swatch"><summary>⌚ ${T('Für die Uhr', 'For your watch')}</summary><ol>${s.map(l => `<li>${esc(l)}</li>`).join('')}</ol><button type="button" class="linkbtn" data-watchhelp>${T('So legst du es an: Mehr → Apple Watch', 'How to set it up: More → Apple Watch')}</button></details>`;
+  const s = it.done ? null : watchSteps(it); if (!s) return '';
+  return `<details class="swatch" data-os-only="ios"><summary>⌚ ${T('Für die Uhr', 'For your watch')}</summary><ol>${s.map(l => `<li>${esc(l)}</li>`).join('')}</ol><button type="button" class="linkbtn" data-watchhelp>${T('So legst du es an: Mehr → Apple Watch', 'How to set it up: More → Apple Watch')}</button></details>`;
 }
+// Verweise „Mehr → Apple Watch“ (Startseite, Laufen, Profil)
+document.addEventListener('click', e => { if (e.target.closest('[data-watchhelp]')) openMehr('sect-watch'); });
 // Longrun heute selbst setzen: „km anpassen“ unter dem Longrun in „Heute dran“ (Vorschlag bleibt zurückholbar)
 let longEdit = false;
 function longCtl(it) {
@@ -3653,10 +3646,11 @@ function renderInstallBar() {
     ? T('„Teilen“ → „Zum Home-Bildschirm“', '“Share” → “Add to Home Screen”')
     : T('Chrome-Menü ⋮ → „App installieren“', 'Chrome menu ⋮ → “Install app”')} · <button type="button" class="linkbtn" id="installguide">${T('Anleitung', 'Guide')}</button></small></span></div>`;
 }
-function openInstallGuide() {
+// Verweis auf einen Abschnitt unter Mehr: hinwechseln, aufklappen (auf Wunsch auch einen Eintrag darin), hinscrollen
+function openMehr(sect, entry = sect) {
   showArea('mehr');
-  const s = $('sect-guide'), d = $('guide-install');
-  sectState.mehr = 'sect-guide'; store(KEYS.sections, sectState);
+  const s = $(sect), d = $(entry);
+  sectState.mehr = sect; store(KEYS.sections, sectState);
   s.open = true; d.open = true;
   requestAnimationFrame(() => d.scrollIntoView({ block: 'start', behavior: 'smooth' }));
 }
@@ -4064,7 +4058,7 @@ $('importbtn').addEventListener('click', () => $('importfile').click());
 $('importfile').addEventListener('change', e => { if (e.target.files[0]) importBackup(e.target.files[0]); e.target.value = ''; });
 $('exportcsv').addEventListener('click', exportCsv);
 $('banners').addEventListener('click', e => { if (e.target.id === 'kbon') { setPlanGear(plan, Object.assign({}, planGear(), { kb: true })); renderAll(); return; } if (e.target.id === 'backupnow') exportBackup(); if (e.target.id === 'syncnow') syncSave(); });
-$('installbar').addEventListener('click', e => { if (e.target.id === 'installguide') openInstallGuide(); });
+$('installbar').addEventListener('click', e => { if (e.target.id === 'installguide') openMehr('sect-guide', 'guide-install'); });
 $('measuredate').value = localDay();
 $('measureform').addEventListener('submit', e => { e.preventDefault(); saveMeasureFromForm(); });
 $('area-profil').addEventListener('click', onProfileClick);
