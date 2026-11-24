@@ -424,6 +424,7 @@ const PACE_RACE = { cut: [480, 420, 390, 375, 360], step: 10, rest: 60, levels: 
    phases: Wochen je Phase, die Rennwoche zählt zum Tapering. longPeak/weekPeak: Ziel-Longrun bzw. Wochen-km am Ende der
    spezifischen Phase für Hobbyläufer mit 3–4 Läufen pro Woche. taper/recover: Anteil der Spitzenwerte je Woche
    (long 0 = kein Longrun). Steigerung höchstens 10 % pro Woche, nach drei Aufbauwochen eine Entlastungswoche. */
+const BILLAT_3030 = 'Intervall: Billat 30/30 – 12 × 30 Sek. zügig, je 30 Sek. traben';
 const SEASON = {
   dist: {
     '5k': { label: '5 km', km: 5, phases: { base: 2, build: 3, spec: 2, taper: 1 }, minWeeks: 6, longPeak: 14, weekPeak: 30,
@@ -444,7 +445,7 @@ const SEASON = {
   },
   // Obergrenze je Phase als Anteil der Spitzenwerte; Basis = zwischen den Blöcken bzw. vor dem ersten
   cap: { basis: 0.6, base: 0.7, build: 0.85, spec: 1 },
-  grow: 0.1, cutLong: 0.8, cutWeek: 0.75, cutEvery: 3, cutShare: 0.8, cutReps: 0.65,
+  grow: 0.1, cutLong: 0.8, cutWeek: 0.75, cutEvery: 3, cutShare: 0.8, cutDone: 0.9, cutReps: 0.65,
   phase: {
     basis: ['Basis', 'Locker laufen und das Niveau halten. Der nächste Block startet später.'],
     base: ['Grundlage', 'Umfang aufbauen, fast alles locker in Zone 2. Dazu Schwellen-Intervalle und kurze Steigerungen für flinke Beine.'],
@@ -463,7 +464,7 @@ const SEASON = {
      Ab 1.9 (Jan: „Ja will ich“ – gegen meinen Rat, Schwelle bringt für den HM mehr): In Basis, Grundlage und Aufbau ersetzt jede dritte
      Kalenderwoche (KW durch 3 teilbar) die Schwelle durch schnelle Intervalle – Basis und Grundlage Billat 30/30, Aufbau Norweger 4 × 4 (vo2).
      Nur die erste Qualität der Woche, nicht bei gemeinsamen Blöcken zweier Rennen. */
-  vo2: { every: 3, basis: 'Intervall: Billat 30/30 – 12 × 30 Sek. zügig, je 30 Sek. traben', base: 'Intervall: Billat 30/30 – 12 × 30 Sek. zügig, je 30 Sek. traben', build: 'Intervall: Norweger 4 × 4 Min. hart, 3 Min. Trabpause' },
+  vo2: { every: 3, basis: BILLAT_3030, base: BILLAT_3030, build: 'Intervall: Norweger 4 × 4 Min. hart, 3 Min. Trabpause' },
   key: {
     basis: { all: ['4 × 6 Min. Schwelle, 90 Sek. Trabpause', '3 × 8 Min. Schwelle, 2 Min. Trabpause, danach 6 × 100 m Steigerung'] },
     base: { all: ['5 × 1 km Schwelle, 1 Min. Trabpause', '3 × 10 Min. Schwelle, 2 Min. Trabpause, danach 6 × 100 m Steigerung'] },

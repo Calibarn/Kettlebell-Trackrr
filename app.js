@@ -1692,8 +1692,8 @@ function seasonPlan(today = localDay(), opt = {}) {
       x.long = L === null || !f.long ? null : peakL * f.long; x.km = W === null ? null : peakW * f.wk; streak = 0; return;
     }
     const pk = bothPeaks(x), share = SEASON.cap[p], capL = Math.max(8, pk.long * share), capW = Math.max(15, pk.week * share);
-    // laufende Woche schon normal gelaufen (über 90 % der Wochen-km)? Dann zählt sie als Aufbau, die Entlastung kommt nächste Woche
-    const doneNormal = i === 0 && W !== null && Ld.cur !== null && Ld.cur > W * 0.9;
+    // laufende Woche schon normal gelaufen (über 90 % der Wochen-km, SEASON.cutDone)? Dann zählt sie als Aufbau, die Entlastung kommt nächste Woche
+    const doneNormal = i === 0 && W !== null && Ld.cur !== null && Ld.cur > W * SEASON.cutDone;
     if (streak >= SEASON.cutEvery && nextPh !== 'taper' && !doneNormal) {
       x.cut = true; x.cutAfter = streak; streak = 0;
       x.long = L === null ? null : L * SEASON.cutLong; x.km = W === null ? null : W * SEASON.cutWeek; return;
@@ -1776,6 +1776,8 @@ function markTests(weeks, today = localDay()) {
 }
 const r5 = v => Math.round(v / 5) * 5;
 const EASY_ADAPT = { step: 10, back: 5, minKm: 3, maxShift: 30 }, EASY_KINDS = ['easy', 'long', 'group'];
+// Toleranz lockerer Läufe: bis 5 s/km schneller bzw. 2 bpm über der Zone zählt noch als im Bereich – fürs Nachrücken und für die Auswertung
+const RUN_TOL = { pace: 5, hr: 2 };
 function trainingPaces(today = localDay()) {
   const ref = fitnessRef(today); if (!ref) return null;
   const at = d => riegel(ref.t10, 10, d) / d, p10 = ref.t10 / 10, base = [r5(p10 + 60), r5(p10 + 90)], adapt = easyFromRuns(ref, base, today);
@@ -1799,8 +1801,8 @@ function easyFromRuns(ref, base, today) {
     if (r.date <= ref.r.date || r.date > today || !EASY_KINDS.includes(r.kind) || !r.sec || !r.hr || r.km < EASY_ADAPT.minKm) continue;
     const pace = r.sec / r.km, high = r.hr > z[2] + 1, inZone = !high && r.hr >= z[1];
     let n = lo;
-    if (high) { if (pace >= lo - 5) n = Math.min(lo + EASY_ADAPT.back, max); }
-    else if (pace < lo - 5) n = Math.max(lo - EASY_ADAPT.step, r5(pace), min);
+    if (high) { if (pace >= lo - RUN_TOL.pace) n = Math.min(lo + EASY_ADAPT.back, max); }
+    else if (pace < lo - RUN_TOL.pace) n = Math.max(lo - EASY_ADAPT.step, r5(pace), min);
     else if (inZone && pace > lo + w + 5) n = Math.min(lo + EASY_ADAPT.step, r5(pace) - w, max);
     if (n < lo) up++; else if (n > lo) down++;
     lo = n;
@@ -1849,6 +1851,11 @@ function renderPaces() {
 }
 // Gemeinsamer Block: in geraden Kalenderwochen gilt die Qualitätseinheit dem späteren Rennen – nur, wenn es andere Einheiten hat
 const mixFor = x => x.with && planKey(x.with) !== planKey(x.target) && !(isoWeek(x.week) % 2) ? x.with : null;
+// Entlastungswoche: etwa ein Drittel weniger Wiederholungen bei gleichem Tempo (5 × 1 km → 3 × 1 km), mindestens 2; ohne „n ×“ null (dann nur „kürzer“)
+function fewerReps(txt) {
+  const m = txt.match(/(\d{1,2})\s*×/), n = m ? Number(m[1]) : 0, k = Math.max(2, Math.round(n * SEASON.cutReps));
+  return m && k < n ? { txt: txt.replace(m[0], `${k} ×`), n } : null;
+}
 function weekKey(x, alt = false) {
   const odd = isoWeek(x.week) % 2, mix = mixFor(x), r = mix || x.target;
   const t = SEASON.key[x.phase] || SEASON.key.basis, list = t[planKey(r)] || t[r.dist] || t.all;
@@ -1857,9 +1864,8 @@ function weekKey(x, alt = false) {
   // jede dritte KW in Grundlage und Aufbau: schnelle Intervalle statt Schwelle (SEASON.vo2) – nur die erste Qualität, nicht im gemeinsamen Block
   const vo2 = !mix && !alt && SEASON.vo2[x.phase] && isoWeek(x.week) % SEASON.vo2.every === 0 ? SEASON.vo2[x.phase] : null;
   const txt = vo2 || (mix ? list[alt ? 1 : 0] : list[(odd ? 0 : 1) ^ (alt ? 1 : 0)]), tp = /^(Intervall|Intervals):/.test(txt) ? trainingPaces() : null;
-  // Entlastungswoche: etwa ein Drittel weniger Wiederholungen bei gleichem Tempo (5 × 1 km → 3 × 1 km); ohne „n ×“ nur „kürzer“
-  const m = x.cut && txt.match(/(\d{1,2})\s*×/), n = m ? Number(m[1]) : 0, k = Math.max(2, Math.round(n * SEASON.cutReps)), less = m && k < n;
-  return (x.cut ? T('kürzer: ', 'shorter: ') : '') + withPace(less ? txt.replace(m[0], `${k} ×`) : txt, r) + (less ? T(` – statt ${n} ×`, ` – instead of ${n} ×`) : '') + (tp ? ` (≈ ${hms(tp.interval)} /km)` : '') + (x.phase === 'recover' ? easyPace() : '') + (mix ? T(` · für ${mix.name}`, ` · for ${mix.name}`) : '');
+  const less = x.cut ? fewerReps(txt) : null;
+  return (x.cut ? T('kürzer: ', 'shorter: ') : '') + withPace(less ? less.txt : txt, r) + (less ? T(` – statt ${less.n} ×`, ` – instead of ${less.n} ×`) : '') + (tp ? ` (≈ ${hms(tp.interval)} /km)` : '') + (x.phase === 'recover' ? easyPace() : '') + (mix ? T(` · für ${mix.name}`, ` · for ${mix.name}`) : '');
 }
 function weekLongNote(x) {
   if (x.a) return T('kein Longrun – Rennwoche', 'no long run – race week');
@@ -2369,11 +2375,11 @@ const gaengeText = g => g ? T(`${g} ${g === 1 ? 'Gang' : 'Gänge'}`, `${g} ${g =
 function saunaHint(day) {
   const next = addDays(day, 1), wd = new Date(day + 'T12:00:00').getDay(), race = d => races.find(r => r.date === d && !r.dns);
   const hard = d => { if (!mod('laufen') || runnerLevel() === 'beginner') return null; const it = plannedRunsOn(d).find(o => o.kind === 'long' || ((o.kind === 'quality' || o.kind === 'quality2') && !o.easy)); return it ? it.title : null; };
-  const r0 = race(day), r1 = race(next), h0 = !r0 && !r1 && hard(day), h1 = !r0 && !r1 && !h0 && hard(next);
+  const r0 = race(day), r1 = race(next);
   if (r0) return { warn: true, text: T(`Heute ${r0.name}: danach keine Sauna – frühestens morgen, dann kurz und mild.`, `${r0.name} today: no sauna afterwards – tomorrow at the earliest, then short and mild.`) };
   if (r1) return { warn: true, text: T(`Morgen ${r1.name}: heute lieber keine Sauna – sie kostet Flüssigkeit und frische Beine.`, `${r1.name} tomorrow: better skip the sauna today – it costs fluid and fresh legs.`) };
-  if (h0) return { text: T(`Erst ${h0}, dann Sauna – vorher trinken und etwas essen, dann 2–3 Gänge.`, `${h0} first, then sauna – drink and eat something first, then 2–3 rounds.`) };
-  if (h1) return { text: T(`Morgen ${h1}: heute mild – 2 Gänge und viel trinken.`, `${h1} tomorrow: keep it mild today – 2 rounds and plenty to drink.`) };
+  const h0 = hard(day); if (h0) return { text: T(`Erst ${h0}, dann Sauna – vorher trinken und etwas essen, dann 2–3 Gänge.`, `${h0} first, then sauna – drink and eat something first, then 2–3 rounds.`) };
+  const h1 = hard(next); if (h1) return { text: T(`Morgen ${h1}: heute mild – 2 Gänge und viel trinken.`, `${h1} tomorrow: keep it mild today – 2 rounds and plenty to drink.`) };
   if (mod('kraft') && strengthDays().includes(wd)) return { text: gymOn(wd) ? T(`Nach ${gymOn(wd)}: erst trinken, dann 2–3 Gänge.`, `After ${gymOn(wd)}: drink first, then 2–3 rounds.`) : T('Nach dem Krafttraining: erst trinken, dann 2–3 Gänge.', 'After strength training: drink first, then 2–3 rounds.') };
   return { text: T('2–3 Gänge à 8–12 Min., dazwischen abkühlen und ruhen, viel trinken.', '2–3 rounds of 8–12 min, cool down and rest in between, drink plenty.') };
 }
@@ -2736,9 +2742,8 @@ function runCard(p, i = 0) {
 }
 /* Auswertung eines Laufs gegen den Zielbereich der Einheit: lockere Läufe nach Puls (Zone 2, Regeneration Zone 1) und Tempo.
    Langsamer bzw. niedriger ist bei lockeren Läufen kein Fehler. Intervall/Tempo: keine Wertung – der Schnitt mischt schnelle Abschnitte, Pausen und Ein-/Auslaufen.
-   Toleranz (wie beim Nachrücken des lockeren Tempos): bis 5 s/km schneller und bis 2 bpm über der Zone zählt noch als im Bereich –
-   der Balken zeigt das als hellgrünen Streifen, der Text sagt „knapp“ (Jan: 6:17 bei 6:20–6:50 stand im Orange, Text „alles im Bereich“). */
-const RUN_ZONE = { easy: 2, long: 2, group: 2, recovery: 1 }, RUN_TOL = { pace: 5, hr: 2 };
+   Toleranz RUN_TOL: der Balken zeigt sie als hellgrünen Streifen, der Text sagt „knapp“ (Jan: 6:17 bei 6:20–6:50 stand im Orange, Text „alles im Bereich“). */
+const RUN_ZONE = { easy: 2, long: 2, group: 2, recovery: 1 };
 function runCheck(r) {
   const zone = RUN_ZONE[r.kind] || null, z = profile.hr.z, tp = trainingPaces(), pace = r.sec ? r.sec / r.km : null, out = { zone, pace, hr: r.hr || null, p: null, h: null };
   if (!zone) return out;
@@ -2757,22 +2762,23 @@ function runVerdict(c) {
   if (H) return { ok: false, short: T(`Puls über ${zn}`, `HR above ${zn}`), text: c.p ? T(`Das Tempo passte, der Puls lag trotzdem über ${zn} – Hitze, Hügel oder Müdigkeit? Beim nächsten Mal mehr auf den Puls achten und dafür langsamer laufen.`, `The pace was fine, but your heart rate was above ${zn} – heat, hills or fatigue? Next time watch your heart rate more and run slower for it.`) : T(`Puls über ${zn} – beim nächsten Mal mehr auf den Puls achten und etwas ruhiger laufen.`, `Heart rate above ${zn} – next time watch your heart rate more and run a bit easier.`) };
   if (P && c.h) return { ok: true, short: T('✓ Puls im Bereich', '✓ HR in range'), text: T('Puls im Bereich, das Tempo war schneller als geplant – passt. Die App rückt dein lockeres Tempo schrittweise nach (höchstens 10 s/km pro Lauf, insgesamt 30 s/km).', 'Heart rate in range, the pace was faster than planned – fine. The app moves your easy pace up step by step (at most 10 s/km per run, 30 s/km in total).') };
   if (P) return { ok: false, short: T('schneller als locker', 'faster than easy'), text: T('Schneller als das lockere Tempo – beim nächsten Mal mehr auf die Zeit achten. Mit Ø-Puls sieht die App auch, ob es trotzdem locker war.', 'Faster than the easy pace – next time watch the time more. With the average heart rate the app also sees whether it was still easy.') };
-  const nP = c.p && c.p.near, nH = c.h && c.h.near;
-  if (nP && nH) return { ok: true, short: T('✓ im Bereich', '✓ in range'), text: T('Passt – Tempo und Puls lagen nur knapp über dem Bereich.', 'Fine – pace and heart rate were only just above the range.') };
-  if (nP) return { ok: true, short: T('✓ im Bereich', '✓ in range'), text: c.h ? T(`Passt – nur ${nP} s/km schneller als locker, und der Puls lag in ${zn}.`, `Fine – only ${nP} s/km faster than easy, and your heart rate was in ${zn}.`) : T(`Passt – nur ${nP} s/km schneller als locker, das liegt in der Messgenauigkeit der Uhr.`, `Fine – only ${nP} s/km faster than easy, that is within the watch’s accuracy.`) };
-  if (nH) return { ok: true, short: T('✓ im Bereich', '✓ in range'), text: T(`Passt – der Puls lag nur ${nH} bpm über ${zn}.`, `Fine – your heart rate was only ${nH} bpm above ${zn}.`) };
-  return { ok: true, short: T('✓ im Bereich', '✓ in range'), text: T('Super – alles im empfohlenen Bereich.', 'Great – everything in the recommended range.') };
+  const nP = c.p && c.p.near, nH = c.h && c.h.near, fine = text => ({ ok: true, short: T('✓ im Bereich', '✓ in range'), text });
+  if (nP && nH) return fine(T('Passt – Tempo und Puls lagen nur knapp über dem Bereich.', 'Fine – pace and heart rate were only just above the range.'));
+  if (nP) return fine(c.h ? T(`Passt – nur ${nP} s/km schneller als locker, und der Puls lag in ${zn}.`, `Fine – only ${nP} s/km faster than easy, and your heart rate was in ${zn}.`) : T(`Passt – nur ${nP} s/km schneller als locker, das liegt in der Messgenauigkeit der Uhr.`, `Fine – only ${nP} s/km faster than easy, that is within the watch’s accuracy.`));
+  if (nH) return fine(T(`Passt – der Puls lag nur ${nH} bpm über ${zn}.`, `Fine – your heart rate was only ${nH} bpm above ${zn}.`));
+  return fine(T('Super – alles im empfohlenen Bereich.', 'Great – everything in the recommended range.'));
 }
 // Balken: Zielbereich in der Mitte, Markierung für deinen Wert. Tempo: rechts schneller (zu schnell = orange), Puls: rechts höher.
 // tol: Toleranz auf der „zu viel“-Seite (Tempo unter lo, Puls über hi) als hellgrüner Streifen – genau so weit, wie die Wertung „im Bereich“ sagt
 function checkBar(v, lo, hi, fmt, pace, label, tol = 0) {
   const W = 320, l = 6, r = 6, y0 = 22, h = 12, span = Math.max(hi - lo, 4), a = Math.min(lo - span, v - span * 0.2), b = Math.max(hi + span, v + span * 0.2);
   const x = t => { const f = (Math.min(Math.max(t, a), b) - a) / (b - a); return l + (pace ? 1 - f : f) * (W - l - r); };
-  const seg = (p, q, cls) => { const x1 = Math.min(x(p), x(q)), x2 = Math.max(x(p), x(q)); return `<rect class="${cls}" x="${x1}" y="${y0}" width="${x2 - x1}" height="${h}"/>`; };
+  const seg = (p, q, cls) => { const x1 = Math.min(x(p), x(q)), x2 = Math.max(x(p), x(q)); return x2 > x1 ? `<rect class="${cls}" x="${x1}" y="${y0}" width="${x2 - x1}" height="${h}"/>` : ''; };
+  const L = pace ? lo - tol : lo, H = pace ? hi : hi + tol; // Toleranz-Streifen zwischen L und lo bzw. hi und H
   const mx = x(v), anchor = mx < 40 ? 'start' : mx > W - 40 ? 'end' : 'middle', tick = t => `<text class="lbl" x="${x(t)}" y="${y0 + h + 15}" text-anchor="middle" font-size="11.5">${fmt(t)}</text>`;
   return `<svg class="chart chk" viewBox="0 0 ${W} 54" role="img" aria-label="${esc(`${label}: ${fmt(v)}, ${T('Zielbereich', 'target range')} ${fmt(pace ? hi : lo)}–${fmt(pace ? lo : hi)}`)}">
     <clipPath id="chk${label.length}${Math.round(v)}"><rect x="${l}" y="${y0}" width="${W - l - r}" height="${h}" rx="6"/></clipPath>
-    <g clip-path="url(#chk${label.length}${Math.round(v)})">${pace ? seg(a, lo - tol, 'zover') + (tol ? seg(lo - tol, lo, 'zbuild tol') : '') : seg(a, lo, 'zlow')}${seg(lo, hi, 'zbuild band')}${pace ? seg(hi, b, 'zlow') : (tol ? seg(hi, hi + tol, 'zbuild tol') : '') + seg(hi + tol, b, 'zover')}</g>
+    <g clip-path="url(#chk${label.length}${Math.round(v)})">${seg(a, L, pace ? 'zover' : 'zlow')}${seg(L, lo, 'zbuild tol')}${seg(lo, hi, 'zbuild band')}${seg(hi, H, 'zbuild tol')}${seg(H, b, pace ? 'zlow' : 'zover')}</g>
     ${tick(lo)}${tick(hi)}<line class="zmark" x1="${mx}" y1="${y0 - 4}" x2="${mx}" y2="${y0 + h + 4}" stroke-width="3" stroke-linecap="round"/>
     <text class="val" x="${mx}" y="${y0 - 8}" text-anchor="${anchor}" font-size="12.5" font-weight="600">${fmt(v)}</text></svg>`;
 }
@@ -3141,7 +3147,7 @@ function syncMerge(remote) {
       if (!idx.has(id)) m.del[k] = Math.max(m.del[k] || 0, ts);
     }
     if (touched) { if (d.key === KEYS.runlog || d.key === KEYS.weight || d.key === KEYS.races || d.key === KEYS.results) arr.sort((a, b) => String(a.date).localeCompare(String(b.date)));
-      if (d.key === KEYS.moblog || d.key === KEYS.gymlog || d.key === KEYS.saunalog) arr.sort((a, b) => String(a.d).localeCompare(String(b.d)));
+      if ([KEYS.moblog, KEYS.gymlog, KEYS.saunalog].includes(d.key)) arr.sort((a, b) => String(a.d).localeCompare(String(b.d)));
       rawSet(d.key, arr); }
   }
   for (const [n, key] of Object.entries(SYNC_SETTINGS)) {
@@ -3772,7 +3778,7 @@ function renderMobility() {
 
 /* Mobility → Recovery → Sauna: heute (Hinweis passend zum Training), eintragen auch nachträglich, Verlauf, Anleitung */
 function renderSauna() {
-  const today = localDay(), L = getSaunaLog(), s = saunaOn(today), plan = WEEK_ORDER.filter(d => profile.week.sauna.includes(d));
+  const today = localDay(), L = getSaunaLog(), s = L.find(e => e.d === today), plan = WEEK_ORDER.filter(d => profile.week.sauna.includes(d));
   const n28 = L.filter(e => e.d > addDays(today, -28) && e.d <= today), withG = n28.filter(e => e.g), avgG = withG.length ? withG.reduce((a, e) => a + e.g, 0) / withG.length : null;
   const tips = [[T('Ablauf', 'How'), T('2–3 Gänge à 8–12 Min. Raus, sobald es unangenehm wird – die Zeit ist kein Ziel. Am Anfang unten sitzen, da ist es kühler.', '2–3 rounds of 8–12 min. Get out as soon as it gets uncomfortable – the time is not a target. Sit low at first, it is cooler there.')],
     [T('Abkühlen und ruhen', 'Cool down and rest'), T('Erst ein paar Minuten an die frische Luft, dann kühl abduschen – von den Füßen Richtung Herz. Danach mindestens so lange ruhen, wie der Gang gedauert hat.', 'First a few minutes in fresh air, then a cool shower – from the feet towards the heart. Then rest at least as long as the round lasted.')],
