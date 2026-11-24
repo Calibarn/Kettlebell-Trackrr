@@ -894,9 +894,13 @@ PREP.mat.push('Dead Bug mit Kurzhantel', 'Floor Press mit Kurzhanteln', 'Pullove
    Der älteste (letzte) Eintrag ist der Grundstand mit allen Funktionen; Neulinge sehen ihn plus die 3 neuesten Updates. */
 /* Versionsnummer der App, angezeigt unter Mehr. Seit 13.11.2026 gehen Änderungen direkt live (main, ohne Wochen-Release über dev);
    jeder Tag mit Veröffentlichung ist eine neue Nebenversion: 1.1, 1.2, 1.3 … Der Neuigkeiten-Eintrag des Tages bekommt dieselbe Nummer (version). */
-const APP_VERSION = '1.9';
+const APP_VERSION = '1.10';
 // Ein Eintrag pro Tag: Änderungen desselben Tages kommen in den Eintrag des Tages (aka = frühere ids für „schon gesehen“)
 const CHANGELOG = [
+  { id: '2026-11-24', date: '2026-11-24', version: '1.10', title: 'Apple Watch', items: [
+    ['Für die Uhr', 'In „Heute dran“ steht bei Intervallen, Longrun und lockeren Läufen unter ⌚ Für die Uhr, was du als eigenes Training in der Fitness-App einträgst: Aufwärmen und Cool-down offen, Wiederholungen mit Zeit oder Strecke, Tempo-Ziel und Erholung. Bei lockeren Läufen ist die Puls-Zone das Ziel.', 'neu'],
+    ['Mehr → Apple Watch', 'Alles zur Uhr an einer Stelle: eigenes Training anlegen, unterwegs weiterschalten, Rennplan übertragen, Pulszonen abgleichen, VO2max ablesen. Rennplan, Herzfrequenz und VO2max verweisen jetzt dorthin.', 'neu']
+  ] },
   { id: '2026-11-23', date: '2026-11-23', version: '1.9', title: 'Schnelle Intervalle', items: [
     ['Ab und zu schnelle Intervalle', 'Jede dritte Woche ersetzt jetzt eine schnelle Intervall-Einheit die Schwelle: Billat 30/30 (12 × 30 Sek. zügig, 30 Sek. traben) in Basis und Grundlage, Norweger 4 × 4 im Aufbau. Die anderen Wochen bleiben Schwelle.', 'neu']
   ] },

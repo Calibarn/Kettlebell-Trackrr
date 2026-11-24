@@ -1287,7 +1287,7 @@ function progressHtml() {
   const vo2 = `<div class="progblock"><p class="progtitle"><b>VO2max</b>${l ? ` <span class="prognum">${vo2Text(l.v)}</span><small>${d !== null ? `${d > 0 ? '+' : d < 0 ? '−' : '±'}${vo2Text(Math.abs(d))} ${T(`seit ${dateGerman(f.date)}`, `since ${dateGerman(f.date)}`)}` : dateGerman(l.date)}</small>` : ''}</p>
     ${V.length > 1 ? measureChart(V.slice(-60), e => e.v, vo2Text, 'VO2max', 'ml/kg/min') : ''}
     <div class="vo2add"><input type="date" id="vo2date" value="${today}" max="${today}" aria-label="${T('Datum', 'Date')}"><input type="text" inputmode="decimal" autocomplete="off" id="vo2val" placeholder="${T('z. B. 38,5', 'e.g. 38.5')}" aria-label="VO2max"><button type="button" class="btn small primary" id="vo2save">${T('Eintragen', 'Add')}</button></div>
-    ${V.length ? `<p class="tiny">${V.slice(-3).reverse().map(e => `${dateShort(e.date)} ${vo2Text(e.v)} <button type="button" class="linkbtn" data-vo2del="${e.date}" aria-label="${T(`VO2max vom ${dateGerman(e.date)} löschen`, `Delete VO2max of ${dateGerman(e.date)}`)}">✕</button>`).join(' · ')}</p>` : `<p class="tiny">${T('Den Wert zeigt die Uhr als Cardio-Fitness bzw. VO2max (iPhone: Health → Herz). Einmal pro Woche reicht – entscheidend ist der Verlauf, nicht der einzelne Wert.', 'Your watch shows it as cardio fitness or VO2max (iPhone: Health → Heart). Once a week is enough – what matters is the trend, not a single value.')}</p>`}</div>`;
+    ${V.length ? `<p class="tiny">${V.slice(-3).reverse().map(e => `${dateShort(e.date)} ${vo2Text(e.v)} <button type="button" class="linkbtn" data-vo2del="${e.date}" aria-label="${T(`VO2max vom ${dateGerman(e.date)} löschen`, `Delete VO2max of ${dateGerman(e.date)}`)}">✕</button>`).join(' · ')}</p>` : `<p class="tiny">${T('Den Wert zeigt die Uhr als Cardio-Fitness bzw. VO2max. Einmal pro Woche reicht – entscheidend ist der Verlauf, nicht der einzelne Wert.', 'Your watch shows it as cardio fitness or VO2max. Once a week is enough – what matters is the trend, not a single value.')} <button type="button" class="linkbtn" data-watchhelp>${T('Wo? Mehr → Apple Watch', 'Where? More → Apple Watch')}</button></p>`}</div>`;
   const G = repGroups().slice(0, 3);
   const reps = G.length ? G.map(g => { const P = g.list.filter(x => x.pace), H = g.list.filter(x => x.max), a = P[0], b = P.at(-1), ha = H[0], hb = H.at(-1);
     const dp = a && b && P.length > 1 ? Math.round(b.pace - a.pace) : null;
@@ -2612,10 +2612,8 @@ function racePlanCard(today = localDay()) {
   const plans = list.map(r => racePlan(r, today)).filter(Boolean); if (!plans.length) return '';
   const hasHr = plans.some(p => p.segs && p.segs.some(s => s.hr)), hrHint = !profile.hr.z ? `<p>${T('Mit deiner max. HF unter Profil → Herzfrequenz kommen Pulsgrenzen dazu.', 'With your max HR under Profile → Heart rate, HR limits are added.')}</p>` : '';
   return `<div class="scard" id="raceplan"><p class="skicker">${T('Rennplan', 'Race plan')}</p>${plans.map(racePlanHtml).join('')}
-    <details class="rpwatch"><summary>${T('Auf die Uhr übertragen', 'Put it on your watch')} ▾</summary>
-    <p>${T('Ein eigenes Lauftraining anlegen: je Abschnitt eine Distanz und den Tempo-Bereich als Warnung.', 'Create a custom running workout: one distance per section and the pace range as an alert.')}${hasHr ? ' ' + T('Der Puls ist die Bremse: Liegt er über der Grenze, ans langsame Ende des Bereichs.', 'Heart rate is the brake: if it is above the limit, go to the slow end of the range.') : ''}</p>
-    <p>${T('Die Uhr misst meist etwas mehr als die vermessene Strecke (Kurven, Hochhäuser) – für die Zielzeit eher in der schnelleren Hälfte bleiben.', 'Your watch usually measures a bit more than the measured course (corners, tall buildings) – for your goal time stay in the faster half.')}</p>
-    <p>${T('Stand heute – ändert sich nur, wenn du ein neues Ergebnis oder eine andere Zielzeit einträgst. Puls und Tempo sind Richtwerte; bei Hitze oder Wind langsamer.', 'As of today – changes only if you enter a new result or another goal time. HR and pace are guidelines; slower in heat or wind.')}</p>${hrHint}</details></div>`;
+    <div class="rpwatch"><p>${hasHr ? T('Der Puls ist die Bremse: Liegt er über der Grenze, ans langsame Ende des Bereichs. ', 'Heart rate is the brake: if it is above the limit, go to the slow end of the range. ') : ''}${T('Stand heute – ändert sich nur, wenn du ein neues Ergebnis oder eine andere Zielzeit einträgst. Puls und Tempo sind Richtwerte; bei Hitze oder Wind langsamer.', 'As of today – changes only if you enter a new result or another goal time. HR and pace are guidelines; slower in heat or wind.')}</p>${hrHint}
+    <button type="button" class="linkbtn" data-watchhelp>⌚ ${T('Auf die Uhr übertragen: Mehr → Apple Watch', 'Put it on your watch: More → Apple Watch')}</button></div></div>`;
 }
 function readyCard() {
   if (!mod('laufen')) return '';
@@ -2860,6 +2858,42 @@ function warmCtl(it) {
   const k = it.done ? 'cooldown' : 'warmup', m = g.intro.match(/(?:etwa|about) (\d+(?:–\d+)?) (?:Minuten|minutes)/);
   return `<small class="slong swarm"><button type="button" class="linkbtn" data-warmgo="${id}|${k}">▶ ${k === 'warmup' ? 'Warm-up' : 'Cooldown'}${k === 'warmup' && m ? T(` · ca. ${m[1]} Min.`, ` · approx. ${m[1]} min`) : ''}</button></small>`;
 }
+// Verweise „Mehr → Apple Watch“: zum Bereich Mehr wechseln und den Abschnitt aufklappen
+document.addEventListener('click', e => {
+  if (!e.target.closest('[data-watchhelp]')) return;
+  showArea('mehr'); const s = $('sect-watch'); s.open = true; s.scrollIntoView({ block: 'start' });
+});
+/* ⌚ Für die Uhr (ab 1.10): die Einheit von heute als eigenes Training der Fitness-App (iPhone ab iOS 26, Uhr ab watchOS 26).
+   Aufwärmen und Cool-down offen (mit Doppeltippen weiter), Intervalle mit Zeit oder Strecke und dem Tempo aus dem Plan als Ziel,
+   lockere Läufe mit der Puls-Zone als Ziel. Wie man es anlegt, steht einmal unter Mehr → Apple Watch. Nicht auf Android. */
+const watchTime = s => s < 60 ? T(`${s} Sek.`, `${s} s`) : T(`${hms(s)} Min.`, `${hms(s)} min`);
+const watchDist = km => km < 1 ? `${Math.round(km * 1000)} m` : `${kmText(km)} km`;
+function watchSteps(it) {
+  if (it.kind === 'race' || it.kind === 'brace') return null; // Rennen: Rennplan auf der Startseite
+  const d = it.detail || '', z = profile.hr.z, zn = Number((d.match(/Zone (\d)/) || [])[1]) || 2;
+  const hr = z ? `${z[zn - 1]}–${z[zn] - 1} bpm` : `Zone ${zn}`, open = T('Offen – mit Doppeltippen weiter', 'Open – double-tap to move on');
+  if (it.test) return [T('Aufwärmen: Zeit 15:00 Min.', 'Warm-up: time 15:00 min'), T('Training: Strecke 5 km, ohne Ziel – so schnell, wie du gleichmäßig durchhältst', 'Work: distance 5 km, no target – as fast as you can hold evenly'), T('Cool-down: Offen', 'Cooldown: open')];
+  const p = (it.kind === 'quality' || it.kind === 'quality2') ? repPlan(d) : null;
+  if (!p) {
+    const km = it.kind === 'long' ? it.km || Number((it.title.match(/(\d+(?:[,.]\d)?) km/) || [])[1]?.replace(',', '.')) : 0;
+    return [T(`Training: ${km ? `Strecke ${kmText(km)} km` : 'Offen'}, Ziel Herzfrequenz ${hr}`, `Work: ${km ? `distance ${kmText(km)} km` : 'open'}, target heart rate ${hr}`)];
+  }
+  // Tempo-Ziel aus dem Plan: Bereich „(5:40–5:45 /km)“ oder ein Wert „(≈ 5:17 /km)“ → ±5 s; zu kurze Stücke ohne Ziel (GPS hinkt nach)
+  const sec = t => { const [m, s] = t.split(':').map(Number); return m * 60 + s; }, rg = d.match(/\((\d+:\d\d)–(\d+:\d\d) \/km\)/), one = !rg && d.match(/\((?:≈ )?(\d+:\d\d) \/km\)/);
+  const pace = rg ? `${rg[1]}–${rg[2]}` : one ? `${hms(sec(one[1]) - 5)}–${hms(sec(one[1]) + 5)}` : null, short = (p.sec && p.sec <= 60) || (p.km && p.km <= 0.2);
+  const target = short ? T('ohne Ziel (zu kurz fürs GPS)', 'no target (too short for GPS)') : pace ? T(`Ziel Tempo ${pace} /km`, `target pace ${pace} /km`) : '';
+  const rest = d.match(/(\d+)\s*(Sek|Min|s|min)\.?\s*(?:Trabpause|traben|jog)/i), restSec = rest ? Number(rest[1]) * (/^m/i.test(rest[2]) ? 60 : 1) : 0;
+  const strides = d.match(/(\d+) × 100 m (?:Steigerung|strides)/);
+  return [T(`Aufwärmen: ${open}`, `Warm-up: ${open}`),
+    T(`${p.n} × wiederholen: Training ${p.sec ? `Zeit ${watchTime(p.sec)}` : `Strecke ${watchDist(p.km)}`}${target ? `, ${target}` : ''}${restSec ? ` · Erholung Zeit ${watchTime(restSec)}` : ''}`,
+      `Repeat ${p.n} ×: work ${p.sec ? `time ${watchTime(p.sec)}` : `distance ${watchDist(p.km)}`}${target ? `, ${target}` : ''}${restSec ? ` · recovery time ${watchTime(restSec)}` : ''}`),
+    T(`Cool-down: Offen${strides ? ` – darin ${strides[1]} × 100 m Steigerung` : ''}`, `Cooldown: open${strides ? ` – with ${strides[1]} × 100 m strides in it` : ''}`)];
+}
+function watchCtl(it) {
+  if (it.done || !RUN(it) || document.documentElement.dataset.os === 'android') return '';
+  const s = watchSteps(it); if (!s) return '';
+  return `<details class="swatch"><summary>⌚ ${T('Für die Uhr', 'For your watch')}</summary><ol>${s.map(l => `<li>${esc(l)}</li>`).join('')}</ol><button type="button" class="linkbtn" data-watchhelp>${T('So legst du es an: Mehr → Apple Watch', 'How to set it up: More → Apple Watch')}</button></details>`;
+}
 // Longrun heute selbst setzen: „km anpassen“ unter dem Longrun in „Heute dran“ (Vorschlag bleibt zurückholbar)
 let longEdit = false;
 function longCtl(it) {
@@ -2874,7 +2908,7 @@ function renderStart() {
   const logBtn = it => RUN(it) && it.key && !ranOn(today) ? `<button type="button" class="btn small primary sgo" data-logtoday="${esc(it.key)}">${T('Eintragen', 'Log')}</button>` : '';
   const btn = it => it.done ? `<span class="sdone">✓ ${T('erledigt', 'done')}</span>` : it.act === 'mob' ? `<button type="button" class="btn small primary sgo" data-startmob="${it.mob}">▶ ${T('Starten', 'Start')}</button>` : it.act === 'gym' ? `<button type="button" class="btn small primary sgo" data-gymdone="${esc(it.gym)}">✓ ${T('Abhaken', 'Check off')}</button>` : it.act === 'sauna' ? `<button type="button" class="btn small primary sgo" data-saunadone>✓ ${T('Abhaken', 'Check off')}</button>` : it.act === 'kraft' || it.act === 'starter' ? `<button type="button" class="btn small primary sgo" data-startact="${it.act}"${it.plan ? ` data-startplan="${it.plan}"` : ''}>▶ ${T('Starten', 'Start')}</button>` : it.act ? `<span class="sbtns"><button type="button" class="btn small sgo" data-startact="${it.act}">${T('Details', 'Details')}</button>${logBtn(it)}</span>` : '';
   const ico = it => startIcon(it.kind === 'strength' ? 'kraft' : it.kind === 'mobility' || it.kind === 'rest' ? 'mobility' : it.kind === 'sauna' ? 'sauna' : it.kind === 'extra' ? 'mehr' : 'laufen');
-  const rows = items.length ? items.map(it => `<div class="srowt${it.done ? ' isdone' : ''}">${ico(it)}<span class="txt"><b>${esc(it.title)}</b>${it.detail || it.note ? `<small>${esc([it.detail, it.note].filter(Boolean).join(' · '))}</small>` : ''}${it.need && it.need.length && !it.done ? `<small class="sneed"><b>${T('Du brauchst', 'You need')}:</b> ${esc(it.need.join(' · '))}</small>` : ''}${it.tip ? `<small class="stip">${esc(it.tip)}</small>` : ''}${longCtl(it)}${warmCtl(it)}${swapCtl(it, items)}</span>${swapOpen && swapOpen === it.key && !it.swap ? '' : btn(it)}</div>`).join('')
+  const rows = items.length ? items.map(it => `<div class="srowt${it.done ? ' isdone' : ''}">${ico(it)}<span class="txt"><b>${esc(it.title)}</b>${it.detail || it.note ? `<small>${esc([it.detail, it.note].filter(Boolean).join(' · '))}</small>` : ''}${it.need && it.need.length && !it.done ? `<small class="sneed"><b>${T('Du brauchst', 'You need')}:</b> ${esc(it.need.join(' · '))}</small>` : ''}${it.tip ? `<small class="stip">${esc(it.tip)}</small>` : ''}${longCtl(it)}${warmCtl(it)}${watchCtl(it)}${swapCtl(it, items)}</span>${swapOpen && swapOpen === it.key && !it.swap ? '' : btn(it)}</div>`).join('')
     : `<div class="srowt">${startIcon('mobility')}<span class="txt"><b>${T('Heute ist nichts geplant', 'Nothing planned today')}</b><small>${T('Ruhetag – oder eine kurze Mobility-Routine', 'Rest day – or a short mobility routine')}</small></span><button type="button" class="btn small sgo" data-go="mobility">Mobility</button></div>`;
   // Diese Woche: Kraft gegen die Krafttage im Profil, Laufen gegen den Plan bzw. den Schnitt der letzten 4 Wochen, Mobility als Anzahl
   const nK = saved.filter(e => e.date >= wk && e.date <= today).length + getGymLog().filter(e => e.d >= wk && e.d <= today).length;

@@ -558,8 +558,12 @@ test('Rennplan: ab Beginn des Taperings auf der Startseite – Abschnitte mit Te
   await expect(h).toContainText('Plan auf 2:01:21 · Ø 5:45 /km');
   await expect(h).toContainText('Ziel 1:59:59 gibt deine Form noch nicht her');
   await expect(h.locator('.rpsegs li')).toHaveText([/km 0–5\s*5:50–6:00 \/km · Puls ≤ 162/, /km 5–15\s*5:37–5:47 \/km · Puls ≤ 168/, /km 15–18\s*5:37–5:47 \/km · Puls ≤ 172/, /km 18–21,1\s*schneller als 5:47 \/km/]);
-  await card.locator('.rpwatch summary').click();
-  await expect(card.locator('.rpwatch')).toContainText('je Abschnitt eine Distanz und den Tempo-Bereich als Warnung');
+  // wie der Plan auf die Uhr kommt, steht unter Mehr → Apple Watch (ab 1.10); der Verweis führt dorthin
+  await expect(card.locator('.rpwatch')).toContainText('Der Puls ist die Bremse');
+  await card.locator('.rpwatch [data-watchhelp]').click();
+  await expect(page.locator('#sect-watch')).toHaveAttribute('open', '');
+  await expect(page.locator('#sect-watch')).toContainText('Je Abschnitt des Rennplans ein Schritt Training mit der Strecke und dem Tempo-Bereich als Ziel');
+  await page.evaluate(() => showArea('start'));
   const x = await page.evaluate(() => {
     const t = localDay(), sum = p => p.segs.reduce((a, s) => a + (s.pace[0] === null ? s.pace[1] - 10 : (s.pace[0] + s.pace[1]) / 2) * (s.to - s.from), 0);
     const hm = racePlan(races.find(r => r.id === 'h'));
