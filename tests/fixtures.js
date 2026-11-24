@@ -53,7 +53,8 @@ async function forward(page, seconds) { await page.evaluate(s => { startedAt -= 
 async function closeRating(page) { await expect(page.locator('#rate')).toBeVisible(); await page.click('#rate-skip'); await expect(page.locator('#rate')).toBeHidden(); }
 
 // Aufklappbaren Bereich öffnen (Profil, Mehr, Laufen) – wie ein Tipp auf die Zeile
-async function openSect(page, id) { await page.evaluate(i => { const d = document.getElementById(i); if (!d) throw Error('Bereich fehlt: ' + i); d.open = true; try { if (d.classList.contains('sect')) sectState[d.dataset.acc] = d.id; } catch (e) {} }, id); }
+// (wartet das toggle-Ereignis ab: sonst klappt es einen gleich danach geöffneten Bereich derselben Gruppe wieder zu)
+async function openSect(page, id) { await page.evaluate(async i => { const d = document.getElementById(i); if (!d) throw Error('Bereich fehlt: ' + i); d.open = true; try { if (d.classList.contains('sect')) sectState[d.dataset.acc] = d.id; } catch (e) {} await new Promise(r => setTimeout(r, 30)); }, id); }
 
 // Heute Qualität (4 × 6 Min.) im HM-Plan, noch kein Lauf eingetragen
 const setupQualityToday = page => page.evaluate(() => {

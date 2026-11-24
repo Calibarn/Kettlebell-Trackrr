@@ -22,9 +22,11 @@ function loadList(key, valid) {
   catch (e) { try { localStorage.setItem(key + '-unlesbar-' + Date.now(), raw); } catch (_) { } loadIssues.push(key); return { ok: [], keep: [] }; }
 }
 function load(k, def) { try { const raw = localStorage.getItem(k); if (raw === null) return def; const v = JSON.parse(raw); return v === null || v === undefined ? def : v; } catch (e) { return def; } }
+const listSeen = {}; // je Liste der Stand im Browser, den dieser Tab zuletzt gelesen oder geschrieben hat
 let syncHook = null; // wird vom Geräte-Sync gesetzt und erfährt so jede Änderung
 let wiping = false;  // Werkseinstellung läuft: nichts mehr speichern (auch nicht beim Schließen der Seite)
-function store(k, v) { if (wiping) return false; try { localStorage.setItem(k, JSON.stringify(v)); if (syncHook) syncHook(k); return true; } catch (e) { logError(e && e.message, 'Speichern ' + k, e && e.stack); return false; } }
+let mergeHook = null; // wird vom Geräte-Sync gesetzt: Listen mit dem zusammenführen, was ein zweiter Tab inzwischen gespeichert hat
+function store(k, v) { if (wiping) return false; try { if (mergeHook) v = mergeHook(k, v); const raw = JSON.stringify(v); localStorage.setItem(k, raw); if (k in listSeen) listSeen[k] = raw; if (syncHook) syncHook(k); return true; } catch (e) { logError(e && e.message, 'Speichern ' + k, e && e.stack); return false; } }
 const isObj = v => !!v && typeof v === 'object' && !Array.isArray(v);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const uid = () => (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2));
@@ -1288,7 +1290,7 @@ function progressHtml() {
   const vo2 = `<div class="progblock"><p class="progtitle"><b>VO2max</b>${l ? ` <span class="prognum">${vo2Text(l.v)}</span><small>${d !== null ? `${d > 0 ? '+' : d < 0 ? '−' : '±'}${vo2Text(Math.abs(d))} ${T(`seit ${dateGerman(f.date)}`, `since ${dateGerman(f.date)}`)}` : dateGerman(l.date)}</small>` : ''}</p>
     ${V.length > 1 ? measureChart(V.slice(-60), e => e.v, vo2Text, 'VO2max', 'ml/kg/min') : ''}
     <div class="vo2add"><input type="date" id="vo2date" value="${today}" max="${today}" aria-label="${T('Datum', 'Date')}"><input type="text" inputmode="decimal" autocomplete="off" id="vo2val" placeholder="${T('z. B. 38,5', 'e.g. 38.5')}" aria-label="VO2max"><button type="button" class="btn small primary" id="vo2save">${T('Eintragen', 'Add')}</button></div>
-    ${V.length ? `<p class="tiny">${V.slice(-3).reverse().map(e => `${dateShort(e.date)} ${vo2Text(e.v)} <button type="button" class="linkbtn" data-vo2del="${e.date}" aria-label="${T(`VO2max vom ${dateGerman(e.date)} löschen`, `Delete VO2max of ${dateGerman(e.date)}`)}">✕</button>`).join(' · ')}</p>` : `<p class="tiny">${T('Den Wert zeigt die Uhr als Cardio-Fitness bzw. VO2max. Einmal pro Woche reicht – entscheidend ist der Verlauf, nicht der einzelne Wert.', 'Your watch shows it as cardio fitness or VO2max. Once a week is enough – what matters is the trend, not a single value.')} <button type="button" class="linkbtn" data-watchhelp>${T('Wo? Mehr → Apple Watch', 'Where? More → Apple Watch')}</button></p>`}</div>`;
+    ${V.length ? `<p class="tiny">${V.slice(-3).reverse().map(e => `${dateShort(e.date)} ${vo2Text(e.v)} <button type="button" class="linkbtn" data-vo2del="${e.date}" aria-label="${T(`VO2max vom ${dateGerman(e.date)} löschen`, `Delete VO2max of ${dateGerman(e.date)}`)}">✕</button>`).join(' · ')}</p>` : `<p class="tiny">${T('Den Wert zeigt die Uhr als Cardio-Fitness bzw. VO2max. Einmal pro Woche reicht – entscheidend ist der Verlauf, nicht der einzelne Wert.', 'Your watch shows it as cardio fitness or VO2max. Once a week is enough – what matters is the trend, not a single value.')} <button type="button" class="linkbtn" data-watchhelp data-os-only="ios">${T('Wo? Mehr → Apple Watch', 'Where? More → Apple Watch')}</button></p>`}</div>`;
   const G = repGroups().slice(0, 3);
   const reps = G.length ? G.map(g => { const P = g.list.filter(x => x.pace), H = g.list.filter(x => x.max), a = P[0], b = P.at(-1), ha = H[0], hb = H.at(-1);
     const dp = a && b && P.length > 1 ? Math.round(b.pace - a.pace) : null;
@@ -1434,13 +1436,20 @@ function repRow(id, i, r) {
 }
 function repsHtml(id, reps, plan, show) {
   const list = reps && reps.length ? reps : plan ? Array.from({ length: plan.n }, () => ({ km: plan.km, sec: plan.sec })) : [{}, {}, {}, {}];
-  return `<div class="reps${show ? '' : ' hide'}" id="${id}"><div class="repshead"><b>${T('Intervalle', 'Intervals')}</b><label for="${id}-n">${T('Anzahl', 'Count')}</label><input type="number" inputmode="numeric" min="1" max="30" id="${id}-n" data-repn="${id}" value="${list.length}"></div>
+  // data-plan: womit vorbelegt wurde (gespeicherte Intervalle: keins) – siehe repsFresh
+  return `<div class="reps${show ? '' : ' hide'}" id="${id}"${reps && reps.length ? '' : ` data-plan="${esc(JSON.stringify([list.length, repKmOut(list[0].km), list[0].sec ? hms(list[0].sec) : '']))}"`}><div class="repshead"><b>${T('Intervalle', 'Intervals')}</b><label for="${id}-n">${T('Anzahl', 'Count')}</label><input type="number" inputmode="numeric" min="1" max="30" id="${id}-n" data-repn="${id}" value="${list.length}"></div>
     <div class="repgrid" id="${id}-g"><span></span><span>${T('Strecke', 'Distance')}</span><span>${T('Zeit', 'Time')}</span><span>${T('Max-Puls', 'Max HR')}</span>${list.map((r, i) => repRow(id, i, r)).join('')}</div>
     <p class="repsum" id="${id}-sum">${(st => st ? esc(repLine(st)) : '')(repStats({ reps: cleanReps(list) }))}</p><p class="tiny">${T('Strecke als 400 (m) oder 1,02 (km). Zeit ohne Doppelpunkt: 140 = 1:40, 605 = 6:05, 6 = 6:00. Leer lassen, was du nicht hast. Die Felder oben gelten für die ganze Einheit inkl. Ein- und Auslaufen.', 'Distance as 400 (m) or 1.02 (km). Time without colon: 140 = 1:40, 605 = 6:05, 6 = 6:00. Leave empty what you don’t have. The fields above are for the whole session incl. warm-up and cool-down.')}</p></div>`;
 }
+// Raster noch so, wie es vorbelegt wurde? Dann ist nichts eingetragen: nicht speichern (sonst sähe der Plan wie gelaufen aus)
+function repsFresh(box) {
+  if (!box || !box.dataset.plan) return false;
+  const [, km, sec] = JSON.parse(box.dataset.plan), want = { km, sec, max: '' };
+  return [...box.querySelectorAll('[data-rep]')].every(i => i.value.trim() === want[i.dataset.f]);
+}
 // Werte aus dem Raster lesen; raw = ohne Prüfung (beim Ändern der Anzahl), sonst null bei Fehlern (Feld markiert, Hinweis)
 function repsRead(id, raw = false) {
-  const box = $(id); if (!box) return [];
+  const box = $(id); if (!box || (!raw && repsFresh(box))) return [];
   const out = [], ins = [...box.querySelectorAll('[data-rep]')];
   for (let i = 0; i < ins.length; i += 3) {
     const [a, b, c] = ins.slice(i, i + 3), km = repKmIn(a.value), sec = repSecIn(b.value), mt = c.value.trim(), max = mt === '' ? null : /^\d{2,3}$/.test(mt) ? Number(mt) : NaN;
@@ -1852,10 +1861,11 @@ function renderPaces() {
 }
 // Gemeinsamer Block: in geraden Kalenderwochen gilt die Qualitätseinheit dem späteren Rennen – nur, wenn es andere Einheiten hat
 const mixFor = x => x.with && planKey(x.with) !== planKey(x.target) && !(isoWeek(x.week) % 2) ? x.with : null;
-// Entlastungswoche: etwa ein Drittel weniger Wiederholungen bei gleichem Tempo (5 × 1 km → 3 × 1 km), mindestens 2; ohne „n ×“ null (dann nur „kürzer“)
+// Entlastungswoche: etwa ein Drittel weniger Wiederholungen bei gleichem Tempo (5 × 1 km → 3 × 1 km), mindestens 2; Bereiche ganz (8–10 × → 5–7 ×); ohne „n ×“ null (dann nur „kürzer“)
 function fewerReps(txt) {
-  const m = txt.match(/(\d{1,2})\s*×/), n = m ? Number(m[1]) : 0, k = Math.max(2, Math.round(n * SEASON.cutReps));
-  return m && k < n ? { txt: txt.replace(m[0], `${k} ×`), n } : null;
+  const m = txt.match(/(?:(\d{1,2})–)?(\d{1,2})\s*×/); if (!m) return null;
+  const cut = v => Math.max(2, Math.round(v * SEASON.cutReps)), lo = m[1] ? Number(m[1]) : null, n = Number(m[2]), k = cut(n); if (k >= n) return null;
+  return { txt: txt.replace(m[0], `${lo && cut(lo) < k ? `${cut(lo)}–` : ''}${k} ×`), n: lo ? `${lo}–${n}` : n };
 }
 function weekKey(x, alt = false) {
   const odd = isoWeek(x.week) % 2, mix = mixFor(x), r = mix || x.target;
@@ -2614,7 +2624,7 @@ function racePlanCard(today = localDay()) {
   const hasHr = plans.some(p => p.segs && p.segs.some(s => s.hr)), hrHint = !profile.hr.z ? `<p>${T('Mit deiner max. HF unter Profil → Herzfrequenz kommen Pulsgrenzen dazu.', 'With your max HR under Profile → Heart rate, HR limits are added.')}</p>` : '';
   return `<div class="scard" id="raceplan"><p class="skicker">${T('Rennplan', 'Race plan')}</p>${plans.map(racePlanHtml).join('')}
     <div class="rpwatch"><p>${hasHr ? T('Der Puls ist die Bremse: Liegt er über der Grenze, ans langsame Ende des Bereichs. ', 'Heart rate is the brake: if it is above the limit, go to the slow end of the range. ') : ''}${T('Stand heute – ändert sich nur, wenn du ein neues Ergebnis oder eine andere Zielzeit einträgst. Puls und Tempo sind Richtwerte; bei Hitze oder Wind langsamer.', 'As of today – changes only if you enter a new result or another goal time. HR and pace are guidelines; slower in heat or wind.')}</p>${hrHint}
-    <button type="button" class="linkbtn" data-watchhelp>⌚ ${T('Auf die Uhr übertragen: Mehr → Apple Watch', 'Put it on your watch: More → Apple Watch')}</button></div></div>`;
+    ${document.documentElement.dataset.os === 'android' ? `<p>${T('Auf die Uhr: ein eigenes Lauftraining anlegen, je Abschnitt eine Distanz und den Tempo-Bereich als Warnung. Die Uhr misst meist etwas mehr als die vermessene Strecke (Kurven, Hochhäuser) – für die Zielzeit eher in der schnelleren Hälfte bleiben.', 'On your watch: create a custom running workout, one distance per section and the pace range as an alert. Your watch usually measures a bit more than the measured course (corners, tall buildings) – for your goal time stay in the faster half.')}</p>` : `<button type="button" class="linkbtn" data-watchhelp>⌚ ${T('Auf die Uhr übertragen: Mehr → Apple Watch', 'Put it on your watch: More → Apple Watch')}</button>`}</div></div>`;
 }
 function readyCard() {
   if (!mod('laufen')) return '';
@@ -2865,20 +2875,34 @@ function warmCtl(it) {
 const watchTime = s => s < 60 ? T(`${s} Sek.`, `${s} s`) : T(`${hms(s)} Min.`, `${hms(s)} min`);
 function watchSteps(it) {
   if (!RUN_KINDS.includes(it.kind)) return null; // Rennen: Rennplan auf der Startseite
-  const cool = T('Cool-down: Offen', 'Cooldown: open');
+  const warm = T('Aufwärmen: Offen – mit Doppeltippen weiter', 'Warm-up: Open – double-tap to move on'), cool = T('Cool-down: Offen', 'Cooldown: open');
   if (it.test) return [T('Aufwärmen: Zeit 15:00 Min.', 'Warm-up: time 15:00 min'), T('Training: Strecke 5 km, ohne Ziel – so schnell, wie du gleichmäßig durchhältst', 'Work: distance 5 km, no target – as fast as you can hold evenly'), cool];
   const d = it.detail || '', kind = runKindOf(it), p = kind === 'quality' ? repPlan(d) : null;
-  if (!p) {
-    const zn = RUN_ZONE[kind] || 2, hr = zoneRange(zn) || `Zone ${zn}`, km = kind === 'long' && it.km;
-    return [T(`Training: ${km ? `Strecke ${kmText(km)} km` : 'Offen'}, Ziel Herzfrequenz ${hr}`, `Work: ${km ? `distance ${kmText(km)} km` : 'open'}, target heart rate ${hr}`)];
-  }
-  // Tempo-Ziel aus dem Plan: Bereich „(5:40–5:45 /km)“ oder ein Wert „(≈ 5:17 /km)“ → ±5 s; zu kurze Stücke ohne Ziel (GPS hinkt nach)
+  const work = km => T(`Training: ${km ? `Strecke ${kmText(km)} km` : 'Offen'}`, `Work: ${km ? `distance ${kmText(km)} km` : 'open'}`);
+  // Tempo-Ziel aus dem Plan: Bereich „(5:40–5:45 /km)“ oder ein Wert „(≈ 5:17 /km)“ → ±5 s
   const [, a, b] = d.match(/\((?:≈ )?(\d+:\d\d)(?:–(\d+:\d\d))? \/km\)/) || [], s = a && repSecIn(a), pace = a && paceRange(b ? [s, repSecIn(b)] : [s - 5, s + 5]);
-  const target = p.sec <= 60 || p.km <= 0.2 ? T(', ohne Ziel (zu kurz fürs GPS)', ', no target (too short for GPS)') : pace ? T(`, Ziel Tempo ${pace}`, `, target pace ${pace}`) : '';
+  const paceGoal = pace ? T(`, Ziel Tempo ${pace}`, `, target pace ${pace}`) : '';
+  if (kind === 'quality' && !p) {
+    // Tempolauf am Stück („8 km im Marathontempo nach 3 km Einlaufen“); ohne feste Strecke („Intervall oder Tempo“) keine Schritte
+    const m = d.match(/(\d+) km (?:im|at) /), w = d.match(/(\d+) km (?:Einlaufen|warm-up)/);
+    return m ? [w ? T(`Aufwärmen: Strecke ${w[1]} km`, `Warm-up: distance ${w[1]} km`) : warm, work(Number(m[1])) + paceGoal, cool] : null;
+  }
+  if (!p) {
+    const zn = RUN_ZONE[kind] || 2, hr = zoneRange(zn) || `Zone ${zn}`, hrGoal = T(`, Ziel Herzfrequenz ${hr}`, `, target heart rate ${hr}`), km = kind === 'long' && it.km;
+    if (kind !== 'long' || !/zügig|brisk|tempo\b|at [^,]*pace\b|level pace/i.test(d)) return [work(km) + hrGoal];
+    // Longrun mit schnellem Ende: „die letzten 5–8 km im …“ als eigener Schritt (untere Grenze), sonst ohne Puls-Ziel – die Uhr würde im schnellen Teil warnen
+    const last = Number((d.match(/(?:letzten|last) (\d+)(?:–\d+)? km/) || [])[1]);
+    return last && km > last ? [work(km - last) + hrGoal, work(last) + paceGoal] : [work(km) + T(', ohne Ziel – schneller Teil laut Plan', ', no target – faster part as planned')];
+  }
+  // zu kurze Stücke ohne Ziel (GPS hinkt nach); gilt das Tempo nur am Ende („die letzten 3 im Level-Tempo“), nicht als Ziel für alle
+  const end = d.match(/(?:die letzten|the last) (\d+) /);
+  const target = p.sec <= 60 || p.km <= 0.2 ? T(', ohne Ziel (zu kurz fürs GPS)', ', no target (too short for GPS)')
+    : end ? T(`, ohne Ziel (nur die letzten ${end[1]}${pace ? `: ${pace}` : ' schnell'})`, `, no target (only the last ${end[1]}${pace ? `: ${pace}` : ' fast'})`) : paceGoal;
+  // ohne genannte Pause: Erholung offen, sonst liefen die Wiederholungen ohne Unterbrechung durch
   const rest = d.match(/(\d+)\s*(Sek|sec|s|Min)\.?\s*(?:Trabpause|Stehpause|traben|jog|standing rest)/i), restTime = rest && watchTime(Number(rest[1]) * (/^m/i.test(rest[2]) ? 60 : 1));
-  const strides = d.match(/(\d+) × 100 m (?:Steigerung|strides)/);
-  return [T('Aufwärmen: Offen – mit Doppeltippen weiter', 'Warm-up: Open – double-tap to move on'),
-    T(`${p.n} × wiederholen: Training ${p.sec ? `Zeit ${watchTime(p.sec)}` : `Strecke ${distText(p.km)}`}`, `Repeat ${p.n} ×: work ${p.sec ? `time ${watchTime(p.sec)}` : `distance ${distText(p.km)}`}`) + target + (rest ? T(` · Erholung Zeit ${restTime}`, ` · recovery time ${restTime}`) : ''),
+  const strides = d.match(/(\d+) × 100 m (?:Steigerung|strides)/), n = (d.match(/(\d{1,2}–\d{1,2}|\d{1,2})\s*[×x]/) || [])[1] || p.n;
+  return [warm,
+    T(`${n} × wiederholen: Training ${p.sec ? `Zeit ${watchTime(p.sec)}` : `Strecke ${distText(p.km)}`}`, `Repeat ${n} ×: work ${p.sec ? `time ${watchTime(p.sec)}` : `distance ${distText(p.km)}`}`) + target + (rest ? T(` · Erholung Zeit ${restTime}`, ` · recovery time ${restTime}`) : T(' · Erholung Offen', ' · recovery open')),
     cool + (strides ? T(` – darin ${strides[1]} × 100 m Steigerung`, ` – with ${strides[1]} × 100 m strides in it`) : '')];
 }
 function watchCtl(it) {
@@ -3136,6 +3160,31 @@ function syncTrack() {
   syncSaveMeta();
   return changed;
 }
+/* Zwei Tabs (oder App und Browser-Tab) teilen sich den Speicher, jeder hat seine Listen im Arbeitsspeicher. Vor dem Schreiben: Hat ein anderer Tab
+   seit dem letzten Lesen etwas geändert, gilt je Eintrag die Änderung – seine, wenn dieser Tab den Eintrag nicht angefasst hat, sonst die eigene. */
+const SYNC_LISTS = {
+  [KEYS.entries]: [SYNC_COLLS.entries, validEntry, savedKeep, a => { saved = a; }],
+  [KEYS.waist]: [SYNC_COLLS.waist, validWaist, waistKeep, a => { waist = a; }, 'date'],
+  [KEYS.weight]: [SYNC_COLLS.weight, validWeight, weightKeep, a => { weights = a; }, 'date'],
+  [KEYS.vo2]: [SYNC_COLLS.vo2, validVo2, vo2Keep, a => { vo2s = a; }, 'date'],
+  [KEYS.runweeks]: [SYNC_COLLS.runweeks, validRunWeek, runWeeksKeep, a => { runWeeks = a; }, 'week'],
+  [KEYS.runlog]: [SYNC_COLLS.runlog, validRun, runLogKeep, a => { runLog = a; }, 'date'],
+  [KEYS.races]: [SYNC_COLLS.races, validRace, racesKeep, a => { races = a; }, 'date'],
+  [KEYS.results]: [SYNC_COLLS.results, validResult, resultsKeep, a => { results = a; }, 'date']
+};
+for (const k of Object.keys(SYNC_LISTS)) listSeen[k] = localStorage.getItem(k);
+mergeHook = (k, mine) => {
+  const L = SYNC_LISTS[k]; if (!L) return mine;
+  const raw = localStorage.getItem(k); if (raw === null || raw === listSeen[k]) return mine;
+  const parse = r => { try { const v = JSON.parse(r); return Array.isArray(v) ? v : null; } catch (e) { return null; } }, theirs = parse(raw); if (!theirs) return mine;
+  const [c, valid, keep, set, by] = L, idOf = e => c.id(e) || JSON.stringify(e), map = a => new Map(a.map(e => [idOf(e), e])), same = (x, y) => JSON.stringify(x) === JSON.stringify(y);
+  const was = map(parse(listSeen[k]) || []), now = map(theirs), ids = new Set(mine.map(idOf));
+  const out = mine.map(e => { const id = idOf(e), b = was.get(id), t = now.get(id); return !same(b, t) && same(b, e) ? t : e; }).filter(e => e !== undefined)
+    .concat(theirs.filter(e => !ids.has(idOf(e)) && !same(was.get(idOf(e)), e)));
+  if (by) out.sort((x, y) => String(x && x[by]).localeCompare(String(y && y[by])));
+  keep.splice(0, keep.length, ...out.filter(e => !valid(e))); set(out.filter(valid));
+  return out;
+};
 let syncTimer = null;
 syncHook = k => { if (SYNC_TRACKED.has(k)) { clearTimeout(syncTimer); syncTimer = setTimeout(() => { syncTrack(); renderSyncStatus(); syncAutoSoon(); }, 250); } };
 function syncPayload() {
@@ -3145,7 +3194,7 @@ function syncPayload() {
     const arr = rawGet(d.key);
     colls[c] = (Array.isArray(arr) ? arr : []).map(e => { const id = d.id(e); return id === null ? null : { k: id, ts: m.mod[c + ':' + id] || 0, v: e }; }).filter(Boolean);
   }
-  for (const [n, key] of Object.entries(SYNC_SETTINGS)) { const v = rawGet(key); if (v !== null) settings[n] = { ts: m.mod['set:' + n] || 0, v }; }
+  for (const [n, key] of Object.entries(SYNC_SETTINGS)) { const v = rawGet(key), ts = m.mod['set:' + n] || 0; if (v !== null && ts >= 0) settings[n] = { ts, v }; }
   return { kind: 'kb-tracker-sync', version: 1, savedAt: new Date().toISOString(), device: m.device, colls, del: m.del, settings };
 }
 // Abgleich: Rückgabe { changed, added, updated, removed }
@@ -3192,7 +3241,7 @@ function syncMerge(remote) {
   // Hat dieses Gerät Neueres als die Datei? Dann bleibt „Änderungen seit dem letzten Speichern“ stehen
   const rts = {}; for (const [c, list] of Object.entries(remote.colls)) if (Array.isArray(list)) for (const r of list) if (isObj(r)) rts[c + ':' + r.k] = r.ts;
   if (isObj(remote.settings)) for (const [n, r] of Object.entries(remote.settings)) if (isObj(r)) rts['set:' + n] = r.ts;
-  m.dirty = Object.keys(m.h).some(k => !(k in rts) || (m.mod[k] || 0) > rts[k]) || Object.keys(m.del).some(k => !(k in rdel));
+  m.dirty = Object.keys(m.h).some(k => !(m.mod[k] < 0) && (!(k in rts) || (m.mod[k] || 0) > rts[k])) || Object.keys(m.del).some(k => !(k in rdel));
   m.lastLoad = new Date().toISOString(); syncSaveMeta();
   res.changed = res.added + res.updated + res.removed > 0;
   return res;
@@ -3337,8 +3386,10 @@ function settingsReset() {
   if (!confirm(T('Einstellungen zurücksetzen?\n\nZurück auf den Ausgangszustand: Profil (Trainingswoche, Herzfrequenz, Geräte & Gewichte), Übungs-Varianten und Gewichte, Stufen, „Entfällt“, Ton und Ansichten.\n\nTrainings, Läufe, Wochensummen, Rennen, Gewicht und Bauchumfang bleiben erhalten. Gilt nur für dieses Gerät.', 'Reset settings?\n\nBack to the defaults: profile (training week, heart rate, equipment & weights), exercise variants and weights, stages, “Skip”, sound and views.\n\nWorkouts, runs, weekly totals, races, weight and waist are kept. Applies to this device only.'))) return;
   wiping = true; clearTimeout(syncTimer);
   try { for (const k of SETTING_KEYS) localStorage.removeItem(k); localStorage.setItem(KEYS.profile, JSON.stringify(normProfile(null))); } catch (e) { }
-  // Sync: Prüfwerte der Einstellungen vergessen – „Sync laden“ holt sie bei Bedarf aus der Datei zurück
+  // Sync: Prüfwerte der Einstellungen vergessen – „Sync laden“ holt sie bei Bedarf aus der Datei zurück. Das leere Profil ist keine Änderung:
+  // Zeitstempel -1 heißt „älter als jeder Stand“ und kommt nicht in die Sync-Datei, bis hier wieder etwas eingestellt wird.
   for (const k of Object.keys(syncMeta.h)) if (k.startsWith('set:')) { delete syncMeta.h[k]; delete syncMeta.mod[k]; }
+  syncMeta.h['set:profile'] = syncHash(JSON.stringify(normProfile(null))); syncMeta.mod['set:profile'] = -1;
   try { localStorage.setItem(SYNC_META, JSON.stringify(syncMeta)); sessionStorage.setItem(SYNC_MSG, T('Einstellungen zurückgesetzt – deine Daten sind unverändert.', 'Settings reset – your data is unchanged.')); } catch (e) { }
   location.reload();
 }
@@ -4096,7 +4147,13 @@ document.addEventListener('change', e => {
   const t = e.target; if (!t || !t.id && !t.dataset) return;
   if (t.dataset && t.dataset.repn) { repsResize(t.dataset.repn); return; }
   if (t.dataset && t.dataset.rep && t.dataset.f === 'sec') { const v = repSecIn(t.value); if (v && !Number.isNaN(v)) { t.value = hms(v); t.removeAttribute('aria-invalid'); } repsLive(t.dataset.rep); return; }
-  if (t.id === 'runkind' || t.id === 'rundate') { const b = $('runreps'); if (b) b.classList.toggle('hide', !formQuality($('rundate').value, $('runkind').value)); return; }
+  if (t.id === 'runkind' || t.id === 'rundate') {
+    const b = $('runreps'), d = $('rundate').value, show = formQuality(d, $('runkind').value); if (!b) return;
+    // anderes Datum: Raster nach dem Plan dieses Tages, solange nichts eingetragen und die Anzahl nicht geändert ist
+    if (t.id === 'rundate' && repsFresh(b) && Number($('runreps-n').value) === JSON.parse(b.dataset.plan)[0]) b.outerHTML = repsHtml('runreps', null, repPlanOn(d), show);
+    else b.classList.toggle('hide', !show);
+    return;
+  }
   if (t.id && t.id.startsWith('srunkind')) { const b = $('srunreps' + t.id.slice(8)); if (b) b.classList.toggle('hide', t.value !== 'quality'); }
 });
 document.addEventListener('input', e => { const t = e.target; if (t && t.dataset && t.dataset.rep) repsLive(t.dataset.rep); });
