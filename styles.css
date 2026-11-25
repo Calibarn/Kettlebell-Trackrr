@@ -725,3 +725,20 @@ html[data-os=android] .infoi{border-color:var(--accent-ink);color:var(--accent-i
 .saunaadd{display:grid;grid-template-columns:1fr 92px auto;gap:8px;align-items:center;padding:2px 16px 0}
 .saunaadd input,.saunaadd select{min-width:0}
 #saunatoday .tiny{padding:0 16px 12px}
+
+/* Lauf-Adventskalender (Startseite, Dezember) */
+#advent .skicker{display:flex;align-items:center;justify-content:space-between}
+.advhide{background:none;border:0;color:var(--label3);font-size:15px;min-width:44px;min-height:32px;cursor:pointer}
+.advhead{margin:2px 0 8px;font-size:15px;color:var(--label2)}
+.advhead b{color:var(--label);font-size:17px}
+#advent .sbar{margin-bottom:12px}
+.advgrid{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+.advdoor{height:44px;border-radius:10px;border:1px solid var(--sep);background:var(--fill);color:var(--label);font:600 15px/1 inherit;cursor:pointer;padding:0}
+.advdoor.closed{color:var(--label3);background:transparent;cursor:default}
+.advdoor.done,.advdoor.rest{background:rgba(52,199,89,.2);border-color:transparent;color:var(--green)}
+.advdoor.rest{background:rgba(52,199,89,.1)}
+.advdoor.miss{color:var(--label3)}
+.advdoor.today{border:2px solid #e4572e}
+.advdoor.sel{outline:2px solid var(--accent);outline-offset:1px}
+.advtip{margin:10px 0 0;font-size:14px;color:var(--label2);line-height:1.4}
+.advtip b{color:var(--label);margin-right:4px}

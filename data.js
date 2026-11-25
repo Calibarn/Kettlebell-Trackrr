@@ -593,6 +593,33 @@ const SEASON_GUIDE = [
 
 /* Mobility (ohne Tracking): Reiter Läufer / Alltag mit je einem geführten Kurzprogramm pro Auswahl, Reiter Übungen nach Körperbereich.
    Die Reihenfolge von routines nicht ändern: data-mob verweist auf den Index. */
+/* Lauf-Adventskalender (ab 1.11): ein kurzer Tipp je Türchen, 1. bis 24. Dezember. Eigene Texte; die Idee stammt aus einem Insta-Post. */
+const ADVENT_TIPS = [
+  'Lauf heute einmal ohne Blick auf die Uhr. Zone 2 erkennst du daran, dass du noch ganze Sätze sprechen kannst.',
+  'Im Dunkeln: Licht an Brust oder Kopf, Reflektoren an die Beine – was sich bewegt, fällt Autofahrern auf.',
+  'Zieh dich an, als wäre es zehn Grad wärmer. Nach zehn Minuten Laufen passt es.',
+  'Mütze und Handschuhe sind die günstigste Wärme – über Kopf und Hände geht viel verloren.',
+  'Glatt? Kürzere Schritte, die Füße unter dem Körper aufsetzen und Kurven langsam nehmen.',
+  'Nikolaus: Etwas Süßes nach dem Lauf ist heute ausdrücklich erlaubt – Kohlenhydrate füllen die Speicher.',
+  'Auch im Winter schwitzt du, du merkst es nur weniger. Trink nach dem Lauf ein großes Glas Wasser.',
+  'Nach dem Lauf schnell raus aus den nassen Sachen – Auskühlen ist im Winter das größere Risiko als die Kälte unterwegs.',
+  'Ein lockerer Lauf darf sich langsam anfühlen. Genau so soll es sein.',
+  'Lauf heute eine neue Runde. Eine unbekannte Strecke macht dieselben Kilometer gefühlt kürzer.',
+  'Musik-Tag: Lauf mit einem Album, das du seit Jahren nicht mehr gehört hast.',
+  'Wer im Advent mehr läuft als geplant, holt sich eher eine Erkältung als Form. Der Plan reicht.',
+  'Ein Schlauchtuch vor Mund und Nase wärmt eisige Luft vor.',
+  'Nasse Schuhe mit Zeitungspapier ausstopfen, nicht auf die Heizung stellen – die Sohle mag keine Hitze.',
+  'Ruhetage gehören zum Training. Auch ein Türchen ohne Lauf zählt.',
+  'Fünf Minuten Lauf-ABC vor dem Lauf wecken die Beine – Kniehebelauf, Anfersen, Hopserlauf.',
+  'Ein Lauf am Morgen rettet jeden Festtagsbraten.',
+  'Glühwein nach dem Lauf? Erst ein Glas Wasser, dann den Glühwein.',
+  'Schreib heute auf, warum du läufst. Das hilft an grauen Januartagen.',
+  'Lauf die letzten fünf Minuten bewusst ganz locker aus – Puls und Beine danken es dir.',
+  'Wintersonnenwende: der kürzeste Tag des Jahres. Ab morgen wird es wieder heller.',
+  'Verabrede dich zum Laufen – zu zweit kommt man auch bei Schmuddelwetter vor die Tür.',
+  'Morgen ist Heiligabend: Leg die Laufsachen heute schon raus.',
+  'Frohe Weihnachten! Jeder Kilometer seit dem 1. Dezember steckt jetzt in deinen Beinen.'
+];
 const MOBILITY = {
   tabs: [['laeufer', 'Läufer'], ['alltag', 'Alltag'], ['uebungen', 'Übungen'], ['recovery', 'Recovery']],
   regions: [['huefte', 'Hüfte'], ['ruecken', 'Rücken'], ['schultern', 'Schultern'], ['beine', 'Beine & Fuß']],
@@ -897,7 +924,8 @@ PREP.mat.push('Dead Bug mit Kurzhantel', 'Floor Press mit Kurzhanteln', 'Pullove
 const APP_VERSION = '1.11';
 // Ein Eintrag pro Tag: Änderungen desselben Tages kommen in den Eintrag des Tages (aka = frühere ids für „schon gesehen“)
 const CHANGELOG = [
-  { id: '2026-11-25', date: '2026-11-25', version: '1.11', title: 'Fehler behoben', items: [
+  { id: '2026-11-25', date: '2026-11-25', version: '1.11', title: 'Adventskalender, Fehler behoben', items: [
+    ['Lauf-Adventskalender', 'Vom 1. bis 24. Dezember auf der Startseite: 24 Türchen mit je einem Tipp und deinen Kilometern bis Heiligabend. Das Ziel ist, was dein Plan bis dahin vorsieht – nicht feste 100 km. Ein Türchen zählt, wenn du trainiert hast oder Pause war. Mit ✕ blendest du ihn aus.', 'neu'],
     ['Zwei Fenster gleichzeitig', 'Ist die App zweimal offen (z. B. als App und im Browser), überschreibt ein Fenster nicht mehr, was du im anderen gespeichert hast – Trainings, Läufe, Rennen, Messungen und Einstellungen.', 'bug'],
     ['Einstellungen zurücksetzen', 'Das Zurücksetzen allein überschreibt weder die Sync-Datei noch andere Geräte. Der automatische Sync wird dabei ausgeschaltet.', 'bug'],
     ['Intervalle eintragen', 'Was nur aus dem Plan vorbelegt ist, wird nicht mehr als gelaufen gespeichert; ein Hinweis sagt es dir. Wählst du ein anderes Datum, steht der Plan dieses Tages im Raster.', 'bug'],

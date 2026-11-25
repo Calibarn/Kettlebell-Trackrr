@@ -5,7 +5,7 @@ const $ = id => document.getElementById(id);
 const KEYS = {
   entries: 'jan-kettlebell-tracker-v1', waist: 'jan-kb-waist-v1', vo2: 'jan-kb-vo2-v1', sound: 'jan-kb-sound-v1', gear: 'jan-kb-gear-v1',
   choice: 'jan-kb-choice-v1', stage: 'jan-kb-stage-v1', plan: 'jan-kb-plan-v1', session: 'jan-kb-session-v1',
-  backup: 'jan-kb-lastbackup-v1', hint: 'jan-kb-installhint-v1', area: 'jan-kb-area-v1', run: 'jan-kb-runview-v1', audio: 'jan-kb-audio-v1', mob: 'jan-kb-mobview-v1', runweeks: 'jan-kb-runweeks-v1', runlog: 'jan-kb-runlog-v1', races: 'jan-kb-races-v1', profile: 'jan-kb-profile-v1', weight: 'jan-kb-weight-v1', skip: 'jan-kb-weekskip-v1', results: 'jan-kb-results-v1', bestview: 'jan-kb-bestview-v1', notes: 'jan-kb-notes-v1', weekplan: 'jan-kb-weekplan-v1', icsremind: 'jan-kb-icsremind-v1', sections: 'jan-kb-sections-v1', starter: 'jan-kb-starter-v1', moblog: 'jan-kb-moblog-v1', runask: 'jan-kb-runask-v1', gymlog: 'jan-kb-gymlog-v1', saunalog: 'jan-kb-saunalog-v1', setup: 'jan-kb-setup-v1', longset: 'jan-kb-longset-v1', swap: 'jan-kb-swap-v1', dayadd: 'jan-kb-dayadd-v1', badges: 'jan-kb-badges-v1'
+  backup: 'jan-kb-lastbackup-v1', hint: 'jan-kb-installhint-v1', area: 'jan-kb-area-v1', run: 'jan-kb-runview-v1', audio: 'jan-kb-audio-v1', mob: 'jan-kb-mobview-v1', runweeks: 'jan-kb-runweeks-v1', runlog: 'jan-kb-runlog-v1', races: 'jan-kb-races-v1', profile: 'jan-kb-profile-v1', weight: 'jan-kb-weight-v1', skip: 'jan-kb-weekskip-v1', results: 'jan-kb-results-v1', bestview: 'jan-kb-bestview-v1', notes: 'jan-kb-notes-v1', weekplan: 'jan-kb-weekplan-v1', icsremind: 'jan-kb-icsremind-v1', sections: 'jan-kb-sections-v1', starter: 'jan-kb-starter-v1', moblog: 'jan-kb-moblog-v1', runask: 'jan-kb-runask-v1', gymlog: 'jan-kb-gymlog-v1', saunalog: 'jan-kb-saunalog-v1', advent: 'jan-kb-advent-v1', setup: 'jan-kb-setup-v1', longset: 'jan-kb-longset-v1', swap: 'jan-kb-swap-v1', dayadd: 'jan-kb-dayadd-v1', badges: 'jan-kb-badges-v1'
 };
 /* Datensicherheit bei Updates:
    - Einträge, die diese Version nicht versteht, werden nie verworfen, sondern unverändert mitgespeichert.
@@ -2499,6 +2499,41 @@ function stripInfo(d) {
   if (ran && !runs.length) rows.push(`<li>${T('Lauf', 'Run')} <span class="chkok">✓</span></li>`);
   return `<div class="sstripinfo"><b>${esc(dayLabel(d))}</b>${rows.length ? `<ul>${rows.join('')}</ul>` : `<p>${T('Nichts geplant – Ruhetag.', 'Nothing planned – rest day.')}</p>`}</div>`;
 }
+/* Lauf-Adventskalender (ab 1.11, Idee aus einem Insta-Post; Ziel und Texte eigene): 24 Türchen vom 1. bis 24. Dezember.
+   Ziel sind nicht feste 100 km, sondern die km deines Plans bis Heiligabend (Wochen-km je Tag anteilig, auf 5 gerundet) – so treibt
+   der Kalender nicht über den Plan hinaus. Ein Türchen ist geschafft, wenn du an dem Tag trainiert hast oder nichts geplant war:
+   Pause zählt mit. Ab 25. November ein Vorgeschmack, am 25. und 26. Dezember die Bilanz. ✕ blendet ihn für dieses Jahr aus (nur dieses Gerät). */
+let adventPick = null;
+function adventCard() {
+  if (!mod('laufen') || runnerLevel() === 'beginner') return '';
+  const today = localDay(), y = today.slice(0, 4), d1 = `${y}-12-01`, d24 = `${y}-12-24`;
+  if (today < `${y}-11-25` || today > `${y}-12-26` || load(KEYS.advent, null) === y) return '';
+  // Wochen-km aus dem Plan: ab dieser Woche aus dem heutigen Plan, vergangene Dezemberwochen aus dem Plan jener Woche
+  const S = seasonPlan(), wkKm = {}, kmOf = wk => {
+    if (!(wk in wkKm)) { const x = S.weeks.find(w => w.week === wk) || (wk < weekStart(today) ? seasonPlan(wk).weeks[0] : null); wkKm[wk] = x && typeof x.km === 'number' ? x.km : null; }
+    return wkKm[wk];
+  };
+  const days = Array.from({ length: 24 }, (_, i) => addDays(d1, i)), perDay = days.map(d => kmOf(weekStart(d)));
+  const known = perDay.every(k => k !== null), goal = known ? Math.max(20, Math.round(perDay.reduce((a, k) => a + k / 7, 0) / 5) * 5) : 100;
+  const ran = allRuns().filter(r => r.date >= d1 && r.date <= d24 && r.date <= today).reduce((a, r) => a + (Number(r.km) || 0), 0);
+  const soll = known ? Math.round(days.filter(d => d <= today).reduce((a, d, i) => a + perDay[i] / 7, 0)) : null;
+  const w = profile.week, mob = getMobLog(), cache = {};
+  const trained = d => ranOn(d) || saved.some(e => e.date === d) || gymDone(d) || mob.some(e => e.d === d);
+  const planned = d => { const wd = new Date(d + 'T12:00:00').getDay(); return plannedRunsOn(d, cache).length > 0 || (mod('kraft') && strengthDays().includes(wd)) || (mod('mobility') && w.mobility.includes(wd)); };
+  const door = (d, i) => {
+    const n = i + 1, st = d > today ? 'closed' : trained(d) ? 'done' : d === today ? 'open' : planned(d) ? 'miss' : 'rest';
+    const lab = { closed: T(`Türchen ${n}: noch zu`, `Door ${n}: still closed`), done: T(`Türchen ${n}: trainiert`, `Door ${n}: trained`), open: T(`Türchen ${n}: heute`, `Door ${n}: today`), miss: T(`Türchen ${n}: ausgelassen`, `Door ${n}: skipped`), rest: T(`Türchen ${n}: Pause`, `Door ${n}: rest`) }[st];
+    return `<button type="button" class="advdoor ${st}${d === today ? ' today' : ''}${adventPick === n ? ' sel' : ''}"${st === 'closed' ? ' disabled' : ` data-advent="${n}"`} aria-label="${esc(lab)}">${st === 'done' || st === 'rest' ? '✓' : n}</button>`;
+  };
+  const tip = adventPick && days[adventPick - 1] <= today ? `<p class="advtip"><b>${T(`Türchen ${adventPick}`, `Door ${adventPick}`)}</b> ${esc(ADVENT_TIPS[adventPick - 1])}</p>` : '';
+  const head = today < d1 ? T(`Ab 1. Dezember: 24 Türchen bis Heiligabend. Dein Ziel: ca. ${goal} km – so viel sieht dein Plan bis dahin vor.`, `From 1 December: 24 doors until Christmas Eve. Your goal: about ${goal} km – as much as your plan has until then.`)
+    : today > d24 ? T(`${kmText(Math.round(ran * 10) / 10)} km seit dem 1. Dezember – frohe Weihnachten!`, `${kmText(Math.round(ran * 10) / 10)} km since 1 December – merry Christmas!`)
+    : `<b>${kmText(Math.round(ran * 10) / 10)}</b> ${T(`von ${goal} km bis Heiligabend`, `of ${goal} km until Christmas Eve`)}${soll !== null ? ` · ${T(`Plan bis heute ca. ${soll} km`, `plan until today about ${soll} km`)}` : ''}`;
+  return `<div class="scard" id="advent"><p class="skicker">${T('Lauf-Adventskalender', 'Running advent calendar')}<button type="button" class="advhide" data-adventhide aria-label="${T('Adventskalender ausblenden', 'Hide advent calendar')}">✕</button></p>
+    <p class="advhead">${head}</p>${today >= d1 && today <= d24 ? `<span class="sbar"><span class="b-run" style="width:${Math.min(100, Math.round(ran / goal * 100))}%"></span></span>` : ''}
+    <div class="advgrid">${days.map(door).join('')}</div>${tip}
+    ${today <= d24 ? `<p class="tiny">${T('Ein Türchen ist geschafft, wenn du an dem Tag trainiert hast – oder nichts geplant war. Pause zählt mit.', 'A door counts when you trained that day – or nothing was planned. Rest counts too.')}</p>` : ''}</div>`;
+}
 /* Rennbereit? (Startseite, nur A-Rennen): Würdest du das Rennen mit deinem aktuellen Training schaffen – und, mit Zielzeit, in dieser Zeit?
    Schaffen (Faustregeln für Hobbyläufer): längster Lauf im Zeitraum und Ø km pro Woche der letzten 4 vollen Wochen –
    5 km: Lauf ≥ 4 km (4 Wochen) · 10 km: ≥ 8 km (4 Wochen), Ø 15 km · HM: ≥ 16 km (6 Wochen), Ø 25 km · Marathon: ≥ 28 km (8 Wochen), Ø 40 km;
@@ -2957,7 +2992,7 @@ function renderStart() {
   const lp = logPick && plannedRunsOn(logPick.day).find(it => it.key === logPick.key);
   const syncPause = autoOn() && autoPaused ? `<div class="scard" id="syncresume"><div class="srowt">${startIcon('mehr')}<span class="txt"><b>${T('Sync pausiert', 'Sync paused')}</b><small>${T('Der Browser fragt wieder nach dem Zugriff auf die Sync-Datei.', 'The browser asks for access to the sync file again.')}</small></span><button type="button" class="btn small primary sgo" data-syncresume>${T('Fortsetzen', 'Resume')}</button></div></div>` : '';
   $('startcontent').innerHTML = `${syncPause}${startFeedback ? feedbackCard(startFeedback) : ''}${lt ? runCard({ day: today, item: lt }, 90) : lp ? runCard({ day: logPick.day, item: lp }, 91) : ''}<div class="scard"><p class="skicker">${T('Heute dran', 'On today')}${items.deload ? ` · <b>${T('Entlastungswoche', 'Deload week')}</b>` : ''}</p>${rows}${addCtl(items)}</div>${pendingHtml()}
-    ${racePlanCard()}<div class="scard"><p class="skicker">${T('Diese Woche', 'This week')}</p>${weekStrip()}<div class="sweek">${week.map(([l, v, b]) => `<div><small>${esc(l)}</small><b>${esc(v)}</b>${b}</div>`).join('')}</div>${yearCard()}</div>${readyCard()}
+    ${racePlanCard()}${adventCard()}<div class="scard"><p class="skicker">${T('Diese Woche', 'This week')}</p>${weekStrip()}<div class="sweek">${week.map(([l, v, b]) => `<div><small>${esc(l)}</small><b>${esc(v)}</b>${b}</div>`).join('')}</div>${yearCard()}</div>${readyCard()}
     <button type="button" class="scard smorerow" data-go="mehr">${startIcon('mehr')}<span class="txt"><b>${T('Mehr', 'More')}</b><small>${esc(T('Neuigkeiten, Sync, Daten', 'News, sync, data') + ' · ' + bTxt)}</small></span><span class="chev"></span></button>`;
 }
 $('startcontent').addEventListener('input', e => {
@@ -2966,6 +3001,9 @@ $('startcontent').addEventListener('input', e => {
 });
 $('startcontent').addEventListener('click', e => {
   const g = e.target.closest('[data-go]'); if (g) { showArea(g.dataset.go); return; }
+  const adv = e.target.closest('[data-advent]'); if (adv) { const n = Number(adv.dataset.advent); adventPick = adventPick === n ? null : n; renderStart(); return; }
+  if (e.target.closest('[data-adventhide]')) { const y = localDay().slice(0, 4); store(KEYS.advent, y); renderStart();
+    toastUndo(T('Adventskalender ausgeblendet.', 'Advent calendar hidden.'), () => { localStorage.removeItem(KEYS.advent); renderStart(); }); return; }
   if (e.target.closest('[data-fbclose]')) { startFeedback = null; renderStart(); return; }
   if (e.target.closest('[data-syncresume]')) { syncAuto(true); return; }
   const sw = e.target.closest('[data-swap]');
