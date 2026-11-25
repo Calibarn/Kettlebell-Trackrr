@@ -894,9 +894,18 @@ PREP.mat.push('Dead Bug mit Kurzhantel', 'Floor Press mit Kurzhanteln', 'Pullove
    Der älteste (letzte) Eintrag ist der Grundstand mit allen Funktionen; Neulinge sehen ihn plus die 3 neuesten Updates. */
 /* Versionsnummer der App, angezeigt unter Mehr. Seit 13.11.2026 gehen Änderungen direkt live (main, ohne Wochen-Release über dev);
    jeder Tag mit Veröffentlichung ist eine neue Nebenversion: 1.1, 1.2, 1.3 … Der Neuigkeiten-Eintrag des Tages bekommt dieselbe Nummer (version). */
-const APP_VERSION = '1.10';
+const APP_VERSION = '1.11';
 // Ein Eintrag pro Tag: Änderungen desselben Tages kommen in den Eintrag des Tages (aka = frühere ids für „schon gesehen“)
 const CHANGELOG = [
+  { id: '2026-11-25', date: '2026-11-25', version: '1.11', title: 'Fehler behoben', items: [
+    ['Zwei Fenster gleichzeitig', 'Ist die App zweimal offen (z. B. als App und im Browser), überschreibt ein Fenster nicht mehr, was du im anderen gespeichert hast – Trainings, Läufe, Rennen, Messungen und Einstellungen.', 'bug'],
+    ['Einstellungen zurücksetzen', 'Das Zurücksetzen allein überschreibt weder die Sync-Datei noch andere Geräte. Der automatische Sync wird dabei ausgeschaltet.', 'bug'],
+    ['Intervalle eintragen', 'Was nur aus dem Plan vorbelegt ist, wird nicht mehr als gelaufen gespeichert; ein Hinweis sagt es dir. Wählst du ein anderes Datum, steht der Plan dieses Tages im Raster.', 'bug'],
+    ['Entlastungswoche', 'Auch Bereiche werden richtig gekürzt: aus 8–10 × 1 km wird 5–7 × 1 km, nicht mehr 8–7 ×.', 'bug'],
+    ['Für die Uhr: Erholung', 'Bei jeder Einheit mit Wiederholungen steht jetzt eine Erholung, auch bei Stehpause und auf Englisch; ohne genannte Pause ist sie offen. Bei einem Bereich wie 8–10 × trägst du die kleinere Zahl ein, der Plan steht dahinter.', 'bug'],
+    ['Für die Uhr: Tempo', 'Marathontempo am Stück bekommt Strecke und Tempo statt Zone 2. Longruns mit schnellem Ende bekommen den schnellen Teil als eigenen Schritt, wo der Plan ihn als km oder Minuten nennt, sonst kein Puls-Ziel. Bei der Pace-Race-Probe gilt das Tempo nur für die letzten 3.', 'bug'],
+    ['Android', 'Verweise auf den Bereich Apple Watch sind weg, die Tipps zum Rennplan auf der Uhr wieder da.', 'bug']
+  ] },
   { id: '2026-11-24', date: '2026-11-24', version: '1.10', title: 'Apple Watch', items: [
     ['Für die Uhr', 'In „Heute dran“ steht bei Intervallen, Longrun und lockeren Läufen unter ⌚ Für die Uhr, was du als eigenes Training in der Fitness-App einträgst: Aufwärmen und Cool-down offen, Wiederholungen mit Zeit oder Strecke, Tempo-Ziel und Erholung. Bei lockeren Läufen ist die Puls-Zone das Ziel.', 'neu'],
     ['Mehr → Apple Watch', 'Alles zur Uhr an einer Stelle: eigenes Training anlegen, unterwegs weiterschalten, Rennplan übertragen, Pulszonen abgleichen, VO2max ablesen. Rennplan, Herzfrequenz und VO2max verweisen jetzt dorthin.', 'neu']

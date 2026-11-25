@@ -2036,7 +2036,19 @@ const EN_TEXT = {
 "Für die Uhr": "For your watch",
 "Mehr → Apple Watch": "More → Apple Watch",
 "In „Heute dran“ steht bei Intervallen, Longrun und lockeren Läufen unter ⌚ Für die Uhr, was du als eigenes Training in der Fitness-App einträgst: Aufwärmen und Cool-down offen, Wiederholungen mit Zeit oder Strecke, Tempo-Ziel und Erholung. Bei lockeren Läufen ist die Puls-Zone das Ziel.": "In “On today”, intervals, long runs and easy runs show under ⌚ For your watch what to enter as a custom workout in the Fitness app: warm-up and cooldown open, repeats with time or distance, pace target and recovery. For easy runs the heart rate zone is the target.",
-"Alles zur Uhr an einer Stelle: eigenes Training anlegen, unterwegs weiterschalten, Rennplan übertragen, Pulszonen abgleichen, VO2max ablesen. Rennplan, Herzfrequenz und VO2max verweisen jetzt dorthin.": "Everything about the watch in one place: create a custom workout, move on during the run, transfer the race plan, match heart rate zones, read VO2max. Race plan, heart rate and VO2max now point there."
+"Alles zur Uhr an einer Stelle: eigenes Training anlegen, unterwegs weiterschalten, Rennplan übertragen, Pulszonen abgleichen, VO2max ablesen. Rennplan, Herzfrequenz und VO2max verweisen jetzt dorthin.": "Everything about the watch in one place: create a custom workout, move on during the run, transfer the race plan, match heart rate zones, read VO2max. Race plan, heart rate and VO2max now point there.",
+"Fehler behoben": "Bugs fixed",
+"Zwei Fenster gleichzeitig": "Two windows at once",
+"Ist die App zweimal offen (z. B. als App und im Browser), überschreibt ein Fenster nicht mehr, was du im anderen gespeichert hast – Trainings, Läufe, Rennen, Messungen und Einstellungen.": "If the app is open twice (e.g. as an app and in the browser), one window no longer overwrites what you saved in the other – workouts, runs, races, measurements and settings.",
+"Das Zurücksetzen allein überschreibt weder die Sync-Datei noch andere Geräte. Der automatische Sync wird dabei ausgeschaltet.": "Resetting alone overwrites neither the sync file nor other devices. Automatic sync is switched off in the process.",
+"Was nur aus dem Plan vorbelegt ist, wird nicht mehr als gelaufen gespeichert; ein Hinweis sagt es dir. Wählst du ein anderes Datum, steht der Plan dieses Tages im Raster.": "Values that are only prefilled from the plan are no longer saved as run; a note tells you. If you choose another date, the grid shows the plan of that day.",
+"Entlastungswoche": "Deload week",
+"Auch Bereiche werden richtig gekürzt: aus 8–10 × 1 km wird 5–7 × 1 km, nicht mehr 8–7 ×.": "Ranges are now shortened correctly too: 8–10 × 1 km becomes 5–7 × 1 km, no longer 8–7 ×.",
+"Für die Uhr: Erholung": "For your watch: recovery",
+"Bei jeder Einheit mit Wiederholungen steht jetzt eine Erholung, auch bei Stehpause und auf Englisch; ohne genannte Pause ist sie offen. Bei einem Bereich wie 8–10 × trägst du die kleinere Zahl ein, der Plan steht dahinter.": "Every session with repeats now has a recovery, also with standing rest and in English; without a named rest it is open. For a range such as 8–10 × you enter the smaller number, the plan is shown behind it.",
+"Für die Uhr: Tempo": "For your watch: pace",
+"Marathontempo am Stück bekommt Strecke und Tempo statt Zone 2. Longruns mit schnellem Ende bekommen den schnellen Teil als eigenen Schritt, wo der Plan ihn als km oder Minuten nennt, sonst kein Puls-Ziel. Bei der Pace-Race-Probe gilt das Tempo nur für die letzten 3.": "A continuous marathon-pace run gets distance and pace instead of zone 2. Long runs with a fast finish get the fast part as its own step where the plan gives it in km or minutes, otherwise no heart rate target. In the Pace Race rehearsal the pace applies only to the last 3.",
+"Verweise auf den Bereich Apple Watch sind weg, die Tipps zum Rennplan auf der Uhr wieder da.": "Links to the Apple Watch section are gone, the tips for the race plan on your watch are back."
 };
 const EN_HTML = {
 "Kraft · Laufen · Mobility": "Strength · Running · Mobility",

@@ -100,7 +100,8 @@ test('Neuigkeiten gruppiert nach Neu, Usability und Bugs; Thema steht nicht dopp
   const first = page.locator('#notes-body');
   const kinds = await page.evaluate(() => { const c = CHANGELOG.find(x => x.id === '2026-11-03'); return NOTE_KINDS.filter(k => c.items.some(it => it[2] === k[0])).map(k => k[1]); });
   expect(kinds).toEqual(['Neu', 'Usability', 'Bugs']);
-  await expect(first.locator('.noteskind').first()).toHaveText('Neu');
+  // erste Gruppe im neuesten Eintrag (ein Tag nur mit Fehlerbehebungen beginnt mit „Bugs“)
+  await expect(first.locator('.noteskind').first()).toHaveText(await page.evaluate(() => NOTE_KINDS.find(k => CHANGELOG[0].items.some(it => it[2] === k[0]))[1]));
   expect(await page.evaluate(() => CHANGELOG.every(c => c.items.every(it => ['neu', 'ux', 'bug'].includes(it[2]))))).toBe(true);
   expect(await page.evaluate(() => CHANGELOG[0].items.some(it => ['Übersichtlicher', 'Behoben', 'Schneller'].includes(it[0])))).toBe(false);
   await expect(first).toContainText('Android: Die Tab-Leiste');

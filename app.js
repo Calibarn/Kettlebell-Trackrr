@@ -1444,8 +1444,14 @@ function repsHtml(id, reps, plan, show) {
 // Raster noch so, wie es vorbelegt wurde? Dann ist nichts eingetragen: nicht speichern (sonst sähe der Plan wie gelaufen aus)
 function repsFresh(box) {
   if (!box || !box.dataset.plan) return false;
-  const [, km, sec] = JSON.parse(box.dataset.plan), want = { km, sec, max: '' };
-  return [...box.querySelectorAll('[data-rep]')].every(i => i.value.trim() === want[i.dataset.f]);
+  const [n, km, sec] = JSON.parse(box.dataset.plan), want = { km, sec, max: '' }, ins = [...box.querySelectorAll('[data-rep]')];
+  return ins.length === 3 * n && ins.every(i => i.value.trim() === want[i.dataset.f]);
+}
+// Hinweis beim Speichern: im sichtbaren Raster steht nur der Plan
+function repsHint(box) {
+  if (!box || box.classList.contains('hide') || !repsFresh(box)) return '';
+  const [, km, sec] = JSON.parse(box.dataset.plan);
+  return km || sec ? T(' Intervalle unverändert vom Plan – nicht gespeichert. Trag Strecke, Zeit oder Max-Puls ein.', ' Intervals unchanged from the plan – not saved. Enter distance, time or max HR.') : '';
 }
 // Werte aus dem Raster lesen; raw = ohne Prüfung (beim Ändern der Anzahl), sonst null bei Fehlern (Feld markiert, Hinweis)
 function repsRead(id, raw = false) {
@@ -1516,14 +1522,14 @@ function addRunFromForm() {
   // Bearbeiten: Datum, km, Zeit, Puls und Art des angetippten Laufs ersetzen (Zeit/Puls leer = entfernen)
   const was = runEdit && runLog.find(r => r.id === runEdit);
   // Intervalle nur, wenn das Raster zu sehen ist (Art Intervall/Tempo bzw. „nach Plan“ am Qualitätstag)
-  const rv = $('runreps') && !$('runreps').classList.contains('hide'), reps = rv ? repsRead('runreps') : []; if (reps === null) return;
+  const rv = $('runreps') && !$('runreps').classList.contains('hide'), hint = repsHint($('runreps')), reps = rv ? repsRead('runreps') : []; if (reps === null) return;
   if (reps.length) ex.reps = reps;
   if (was) {
     const kind = $('runkind').value || was.kind || 'easy';
     for (const k of ['sec', 'hr', 'kind', 'reps']) delete was[k];
     Object.assign(was, { date: d, km }, runExtra(Object.assign(ex, { kind })));
     runLog.sort((a, b) => a.date.localeCompare(b.date)); persistRunLog(); runEdit = null; runFeedback = null;
-    renderRun(); toast(T(`✓ Lauf vom ${dayLabel(d)} gespeichert.`, `✓ Run of ${dayLabel(d)} saved.`)); return;
+    renderRun(); toast(T(`✓ Lauf vom ${dayLabel(d)} gespeichert.`, `✓ Run of ${dayLabel(d)} saved.`) + hint); return;
   }
   // Art: gewählt, sonst die geplante Einheit des Tages, sonst locker
   const planned = plannedRunsOn(d)[0], kind = $('runkind').value || (planned ? runKindOf(planned) : 'easy');
@@ -1532,7 +1538,7 @@ function addRunFromForm() {
   runFeedback = run.sec || run.hr || run.reps ? { id: run.id, title: `${dayLabel(d)} · ${planned && !$('runkind').value ? planned.title : RUN_KIND_LABEL()[kind]}`, box: 'runfb' } : null;
   $('runkm').value = ''; $('runhr').value = ''; document.querySelectorAll('#runtime input').forEach(i => { i.value = ''; }); $('runkm').removeAttribute('aria-invalid');
   if (rv) $('runreps').outerHTML = repsHtml('runreps', null, repPlanOn(d), true);
-  renderWeekRows(); renderLoad(); toast(T(`✓ ${kmText(km)} km am ${dayLabel(d)} gespeichert.`, `✓ ${kmText(km)} km saved for ${dayLabel(d)}.`));
+  renderWeekRows(); renderLoad(); toast(T(`✓ ${kmText(km)} km am ${dayLabel(d)} gespeichert.`, `✓ ${kmText(km)} km saved for ${dayLabel(d)}.`) + hint);
 }
 
 /* ---------- Laufen → Plan: Rennen und Saisonplan ---------- */
@@ -2892,6 +2898,12 @@ function watchSteps(it) {
     if (kind !== 'long' || !/zügig|brisk|tempo\b|at [^,]*pace\b|level pace/i.test(d)) return [work(km) + hrGoal];
     // Longrun mit schnellem Ende: „die letzten 5–8 km im …“ als eigener Schritt (untere Grenze), sonst ohne Puls-Ziel – die Uhr würde im schnellen Teil warnen
     const last = Number((d.match(/(?:letzten|last) (\d+)(?:–\d+)? km/) || [])[1]);
+    // „die letzten 10 Min. zügig“: Strecke davor aus dem Marathontempo geschätzt (auf 0,5 km), ohne Tempo oder km offen
+    const min = Number((d.match(/(?:letzten|last) (\d+) [Mm]in/) || [])[1]);
+    if (min) {
+      const tp = trainingPaces(), part = tp ? Math.round(min * 120 / tp.marathon) / 2 : 0, before = part && km > part ? km - part : 0;
+      return [work(before) + hrGoal + (before ? '' : T(` – ${min} Min. vor Schluss doppeltippen`, ` – double-tap ${min} min before the end`)), T(`Training: Zeit ${watchTime(min * 60)}, ohne Ziel – zügig`, `Work: time ${watchTime(min * 60)}, no target – brisk`)];
+    }
     return last && km > last ? [work(km - last) + hrGoal, work(last) + paceGoal] : [work(km) + T(', ohne Ziel – schneller Teil laut Plan', ', no target – faster part as planned')];
   }
   // zu kurze Stücke ohne Ziel (GPS hinkt nach); gilt das Tempo nur am Ende („die letzten 3 im Level-Tempo“), nicht als Ziel für alle
@@ -2900,9 +2912,10 @@ function watchSteps(it) {
     : end ? T(`, ohne Ziel (nur die letzten ${end[1]}${pace ? `: ${pace}` : ' schnell'})`, `, no target (only the last ${end[1]}${pace ? `: ${pace}` : ' fast'})`) : paceGoal;
   // ohne genannte Pause: Erholung offen, sonst liefen die Wiederholungen ohne Unterbrechung durch
   const rest = d.match(/(\d+)\s*(Sek|sec|s|Min)\.?\s*(?:Trabpause|Stehpause|traben|jog|standing rest)/i), restTime = rest && watchTime(Number(rest[1]) * (/^m/i.test(rest[2]) ? 60 : 1));
-  const strides = d.match(/(\d+) × 100 m (?:Steigerung|strides)/), n = (d.match(/(\d{1,2}–\d{1,2}|\d{1,2})\s*[×x]/) || [])[1] || p.n;
+  const strides = d.match(/(\d+) × 100 m (?:Steigerung|strides)/), range = d.match(/^[^×]*?(\d{1,2})–(\d{1,2})\s*×/), n = range ? range[1] : p.n;
+  const plan = range ? T(` (Plan ${range[1]}–${range[2]})`, ` (plan ${range[1]}–${range[2]})`) : ''; // die Uhr braucht eine feste Zahl: die kleinere
   return [warm,
-    T(`${n} × wiederholen: Training ${p.sec ? `Zeit ${watchTime(p.sec)}` : `Strecke ${distText(p.km)}`}`, `Repeat ${n} ×: work ${p.sec ? `time ${watchTime(p.sec)}` : `distance ${distText(p.km)}`}`) + target + (rest ? T(` · Erholung Zeit ${restTime}`, ` · recovery time ${restTime}`) : T(' · Erholung Offen', ' · recovery open')),
+    T(`${n} × wiederholen${plan}: Training ${p.sec ? `Zeit ${watchTime(p.sec)}` : `Strecke ${distText(p.km)}`}`, `Repeat ${n} ×${plan}: work ${p.sec ? `time ${watchTime(p.sec)}` : `distance ${distText(p.km)}`}`) + target + (rest ? T(` · Erholung Zeit ${restTime}`, ` · recovery time ${restTime}`) : T(' · Erholung Offen', ' · recovery open')),
     cool + (strides ? T(` – darin ${strides[1]} × 100 m Steigerung`, ` – with ${strides[1]} × 100 m strides in it`) : '')];
 }
 function watchCtl(it) {
@@ -3006,14 +3019,14 @@ $('startcontent').addEventListener('click', e => {
     if (hr !== null && !(hr >= 40 && hr <= 230)) { $('srunhr' + s).setAttribute('aria-invalid', 'true'); toast(T('Bitte den Ø-Puls zwischen 40 und 230 eintragen – oder leer lassen.', 'Please enter an average HR between 40 and 230 – or leave it empty.')); return; }
     const easyBefore = (trainingPaces() || {}).easy;
     const kSel = $('srunkind' + s), kind = kSel && RUN_KIND_SET.includes(kSel.value) ? kSel.value : ru.dataset.kind;
-    const rb = $('srunreps' + s), reps = rb && !rb.classList.contains('hide') ? repsRead('srunreps' + s) : []; if (reps === null) return;
+    const rb = $('srunreps' + s), hint = repsHint(rb), reps = rb && !rb.classList.contains('hide') ? repsRead('srunreps' + s) : []; if (reps === null) return;
     const run = addRun(day, km, { sec: sec || undefined, hr: hr || undefined, kind, reps }); const wp = curWeekPlan(wk); if (wp && !wp.done.includes(key)) { wp.done.push(key); storeWeekPlan(); }
     if (run.sec || run.hr || run.reps) startFeedback = { id: run.id, title: kind === ru.dataset.kind ? ru.dataset.title : `${dayLabel(day)} · ${RUN_KIND_LABEL()[kind]}` };
     pendOpen = null;
     if (day === localDay()) logToday = null; if (logPick && logPick.day === day) logPick = null;
     const easyNow = (trainingPaces() || {}).easy, easyMoved = easyBefore && easyNow && easyNow[0] !== easyBefore[0];
     if (startFeedback && easyMoved) startFeedback.easy = [easyBefore, easyNow, !!(run.hr && profile.hr.z && run.hr > profile.hr.z[2] + 1)]; // Hinweis in der Auswertung (Toast wäre zu lang)
-    renderStart(); toast(T(`✓ ${kmText(km)} km am ${dayLabel(day)} eingetragen.`, `✓ ${kmText(km)} km on ${dayLabel(day)} logged.`)); if (startFeedback) window.scrollTo(0, 0); return;
+    renderStart(); toast(T(`✓ ${kmText(km)} km am ${dayLabel(day)} eingetragen.`, `✓ ${kmText(km)} km on ${dayLabel(day)} logged.`) + hint); if (startFeedback) window.scrollTo(0, 0); return;
   }
   const rd = e.target.closest('[data-resdns]'); if (rd) { const r = races.find(x => x.id === rd.dataset.resdns); if (r) { r.dns = true; persistRaces(); renderStart(); toast(T(`Notiert: ${r.name} nicht gelaufen.`, `Noted: ${r.name} not run.`)); } return; }
   const a = e.target.closest('[data-startact]'); if (!a) return;
@@ -3172,10 +3185,21 @@ const SYNC_LISTS = {
   [KEYS.races]: [SYNC_COLLS.races, validRace, racesKeep, a => { races = a; }, 'date'],
   [KEYS.results]: [SYNC_COLLS.results, validResult, resultsKeep, a => { results = a; }, 'date']
 };
-for (const k of Object.keys(SYNC_LISTS)) listSeen[k] = localStorage.getItem(k);
+// Einstellungen feldweise (Profil, Gewichte und Varianten, Wochenplan …): v wird direkt ergänzt, damit der Arbeitsspeicher dieses Tabs mitkommt
+const SYNC_OBJS = new Set(Object.values(SYNC_SETTINGS).filter(k => k !== KEYS.badges && k !== KEYS.starter));
+for (const k of [...Object.keys(SYNC_LISTS), ...SYNC_OBJS]) listSeen[k] = localStorage.getItem(k);
+function mergeObj(mine, was, now) {
+  const eq = (x, y) => JSON.stringify(x) === JSON.stringify(y);
+  for (const f of new Set([...Object.keys(mine), ...Object.keys(was), ...Object.keys(now)])) {
+    if (eq(was[f], now[f])) continue;
+    if (isObj(mine[f]) && isObj(now[f])) mergeObj(mine[f], isObj(was[f]) ? was[f] : {}, now[f]);
+    else if (eq(mine[f], was[f])) { if (now[f] === undefined) delete mine[f]; else mine[f] = now[f]; }
+  }
+  return mine;
+}
 mergeHook = (k, mine) => {
-  const L = SYNC_LISTS[k]; if (!L) return mine;
-  const raw = localStorage.getItem(k); if (raw === null || raw === listSeen[k]) return mine;
+  const L = SYNC_LISTS[k], raw = L || SYNC_OBJS.has(k) ? localStorage.getItem(k) : null; if (raw === null || raw === listSeen[k]) return mine;
+  if (!L) { const obj = r => { try { const v = JSON.parse(r); return isObj(v) ? v : null; } catch (e) { return null; } }, now = obj(raw); return isObj(mine) && now ? mergeObj(mine, obj(listSeen[k]) || {}, now) : mine; }
   const parse = r => { try { const v = JSON.parse(r); return Array.isArray(v) ? v : null; } catch (e) { return null; } }, theirs = parse(raw); if (!theirs) return mine;
   const [c, valid, keep, set, by] = L, idOf = e => c.id(e) || JSON.stringify(e), map = a => new Map(a.map(e => [idOf(e), e])), same = (x, y) => JSON.stringify(x) === JSON.stringify(y);
   const was = map(parse(listSeen[k]) || []), now = map(theirs), ids = new Set(mine.map(idOf));
@@ -3194,7 +3218,7 @@ function syncPayload() {
     const arr = rawGet(d.key);
     colls[c] = (Array.isArray(arr) ? arr : []).map(e => { const id = d.id(e); return id === null ? null : { k: id, ts: m.mod[c + ':' + id] || 0, v: e }; }).filter(Boolean);
   }
-  for (const [n, key] of Object.entries(SYNC_SETTINGS)) { const v = rawGet(key), ts = m.mod['set:' + n] || 0; if (v !== null && ts >= 0) settings[n] = { ts, v }; }
+  for (const [n, key] of Object.entries(SYNC_SETTINGS)) { const v = rawGet(key), ts = m.mod['set:' + n] || 0; if (v !== null && ts >= 0) settings[n] = { ts, v }; else if (isObj(m.held) && m.held[n]) settings[n] = m.held[n]; }
   return { kind: 'kb-tracker-sync', version: 1, savedAt: new Date().toISOString(), device: m.device, colls, del: m.del, settings };
 }
 // Abgleich: Rückgabe { changed, added, updated, removed }
@@ -3384,13 +3408,16 @@ const SETTING_KEYS = ['sound', 'gear', 'choice', 'stage', 'plan', 'area', 'run',
 function settingsReset() {
   if (sessionActive()) { alert(T('Bitte das laufende Training zuerst beenden oder zurücksetzen.', 'Please finish or reset the current workout first.')); return; }
   if (!confirm(T('Einstellungen zurücksetzen?\n\nZurück auf den Ausgangszustand: Profil (Trainingswoche, Herzfrequenz, Geräte & Gewichte), Übungs-Varianten und Gewichte, Stufen, „Entfällt“, Ton und Ansichten.\n\nTrainings, Läufe, Wochensummen, Rennen, Gewicht und Bauchumfang bleiben erhalten. Gilt nur für dieses Gerät.', 'Reset settings?\n\nBack to the defaults: profile (training week, heart rate, equipment & weights), exercise variants and weights, stages, “Skip”, sound and views.\n\nWorkouts, runs, weekly totals, races, weight and waist are kept. Applies to this device only.'))) return;
+  const resetNames = Object.keys(SYNC_SETTINGS).filter(n => SETTING_KEYS.includes(SYNC_SETTINGS[n])), keep = syncPayload().settings, wasAuto = !!syncMeta.auto;
+  syncMeta.held = Object.fromEntries(resetNames.filter(n => keep[n]).map(n => [n, keep[n]]));
+  syncMeta.auto = false; // sonst holt der nächste automatische Abgleich alles sofort zurück
   wiping = true; clearTimeout(syncTimer);
   try { for (const k of SETTING_KEYS) localStorage.removeItem(k); localStorage.setItem(KEYS.profile, JSON.stringify(normProfile(null))); } catch (e) { }
   // Sync: Prüfwerte der Einstellungen vergessen – „Sync laden“ holt sie bei Bedarf aus der Datei zurück. Das leere Profil ist keine Änderung:
-  // Zeitstempel -1 heißt „älter als jeder Stand“ und kommt nicht in die Sync-Datei, bis hier wieder etwas eingestellt wird.
-  for (const k of Object.keys(syncMeta.h)) if (k.startsWith('set:')) { delete syncMeta.h[k]; delete syncMeta.mod[k]; }
+  // Zeitstempel -1 heißt „älter als jeder Stand“. In die Sync-Datei kommt weiter der bisherige Stand (held), bis hier wieder etwas eingestellt wird.
+  for (const n of resetNames) { delete syncMeta.h['set:' + n]; delete syncMeta.mod['set:' + n]; }
   syncMeta.h['set:profile'] = syncHash(JSON.stringify(normProfile(null))); syncMeta.mod['set:profile'] = -1;
-  try { localStorage.setItem(SYNC_META, JSON.stringify(syncMeta)); sessionStorage.setItem(SYNC_MSG, T('Einstellungen zurückgesetzt – deine Daten sind unverändert.', 'Settings reset – your data is unchanged.')); } catch (e) { }
+  try { localStorage.setItem(SYNC_META, JSON.stringify(syncMeta)); sessionStorage.setItem(SYNC_MSG, T('Einstellungen zurückgesetzt – deine Daten sind unverändert.', 'Settings reset – your data is unchanged.') + (wasAuto ? T(' Automatischer Sync ist jetzt aus.', ' Automatic sync is now off.') : '')); } catch (e) { }
   location.reload();
 }
 
@@ -4149,8 +4176,8 @@ document.addEventListener('change', e => {
   if (t.dataset && t.dataset.rep && t.dataset.f === 'sec') { const v = repSecIn(t.value); if (v && !Number.isNaN(v)) { t.value = hms(v); t.removeAttribute('aria-invalid'); } repsLive(t.dataset.rep); return; }
   if (t.id === 'runkind' || t.id === 'rundate') {
     const b = $('runreps'), d = $('rundate').value, show = formQuality(d, $('runkind').value); if (!b) return;
-    // anderes Datum: Raster nach dem Plan dieses Tages, solange nichts eingetragen und die Anzahl nicht geändert ist
-    if (t.id === 'rundate' && repsFresh(b) && Number($('runreps-n').value) === JSON.parse(b.dataset.plan)[0]) b.outerHTML = repsHtml('runreps', null, repPlanOn(d), show);
+    // anderes Datum: Raster nach dem Plan dieses Tages, solange nichts eingetragen ist
+    if (t.id === 'rundate' && repsFresh(b)) b.outerHTML = repsHtml('runreps', null, repPlanOn(d), show);
     else b.classList.toggle('hide', !show);
     return;
   }
