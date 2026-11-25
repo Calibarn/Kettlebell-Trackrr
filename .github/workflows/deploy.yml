@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: ${{ steps.deployment.outputs.page_url || steps.retry.outputs.page_url }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -48,5 +48,14 @@ jobs:
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site
+      # deploy-pages findet das eben hochgeladene Paket manchmal noch nicht („Found 0 artifact(s)“, actions/deploy-pages#451):
+      # kurz warten, bei Fehlschlag nach einer Minute ein zweiter Versuch
+      - run: sleep 15
       - id: deployment
+        uses: actions/deploy-pages@v4
+        continue-on-error: true
+      - if: steps.deployment.outcome == 'failure'
+        run: sleep 60
+      - id: retry
+        if: steps.deployment.outcome == 'failure'
         uses: actions/deploy-pages@v4
