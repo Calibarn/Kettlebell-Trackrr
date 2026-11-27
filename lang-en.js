@@ -2075,7 +2075,19 @@ const EN_TEXT = {
 "Frohe Weihnachten! Jeder Kilometer seit dem 1. Dezember steckt jetzt in deinen Beinen.": "Merry Christmas! Every kilometre since 1 December is now in your legs.",
 "Adventskalender, Fehler behoben": "Advent calendar, bugs fixed",
 "Lauf-Adventskalender": "Running advent calendar",
-"Vom 1. bis 24. Dezember auf der Startseite: 24 Türchen mit je einem Tipp und deinen Kilometern bis Heiligabend. Das Ziel ist, was dein Plan bis dahin vorsieht – nicht feste 100 km. Ein Türchen zählt, wenn du trainiert hast oder Pause war. Mit ✕ blendest du ihn aus.": "From 1 to 24 December on the start page: 24 doors with a tip each and your kilometres until Christmas Eve. The goal is what your plan has until then – not a fixed 100 km. A door counts when you trained or it was a rest day. Tap ✕ to hide it."
+"Vom 1. bis 24. Dezember auf der Startseite: 24 Türchen mit je einem Tipp und deinen Kilometern bis Heiligabend. Das Ziel ist, was dein Plan bis dahin vorsieht – nicht feste 100 km. Ein Türchen zählt, wenn du trainiert hast oder Pause war. Mit ✕ blendest du ihn aus.": "From 1 to 24 December on the start page: 24 doors with a tip each and your kilometres until Christmas Eve. The goal is what your plan has until then – not a fixed 100 km. A door counts when you trained or it was a rest day. Tap ✕ to hide it.",
+"Vorgebeugt, freie Hand auf dem Oberschenkel": "Bent over, free hand on your thigh",
+"Aufrecht stehen, Hände vor der Brust locker verschränken, Ellenbogen seitlich.": "Stand tall, loosely interlace your hands in front of your chest, elbows out to the sides.",
+"Die Handgelenke langsam in großen Kreisen bewegen, nach der Hälfte die Richtung wechseln.": "Slowly move your wrists in big circles, change direction halfway.",
+"Zum Schluss die Finger strecken und die Hände ausschütteln.": "Finally stretch your fingers and shake out your hands.",
+"Bereitet die Handgelenke auf Rack-Position, Drücken und Halo mit der Kettlebell vor.": "Prepares your wrists for the rack position, pressing and halos with the kettlebell.",
+"Langsam und nur im schmerzfreien Bereich kreisen.": "Circle slowly and only within a pain-free range.",
+"AMRAP mit Rudern": "AMRAP with rows",
+"Im AMRAP ersetzt einarmiges Rudern den Cross-Body Lunge. So ist jetzt auch eine Zugübung für den Rücken dabei – die Beine haben mit Thruster, Kreuzheben und Ausfallschritt genug zu tun. Deine bisherigen AMRAP-Ergebnisse bleiben, sind mit der neuen Runde aber nicht ganz vergleichbar.": "In the AMRAP, the one-arm row replaces the cross-body lunge. Now there is a pulling exercise for your back – your legs have enough to do with the thruster, deadlift and lunge. Your previous AMRAP results stay, but they are not fully comparable with the new round.",
+"Handgelenke im Warm-up": "Wrists in the warm-up",
+"Ganzkörper, AMRAP, Core und Stand-Core wärmen jetzt auch die Handgelenke auf – für Rack-Position, Drücken und Halo. Das Warm-up dauert so lange wie vorher.": "Full body, AMRAP, Core and Standing core now also warm up your wrists – for the rack position, pressing and halos. The warm-up takes as long as before.",
+"Handgelenke kreisen": "Wrist circles",
+"Hände verschränkt": "hands interlaced"
 };
 const EN_HTML = {
 "Kraft · Laufen · Mobility": "Strength · Running · Mobility",

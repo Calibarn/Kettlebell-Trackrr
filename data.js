@@ -27,7 +27,7 @@ const PLANS = {
       { id: 'balance', order: ['bw', 'kb'], v: { bw: ['Standwaage', '6–10 je Seite', 'Zunächst ohne Gewicht'], kb: ['Einbeiniges Kreuzheben', '6–10 je Seite', 'Kugel in der Hand gegenüber dem Standbein'] } },
       { id: 'crunch', v: { bw: ['Stehende Knie-Ellenbogen-Crunches', '10 je Seite', 'Ohne Gewicht'] } }
     ],
-    warmup: [['0:45', 'Marschieren auf der Stelle'], ['0:45', 'Schulter- und Armkreisen'], ['0:45', 'Hüftbeuge ohne Gewicht'], ['0:45', 'Kniebeugen ohne Gewicht'], ['1:00', 'Ausfallschritt mit Rotation']],
+    warmup: [['0:30', 'Marschieren auf der Stelle'], ['0:30', 'Schulter- und Armkreisen'], ['0:30', 'Handgelenke kreisen'], ['0:45', 'Hüftbeuge ohne Gewicht'], ['0:45', 'Kniebeugen ohne Gewicht'], ['1:00', 'Ausfallschritt mit Rotation']],
     cooldown: [['0:45 × 2', 'Hüftbeuger-Dehnung'], ['0:30 × 2', 'Vorderer Oberschenkel'], ['0:30 × 2', 'Figure-4 Gesäß'], ['0:30 × 2', 'Brustdehnung am Türrahmen'], ['0:30', 'Kindhaltung']]
   },
   run: {
@@ -121,9 +121,11 @@ PLANS.amrap = {
     { id: 'dlhalo', v: { kb: ['Deadlift to Halo', '15', 'Kreuzheben, dann einmal um den Kopf'] } },
     { id: 'pressout', v: { kb: ['Lunge to Press-out', '10 je Seite', 'Unten im Ausfallschritt nach vorne drücken'] } },
     { id: 'pullrot', v: { kb: ['Pullover mit Rotation', '20', 'Vor der Brust drehen, dann über den Kopf'] } },
-    { id: 'crosslunge', v: { kb: ['Cross-Body Lunge', '10 je Seite', 'Kugel quer am vorderen Bein vorbeiführen'] } }
+    // ab 1.12 (Video „20 min Training mit einer Kettlebell“: Kreuzheben, Rudern, Thruster): einarmiges Rudern statt Cross-Body Lunge –
+    // vorher gab es keine Zugübung für den Rücken, dafür zwei Ausfallschritte. Neue Übungsplatz-ID, damit alte Ergebnisse nicht vermischt werden.
+    { id: 'row', v: { kb: ['Einarmiges Rudern', '10 je Seite', 'Vorgebeugt, freie Hand auf dem Oberschenkel'] } }
   ],
-  warmup: [['0:30', 'Marschieren auf der Stelle'], ['0:45', 'Schulter- und Armkreisen'], ['0:45', 'Hüftbeuge ohne Gewicht'], ['0:45', 'Kniebeugen ohne Gewicht'], ['0:45', 'Ausfallschritt mit Rotation'], ['0:30', 'Halo um den Kopf']],
+  warmup: [['0:30', 'Marschieren auf der Stelle'], ['0:30', 'Schulter- und Armkreisen'], ['0:30', 'Handgelenke kreisen'], ['0:45', 'Hüftbeuge ohne Gewicht'], ['0:30', 'Kniebeugen ohne Gewicht'], ['0:45', 'Ausfallschritt mit Rotation'], ['0:30', 'Halo um den Kopf']],
   cooldown: [['0:30 × 2', 'Hüftbeuger-Dehnung'], ['0:30 × 2', 'Vorderer Oberschenkel'], ['0:30 × 2', 'Brustdehnung am Türrahmen'], ['1:00', 'Kindhaltung']]
 };
 /* Core: EMOM mit einer Kettlebell, komplett im Knien. Fest auf Kettlebell – die Geräte-Auswahl gilt hier nicht (kbOnly). */
@@ -135,7 +137,7 @@ PLANS.core = {
     { id: 'pullover', v: { kb: ['Pullover im Kniestand', '10', 'Kugel an den Hörnern, Rippen unten'] } },
     { id: 'wrestler', v: { kb: ['Wrestler-Halo', '10 abwechselnd', 'Diagonal von Hüfte zu Hüfte, einmal um den Kopf'] } }
   ],
-  warmup: [['0:30', 'Marschieren auf der Stelle'], ['0:45', 'Schulter- und Armkreisen'], ['0:45', 'Katze-Kuh'], ['1:00', 'Ausfallschritt mit Rotation'], ['0:30', 'Kettlebell-Kreuzheben'], ['0:30', 'Halo um den Kopf']],
+  warmup: [['0:30', 'Marschieren auf der Stelle'], ['0:30', 'Schulter- und Armkreisen'], ['0:30', 'Handgelenke kreisen'], ['0:45', 'Katze-Kuh'], ['0:45', 'Ausfallschritt mit Rotation'], ['0:30', 'Kettlebell-Kreuzheben'], ['0:30', 'Halo um den Kopf']],
   cooldown: [['0:45 × 2', 'Hüftbeuger-Dehnung'], ['0:30 × 2', 'Brustdehnung am Türrahmen'], ['1:30', 'Kindhaltung']]
 };
 /* Finisher: kurzer Rumpf-Block im Grätschsitz, EMOM mit einer Kettlebell (Idee aus einem Video: „1 kettlebell, 10 minutes, core finisher“).
@@ -165,7 +167,7 @@ PLANS.standcore = {
     { id: 'sling', v: { kb: ['Slingshot mit Blocker', '30 Sek.', 'Nach der halben Zeit Richtung wechseln'] } },
     { id: 'slpress', v: { kb: ['Einbeiniges Überkopfdrücken', '5 je Seite', 'Knie auf Hüfthöhe, Rippen unten'] } }
   ],
-  warmup: [['0:30', 'Marschieren auf der Stelle'], ['0:45', 'Schulter- und Armkreisen'], ['0:45', 'Ausfallschritt mit Rotation'], ['0:30', 'Hüftbeuge ohne Gewicht'], ['0:30', 'Halo um den Kopf']],
+  warmup: [['0:30', 'Marschieren auf der Stelle'], ['0:30', 'Schulter- und Armkreisen'], ['0:30', 'Handgelenke kreisen'], ['0:30', 'Ausfallschritt mit Rotation'], ['0:30', 'Hüftbeuge ohne Gewicht'], ['0:30', 'Halo um den Kopf']],
   cooldown: [['0:30 × 2', 'Brustdehnung am Türrahmen'], ['1:00', 'Kindhaltung']]
 };
 /* Miniband: kurze Gummischlaufe (5 Stärken) – Beine und Hüfte fürs Laufen. Zirkel, fest mit Miniband (miniOnly): Übungen ohne Gerätewahl,
@@ -251,6 +253,7 @@ const GUIDES = {
   'Dead Bug': { steps: ['Rückenlage, Arme senkrecht nach oben, Knie 90 Grad über der Hüfte.', 'Unteren Rücken sanft in den Boden drücken. Einen Arm und das gegenüberliegende Bein langsam strecken.', 'Zurückführen und Seite wechseln.'], effect: 'Gerade und tiefe Bauchmuskulatur, Rumpfkontrolle.', cue: 'Unterer Rücken bleibt am Boden; Bewegung verkleinern, wenn er abhebt. Ruhig ausatmen.' },
   'Marschieren auf der Stelle': { steps: ['Locker auf der Stelle gehen und die Arme mitnehmen.', 'Mit kleinen Schritten beginnen und das Tempo allmählich steigern.'], effect: 'Wärmt den Körper auf und erhöht die Belastung allmählich.', cue: 'Leicht auftreten und entspannt weiteratmen.' },
   'Seitliche Schritte': { steps: ['Mit lockeren Knien seitlich treten.', 'Anderen Fuß heranführen, dann die Richtung wechseln.'], effect: 'Aktiviert Beine und seitliche Hüftmuskeln.', cue: 'Füße nicht überkreuzen; kontrolliert auftreten.' },
+  'Handgelenke kreisen': { steps: ['Aufrecht stehen, Hände vor der Brust locker verschränken, Ellenbogen seitlich.', 'Die Handgelenke langsam in großen Kreisen bewegen, nach der Hälfte die Richtung wechseln.', 'Zum Schluss die Finger strecken und die Hände ausschütteln.'], effect: 'Bereitet die Handgelenke auf Rack-Position, Drücken und Halo mit der Kettlebell vor.', cue: 'Langsam und nur im schmerzfreien Bereich kreisen.' },
   'Schulter- und Armkreisen': { steps: ['Aufrecht stehen, Schultern locker.', 'Erst kleine, dann größere Kreise vorwärts und rückwärts.'], effect: 'Bewegt die Schultern durch und bereitet auf Oberkörperübungen vor.', cue: 'Nur im angenehmen Bewegungsumfang kreisen.' },
   'Hüftkreisen': { steps: ['Hüftbreit stehen, Knie weich, Hände an die Hüften.', 'Langsame kleine Kreise mit dem Becken, dann Richtung wechseln.'], effect: 'Lockere Mobilisation im Beckenbereich.', cue: 'Keine großen erzwungenen Kreise aus dem unteren Rücken.' },
   'Hüftkreisen und Oberkörperrotation': { steps: ['Kleine Hüftkreise ausführen.', 'Danach den Oberkörper langsam rechts und links drehen, Arme locker mitnehmen.'], effect: 'Lockere Mobilisation von Becken und Oberkörper.', cue: 'Nicht in die Endposition schleudern.' },
@@ -921,9 +924,13 @@ PREP.mat.push('Dead Bug mit Kurzhantel', 'Floor Press mit Kurzhanteln', 'Pullove
    Der älteste (letzte) Eintrag ist der Grundstand mit allen Funktionen; Neulinge sehen ihn plus die 3 neuesten Updates. */
 /* Versionsnummer der App, angezeigt unter Mehr. Seit 13.11.2026 gehen Änderungen direkt live (main, ohne Wochen-Release über dev);
    jeder Tag mit Veröffentlichung ist eine neue Nebenversion: 1.1, 1.2, 1.3 … Der Neuigkeiten-Eintrag des Tages bekommt dieselbe Nummer (version). */
-const APP_VERSION = '1.11';
+const APP_VERSION = '1.12';
 // Ein Eintrag pro Tag: Änderungen desselben Tages kommen in den Eintrag des Tages (aka = frühere ids für „schon gesehen“)
 const CHANGELOG = [
+  { id: '2026-11-27', date: '2026-11-27', version: '1.12', title: 'AMRAP mit Rudern', items: [
+    ['AMRAP mit Rudern', 'Im AMRAP ersetzt einarmiges Rudern den Cross-Body Lunge. So ist jetzt auch eine Zugübung für den Rücken dabei – die Beine haben mit Thruster, Kreuzheben und Ausfallschritt genug zu tun. Deine bisherigen AMRAP-Ergebnisse bleiben, sind mit der neuen Runde aber nicht ganz vergleichbar.', 'ux'],
+    ['Handgelenke im Warm-up', 'Ganzkörper, AMRAP, Core und Stand-Core wärmen jetzt auch die Handgelenke auf – für Rack-Position, Drücken und Halo. Das Warm-up dauert so lange wie vorher.', 'ux']
+  ] },
   { id: '2026-11-25', date: '2026-11-25', version: '1.11', title: 'Adventskalender, Fehler behoben', items: [
     ['Lauf-Adventskalender', 'Vom 1. bis 24. Dezember auf der Startseite: 24 Türchen mit je einem Tipp und deinen Kilometern bis Heiligabend. Das Ziel ist, was dein Plan bis dahin vorsieht – nicht feste 100 km. Ein Türchen zählt, wenn du trainiert hast oder Pause war. Mit ✕ blendest du ihn aus.', 'neu'],
     ['Zwei Fenster gleichzeitig', 'Ist die App zweimal offen (z. B. als App und im Browser), überschreibt ein Fenster nicht mehr, was du im anderen gespeichert hast – Trainings, Läufe, Rennen, Messungen und Einstellungen.', 'bug'],

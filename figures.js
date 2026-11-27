@@ -99,6 +99,7 @@ const FIG = {
   'Dead Bug': { a: fr(DB), b: fr(P(DB, { e2: [26, 170], w2: [6, 176], k1: [138, 172], f1: [174, 178], t1: [182, 172] })), la: 'Arme hoch, Knie 90 Grad', lb: 'Arm und Gegenbein strecken' },
   'Marschieren auf der Stelle': { a: fr(FS), b: fr(MARCH_B), la: 'aufrecht', lb: 'Knie heben, Arme mitnehmen' },
   'Seitliche Schritte': { a: fr(P(FS, { q1: [96, 112], q2: [104, 112], k1: [95, 150], f1: [95, 188], k2: [105, 150], f2: [105, 188] })), b: fr(P(FS, { k1: [82, 150], f1: [66, 188], k2: [118, 150], f2: [134, 188] }), [{ arrow: 'M118 200 H160' }]), la: 'Füße zusammen', lb: 'Schritt zur Seite' },
+  'Handgelenke kreisen': { a: fr(P(FS, { e1: [84, 94], w1: [98, 82], e2: [116, 94], w2: [102, 82] })), b: fr(P(FS, { e1: [84, 94], w1: [98, 82], e2: [116, 94], w2: [102, 82] }), [{ loop: [100, 80, 18, 14] }]), la: 'Hände verschränkt', lb: 'Handgelenke kreisen' },
   'Schulter- und Armkreisen': { a: fr(FS), b: fr(P(FS, { e1: [80, 36], w1: [76, 10], e2: [120, 36], w2: [124, 10] }), [{ loop: [82, 40, 22, 32] }, { loop: [118, 40, 22, 32] }]), la: 'Arme locker', lb: 'große Kreise' },
   'Hüftkreisen': { a: fr(HIPS_A, [{ loop: [104, 114, 24, 7] }]), b: fr(HIPS_B, [{ loop: [104, 114, 24, 7] }]), la: 'Hände an die Hüfte', lb: 'Becken kreisen' },
   'Hüftbeuger-Dehnung': { a: fr(HF_A), b: fr(HF_B, [{ arrow: 'M150 112 H176' }]), la: 'halber Kniestand', lb: 'Becken nach vorne schieben' },

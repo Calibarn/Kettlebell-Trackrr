@@ -212,5 +212,6 @@ test('Intervall-Raster: Hinweis beim Speichern, wenn nur der Plan drinsteht', as
 });
 
 test('Neuigkeiten: Eintrag zur aktuellen Version', async ({ page }) => {
-  expect(await page.evaluate(() => [CHANGELOG[0].version === APP_VERSION, APP_VERSION !== '1.10', CHANGELOG[0].items.length > 3])).toEqual([true, true, true]);
+  // der neueste Eintrag gehört zur aktuellen Version und hat Inhalt (die Zahl der Punkte hängt vom Tag ab)
+  expect(await page.evaluate(() => [CHANGELOG[0].version === APP_VERSION, APP_VERSION !== '1.10', CHANGELOG[0].items.length > 0])).toEqual([true, true, true]);
 });
