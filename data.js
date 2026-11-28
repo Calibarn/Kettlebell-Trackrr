@@ -924,9 +924,13 @@ PREP.mat.push('Dead Bug mit Kurzhantel', 'Floor Press mit Kurzhanteln', 'Pullove
    Der älteste (letzte) Eintrag ist der Grundstand mit allen Funktionen; Neulinge sehen ihn plus die 3 neuesten Updates. */
 /* Versionsnummer der App, angezeigt unter Mehr. Seit 13.11.2026 gehen Änderungen direkt live (main, ohne Wochen-Release über dev);
    jeder Tag mit Veröffentlichung ist eine neue Nebenversion: 1.1, 1.2, 1.3 … Der Neuigkeiten-Eintrag des Tages bekommt dieselbe Nummer (version). */
-const APP_VERSION = '1.12';
+const APP_VERSION = '1.13';
 // Ein Eintrag pro Tag: Änderungen desselben Tages kommen in den Eintrag des Tages (aka = frühere ids für „schon gesehen“)
 const CHANGELOG = [
+  { id: '2026-11-28', date: '2026-11-28', version: '1.13', title: 'Krafttage im Wechsel, Nicht geschafft', items: [
+    ['Krafttage im Wechsel', 'Unter Profil → Trainingswoche gibt es je Krafttag „wechselnd“: Dort kommt immer der Plan, der am längsten nicht dran war. So kommt jeder Plan an die Reihe, danach geht es von vorn los. Was du sonst trainierst, zählt mit; fällt ein Tag aus, bleibt der Plan vorne. Feste Pläne und Gym/Kurs an anderen Tagen bleiben, wie sie sind. Am Tag vor der Qualität und an Tagen mit Qualität oder Longrun nimmt der Wechsel nur Pläne ohne schwere Beinarbeit.', 'neu'],
+    ['Nicht geschafft', 'In „Heute dran“ steht bei Läufen und Kraft „Nicht geschafft“: Die Einheit rückt auf den nächsten passenden Tag der Woche – nach denselben Regeln wie beim Nachholen, auch wenn „Abhaken & nachholen“ aus ist. Ist kein Tag mehr frei, entfällt sie diese Woche. Rückgängig geht im Hinweis.', 'neu']
+  ] },
   { id: '2026-11-27', date: '2026-11-27', version: '1.12', title: 'AMRAP mit Rudern', items: [
     ['AMRAP mit Rudern', 'Im AMRAP ersetzt einarmiges Rudern den Cross-Body Lunge. So ist jetzt auch eine Zugübung für den Rücken dabei – die Beine haben mit Thruster, Kreuzheben und Ausfallschritt genug zu tun. Deine bisherigen AMRAP-Ergebnisse bleiben, sind mit der neuen Runde aber nicht ganz vergleichbar.', 'ux'],
     ['Handgelenke im Warm-up', 'Ganzkörper, AMRAP, Core und Stand-Core wärmen jetzt auch die Handgelenke auf – für Rack-Position, Drücken und Halo. Das Warm-up dauert so lange wie vorher.', 'ux']

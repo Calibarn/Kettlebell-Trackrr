@@ -117,7 +117,7 @@ function normProfile(p) {
       track: wk.track === true, runner: wk.runner === 'beginner' || wk.runner === 'runner' ? wk.runner : null,
       strengthFixed: Array.isArray(wk.strengthFixed) ? [...new Set(wk.strengthFixed.filter(d => isWd(d) && strength.includes(d)))] : [],
       // fester Kraft-Plan je Krafttag (Wochentag → Plan); fehlt er, gilt der zuletzt genutzte Plan
-      strengthPlan: isObj(wk.strengthPlan) ? Object.fromEntries(Object.entries(wk.strengthPlan).filter(([d, pk]) => strength.includes(Number(d)) && typeof pk === 'string' && (PLANS[pk] || pk === 'gym'))) : {},
+      strengthPlan: isObj(wk.strengthPlan) ? Object.fromEntries(Object.entries(wk.strengthPlan).filter(([d, pk]) => strength.includes(Number(d)) && typeof pk === 'string' && (PLANS[pk] || pk === 'gym' || pk === 'rot'))) : {},
       // „Gym/Kurs“ je Krafttag mit eigenem Namen (z. B. Blaze)
       // Mobility-Tage mit Routine je Tag (sonst die zuletzt genutzte)
       mobility: mobDays,
@@ -977,7 +977,7 @@ function weekWarnings(w = profile.week) {
   { const p = w.quality !== null ? (w.quality + 6) % 7 : null; if (p !== null && w.strengthPlan[p] === 'gym' && w.gymHard.includes(p) && w.strength.includes(p)) out.push(T(`Qualität am ${WD_LONG[w.quality]} direkt nach hartem Training (${w.gymNames[p] || 'Gym/Kurs'}, ${WD_LONG[p]}) – der Plan legt dort nur einen lockeren Lauf hin. Besser die Qualität auf einen anderen Tag legen.`, `Quality on ${WD_LONG[w.quality]} right after a hard session (${w.gymNames[p] || 'gym/class'}, ${WD_LONG[p]}) – the plan only puts an easy run there. Better move the quality session to another day.`)); }
   // Kraft zu Hause mit Beinen am Vortag (frei = zuletzt genutzter Plan, zählt mit); Oberkörper, Core, Büro und Kurse nicht – harte Kurse warnen oben
   { const p = w.quality !== null ? (w.quality + 6) % 7 : null, k = p !== null && w.strength.includes(p) ? w.strengthPlan[p] : null;
-    if (p !== null && w.strength.includes(p) && k !== 'gym' && !NO_LEGS.includes(k)) out.push(T(`Qualität am ${WD_LONG[w.quality]} direkt nach Kraft (${WD[p]}${PLANS[k] ? ', ' + PLANS[k].tab : ''}) – die Beine sind dann selten frisch. Am Vortag besser Oberkörper oder Core – oder die Qualität auf einen anderen Tag.`, `Quality on ${WD_LONG[w.quality]} right after strength (${WD[p]}${PLANS[k] ? ', ' + PLANS[k].tab : ''}) – the legs are rarely fresh then. Better upper body or core the day before – or move the quality session.`)); }
+    if (p !== null && w.strength.includes(p) && k !== 'gym' && k !== 'rot' && !NO_LEGS.includes(k)) out.push(T(`Qualität am ${WD_LONG[w.quality]} direkt nach Kraft (${WD[p]}${PLANS[k] ? ', ' + PLANS[k].tab : ''}) – die Beine sind dann selten frisch. Am Vortag besser Oberkörper oder Core – oder die Qualität auf einen anderen Tag.`, `Quality on ${WD_LONG[w.quality]} right after strength (${WD[p]}${PLANS[k] ? ', ' + PLANS[k].tab : ''}) – the legs are rarely fresh then. Better upper body or core the day before – or move the quality session.`)); }
   if (w.quality !== null && w.long !== null && next(w.long) === w.quality) out.push(T(`Qualität am ${WD_LONG[w.quality]} direkt nach dem Longrun – die Beine sind dann selten frisch.`, `Quality on ${WD_LONG[w.quality]} right after the long run – the legs are rarely fresh then.`));
   // zweite Qualität: nicht direkt neben Qualität oder Longrun; zwei Läufe am selben Tag vermeiden
   const hard = [[w.quality, T('Qualität', 'Quality')], [w.long, T('Longrun', 'Long run')]].concat(w.extras.filter(e => e.type === 'quality').map(e => [e.d, e.name || T('2. Qualität', '2nd quality')])).filter(([d]) => d !== null);
@@ -991,6 +991,14 @@ const mod = k => !profile.modules || profile.modules[k] !== false;
 const strengthDays = () => mod('kraft') ? profile.week.strength : [];
 const MOD_LABEL = () => ({ kraft: T('Kraft', 'Strength'), laufen: T('Laufen', 'Running'), mobility: 'Mobility' });
 const modChips = () => `<p class="tiny">${T('Was machst du? Abgewähltes verschwindet aus Leiste, Startseite und Profil.', 'What do you do? Deselected parts disappear from the bar, home screen and profile.')}</p><div class="chips" role="group" aria-label="${T('Bereiche', 'Areas')}">${['kraft', 'laufen', 'mobility'].map(k => `<button type="button" class="chip" data-modtoggle="${k}" aria-pressed="${mod(k)}">${MOD_LABEL()[k]}</button>`).join('')}</div>`;
+// Profil: welche Pläne im Wechsel sind – der, der am längsten her ist, zuerst
+function rotHint() {
+  const pool = rotPool(), last = rotLast(addDays(localDay(), 1));
+  if (!pool.length) return T('Wechselnd: Jeder Plan, den du machen kannst, steht schon fest an einem Tag – dort gilt „frei“.', 'Rotating: every plan you can do is already fixed on a day – “free” applies there.');
+  const order = pool.slice().sort((a, b) => (last[a] || '').localeCompare(last[b] || '')).map(pk => tr(PLANS[pk].tab)).join(' → ');
+  return T(`Wechselnd: immer der Plan, der am längsten her ist – als Nächstes ${order}, dann von vorn. Fällt einer aus, bleibt er vorne und kommt am nächsten Wechseltag.`, `Rotating: always the plan you did longest ago – next ${order}, then from the start. If one is skipped, it stays at the front and comes on the next rotating day.`)
+    + (mod('laufen') ? T(' Am Tag vor der Qualität und an Tagen mit Qualität oder Longrun nur Pläne ohne schwere Beinarbeit.', ' On the day before the quality session and on days with quality or long run only plans without heavy leg work.') : '');
+}
 // Routine für einen Mobility-Tag: festgelegt, sonst die zuletzt genutzte, sonst die erste
 function mobRoutineOn(wd) { const id = profile.week.mobilityPlan[wd], last = getMobLog().at(-1); return MOBILITY.routines.find(r => r.id === id) || (last && MOBILITY.routines.find(r => r.title === last.t)) || MOBILITY.routines[0]; }
 // Leiste und Profil-Bereiche nach dem, was du machst
@@ -1020,7 +1028,7 @@ function renderProfile() {
     </div>`).join('')}</div>
     ${w.extras.length < 4 ? `<div class="chips"><button type="button" class="chip" id="wkxadd">＋ ${T('Weitere Einheit', 'Other session')}</button></div>` : ''}
 ` : ''}${mod('kraft') ? `    <p class="tiny">${T('Kraft-Tage', 'Strength days')}</p><div class="chips days" role="group" aria-label="${T('Kraft-Tage', 'Strength days')}">${WEEK_ORDER.map(d => `<button type="button" class="chip" data-strength="${d}" aria-pressed="${w.strength.includes(d)}">${WD[d]}</button>`).join('')}</div>
-    ${w.strength.length ? `<p class="tiny">${T('Plan je Krafttag – „frei“ nimmt den zuletzt genutzten', 'Plan per strength day – “free” uses the last one you used')}</p><div class="dayplans">${WEEK_ORDER.filter(d => w.strength.includes(d)).map(d => `<label class="dayplan${w.strengthPlan[d] === 'gym' ? ' gym' : ''}"><span>${WD[d]}</span><select data-wkplan="${d}" aria-label="${T(`Kraft-Plan am ${WD_LONG[d]}`, `Strength plan on ${WD_LONG[d]}`)}"><option value="">${T('frei', 'free')}</option>${PLAN_ORDER.filter(pk => planOwned(pk) && !PLANS[pk].vacationOnly).map(pk => `<option value="${pk}"${w.strengthPlan[d] === pk ? ' selected' : ''}>${esc(tr(PLANS[pk].tab))}</option>`).join('')}<option value="gym"${w.strengthPlan[d] === 'gym' ? ' selected' : ''}>${T('Gym/Kurs', 'Gym/class')}</option></select>${w.strengthPlan[d] === 'gym' ? `<input type="text" data-wkgym="${d}" maxlength="30" autocomplete="off" value="${esc(w.gymNames[d] || '')}" placeholder="${T('z. B. Blaze', 'e.g. Blaze')}" aria-label="${T(`Name des Kurses am ${WD_LONG[d]}`, `Name of the class on ${WD_LONG[d]}`)}"><button type="button" class="chip" data-wkgymhard="${d}" aria-pressed="${w.gymHard.includes(d)}" title="${T('Hartes Training – am Tag danach kein Tempolauf', 'Hard session – no hard run the next day')}">${T('hart', 'hard')}</button>` : ''}</label>`).join('')}</div>` : ''}
+    ${w.strength.length ? `<p class="tiny">${T('Plan je Krafttag – „frei“ nimmt den zuletzt genutzten, „wechselnd“ der Reihe nach alle', 'Plan per strength day – “free” uses the last one you used, “rotating” goes through all of them')}</p><div class="dayplans">${WEEK_ORDER.filter(d => w.strength.includes(d)).map(d => `<label class="dayplan${w.strengthPlan[d] === 'gym' ? ' gym' : ''}"><span>${WD[d]}</span><select data-wkplan="${d}" aria-label="${T(`Kraft-Plan am ${WD_LONG[d]}`, `Strength plan on ${WD_LONG[d]}`)}"><option value="">${T('frei', 'free')}</option><option value="rot"${w.strengthPlan[d] === 'rot' ? ' selected' : ''}>${T('wechselnd', 'rotating')}</option>${PLAN_ORDER.filter(pk => planOwned(pk) && !PLANS[pk].vacationOnly).map(pk => `<option value="${pk}"${w.strengthPlan[d] === pk ? ' selected' : ''}>${esc(tr(PLANS[pk].tab))}</option>`).join('')}<option value="gym"${w.strengthPlan[d] === 'gym' ? ' selected' : ''}>${T('Gym/Kurs', 'Gym/class')}</option></select>${w.strengthPlan[d] === 'gym' ? `<input type="text" data-wkgym="${d}" maxlength="30" autocomplete="off" value="${esc(w.gymNames[d] || '')}" placeholder="${T('z. B. Blaze', 'e.g. Blaze')}" aria-label="${T(`Name des Kurses am ${WD_LONG[d]}`, `Name of the class on ${WD_LONG[d]}`)}"><button type="button" class="chip" data-wkgymhard="${d}" aria-pressed="${w.gymHard.includes(d)}" title="${T('Hartes Training – am Tag danach kein Tempolauf', 'Hard session – no hard run the next day')}">${T('hart', 'hard')}</button>` : ''}</label>`).join('')}</div>${Object.values(w.strengthPlan).includes('rot') ? `<p class="tiny" id="rothint">${esc(rotHint())}</p>` : ''}` : ''}
     ${w.strength.length ? `<p class="tiny">${T('Feste Krafttage – beim Nachholen kommt dort kein Lauf dazu', 'Fixed strength days – no run is added there when catching up')}</p><div class="chips days" role="group" aria-label="${T('Feste Krafttage', 'Fixed strength days')}">${WEEK_ORDER.filter(d => w.strength.includes(d)).map(d => `<button type="button" class="chip" data-strengthfix="${d}" aria-pressed="${w.strengthFixed.includes(d)}">${WD[d]}</button>`).join('')}</div>` : ''}
 ` : ''}${mod('mobility') ? `    <p class="tiny">${T('Mobility-Tage', 'Mobility days')}</p><div class="chips days" role="group" aria-label="${T('Mobility-Tage', 'Mobility days')}">${WEEK_ORDER.map(d => `<button type="button" class="chip" data-mobday="${d}" aria-pressed="${w.mobility.includes(d)}">${WD[d]}</button>`).join('')}</div>
     ${w.mobility.length ? `<p class="tiny">${T('Routine je Mobility-Tag – „frei“ nimmt die zuletzt genutzte', 'Routine per mobility day – “free” uses the last one you used')}</p><div class="dayplans">${WEEK_ORDER.filter(d => w.mobility.includes(d)).map(d => `<label class="dayplan"><span>${WD[d]}</span><select data-wkmob="${d}" aria-label="${T(`Mobility-Routine am ${WD_LONG[d]}`, `Mobility routine on ${WD_LONG[d]}`)}"><option value="">${T('frei', 'free')}</option>${MOBILITY.routines.map(r => `<option value="${r.id}"${w.mobilityPlan[d] === r.id ? ' selected' : ''}>${esc(tr(r.label))}</option>`).join('')}</select></label>`).join('')}</div>` : ''}
@@ -1135,7 +1143,7 @@ function onProfileChange(e) {
   else if (t.dataset.xtype !== undefined) wk.extras[Number(t.dataset.xtype)].type = t.value;
   else if (t.dataset.xname !== undefined) wk.extras[Number(t.dataset.xname)].name = t.value.trim().slice(0, 30);
   else if (t.id === 'wklevel') wk.runner = t.value === 'beginner' || t.value === 'runner' ? t.value : null;
-  else if (t.dataset.wkplan !== undefined) { const d = t.dataset.wkplan; if (PLANS[t.value] || t.value === 'gym') wk.strengthPlan[d] = t.value; else delete wk.strengthPlan[d]; if (t.value !== 'gym') delete wk.gymNames[d]; }
+  else if (t.dataset.wkplan !== undefined) { const d = t.dataset.wkplan; if (PLANS[t.value] || t.value === 'gym' || t.value === 'rot') wk.strengthPlan[d] = t.value; else delete wk.strengthPlan[d]; if (t.value !== 'gym') delete wk.gymNames[d]; }
   else if (t.dataset.wkmob !== undefined) { const d = t.dataset.wkmob; if (MOBILITY.routines.some(r => r.id === t.value)) wk.mobilityPlan[d] = t.value; else delete wk.mobilityPlan[d]; }
   else if (t.dataset.wkgym !== undefined) { const d = t.dataset.wkgym, n = t.value.trim().slice(0, 30); if (n) wk.gymNames[d] = n; else delete wk.gymNames[d]; }
   else if (t.id === 'kbdefault' || t.id === 'dbdefault') { profile.kit[t.id.slice(0, 2) + 'Default'] = Number(t.value); profileChanged('kit'); return; }
@@ -1894,11 +1902,35 @@ function weekLongNote(x) {
 }
 // Fester Kraft-Plan eines Wochentags (nur, wenn die Geräte dafür eingetragen sind), sonst null
 // Im Urlaub ist jeder Krafttag ein Hotel-Tag (auch ein Kurs-Tag); „Gym/Kurs“ hat keinen App-Plan
-const dayPlan = d => { if (vacation()) return 'hotel'; const pk = profile.week.strengthPlan[d]; return pk && PLANS[pk] && planOwned(pk) ? pk : null; };
+// „wechselnd“ (ab 1.13) braucht das Datum: dann kommt der Plan dran, der am längsten her ist
+const dayPlan = (d, date) => { if (vacation()) return 'hotel'; const pk = profile.week.strengthPlan[d]; if (pk === 'rot') return rotPlan(date || addDays(weekStart(localDay()), dayIdx(d))); return pk && PLANS[pk] && planOwned(pk) ? pk : null; };
+/* Krafttage „wechselnd“: alle Pläne, die du machen kannst, der Reihe nach – an jedem dieser Tage der, der am längsten nicht dran war
+   (nie gemacht zuerst, bei Gleichstand in der Reihenfolge der Reiter). Was du sonst trainierst, zählt mit; ein verpasster Plan bleibt vorne.
+   Pläne, die an einem anderen Tag fest stehen, sind nicht dabei. Am Tag vor einer Qualität und an Tagen mit Qualität oder Longrun nur Pläne ohne schwere Beinarbeit.
+   Ab heute werden die Wechseltage bis zum gefragten Datum durchgespielt; ist an einem Tag schon etwas eingetragen, gilt das. */
+const rotPool = () => PLAN_ORDER.filter(pk => planOwned(pk) && !PLANS[pk].vacationOnly && !Object.values(profile.week.strengthPlan).includes(pk));
+function rotLast(before) { const last = {}; for (const e of saved) if (e.date < before && !(last[e.plan] >= e.date)) last[e.plan] = e.date; return last; }
+function rotPlan(date) {
+  const w = profile.week, pool = rotPool(), today = localDay(), start = date < today ? date : today, last = rotLast(start);
+  if (!pool.length) return null;
+  const q = mod('laufen') ? [w.quality, ...w.extras.filter(e => e.type === 'quality').map(e => e.d)].filter(d => d !== null) : [];
+  const noLegs = wd => q.includes(wd) || q.includes((wd + 1) % 7) || (mod('laufen') && w.long === wd);
+  for (let d = start; ; d = addDays(d, 1)) {
+    const wd = new Date(d + 'T12:00:00').getDay(), done = d <= today ? saved.filter(e => e.date === d).sort((a, b) => String(a.at || '').localeCompare(String(b.at || ''))) : [];
+    let pk = null;
+    if (strengthDays().includes(wd) && w.strengthPlan[wd] === 'rot') {
+      const easy = noLegs(wd) ? pool.filter(p => NO_LEGS.includes(p)) : [], cand = easy.length ? easy : pool;
+      pk = done.length ? done[0].plan : cand.reduce((a, b) => (last[b] || '') < (last[a] || '') ? b : a);
+      last[pk] = d;
+    }
+    for (const e of done) last[e.plan] = d;
+    if (d >= date) return pk;
+  }
+}
 const gymOn = d => !vacation() && profile.week.strengthPlan[d] === 'gym' ? (profile.week.gymNames[d] || T('Gym/Kurs', 'Gym/class')) : null;
 // harter Kurs am Vortag? (week: Wochenstart – ein heute getauschter Kurs zählt nicht)
 const hardGymBefore = (d, week) => { const p = (d + 6) % 7, s = week ? daySwap[addDays(week, dayIdx(p))] : null; return gymOn(p) && profile.week.gymHard.includes(p) && !(s && s.from === 'strength-' + p) ? gymOn(p) : null; };
-const strengthTitle = d => { const g = gymOn(d); if (g) return `${T('Kurs', 'Class')} · ${g}`; const pk = dayPlan(d); return pk ? `${T('Kraft', 'Strength')} · ${tr(PLANS[pk].tab)}` : T('Kraft', 'Strength'); };
+const strengthTitle = (d, date) => { const g = gymOn(d); if (g) return `${T('Kurs', 'Class')} · ${g}`; const pk = dayPlan(d, date); return pk ? `${T('Kraft', 'Strength')} · ${tr(PLANS[pk].tab)}` : T('Kraft', 'Strength'); };
 // Einheiten der Woche auf die Tage aus dem Profil verteilt, Montag bis Sonntag
 const dayIdx = d => WEEK_ORDER.indexOf(d);
 /* Was ein B-Rennen in der Woche ersetzt und wie man es läuft – gemessen am A-Rennen des Blocks:
@@ -1918,7 +1950,7 @@ function bRole(x) {
 }
 function weekSchedule(x) {
   const w = profile.week, out = [], rd = x.a ? dayIdx(new Date(x.a.date + 'T12:00:00').getDay()) : 9;
-  const add = (d, kind, title, detail, extra = {}) => out.push(Object.assign({ d, kind, title, detail, plan: kind === 'strength' ? dayPlan(d) : null }, extra));
+  const add = (d, kind, title, detail, extra = {}) => out.push(Object.assign({ d, kind, title, detail, plan: kind === 'strength' ? dayPlan(d, addDays(x.week, dayIdx(d))) : null }, extra));
   const before = (d, gap = 1) => dayIdx(d) <= rd - gap;
   if (x.a) add(new Date(x.a.date + 'T12:00:00').getDay(), 'race', T(`Rennen: ${x.a.name}`, `Race: ${x.a.name}`), raceLabel(x.a) + goalLine(x.a), { warm: x.a.dist });
   if (x.bRace) add(new Date(x.bRace.date + 'T12:00:00').getDay(), 'brace', T(`${prioText(x.bRace.prio)}-Rennen: ${x.bRace.name}`, `${prioText(x.bRace.prio)} race: ${x.bRace.name}`), raceLabel(x.bRace) + goalLine(x.bRace) + bRole(x), { warm: x.bRace.dist });
@@ -1930,7 +1962,7 @@ function weekSchedule(x) {
     const sug = kmRound(x.long), own = x.noLong ? null : longSet[x.week] || null, lv = own || sug;
     add(w.long, 'long', x.noLong ? T('Locker oder frei', 'Easy or rest') : own ? T(`Longrun ${kmText(own)} km · selbst gesetzt`, `Long run ${kmText(own)} km · set by you`) : lv ? T(`Longrun ca. ${lv} km`, `Long run approx. ${lv} km`) : T('Longrun', 'Long run'), weekLongNote(x), x.noLong ? {} : { km: lv || null, suggested: sug || null, own: !!own, week: x.week });
   }
-  for (const d of strengthDays()) if (!x.a || before(d, 2)) add(d, 'strength', strengthTitle(d), x.a ? T('leicht, keine schweren Beinübungen', 'light, no heavy leg exercises') : x.phase === 'taper' ? T('ohne schwere Beinübungen', 'without heavy leg exercises') : x.phase === 'recover' ? T('leicht', 'light') : '');
+  for (const d of strengthDays()) if (!x.a || before(d, 2)) add(d, 'strength', strengthTitle(d, addDays(x.week, dayIdx(d))), x.a ? T('leicht, keine schweren Beinübungen', 'light, no heavy leg exercises') : x.phase === 'taper' ? T('ohne schwere Beinübungen', 'without heavy leg exercises') : x.phase === 'recover' ? T('leicht', 'light') : '');
   // Weitere Einheiten: lockerer Lauf, zweite Qualität (die andere Einheit der Woche; in Erholung, Tapering und B-Rennwoche locker) oder anderes
   w.extras.forEach((e, i) => {
     const key = 'x' + i;
@@ -1940,12 +1972,11 @@ function weekSchedule(x) {
     else if (e.type === 'quality') { const hq = hardGymBefore(e.d, x.week); if (['recover', 'taper'].includes(x.phase) || x.bRace || x.mPost || x.test || hq) add(e.d, 'quality2', e.name || T('Lockerer Lauf', 'Easy run'), hrize(hq ? T(`locker statt Tempo, Zone 2 – gestern ${hq} (hart)`, `easy instead of speed, Zone 2 – ${hq} yesterday (hard)`) : T('locker statt Tempo, Zone 2', 'easy instead of speed, Zone 2')) + easyPace(), { key, easy: true }); else add(e.d, 'quality2', e.name || T('Qualität 2', 'Quality 2'), weekKey(x, true), { key }); }
     else add(e.d, 'extra', extraTitle(e), '', { key });
   });
-  const skip = weekSkip[x.week] || [], wp = curWeekPlan(x.week);
+  const skip = weekSkip[x.week] || [], wp = curWeekPlan(x.week), mv = weekMoves(x.week);
   for (const it of out) {
     it.key = it.key || (it.kind === 'strength' ? 'strength-' + it.d : it.kind); it.skip = skip.includes(it.key);
-    if (wp) {
-      it.done = wp.done.includes(it.key); if (isWd(wp.moved[it.key])) { it.from = it.d; it.d = wp.moved[it.key]; }
-    }
+    if (wp) it.done = wp.done.includes(it.key);
+    if (isWd(mv[it.key])) { it.from = it.d; it.d = mv[it.key]; }
   }
   for (let i = 0; i < 7; i++) { swapIn(out, addDays(x.week, i), x); addIn(out, addDays(x.week, i)); }
   // Kraft und Laufen am selben Tag gehen parallel: Kraft nach dem Lauf, nach Qualität oder Longrun ohne schwere Beinübungen
@@ -1968,6 +1999,14 @@ function curWeekPlan(week) {
   return weekPlan;
 }
 const storeWeekPlan = () => store(KEYS.weekplan, weekPlan);
+// Verschoben wird auch ohne „Abhaken & nachholen“ – über „Nicht geschafft“ auf der Startseite (ab 1.13)
+const weekMoves = week => isObj(weekPlan) && weekPlan.week === week && isObj(weekPlan.moved) ? weekPlan.moved : {};
+function setMove(week, key, to) {
+  if (!isObj(weekPlan) || weekPlan.week !== week) weekPlan = { week, done: [], moved: {} };
+  if (!isObj(weekPlan.moved)) weekPlan.moved = {};
+  if (to === null) delete weekPlan.moved[key]; else weekPlan.moved[key] = to;
+  storeWeekPlan();
+}
 // Nächster passender Tag ab morgen (bzw. ab heute für Einheiten von gestern und früher), höchstens bis Sonntag:
 // harte Einheiten (Qualität, Longrun) nicht neben einer anderen harten Einheit oder einem Rennen, nichts am Renntag;
 // bevorzugt ein Tag ohne andere Einheit, sonst ein Tag ohne weiteren Lauf.
@@ -2035,6 +2074,20 @@ function swapIn(list, day, x = null) {
     }
   }
   // Mobility und Ruhetag stehen nur auf der Startseite (todayItems), im Wochenplan fällt die Einheit einfach aus
+}
+/* „Nicht geschafft“ (Startseite, ab 1.13): die Einheit von heute rückt auf den nächsten passenden Tag dieser Woche – nach denselben Regeln wie
+   „Abhaken & nachholen“ (harte Einheiten nicht nebeneinander, Läufe nicht auf feste Krafttage …). Ist keiner mehr frei, entfällt sie diese Woche.
+   Krafttage „wechselnd“ brauchen nichts weiter: Was ausfällt, bleibt vorne. Mobility und Sauna hängen an nichts, die fallen einfach weg. */
+function missToday(key) {
+  const today = localDay(), wk = weekStart(today), x = seasonPlan().weeks[0];
+  const items = x && x.week === wk ? weekSchedule(x) : [], it = items.find(o => o.key === key && !o.skip);
+  if (!it) return;
+  const was = weekMoves(wk)[key], to = catchUpDay(it, items);
+  const undo = () => { if (to !== null) setMove(wk, key, isWd(was) ? was : null); else toggleSkip(wk, key); renderStart(); };
+  if (to !== null) setMove(wk, key, to); else toggleSkip(wk, key);
+  swapOpen = null; renderStart();
+  // kurz halten, sonst schiebt der Text „Rückgängig“ aus dem Bild
+  toastUndo(to !== null ? T(`Auf ${WD_LONG[to]} verschoben.`, `Moved to ${WD_LONG[to]}.`) : T('Entfällt diese Woche – kein Tag mehr frei.', 'Skipped this week – no day left.'), undo);
 }
 const swapWas = (o, d) => o.kind === 'strength' ? gymOn(d) || T('Kraft', 'strength') : o.title;
 /* Heute zusätzlich (Startseite → Heute dran → „+ Heute zusätzlich …“): einen lockeren Lauf, Kraft (Plan wählbar) oder Mobility
@@ -2424,7 +2477,7 @@ function todayItems() {
     const s = getStarter(), doneToday = s.log.some(x => x.d === today);
     if (mod('laufen') && (doneToday || s.done < STARTER_N)) out.push({ kind: 'starter', title: T(`Lauf-Einstieg · Woche ${s.week + 1}`, `Running starter · week ${s.week + 1}`), detail: starterSummary(s.week), act: 'starter', done: doneToday });
     const mi = mobItem(); if (mi) out.push(mi);
-    if (strengthDays().includes(wd)) out.push(gymOn(wd) ? { kind: 'strength', gym: gymOn(wd), title: `${T('Kurs', 'Class')} · ${gymOn(wd)}`, detail: T('im Studio', 'at the gym'), act: 'gym', done: gymDone(today) } : kraft(dayPlan(wd) || plan));
+    if (strengthDays().includes(wd)) out.push(gymOn(wd) ? { kind: 'strength', gym: gymOn(wd), title: `${T('Kurs', 'Class')} · ${gymOn(wd)}`, detail: T('im Studio', 'at the gym'), act: 'gym', done: gymDone(today) } : kraft(dayPlan(wd, today) || plan));
     const si = saunaItem(); if (si) out.push(si);
     return out;
   }
@@ -2433,7 +2486,7 @@ function todayItems() {
     w.quality === wd && { kind: 'quality', key: 'quality', title: T('Qualität', 'Quality'), detail: T('Intervall oder Tempo', 'Intervals or tempo') },
     w.long === wd && { kind: 'long', key: 'long', title: T('Longrun', 'Long run'), detail: hrize(T('locker, Zone 2', 'easy, Zone 2')) },
     w.group === wd && { kind: 'group', key: 'group', title: T('Laufgruppe', 'Running group'), detail: hrize(T('locker, Zone 2', 'easy, Zone 2')) },
-    strengthDays().includes(wd) && { kind: 'strength', key: 'strength-' + wd, plan: dayPlan(wd), base: '', sameDay: [w.quality, w.long].includes(wd) ? 'hard' : w.group === wd ? 'easy' : null },
+    strengthDays().includes(wd) && { kind: 'strength', key: 'strength-' + wd, plan: dayPlan(wd, today), base: '', sameDay: [w.quality, w.long].includes(wd) ? 'hard' : w.group === wd ? 'easy' : null },
     ...w.extras.map((e, i) => ({ e, i })).filter(({ e }) => e.d === wd).map(({ e, i }) => ({ kind: extraKind(e), key: 'x' + i, recovery: e.type === 'recovery', title: extraTitle(e), detail: e.type === 'easy' ? hrize(T('locker, Zone 2', 'easy, Zone 2')) : e.type === 'recovery' ? recoveryDetail() : e.type === 'quality' ? T('Intervall oder Tempo', 'Intervals or tempo') : '' }))].filter(Boolean);
   const swapped = all ? all.find(o => o.swapped) : (swapIn(items, today), addIn(items, today), items.find(o => o.swapped));
   if (!x) items.splice(0, items.length, ...items.filter(o => !o.skip));
@@ -2444,7 +2497,7 @@ function todayItems() {
   // Entlastungswoche: Kraft mit gleichem Gewicht, aber weniger Sätzen; Kurs lockerer
   const cutTip = (it, gym) => [tip(it), x && x.cut ? (gym ? T('Entlastungswoche: etwas lockerer als sonst', 'Deload week: a bit easier than usual') : T('Entlastungswoche: gleiches Gewicht, je Übung 1 Satz weniger', 'Deload week: same weight, 1 set less per exercise')) : ''].filter(Boolean).join(' · ');
   const gymItem = it => ({ kind: 'strength', gym: gymOn(wd), key: it.key || 'strength-' + wd, title: `${T('Kurs', 'Class')} · ${gymOn(wd)}`, detail: it.sameDay ? it.base : it.detail || T('im Studio', 'at the gym'), act: 'gym', done: it.done || gymDone(today), tip: cutTip(it, true) });
-  for (const it of items) out.push(it.kind === 'strength' && !it.swap && !it.extraAdd && gymOn(wd) ? gymItem(it) : it.kind === 'strength' ? Object.assign(kraft(it.plan || plan), { key: it.key, swap: it.swap, extraAdd: it.extraAdd, done: it.done, note: it.sameDay ? it.base : it.detail, tip: cutTip(it, false) }) : Object.assign({}, it, { act: RUN(it) ? 'plan' : null, done: it.done || (RUN(it) && ranToday) }));
+  for (const it of items) out.push(Object.assign(it.kind === 'strength' && !it.swap && !it.extraAdd && gymOn(wd) ? gymItem(it) : it.kind === 'strength' ? Object.assign(kraft(it.plan || plan), { key: it.key, swap: it.swap, extraAdd: it.extraAdd, done: it.done, note: it.sameDay ? it.base : it.detail, tip: cutTip(it, false) }) : Object.assign({}, it, { act: RUN(it) ? 'plan' : null, done: it.done || (RUN(it) && ranToday) }), { sched: !!all }));
   const mi = mobItem(); if (mi) out.push(mi);
   // getauscht zu Mobility oder Ruhetag (Lauf und Kraft kommen schon aus dem Plan)
   const sw = daySwap[today];
@@ -2494,7 +2547,7 @@ let stripDay = null, logPick = null;
 function stripInfo(d) {
   const today = localDay(), wd = new Date(d + 'T12:00:00').getDay(), runs = mod('laufen') ? plannedRunsOn(d) : [], ran = ranOn(d), rows = [];
   if (mod('mobility') && profile.week.mobility.includes(wd)) { const done = getMobLog().some(e => e.d === d); rows.push(`<li>${esc('Mobility · ' + tr(mobRoutineOn(wd).title))}${done ? ' <span class="chkok">✓</span>' : ''}</li>`); }
-  if (strengthDays().includes(wd)) { const done = saved.some(e => e.date === d) || gymDone(d); rows.push(`<li>${esc(strengthTitle(wd))}${done ? ' <span class="chkok">✓</span>' : ''}</li>`); }
+  if (strengthDays().includes(wd)) { const done = saved.some(e => e.date === d) || gymDone(d); rows.push(`<li>${esc(strengthTitle(wd, d))}${done ? ' <span class="chkok">✓</span>' : ''}</li>`); }
   for (const it of runs) rows.push(`<li>${esc(it.title)}${ran ? ' <span class="chkok">✓</span>' : d <= today ? ` <button type="button" class="btn small primary" data-logpick="${d}|${esc(it.key)}">${T('Eintragen', 'Log')}</button>` : ''}</li>`);
   if (ran && !runs.length) rows.push(`<li>${T('Lauf', 'Run')} <span class="chkok">✓</span></li>`);
   return `<div class="sstripinfo"><b>${esc(dayLabel(d))}</b>${rows.length ? `<ul>${rows.join('')}</ul>` : `<p>${T('Nichts geplant – Ruhetag.', 'Nothing planned – rest day.')}</p>`}</div>`;
@@ -2885,7 +2938,7 @@ function swapCtl(it, items) {
   if (it.extraAdd) return `<small class="sswap"><button type="button" class="linkbtn" data-addundo>${T('Wieder entfernen', 'Remove again')}</button></small>`;
   if (it.swap) return `<small class="sswap"><button type="button" class="linkbtn" data-swapundo>${T('Tausch zurücknehmen', 'Undo swap')}</button></small>`;
   if (daySwap[localDay()] || !it.key || !(it.kind === 'strength' || (RUN(it) && !['race', 'brace'].includes(it.kind)))) return '';
-  if (swapOpen !== it.key) return `<small class="sswap"><button type="button" class="linkbtn" data-swapopen="${esc(it.key)}">${T('Heute stattdessen …', 'Instead today …')}</button></small>`;
+  if (swapOpen !== it.key) return `<small class="sswap"><button type="button" class="linkbtn" data-swapopen="${esc(it.key)}">${T('Heute stattdessen …', 'Instead today …')}</button>${it.sched ? ` · <button type="button" class="linkbtn" data-missed="${esc(it.key)}">${T('Nicht geschafft', 'Not done')}</button>` : ''}</small>`;
   const ch = swapChoices(it, items);
   return `<span class="sswapbox">${ch.map(([to, l]) => `<button type="button" class="btn small" data-swap="${to}" data-from="${esc(it.key)}">${esc(l)}</button>`).join('')}
     ${ch.some(([to]) => to === 'kraft') ? planPick('swapplan') : ''}
@@ -3008,6 +3061,7 @@ $('startcontent').addEventListener('click', e => {
   if (e.target.closest('[data-syncresume]')) { syncAuto(true); return; }
   const sw = e.target.closest('[data-swap]');
   if (sw) { const to = sw.dataset.swap, pk = to === 'kraft' && $('swapplan') ? $('swapplan').value : undefined; setSwap(localDay(), Object.assign({ from: sw.dataset.from, to }, PLANS[pk] ? { plan: pk } : {})); swapOpen = null; renderStart(); toast(T('Für heute getauscht.', 'Swapped for today.')); return; }
+  const ms = e.target.closest('[data-missed]'); if (ms) { missToday(ms.dataset.missed); return; }
   const so = e.target.closest('[data-swapopen]'); if (so) { swapOpen = so.dataset.swapopen; addOpen = false; renderStart(); return; }
   const ad = e.target.closest('[data-add]');
   if (ad) { const to = ad.dataset.add, pk = to === 'kraft' && $('addplan') ? $('addplan').value : undefined; setAdd(localDay(), Object.assign({ to }, PLANS[pk] ? { plan: pk } : {})); addOpen = false; renderStart(); toast(T('Für heute dazugeplant.', 'Added for today.')); return; }
@@ -4267,11 +4321,7 @@ $('runcontent').addEventListener('click', e => {
     return;
   }
   const um = e.target.closest('[data-unmove]');
-  if (um && wp) {
-    const k = um.dataset.unmove;
-    delete wp.moved[k];
-    storeWeekPlan(); renderRun(); return;
-  }
+  if (um) { setMove(weekStart(localDay()), um.dataset.unmove, null); renderRun(); return; }
   if (e.target.closest('#racecancel')) { raceEdit = null; renderRun(); return; }
   if (e.target.closest('#racedel')) { const old = raceEdit && races.find(r => r.id === raceEdit); if (old) { races = races.filter(r => r !== old); persistRaces(); raceEdit = null; renderRun(); toastUndo(T('Rennen gelöscht.', 'Race deleted.'), () => { races.push(old); persistRaces(); renderRun(); }); } return; }
   const re = e.target.closest('[data-raceedit]'); if (re) { raceEdit = re.dataset.raceedit; renderRun(); $('racename').focus(); window.scrollTo({ top: 0 }); return; }

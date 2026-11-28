@@ -2087,7 +2087,12 @@ const EN_TEXT = {
 "Handgelenke im Warm-up": "Wrists in the warm-up",
 "Ganzkörper, AMRAP, Core und Stand-Core wärmen jetzt auch die Handgelenke auf – für Rack-Position, Drücken und Halo. Das Warm-up dauert so lange wie vorher.": "Full body, AMRAP, Core and Standing core now also warm up your wrists – for the rack position, pressing and halos. The warm-up takes as long as before.",
 "Handgelenke kreisen": "Wrist circles",
-"Hände verschränkt": "hands interlaced"
+"Hände verschränkt": "hands interlaced",
+"Krafttage im Wechsel, Nicht geschafft": "Rotating strength days, Not done",
+"Krafttage im Wechsel": "Rotating strength days",
+"Unter Profil → Trainingswoche gibt es je Krafttag „wechselnd“: Dort kommt immer der Plan, der am längsten nicht dran war. So kommt jeder Plan an die Reihe, danach geht es von vorn los. Was du sonst trainierst, zählt mit; fällt ein Tag aus, bleibt der Plan vorne. Feste Pläne und Gym/Kurs an anderen Tagen bleiben, wie sie sind. Am Tag vor der Qualität und an Tagen mit Qualität oder Longrun nimmt der Wechsel nur Pläne ohne schwere Beinarbeit.": "Under Profile → Training week each strength day can be set to “rotating”: it always gets the plan you did longest ago. That way every plan gets its turn, then it starts again from the beginning. Whatever else you train counts too; if a day is skipped, its plan stays at the front. Fixed plans and gym/class on other days stay as they are. On the day before the quality session and on days with quality or long run the rotation only picks plans without heavy leg work.",
+"Nicht geschafft": "Not done",
+"In „Heute dran“ steht bei Läufen und Kraft „Nicht geschafft“: Die Einheit rückt auf den nächsten passenden Tag der Woche – nach denselben Regeln wie beim Nachholen, auch wenn „Abhaken & nachholen“ aus ist. Ist kein Tag mehr frei, entfällt sie diese Woche. Rückgängig geht im Hinweis.": "In “On today” runs and strength now have “Not done”: the session moves to the next suitable day of the week – by the same rules as catching up, even when “Tick off & catch up” is off. If no day is left, it is skipped this week. Undo is in the notice."
 };
 const EN_HTML = {
 "Kraft · Laufen · Mobility": "Strength · Running · Mobility",
