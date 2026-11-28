@@ -639,7 +639,7 @@ html[data-os=android] .infoi{border-color:var(--accent-ink);color:var(--accent-i
 .srowt .txt small.slong{display:block;overflow:visible}
 .srowt .txt small.slong .linkbtn{font-size:inherit;padding:6px 0}
 .srowt .txt small.swarm .linkbtn{text-align:left}
-.srowt .txt small.sswap{display:block;overflow:visible}
+.srowt .txt small.sswap{display:flex;flex-wrap:wrap;column-gap:20px;overflow:visible}
 .srowt .txt small.sswap .linkbtn{font-size:inherit;padding:6px 0}
 .saddrow{margin-top:6px}
 .saddrow > .linkbtn{padding:8px 0}

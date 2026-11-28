@@ -58,7 +58,8 @@ test('feste Pläne anderer Tage sind nicht dabei; vor und an der Qualität und a
   expect(await page.evaluate(() => dayPlan(3, '2026-12-02'))).toBe('wed');
   // Hinweis „Qualität direkt nach Kraft“ nicht für Wechseltage – der Wechsel nimmt dort ohnehin nichts für die Beine
   await page.evaluate(() => { profile.modules = { kraft: true, laufen: true, mobility: true }; });
-  expect((await page.evaluate(() => weekWarnings())).filter(t => t.includes('direkt nach Kraft'))).toEqual([]);
+  // … und auch nicht „Kraft am Longrun-Tag“ (Samstag ist Longrun und wechselnd)
+  expect((await page.evaluate(() => weekWarnings())).filter(t => t.includes('direkt nach Kraft') || t.includes('Kraft am Longrun-Tag'))).toEqual([]);
 });
 
 test('Profil: „wechselnd“ wählbar, mit Reihenfolge; Startseite und Wochenplan zeigen den Plan des Tages', async ({ page }) => {

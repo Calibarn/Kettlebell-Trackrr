@@ -984,7 +984,7 @@ function weekWarnings(w = profile.week) {
   for (const e of w.extras.filter(e => e.type === 'quality')) for (const [d, n] of hard) if (d !== e.d && (next(d) === e.d || next(e.d) === d)) { out.push(T(`${e.name || '2. Qualität'} am ${WD_LONG[e.d]} liegt direkt neben ${n} (${WD_LONG[d]}) – zwei harte Tage hintereinander. Besser einen lockeren Tag dazwischen.`, `${e.name || '2nd quality'} on ${WD_LONG[e.d]} is right next to ${n} (${WD_LONG[d]}) – two hard days in a row. Better an easy day in between.`)); break; }
   const runDays = [w.quality, w.long, w.group, ...w.extras.filter(e => e.type !== 'other').map(e => e.d)].filter(d => d !== null);
   if (new Set(runDays).size < runDays.length) out.push(T('Zwei Läufe am selben Tag – gemeint ist meist ein Lauf. Sonst plant die App beide ein.', 'Two runs on the same day – usually one run is meant. Otherwise the app plans both.'));
-  if (w.long !== null && w.strength.includes(w.long)) out.push(T('Kraft am Longrun-Tag: nur Oberkörper oder nach dem Lauf leicht.', 'Strength on long-run day: upper body only or light after the run.'));
+  if (w.long !== null && w.strength.includes(w.long) && w.strengthPlan[w.long] !== 'rot') out.push(T('Kraft am Longrun-Tag: nur Oberkörper oder nach dem Lauf leicht.', 'Strength on long-run day: upper body only or light after the run.'));
   return out;
 }
 const mod = k => !profile.modules || profile.modules[k] !== false;
@@ -2938,7 +2938,7 @@ function swapCtl(it, items) {
   if (it.extraAdd) return `<small class="sswap"><button type="button" class="linkbtn" data-addundo>${T('Wieder entfernen', 'Remove again')}</button></small>`;
   if (it.swap) return `<small class="sswap"><button type="button" class="linkbtn" data-swapundo>${T('Tausch zurücknehmen', 'Undo swap')}</button></small>`;
   if (daySwap[localDay()] || !it.key || !(it.kind === 'strength' || (RUN(it) && !['race', 'brace'].includes(it.kind)))) return '';
-  if (swapOpen !== it.key) return `<small class="sswap"><button type="button" class="linkbtn" data-swapopen="${esc(it.key)}">${T('Heute stattdessen …', 'Instead today …')}</button>${it.sched ? ` · <button type="button" class="linkbtn" data-missed="${esc(it.key)}">${T('Nicht geschafft', 'Not done')}</button>` : ''}</small>`;
+  if (swapOpen !== it.key) return `<small class="sswap"><button type="button" class="linkbtn" data-swapopen="${esc(it.key)}">${T('Heute stattdessen …', 'Instead today …')}</button>${it.sched ? `<button type="button" class="linkbtn" data-missed="${esc(it.key)}">${T('Nicht geschafft', 'Not done')}</button>` : ''}</small>`;
   const ch = swapChoices(it, items);
   return `<span class="sswapbox">${ch.map(([to, l]) => `<button type="button" class="btn small" data-swap="${to}" data-from="${esc(it.key)}">${esc(l)}</button>`).join('')}
     ${ch.some(([to]) => to === 'kraft') ? planPick('swapplan') : ''}
